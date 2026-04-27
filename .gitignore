@@ -1,0 +1,14 @@
+# Python artifacts
+__pycache__/
+*.pyc
+venv/
+
+# Generated Terraform output
+my-ibm-migration/
+*.zip
+
+# Local test data
+*.xlsx
+
+# Old files we don't need anymore
+parser.py
