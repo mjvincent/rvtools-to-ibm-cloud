@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
-import shutil
+# Removed import shutil as it was unused
 from logic_engine import (
     map_vmware_to_ibm_vpc,
     create_terraform_structure,
-    render_terraform_templates
+    render_terraform_templates,
+    generate_variables_hcl,
+    generate_tfvars
 )
 
 st.set_page_config(page_title="IBM Cloud Terraform Generator", layout="wide")
@@ -59,26 +61,14 @@ if uploaded_file:
     if st.button("Build Terraform Project"):
         selected_zone = processed_vms[0]['Zone'] if processed_vms else "zone-1"
 
-        vsi_hcl, vpc_hcl, storage_hcl = render_terraform_templates(
-            processed_vms,
-            target_region,
-            selected_zone
+        # 1. Generate all HCL content
+        vsi_h, vpc_h, stor_h = render_terraform_templates(
+            processed_vms, target_region, selected_zone
         )
+        var_h = generate_variables_hcl()
+        tfvars_h = generate_tfvars(target_region, selected_zone, project_name)
 
+        # 2. Pass ALL 6 arguments to the structure creator
         create_terraform_structure(
-            project_name,
-            vsi_hcl,
-            vpc_hcl,
-            storage_hcl
+            project_name, vsi_h, vpc_h, stor_h, var_h, tfvars_h
         )
-
-        shutil.make_archive(project_name, 'zip', project_name)
-
-        with open(f"{project_name}.zip", "rb") as fp:
-            st.download_button(
-                label="📥 Download Actionable Terraform Folder",
-                data=fp,
-                file_name=f"{project_name}.zip",
-                mime="application/zip"
-            )
-        st.balloons()

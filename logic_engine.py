@@ -25,6 +25,7 @@ def map_vmware_to_ibm_vpc(vcpus, ram_mb, cpu_usage=100, region="us-south"):
 
     ibm_profile = f"{family}-{int(target_vcpus)}x{int(ram_gb)}"
 
+    # 4. Zone Mapping
     zones = {
         "us-south": ["us-south-1", "us-south-2", "us-south-3"],
         "us-east": ["us-east-1", "us-east-2", "us-east-3"],
@@ -43,9 +44,48 @@ def map_vmware_to_ibm_vpc(vcpus, ram_mb, cpu_usage=100, region="us-south"):
     }
 
 
-def create_terraform_structure(project, vsi_h, vpc_h, stor_h):
+def generate_variables_hcl():
     """
-    Creates a best-practice directory structure.
+    Generates the variable definitions file.
+    """
+    return """
+variable "ibm_region" {
+  description = "The IBM Cloud region"
+  type        = string
+}
+
+variable "ibm_zone" {
+  description = "The specific zone within the region"
+  type        = string
+}
+
+variable "prefix" {
+  description = "A prefix for resource naming"
+  type        = string
+}
+
+variable "image_id" {
+  description = "The ID of the image to use for VSIs"
+  type        = string
+  default     = "r006-00000000-0000-0000-0000-000000000000"
+}
+"""
+
+
+def generate_tfvars(region, zone, project):
+    """
+    Generates the actual values for the variables.
+    """
+    # Line split to avoid E501 length error
+    output = f'ibm_region = "{region}"\n'
+    output += f'ibm_zone   = "{zone}"\n'
+    output += f'prefix     = "{project}"\n'
+    return output
+
+
+def create_terraform_structure(project, vsi_h, vpc_h, stor_h, var_h, tfvars_h):
+    """
+    Creates a best-practice directory structure including variables.
     """
     base_path = f"./{project}"
     module_path = f"{base_path}/modules"
@@ -54,15 +94,13 @@ def create_terraform_structure(project, vsi_h, vpc_h, stor_h):
     os.makedirs(f"{module_path}/vpc", exist_ok=True)
     os.makedirs(f"{module_path}/storage", exist_ok=True)
 
-    with open(f"{module_path}/vpc/main.tf", "w") as f:
-        f.write(vpc_h)
+    # 1. Write Root Files
+    with open(f"{base_path}/variables.tf", "w") as f:
+        f.write(var_h)
+    with open(f"{base_path}/terraform.tfvars", "w") as f:
+        f.write(tfvars_h)
 
-    with open(f"{module_path}/vsi/main.tf", "w") as f:
-        f.write(vsi_h)
-
-    with open(f"{module_path}/storage/main.tf", "w") as f:
-        f.write(stor_h)
-
+    # The 'Glue' file for modules
     root_main = """
 module "vpc" {
   source = "./modules/vpc"
@@ -76,9 +114,17 @@ module "vsi" {
   source = "./modules/vsi"
   vpc_id = module.vpc.vpc_id
 }
-    """
+"""
     with open(f"{base_path}/main.tf", "w") as f:
         f.write(root_main)
+
+    # 2. Write Module Files
+    with open(f"{module_path}/vpc/main.tf", "w") as f:
+        f.write(vpc_h)
+    with open(f"{module_path}/vsi/main.tf", "w") as f:
+        f.write(vsi_h)
+    with open(f"{module_path}/storage/main.tf", "w") as f:
+        f.write(stor_h)
 
     return f"Success! Project created at {base_path}"
 
