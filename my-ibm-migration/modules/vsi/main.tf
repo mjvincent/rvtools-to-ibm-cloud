@@ -15,8 +15,7 @@ resource "ibm_is_instance" "ad01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -33,8 +32,7 @@ resource "ibm_is_instance" "ad02-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -51,8 +49,7 @@ resource "ibm_is_instance" "adminlinuxutilityserver-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -69,8 +66,7 @@ resource "ibm_is_instance" "adminwindowsutilityserver-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -87,8 +83,7 @@ resource "ibm_is_instance" "adnsva-primary1" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -105,8 +100,7 @@ resource "ibm_is_instance" "adnsva-primary2" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -123,8 +117,7 @@ resource "ibm_is_instance" "archive1-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -141,8 +134,7 @@ resource "ibm_is_instance" "backups-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -159,8 +151,7 @@ resource "ibm_is_instance" "ca01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -177,8 +168,7 @@ resource "ibm_is_instance" "carbonblack-sensor-gateway-primary" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -195,8 +185,7 @@ resource "ibm_is_instance" "carbonblack-workoad-primary" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -213,8 +202,7 @@ resource "ibm_is_instance" "core01" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -231,8 +219,7 @@ resource "ibm_is_instance" "core02" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -249,8 +236,7 @@ resource "ibm_is_instance" "datapower-template" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -267,8 +253,7 @@ resource "ibm_is_instance" "datapower-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -285,8 +270,7 @@ resource "ibm_is_instance" "datapower-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -303,8 +287,7 @@ resource "ibm_is_instance" "datapower-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -321,8 +304,7 @@ resource "ibm_is_instance" "datapower-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -339,8 +321,7 @@ resource "ibm_is_instance" "datapower1-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -357,8 +338,7 @@ resource "ibm_is_instance" "datapower1-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -375,8 +355,7 @@ resource "ibm_is_instance" "devutilwin01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -393,8 +372,7 @@ resource "ibm_is_instance" "devutilwin02-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -411,8 +389,7 @@ resource "ibm_is_instance" "devutilwin03-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -429,8 +406,7 @@ resource "ibm_is_instance" "devutilwin04-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -447,8 +423,7 @@ resource "ibm_is_instance" "devutilwin10-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -465,8 +440,7 @@ resource "ibm_is_instance" "dns1-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -483,8 +457,7 @@ resource "ibm_is_instance" "dns2-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -501,8 +474,7 @@ resource "ibm_is_instance" "duo-auth-proxy-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -519,8 +491,7 @@ resource "ibm_is_instance" "fg500d-backups-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -537,8 +508,7 @@ resource "ibm_is_instance" "gitlab-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -555,8 +525,7 @@ resource "ibm_is_instance" "ilmt-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -573,8 +542,7 @@ resource "ibm_is_instance" "isam-template" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -591,8 +559,7 @@ resource "ibm_is_instance" "isam-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -609,8 +576,7 @@ resource "ibm_is_instance" "isam-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -627,8 +593,7 @@ resource "ibm_is_instance" "isam-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -645,8 +610,7 @@ resource "ibm_is_instance" "isam-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -663,8 +627,7 @@ resource "ibm_is_instance" "isam1-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -681,8 +644,7 @@ resource "ibm_is_instance" "isam1-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -699,8 +661,7 @@ resource "ibm_is_instance" "isampa-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -717,8 +678,7 @@ resource "ibm_is_instance" "isamweb-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -735,8 +695,7 @@ resource "ibm_is_instance" "isamweb-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -753,8 +712,7 @@ resource "ibm_is_instance" "isamweb-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -771,8 +729,7 @@ resource "ibm_is_instance" "isamweb1-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -789,8 +746,7 @@ resource "ibm_is_instance" "isamweb1-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -807,8 +763,7 @@ resource "ibm_is_instance" "isim-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -825,8 +780,7 @@ resource "ibm_is_instance" "isim-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -843,8 +797,7 @@ resource "ibm_is_instance" "isim-prod-va-hicloud-orgin" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -861,8 +814,7 @@ resource "ibm_is_instance" "isim-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -879,8 +831,7 @@ resource "ibm_is_instance" "isim-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -897,8 +848,7 @@ resource "ibm_is_instance" "isim1-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -915,8 +865,7 @@ resource "ibm_is_instance" "isim1-prod-va-hicloud-orgin" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -933,8 +882,7 @@ resource "ibm_is_instance" "isim1-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -951,8 +899,7 @@ resource "ibm_is_instance" "ispim-template" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -969,8 +916,7 @@ resource "ibm_is_instance" "ispim-prod-va-hicloud-orgin" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -987,8 +933,7 @@ resource "ibm_is_instance" "isvd01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1005,8 +950,7 @@ resource "ibm_is_instance" "isvd01-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1023,8 +967,7 @@ resource "ibm_is_instance" "isvd01-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1041,8 +984,7 @@ resource "ibm_is_instance" "isvd01-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1059,8 +1001,7 @@ resource "ibm_is_instance" "isvd02-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1077,8 +1018,7 @@ resource "ibm_is_instance" "isvd02-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1095,8 +1035,7 @@ resource "ibm_is_instance" "jenkins-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1113,8 +1052,7 @@ resource "ibm_is_instance" "jira-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1131,8 +1069,7 @@ resource "ibm_is_instance" "moveit-auto-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1149,8 +1086,7 @@ resource "ibm_is_instance" "moveit-central-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1167,8 +1103,7 @@ resource "ibm_is_instance" "moveit-central-prod-va-hicloud_standby" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1185,8 +1120,7 @@ resource "ibm_is_instance" "moveit-dmz-dmz-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1203,8 +1137,7 @@ resource "ibm_is_instance" "moveit-mft-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1221,8 +1154,7 @@ resource "ibm_is_instance" "moveit-mft-prod-va-hicloud_standby" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1239,8 +1171,7 @@ resource "ibm_is_instance" "mwg01-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1257,8 +1188,7 @@ resource "ibm_is_instance" "mwg02-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1275,8 +1205,7 @@ resource "ibm_is_instance" "mwg02-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1293,8 +1222,7 @@ resource "ibm_is_instance" "mysql-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1311,8 +1239,7 @@ resource "ibm_is_instance" "prod01" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1329,8 +1256,7 @@ resource "ibm_is_instance" "prod02" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1347,8 +1273,7 @@ resource "ibm_is_instance" "rdl01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1365,8 +1290,7 @@ resource "ibm_is_instance" "rhel8-template" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1383,8 +1307,7 @@ resource "ibm_is_instance" "rhel8-template-old" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1401,8 +1324,7 @@ resource "ibm_is_instance" "rhel-template" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1419,8 +1341,7 @@ resource "ibm_is_instance" "sepm01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1437,8 +1358,7 @@ resource "ibm_is_instance" "server2022gold1" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1455,8 +1375,7 @@ resource "ibm_is_instance" "servicenow-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1473,8 +1392,7 @@ resource "ibm_is_instance" "sftp01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1491,8 +1409,7 @@ resource "ibm_is_instance" "sgw-va-1-2-1-0-24042317_ovf10" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1509,8 +1426,7 @@ resource "ibm_is_instance" "sit01" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1527,8 +1443,7 @@ resource "ibm_is_instance" "sit02" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1545,8 +1460,7 @@ resource "ibm_is_instance" "sklm02-bcr-va-healthinteractive-net" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1563,8 +1477,7 @@ resource "ibm_is_instance" "sklm03-bcr-va-healthinteractive-net" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1581,8 +1494,7 @@ resource "ibm_is_instance" "splunk-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1599,8 +1511,7 @@ resource "ibm_is_instance" "splunkdeployment-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1617,8 +1528,7 @@ resource "ibm_is_instance" "splunkdevdeployment-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1635,8 +1545,7 @@ resource "ibm_is_instance" "splunkdevhf-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1653,8 +1562,7 @@ resource "ibm_is_instance" "splunkdevindexer1-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1671,8 +1579,7 @@ resource "ibm_is_instance" "splunkes-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1689,8 +1596,7 @@ resource "ibm_is_instance" "splunkhf-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1707,8 +1613,7 @@ resource "ibm_is_instance" "splunkindexer1-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1725,8 +1630,7 @@ resource "ibm_is_instance" "splunkindexer2-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1743,8 +1647,7 @@ resource "ibm_is_instance" "splunkindexmaster-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1761,8 +1664,7 @@ resource "ibm_is_instance" "splunklicensemaster-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1779,8 +1681,7 @@ resource "ibm_is_instance" "sspr-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1797,8 +1698,7 @@ resource "ibm_is_instance" "sspr02-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1815,8 +1715,7 @@ resource "ibm_is_instance" "stg01" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1833,8 +1732,7 @@ resource "ibm_is_instance" "stg02" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1851,8 +1749,7 @@ resource "ibm_is_instance" "symantec-2-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1869,8 +1766,7 @@ resource "ibm_is_instance" "symc1-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1887,8 +1783,7 @@ resource "ibm_is_instance" "va-jira-mysql-dep" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1905,8 +1800,7 @@ resource "ibm_is_instance" "vapldace01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1923,8 +1817,7 @@ resource "ibm_is_instance" "vapldcsvn01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1941,8 +1834,7 @@ resource "ibm_is_instance" "vapldibmdb01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1959,8 +1851,7 @@ resource "ibm_is_instance" "vapldlbas01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1977,8 +1868,7 @@ resource "ibm_is_instance" "vapldmq01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -1995,8 +1885,7 @@ resource "ibm_is_instance" "vapldmqp01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2013,8 +1902,7 @@ resource "ibm_is_instance" "vapldport01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2031,8 +1919,7 @@ resource "ibm_is_instance" "vapldwas01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2049,8 +1936,7 @@ resource "ibm_is_instance" "vapldwsrr01-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2067,8 +1953,7 @@ resource "ibm_is_instance" "vaplnspdep11-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2085,8 +1970,7 @@ resource "ibm_is_instance" "vaplnsphf11-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2103,8 +1987,7 @@ resource "ibm_is_instance" "vaplnspin11-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2121,8 +2004,7 @@ resource "ibm_is_instance" "vaplpace01-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2139,8 +2021,7 @@ resource "ibm_is_instance" "vaplpace02-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2157,8 +2038,7 @@ resource "ibm_is_instance" "vaplparch01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2175,8 +2055,7 @@ resource "ibm_is_instance" "vaplpcms01-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2193,8 +2072,7 @@ resource "ibm_is_instance" "vaplpcms02-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2211,8 +2089,7 @@ resource "ibm_is_instance" "vaplpdns01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2229,8 +2106,7 @@ resource "ibm_is_instance" "vaplpdns02-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2247,8 +2123,7 @@ resource "ibm_is_instance" "vaplpduo01-core-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2265,8 +2140,7 @@ resource "ibm_is_instance" "vaplpibmdb01-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2283,8 +2157,7 @@ resource "ibm_is_instance" "vaplpibmdb02-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2301,8 +2174,7 @@ resource "ibm_is_instance" "vaplpibmdb21-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2319,8 +2191,7 @@ resource "ibm_is_instance" "vaplpibmdb22-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2337,8 +2208,7 @@ resource "ibm_is_instance" "vaplpjen01-core-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2355,8 +2225,7 @@ resource "ibm_is_instance" "vaplpjen01-core-va-hicloud_bad_tbd_2025-09-17" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2373,8 +2242,7 @@ resource "ibm_is_instance" "vaplpjira01-core-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2391,8 +2259,7 @@ resource "ibm_is_instance" "vaplplbas01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2409,8 +2276,7 @@ resource "ibm_is_instance" "vaplpmpage01-prod-va-hicloud_don't-delete" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2427,8 +2293,7 @@ resource "ibm_is_instance" "vaplpmq01-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2445,8 +2310,7 @@ resource "ibm_is_instance" "vaplpmq02-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2463,8 +2327,7 @@ resource "ibm_is_instance" "vaplpmqp01-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2481,8 +2344,7 @@ resource "ibm_is_instance" "vaplpmqp02-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2499,8 +2361,7 @@ resource "ibm_is_instance" "vaplpmysql01-core-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2517,8 +2378,7 @@ resource "ibm_is_instance" "vaplpnagios01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2535,8 +2395,7 @@ resource "ibm_is_instance" "vaplpnas01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2553,8 +2412,7 @@ resource "ibm_is_instance" "vaplpntpsrv01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2571,8 +2429,7 @@ resource "ibm_is_instance" "vaplprhrepo01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2589,8 +2446,7 @@ resource "ibm_is_instance" "vaplpslog01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2607,8 +2463,7 @@ resource "ibm_is_instance" "vaplpsmtp01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2625,8 +2480,7 @@ resource "ibm_is_instance" "vaplpsp01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2643,8 +2497,7 @@ resource "ibm_is_instance" "vaplpspdep01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2661,8 +2514,7 @@ resource "ibm_is_instance" "vaplpspes01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2679,8 +2531,7 @@ resource "ibm_is_instance" "vaplpsphf01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2697,8 +2548,7 @@ resource "ibm_is_instance" "vaplpspim01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2715,8 +2565,7 @@ resource "ibm_is_instance" "vaplpspin01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2733,8 +2582,7 @@ resource "ibm_is_instance" "vaplpspin02-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2751,8 +2599,7 @@ resource "ibm_is_instance" "vaplpspxy01-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2769,8 +2616,7 @@ resource "ibm_is_instance" "vaplpurldir01-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2787,8 +2633,7 @@ resource "ibm_is_instance" "vaplpurldir02-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2805,8 +2650,7 @@ resource "ibm_is_instance" "vaplpwsrr01-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2823,8 +2667,7 @@ resource "ibm_is_instance" "vaplpwsrr01-prod-va-hicloud_standby" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2841,8 +2684,7 @@ resource "ibm_is_instance" "vaplqace01-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2859,8 +2701,7 @@ resource "ibm_is_instance" "vaplqace02-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2877,8 +2718,7 @@ resource "ibm_is_instance" "vaplqcms01-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2895,8 +2735,7 @@ resource "ibm_is_instance" "vaplqcms02-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2913,8 +2752,7 @@ resource "ibm_is_instance" "vaplqibmdb01-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2931,8 +2769,7 @@ resource "ibm_is_instance" "vaplqibmdb02-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2949,8 +2786,7 @@ resource "ibm_is_instance" "vaplqibmdb21-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2967,8 +2803,7 @@ resource "ibm_is_instance" "vaplqibmdb22-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -2985,8 +2820,7 @@ resource "ibm_is_instance" "vaplqmqiib01-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3003,8 +2837,7 @@ resource "ibm_is_instance" "vaplqmqiib02-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3021,8 +2854,7 @@ resource "ibm_is_instance" "vaplqmqp01-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3039,8 +2871,7 @@ resource "ibm_is_instance" "vaplqmqp02-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3057,8 +2888,7 @@ resource "ibm_is_instance" "vaplqwsrr01-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3075,8 +2905,7 @@ resource "ibm_is_instance" "vaplqwsrr01-stg-va-hicloud_standby" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3093,8 +2922,7 @@ resource "ibm_is_instance" "vapltace01-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3111,8 +2939,7 @@ resource "ibm_is_instance" "vapltcms01-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3129,8 +2956,7 @@ resource "ibm_is_instance" "vapltibmdb01-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3147,8 +2973,7 @@ resource "ibm_is_instance" "vapltibmdb21-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3165,8 +2990,7 @@ resource "ibm_is_instance" "vapltisds01-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3183,8 +3007,7 @@ resource "ibm_is_instance" "vapltmqiib01-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3201,8 +3024,7 @@ resource "ibm_is_instance" "vapltmqp01-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3219,8 +3041,7 @@ resource "ibm_is_instance" "vapltport01-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3237,8 +3058,7 @@ resource "ibm_is_instance" "vapltwsrr01-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3255,8 +3075,7 @@ resource "ibm_is_instance" "va-primary-nsxt-ctrlmgr0" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3273,8 +3092,7 @@ resource "ibm_is_instance" "va-primary-nsxt-ctrlmgr1" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3291,8 +3109,7 @@ resource "ibm_is_instance" "va-primary-nsxt-ctrlmgr2" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3309,8 +3126,7 @@ resource "ibm_is_instance" "va-primary-usage-meter-bcr-va-healthinteractive-net"
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3327,8 +3143,7 @@ resource "ibm_is_instance" "vapwpkx01-core-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3345,8 +3160,7 @@ resource "ibm_is_instance" "vapwpkx01-core-va-hicloud_new" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3363,8 +3177,7 @@ resource "ibm_is_instance" "vbrp-repl01-bcr-va-healthinteractive-net" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3381,8 +3194,7 @@ resource "ibm_is_instance" "vbrp-repl02-bcr-va-healthinteractive-net" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3399,8 +3211,7 @@ resource "ibm_is_instance" "vcenter-8" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3417,8 +3228,7 @@ resource "ibm_is_instance" "vcenter-server-7-0" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3435,8 +3245,7 @@ resource "ibm_is_instance" "vrops-edge-1" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3453,8 +3262,7 @@ resource "ibm_is_instance" "vrops-edge-2" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3471,8 +3279,7 @@ resource "ibm_is_instance" "was-dev-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3489,8 +3296,7 @@ resource "ibm_is_instance" "was-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3507,8 +3313,7 @@ resource "ibm_is_instance" "was-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3525,8 +3330,7 @@ resource "ibm_is_instance" "was-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3543,8 +3347,7 @@ resource "ibm_is_instance" "was1-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3561,8 +3364,7 @@ resource "ibm_is_instance" "was1-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3579,8 +3381,7 @@ resource "ibm_is_instance" "wasnd-portal-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3597,8 +3398,7 @@ resource "ibm_is_instance" "wasnd-portal-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3615,8 +3415,7 @@ resource "ibm_is_instance" "wasnd-portal1-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3633,8 +3432,7 @@ resource "ibm_is_instance" "wasnd-portal1-stg-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3651,8 +3449,7 @@ resource "ibm_is_instance" "was-portal-sit-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3669,8 +3466,7 @@ resource "ibm_is_instance" "webgateway-nonprod" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3687,8 +3483,7 @@ resource "ibm_is_instance" "webmaint-dmz-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3705,8 +3500,7 @@ resource "ibm_is_instance" "webmaint-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3723,8 +3517,7 @@ resource "ibm_is_instance" "winutil-aisn-prod-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################
@@ -3741,8 +3534,7 @@ resource "ibm_is_instance" "winutility20-va-hicloud" {
   vpc  = ibm_is_vpc.vpc.id
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
-}
-##############################################################################
+}##############################################################################
 # Virtual Server Instance: 
 # Migrated from VMware via RVTools
 ##############################################################################

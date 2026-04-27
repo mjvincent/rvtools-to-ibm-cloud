@@ -2,6 +2,14 @@ import os
 import pandas as pd
 from jinja2 import Template
 
+def generate_tfvars(project_name, region, zone):
+    content = f"""
+ibm_region = "{region}"
+ibm_zone   = "{zone}"
+project_prefix = "{project_name}"
+"""
+    return content
+
 def map_vmware_to_ibm_vpc(vcpus, ram_mb, region="us-south"):
     """
     Core Logic Engine: Translates VMware specs to IBM VPC Profiles
