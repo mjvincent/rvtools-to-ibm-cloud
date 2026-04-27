@@ -2,14 +2,20 @@ import os
 from jinja2 import Template
 
 
-def map_vmware_to_ibm_vpc(vcpus, ram_mb, region="us-south"):
+def map_vmware_to_ibm_vpc(vcpus, ram_mb, cpu_usage=100, region="us-south"):
     """
-    Core Logic Engine: Translates VMware specs to IBM VPC Profiles
-    and assigns appropriate Data Centers (Zones).
+    Upgraded Logic Engine: Translates VMware specs with Right-Sizing.
     """
-    ram_gb = ram_mb / 1024
-    ratio = ram_gb / vcpus
+    # 1. Right-Sizing: If usage < 40%, suggest 50% vCPUs (min 1)
+    target_vcpus = vcpus
+    if cpu_usage < 40:
+        target_vcpus = max(1, int(vcpus / 2))
 
+    # 2. Convert RAM to GB
+    ram_gb = ram_mb / 1024
+    ratio = ram_gb / target_vcpus
+
+    # 3. Assign the VSI Profile Family
     if ratio <= 2:
         family = "cx2"
     elif ratio >= 8:
@@ -17,7 +23,7 @@ def map_vmware_to_ibm_vpc(vcpus, ram_mb, region="us-south"):
     else:
         family = "bx2"
 
-    ibm_profile = f"{family}-{int(vcpus)}x{int(ram_gb)}"
+    ibm_profile = f"{family}-{int(target_vcpus)}x{int(ram_gb)}"
 
     zones = {
         "us-south": ["us-south-1", "us-south-2", "us-south-3"],
@@ -32,13 +38,14 @@ def map_vmware_to_ibm_vpc(vcpus, ram_mb, region="us-south"):
         "profile": ibm_profile,
         "region": region,
         "zone": selected_zone,
-        "family": family
+        "family": family,
+        "is_rightsized": target_vcpus < vcpus
     }
 
 
 def create_terraform_structure(project, vsi_h, vpc_h, stor_h):
     """
-    Creates a best-practice directory structure and writes the HCL files.
+    Creates a best-practice directory structure.
     """
     base_path = f"./{project}"
     module_path = f"{base_path}/modules"

@@ -27,6 +27,7 @@ if uploaded_file:
     processed_vms = []
     for index, row in df_vinfo.iterrows():
         vm_name = row['VM']
+        cpu_usage_pct = row.get('CPU usage %', 100)
         vm_disks = df_vdisk[df_vdisk['VM'] == vm_name]
 
         disk_list = []
@@ -39,12 +40,15 @@ if uploaded_file:
         mapping = map_vmware_to_ibm_vpc(
             row['CPUs'],
             row['Memory'],
+            cpu_usage=cpu_usage_pct,
             region=target_region
         )
 
         processed_vms.append({
             "VM Name": vm_name,
+            "Original vCPU": row['CPUs'],
             "IBM Profile": mapping['profile'],
+            "Right-Sized": "✅" if mapping['is_rightsized'] else "❌",
             "Zone": mapping['zone'],
             "Disks": disk_list
         })
