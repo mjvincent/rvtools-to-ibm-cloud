@@ -58,17 +58,31 @@ if uploaded_file:
     st.write("### Target IBM Cloud Configuration Preview")
     st.dataframe(pd.DataFrame(processed_vms).drop(columns=['Disks']))
 
+    # Ensure this is inside the "if uploaded_file is not None:" block
     if st.button("Build Terraform Project"):
-        selected_zone = processed_vms[0]['Zone'] if processed_vms else "zone-1"
+        with st.status("Generating Migration Files...", expanded=True) as status:
+            try:
+                # 1. Capture the target zone from the first VM
+                selected_zone = processed_vms[0]['Zone'] if processed_vms else "us-east-1"
 
-        # 1. Generate all HCL content
-        vsi_h, vpc_h, stor_h = render_terraform_templates(
-            processed_vms, target_region, selected_zone
-        )
-        var_h = generate_variables_hcl()
-        tfvars_h = generate_tfvars(target_region, selected_zone, project_name)
+                st.write("Rendering HCL templates...")
+                vsi_h, vpc_h, stor_h = render_terraform_templates(
+                    processed_vms, target_region, selected_zone
+                )
 
-        # 2. Pass ALL 6 arguments to the structure creator
-        create_terraform_structure(
-            project_name, vsi_h, vpc_h, stor_h, var_h, tfvars_h
-        )
+                st.write("Generating variable files...")
+                var_h = generate_variables_hcl()
+                tfvars_h = generate_tfvars(target_region, selected_zone, project_name)
+
+                st.write("Creating directory structure...")
+                create_terraform_structure(
+                    project_name, vsi_h, vpc_h, stor_h, var_h, tfvars_h
+                )
+
+                status.update(label="Build Complete!", state="complete", expanded=False)
+                st.success(f"Project '{project_name}' created successfully!")
+                st.balloons()
+
+            except Exception as e:
+                status.update(label="Build Failed", state="error")
+                st.error(f"An error occurred: {e}")
