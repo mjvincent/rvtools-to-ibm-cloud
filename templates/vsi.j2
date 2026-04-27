@@ -1,0 +1,18 @@
+##############################################################################
+# Virtual Server Instance: {{ vm_name }}
+# Migrated from VMware via RVTools
+##############################################################################
+
+resource "ibm_is_instance" "{{ vm_name_sanitized }}" {
+  name    = "{{ vm_name_sanitized }}"
+  image   = var.image_id
+  profile = "{{ ibm_profile }}"
+
+  primary_network_interface {
+    subnet = ibm_is_subnet.subnet.id
+  }
+
+  vpc  = ibm_is_vpc.vpc.id
+  zone = var.ibm_zone
+  keys = [data.ibm_is_ssh_key.ssh_key.id]
+}
