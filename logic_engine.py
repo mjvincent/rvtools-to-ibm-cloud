@@ -74,9 +74,6 @@ module "vsi" {
     with open(f"{base_path}/main.tf", "w") as f:
         f.write(root_main)
 def render_terraform_templates(vm_list, region, zone):
-    """
-    Populates templates with VM and Storage data, and creates dynamic VPC HCL.
-    """
     with open("templates/vsi.j2", "r") as f:
         vsi_template = Template(f.read())
     
@@ -92,18 +89,21 @@ def render_terraform_templates(vm_list, region, zone):
             ibm_profile = vm['IBM Profile'],
             zone = zone
         )
-        all_vsi_hcl += "\n"
 
-        # 2. Generate Storage HCL (Secondary Disks)
-        # We assume a standard 100GB data volume for this prototype iteration
-        all_storage_hcl += f"""
-resource "ibm_is_volume" "{sanitized_name}-data" {{
-  name    = "{sanitized_name}-data"
-  profile = "general-purpose"
-  zone    = "{zone}"
-  capacity = 100
+        # 2. Loop through the ACTUAL disks we found for this VM
+        for i, disk in enumerate(vm.get('Disks', [])):
+            # We skip the first disk if it's the boot drive (IBM handles boot disks in the VSI resource)
+            if i == 0: continue 
+            
+            all_storage_hcl += f"""
+resource "ibm_is_volume" "{sanitized_name}-disk-{i}" {{
+  name     = "{sanitized_name}-disk-{i}"
+  profile  = "10iops-tier" # Standard IBM storage tier
+  zone     = "{zone}"
+  capacity = {disk['capacity_gb']}
 }}
 """
+    # ... (rest of the VPC HCL code)
 
     # 3. Dynamic VPC HCL (No longer hardcoded!)
     vpc_hcl = f"""
