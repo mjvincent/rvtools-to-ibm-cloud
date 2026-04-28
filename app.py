@@ -19,7 +19,6 @@ target_region = st.sidebar.selectbox(
 )
 
 st.sidebar.header("Right-Sizing Settings")
-# Shortened option strings to fix E501
 modes = [
     "Conservative (30%)", "IBM Standard (40%)",
     "Moderate (50%)", "Aggressive (70%)", "Custom"
@@ -40,7 +39,6 @@ uploaded_file = st.sidebar.file_uploader("Upload RVTools XLSX", type=["xlsx"])
 
 # --- Main Logic Block ---
 if uploaded_file is not None:
-    # 1. Load the data
     df = pd.read_excel(uploaded_file, sheet_name='vInfo')
 
     raw_data = []
@@ -50,25 +48,43 @@ if uploaded_file is not None:
             'vCPUs': row.get('CPUs', 1),
             'RAM': row.get('Memory', 1024),
             'CPU Usage': row.get('CPU Usage %', 100),
-            'Disks': []  # Fixed E261: Added two spaces before comment
+            'Disks': []
         })
 
-    # 2. Process with Global Threshold
+    # 2. Process with Global Threshold and CPU Validation
     processed_vms = []
+    cpu_warning_triggered = False
+
     for vm in raw_data:
-        mapping = map_vmware_to_ibm_vpc(
-            vm['vCPUs'],
-            vm['RAM'],
-            vm['CPU Usage'],
-            target_region,
-            utilization_threshold
-        )
+        usage = vm.get('CPU Usage')
+        is_unknown = (usage == 100 or pd.isna(usage))
+
+        if is_unknown:
+            cpu_warning_triggered = True
+            # Force Like-for-Like
+            mapping = map_vmware_to_ibm_vpc(
+                vm['vCPUs'], vm['RAM'], 100, target_region, 100
+            )
+            status_icon = "⚠️ No Data"
+        else:
+            mapping = map_vmware_to_ibm_vpc(
+                vm['vCPUs'], vm['RAM'], usage,
+                target_region, utilization_threshold
+            )
+            status_icon = "✅" if mapping['is_rightsized'] else "❌"
+
         vm.update({
             "IBM Profile": mapping['profile'],
-            "Right-Sized": "✅" if mapping['is_rightsized'] else "❌",
+            "Right-Sized": status_icon,
             "Override": False
         })
         processed_vms.append(vm)
+
+    if cpu_warning_triggered:
+        st.warning(
+            "**Note:** Some VMs are missing CPU data. "
+            "The tool defaulted to **Like-for-Like** sizing."
+        )
 
     st.write("### Review Migration Plan & Manual Overrides")
 
@@ -82,7 +98,7 @@ if uploaded_file is not None:
                 default=False
             )
         },
-        disabled=["VM Name", "Original vCPU", "IBM Profile", "Right-Sized"],
+        disabled=["VM Name", "IBM Profile", "Right-Sized"],
         hide_index=True
     )
 
@@ -100,20 +116,16 @@ if uploaded_file is not None:
         with st.status("Generating Migration Files...") as status:
             try:
                 selected_zone = f"{target_region}-1"
-
                 vsi_h, vpc_h, stor_h = render_terraform_templates(
                     final_vms, target_region, selected_zone
                 )
-
                 var_h = generate_variables_hcl()
                 tfvars_h = generate_tfvars(
                     target_region, selected_zone, project_name
                 )
-
                 create_terraform_structure(
                     project_name, vsi_h, vpc_h, stor_h, var_h, tfvars_h
                 )
-
                 status.update(label="Build Complete!", state="complete")
                 st.success(f"Project '{project_name}' created!")
                 st.balloons()
