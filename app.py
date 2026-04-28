@@ -32,6 +32,24 @@ st.sidebar.header("Migration Settings")
 target_region = st.sidebar.selectbox(
     "Target IBM Region", ["us-south", "us-east", "eu-gb", "jp-tok"]
 )
+# RE-IMPLEMENTED: Right-Sizing Slider Block
+st.sidebar.header("Right-Sizing Settings")
+modes = [
+    "Conservative (30%)",
+    "IBM Standard (40%)",
+    "Moderate (50%)",
+    "Aggressive (70%)",
+    "Custom"
+]
+threshold_mode = st.sidebar.selectbox("Standard Thresholds", modes, index=1)
+
+if threshold_mode == "Custom":
+    utilization_threshold = st.sidebar.slider(
+        "Custom CPU Threshold (%)", 1, 100, 40
+    )
+else:
+    # Extracts the integer from the string (e.g., "40")
+    utilization_threshold = int(''.join(filter(str.isdigit, threshold_mode)))
 project_name = st.sidebar.text_input("Project Name", "my-ibm-migration")
 uploaded_file = st.sidebar.file_uploader("Upload RVTools", type=["xlsx"])
 
@@ -76,10 +94,16 @@ if uploaded_file is not None:
         else:
             suggested_tier = '3iops-tier'
 
-        # 3. Mapping Call
+        # 3. Mapping Call using the dynamic threshold from Sidebar
         calc_usage = 100 if is_un_cpu else usage
+
+        # We pass utilization_threshold here instead of a hardcoded 40
         mapping = map_vmware_to_ibm_vpc(
-            orig_cpu, orig_ram, calc_usage, target_region, 40
+            orig_cpu,
+            orig_ram,
+            calc_usage,
+            target_region,
+            utilization_threshold
         )
 
         # Fixed E501: Vertical dictionary list
@@ -113,6 +137,7 @@ if uploaded_file is not None:
         hide_index=True
     )
 
+    # 4. Build Button Area
     if st.button("Build Terraform Project"):
         final_vms = [
             v for v in edited_df.to_dict('records') if not v['Exclude?']
@@ -132,3 +157,24 @@ if uploaded_file is not None:
                 st.snow()
             except Exception as e:
                 st.error(f"Build Failed: {e}")
+
+    # 5. UI Legend (Move this OUTSIDE the button block)
+    st.write("---")
+    st.write("### 🧭 UI Legend & Logic Guide")
+    l_col1, l_col2, l_col3 = st.columns(3)
+
+    with l_col1:
+        st.markdown("**Status Icons**")
+        st.write("✅ : VM is correctly right-sized.")
+        st.write("❌ : Profile matches original specs (No savings).")
+        st.write("⚠️ : Missing data; reverted to Like-for-Like.")
+
+    with l_col2:
+        st.markdown("**Storage Tiering**")
+        st.write("- **10 IOPS:** DB/PROD keywords found.")
+        st.write("- **5 IOPS:** CPU utilization > 70%.")
+        st.write("- **3 IOPS:** Default for cost optimization.")
+
+    with l_col3:
+        st.markdown("**Exclusion Rules**")
+        st.write("VMs with state `poweredOff` are auto-checked for exclusion.")
