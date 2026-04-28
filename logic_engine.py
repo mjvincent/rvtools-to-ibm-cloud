@@ -1,166 +1,104 @@
 import os
-from jinja2 import Template
+import jinja2
 
 
-def map_vmware_to_ibm_vpc(
-    vcpus, ram_mb, cpu_usage=100, region="us-south", threshold=40
-):
+def map_vmware_to_ibm_vpc(vcpus, ram_mb, cpu_usage, region, threshold):
     """
-    Upgraded Logic Engine: Now supports dynamic utilization thresholds.
+    Maps VMware specs to IBM Cloud VPC profiles with right-sizing logic.
     """
-    target_vcpus = vcpus
-    # Use the dynamic threshold instead of hardcoded 40
-    if cpu_usage < threshold:
-        target_vcpus = max(1, int(vcpus / 2))
+    # Simple right-sizing logic: adjust vCPUs based on usage vs threshold
+    # If usage is 20% and threshold is 40%, we only need half the vCPUs
+    adjusted_vcpus = max(1, int(vcpus * (cpu_usage / threshold)))
 
-    ram_gb = ram_mb / 1024
-    ratio = ram_gb / target_vcpus
+    # Logic to select a profile (Simplified for this example)
+    # IBM Profiles usually follow: cx2-(vCPU)x(RAM)
+    # We'll default to the 'cx2' (Compute Optimized) family
+    profile = f"cx2-{adjusted_vcpus}x{int(adjusted_vcpus * 2)}"
 
-    # Maintain your family logic (cx2, mx2, bx2)
-    if ratio <= 2:
-        family = "cx2"
-    elif ratio >= 8:
-        family = "mx2"
-    else:
-        family = "bx2"
+    is_rightsized = cpu_usage < threshold
 
-    ibm_profile = f"{family}-{int(target_vcpus)}x{int(ram_gb)}"
-
-    # ... rest of your zone logic stays the same ...
     return {
-        "profile": ibm_profile,
-        "is_rightsized": target_vcpus < vcpus,
-        "family": family
+        "profile": profile,
+        "is_rightsized": is_rightsized
     }
 
 
+def render_terraform_templates(vms, region, zone):
+    # Defining the template
+    vsi_template_str = """
+{% for vm in vms %}
+# Compute Resource for {{ vm['VM Name'] }}
+resource "ibm_is_instance" "{{ vm['VM Name']|replace(' ', '_') }}_vsi" {
+  name    = "{{ vm['VM Name']|replace(' ', '_') }}-vsi"
+  profile = "{{ vm['IBM Profile'] }}"
+  image   = var.image_id
+  zone    = var.zone
+
+  primary_network_interface {
+    subnet = var.subnet_id
+  }
+}
+
+# Storage Resource (Aggregated from vDisk)
+resource "ibm_is_volume" "{{ vm['VM Name']|replace(' ', '_') }}_volume" {
+  name     = "{{ vm['VM Name']|replace(' ', '_') }}-data-vol"
+  profile  = "{{ vm['Storage Tier'] }}"
+  zone     = var.zone
+  capacity = {{ vm['Total Storage GB']|int }}
+}
+
+# Attachment Resource
+resource "ibm_is_instance_volume_attachment"
+"{{ vm['VM Name']|replace(' ', '_') }}_attach" {
+  instance = ibm_is_instance.{{ vm['VM Name']|replace(' ', '_') }}_vsi.id
+  volume   = ibm_is_volume.{{ vm['VM Name']|replace(' ', '_') }}_volume.id
+  name     = "{{ vm['VM Name']|replace(' ', '_') }}-attachment"
+}
+
+{% endfor %}
+"""
+    # Initialize Jinja environment
+    env = jinja2.Environment(loader=jinja2.BaseLoader())
+
+    # FIX F841: Actually use the template string to render
+    template = env.from_string(vsi_template_str)
+    vsi_h = template.render(vms=vms)
+
+    # Placeholder logic for VPC and Storage (can be expanded later)
+    vpc_h = "# VPC resources would be defined here"
+    stor_h = "# Additional storage logic if needed"
+
+    return vsi_h, vpc_h, stor_h
+
+
+def create_terraform_structure(project_name, vsi, vpc, stor, var, tfvars):
+    """Creates the directory structure and writes the .tf files."""
+    os.makedirs(project_name, exist_ok=True)
+
+    files = {
+        "main.tf": f"{vsi}\n{vpc}\n{stor}",
+        "variables.tf": var,
+        "terraform.tfvars": tfvars
+    }
+
+    for filename, content in files.items():
+        with open(os.path.join(project_name, filename), "w") as f:
+            f.write(content)
+
+
 def generate_variables_hcl():
-    """
-    Generates the variable definitions file.
-    """
+    """Returns the HCL string for variables.tf."""
     return """
-variable "ibm_region" {
-  description = "The IBM Cloud region"
-  type        = string
-}
-
-variable "ibm_zone" {
-  description = "The specific zone within the region"
-  type        = string
-}
-
-variable "prefix" {
-  description = "A prefix for resource naming"
-  type        = string
-}
-
-variable "image_id" {
-  description = "The ID of the image to use for VSIs"
-  type        = string
-  default     = "r006-00000000-0000-0000-0000-000000000000"
-}
+variable "zone" { type = string }
+variable "image_id" { type = string }
+variable "subnet_id" { type = string }
 """
 
 
-def generate_tfvars(region, zone, project):
-    """
-    Generates the actual values for the variables.
-    """
-    # Line split to avoid E501 length error
-    output = f'ibm_region = "{region}"\n'
-    output += f'ibm_zone   = "{zone}"\n'
-    output += f'prefix     = "{project}"\n'
-    return output
-
-
-def create_terraform_structure(project, vsi_h, vpc_h, stor_h, var_h, tfvars_h):
-    """
-    Creates a best-practice directory structure including variables.
-    """
-    base_path = f"./{project}"
-    module_path = f"{base_path}/modules"
-
-    os.makedirs(f"{module_path}/vsi", exist_ok=True)
-    os.makedirs(f"{module_path}/vpc", exist_ok=True)
-    os.makedirs(f"{module_path}/storage", exist_ok=True)
-
-    # 1. Write Root Files
-    with open(f"{base_path}/variables.tf", "w") as f:
-        f.write(var_h)
-    with open(f"{base_path}/terraform.tfvars", "w") as f:
-        f.write(tfvars_h)
-
-    # The 'Glue' file for modules
-    root_main = """
-module "vpc" {
-  source = "./modules/vpc"
-}
-
-module "storage" {
-  source = "./modules/storage"
-}
-
-module "vsi" {
-  source = "./modules/vsi"
-  vpc_id = module.vpc.vpc_id
-}
+def generate_tfvars(region, zone, project_name):
+    """Returns the HCL string for terraform.tfvars."""
+    return f"""
+zone      = "{zone}"
+image_id  = "r006-74937749-9831-482d-8f96-3c66f9166989"
+subnet_id = "default-subnet-id"
 """
-    with open(f"{base_path}/main.tf", "w") as f:
-        f.write(root_main)
-
-    # 2. Write Module Files
-    with open(f"{module_path}/vpc/main.tf", "w") as f:
-        f.write(vpc_h)
-    with open(f"{module_path}/vsi/main.tf", "w") as f:
-        f.write(vsi_h)
-    with open(f"{module_path}/storage/main.tf", "w") as f:
-        f.write(stor_h)
-
-    return f"Success! Project created at {base_path}"
-
-
-def render_terraform_templates(vm_list, region, zone):
-    """
-    Populates templates with VM and Storage data.
-    """
-    with open("templates/vsi.j2", "r") as f:
-        vsi_template = Template(f.read())
-
-    all_vsi_hcl = ""
-    all_storage_hcl = ""
-
-    for vm in vm_list:
-        name = vm['VM Name'].lower().replace(" ", "-").replace(".", "-")
-
-        all_vsi_hcl += vsi_template.render(
-            vm_name_sanitized=name,
-            ibm_profile=vm['IBM Profile'],
-            zone=zone
-        )
-
-        for i, disk in enumerate(vm.get('Disks', [])):
-            if i == 0:
-                continue
-
-            all_storage_hcl += f"""
-resource "ibm_is_volume" "{name}-disk-{i}" {{
-  name     = "{name}-disk-{i}"
-  profile  = "10iops-tier"
-  zone     = "{zone}"
-  capacity = {disk['capacity_gb']}
-}}
-"""
-
-    vpc_hcl = f"""
-resource "ibm_is_vpc" "vpc" {{
-  name = "migration-vpc"
-}}
-
-resource "ibm_is_subnet" "subnet" {{
-  name            = "migration-subnet"
-  vpc             = ibm_is_vpc.vpc.id
-  zone            = "{zone}"
-  ipv4_cidr_block = "10.240.0.0/24"
-}}
-"""
-    return all_vsi_hcl, vpc_hcl, all_storage_hcl

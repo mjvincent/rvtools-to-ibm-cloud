@@ -39,64 +39,63 @@ uploaded_file = st.sidebar.file_uploader("Upload RVTools XLSX", type=["xlsx"])
 
 # --- Main Logic Block ---
 if uploaded_file is not None:
-    # Read both tabs
+    # 1. Load the data
     df_vinfo = pd.read_excel(uploaded_file, sheet_name='vInfo')
     df_vdisk = pd.read_excel(uploaded_file, sheet_name='vDisk')
 
-    # Group the disks by VM Name to get total capacity
-    # Note: Column names in RVTools are usually 'VM' and 'Capacity MB'
-    disk_summary = df_vdisk.groupby('VM')['Capacity MB'].sum().to_dict()
+    # Identify columns dynamically
+    cap_col = next((c for c in df_vdisk.columns if 'Capacity' in c), None)
+    vm_col = next((c for c in df_vdisk.columns if 'VM' in c), 'VM')
 
-    raw_data = []
+    disk_summary = {}
+    if cap_col:
+        disk_summary = df_vdisk.groupby(vm_col)[cap_col].sum().to_dict()
+
+    # 2. Process with Validation and Comparative Logic
+    processed_vms = []
+    data_warning_triggered = False
+
     for index, row in df_vinfo.iterrows():
         vm_name = row.get('VM', 'Unknown')
+        usage = row.get('CPU Usage %', 100)
+        orig_cpu = row.get('CPUs', 1)
+        orig_ram = row.get('Memory', 1024)
 
-        # Pull the total disk capacity for this specific VM
-        total_capacity_mb = disk_summary.get(vm_name, 0)
-        total_capacity_gb = round(total_capacity_mb / 1024, 2)
+        # Storage check
+        total_mb = disk_summary.get(vm_name, 0)
+        total_gb = round(total_mb / 1024, 2)
 
-        raw_data.append({
-            'VM Name': vm_name,
-            'vCPUs': row.get('CPUs', 1),
-            'RAM': row.get('Memory', 1024),
-            'CPU Usage': row.get('CPU Usage %', 100),
-            'Total Storage GB': total_capacity_gb,
-            'Storage Tier': '10iops-tier'  # Default to high-perf
-        })
+        # Validation: Check for missing CPU or tiny/missing storage
+        is_unknown_cpu = (usage == 100 or pd.isna(usage))
+        is_unknown_disk = (total_gb <= 0.5)  # Flag < 512MB as "No Data"
 
-    # 2. Process with Global Threshold and CPU Validation
-    processed_vms = []
-    cpu_warning_triggered = False
-
-    for vm in raw_data:
-        usage = vm.get('CPU Usage')
-        is_unknown = (usage == 100 or pd.isna(usage))
-
-        if is_unknown:
-            cpu_warning_triggered = True
-            # Force Like-for-Like
+        if is_unknown_cpu or is_unknown_disk:
+            data_warning_triggered = True
             mapping = map_vmware_to_ibm_vpc(
-                vm['vCPUs'], vm['RAM'], 100, target_region, 100
+                orig_cpu, orig_ram, 100, target_region, 100
             )
             status_icon = "⚠️ No Data"
         else:
             mapping = map_vmware_to_ibm_vpc(
-                vm['vCPUs'], vm['RAM'], usage,
+                orig_cpu, orig_ram, usage,
                 target_region, utilization_threshold
             )
             status_icon = "✅" if mapping['is_rightsized'] else "❌"
 
-        vm.update({
-            "IBM Profile": mapping['profile'],
-            "Right-Sized": status_icon,
-            "Override": False
+        processed_vms.append({
+            'VM Name': vm_name,
+            'Original Specs': f"{orig_cpu}v / {orig_ram}M",
+            'IBM Proposed': mapping['profile'],
+            'Right-Sized': status_icon,
+            'Storage (GB)': total_gb,
+            'Storage Tier': '10iops-tier',
+            'Override': False
         })
-        processed_vms.append(vm)
 
-    if cpu_warning_triggered:
+    if data_warning_triggered:
         st.warning(
-            "**Note:** Some VMs are missing CPU data. "
-            "The tool defaulted to **Like-for-Like** sizing."
+            "**Note:** Some VMs are missing telemetry. "
+            "Reverting to **Like-for-Like** for those entries."
         )
 
     st.write("### Review Migration Plan & Manual Overrides")
@@ -106,31 +105,21 @@ if uploaded_file is not None:
         pd.DataFrame(processed_vms),
         column_config={
             "Override": st.column_config.CheckboxColumn("Keep Original?"),
-            "Total Storage GB": st.column_config.NumberColumn(
-                "Storage (GB)", help="Total aggregated disk capacity",
-                format="%d"
-            ),
             "Storage Tier": st.column_config.SelectboxColumn(
                 "IBM Storage Tier",
-                options=["5iops-tier", "10iops-tier", "general-purpose"],
-                help="Select the IOPS performance tier for migration"
+                options=["5iops-tier", "10iops-tier", "general-purpose"]
             )
         },
-        disabled=["VM Name", "IBM Profile", "Right-Sized", "Total Storage GB"],
+        disabled=[
+            "VM Name", "Original Specs", "IBM Proposed",
+            "Right-Sized", "Storage (GB)"
+        ],
         hide_index=True
     )
 
     # 4. Build Button
     if st.button("Build Terraform Project"):
         final_vms = edited_df.to_dict('records')
-
-        for vm in final_vms:
-            if vm['Override']:
-                orig_mapping = map_vmware_to_ibm_vpc(
-                    vm['vCPUs'], vm['RAM'], 100, target_region, 100
-                )
-                vm['IBM Profile'] = orig_mapping['profile']
-
         with st.status("Generating Migration Files...") as status:
             try:
                 selected_zone = f"{target_region}-1"
@@ -142,16 +131,10 @@ if uploaded_file is not None:
                     target_region, selected_zone, project_name
                 )
                 create_terraform_structure(
-                    project_name,
-                    vsi_h,
-                    vpc_h,
-                    stor_h,
-                    var_h,
-                    tfvars_h
+                    project_name, vsi_h, vpc_h, stor_h, var_h, tfvars_h
                 )
                 status.update(label="Build Complete!", state="complete")
                 st.success(f"Project '{project_name}' created!")
-                st.balloons()
             except Exception as e:
                 st.error(f"Error: {e}")
 else:

@@ -16,3 +16,25 @@ resource "ibm_is_instance" "{{ vm_name_sanitized }}" {
   zone = var.ibm_zone
   keys = [data.ibm_is_ssh_key.ssh_key.id]
 }
+
+{% for vm in vms %}
+resource "ibm_is_instance" "{{ vm['VM Name']|replace(' ', '_') }}_vsi" {
+  name    = "{{ vm['VM Name']|replace(' ', '_') }}-vsi"
+  profile = "{{ vm['IBM Profile'] }}"
+  # ... (rest of your existing VSI config)
+}
+
+# New Storage Attachment Logic
+resource "ibm_is_volume" "{{ vm['VM Name']|replace(' ', '_') }}_volume" {
+  name     = "{{ vm['VM Name']|replace(' ', '_') }}-data-vol"
+  profile  = "{{ vm['Storage Tier'] }}"
+  zone     = var.zone
+  capacity = {{ vm['Total Storage GB'] }}
+}
+
+resource "ibm_is_instance_volume_attachment" "{{ vm['VM Name']|replace(' ', '_') }}_attach" {
+  instance = ibm_is_instance.{{ vm['VM Name']|replace(' ', '_') }}_vsi.id
+  volume   = ibm_is_volume.{{ vm['VM Name']|replace(' ', '_') }}_volume.id
+  name     = "{{ vm['VM Name']|replace(' ', '_') }}-attachment"
+}
+{% endfor %}
