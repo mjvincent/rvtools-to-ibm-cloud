@@ -32,5 +32,13 @@ The tool evaluates every Virtual Machine using the following logic:
 - **Jinja2**: Templating engine for HCL generation.
 - **Pandas**: High-performance data manipulation for Excel parsing.
 
+## Latest Updates (April 2026)
+
+### 🛠️ Interactive Decision Engine
+The tool now features a "Human-in-the-Loop" workflow:
+* **Dynamic Thresholds:** Architects can select from Industry Standard (30%-70%) utilization thresholds to drive recommendations.
+* **Manual Overrides:** Users can individually override recommendations for mission-critical VMs directly in the web interface.
+* **Decoupled HCL:** The generation logic now produces modular Terraform code with a dedicated `.tfvars` file for environment-specific configuration.
+
 ---
 *Developed as a Technical Specialist tool for IBM Cloud Automation.*

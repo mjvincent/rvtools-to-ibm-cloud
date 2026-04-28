@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-# Removed import shutil as it was unused
 from logic_engine import (
     map_vmware_to_ibm_vpc,
     create_terraform_structure,
@@ -12,77 +11,113 @@ from logic_engine import (
 st.set_page_config(page_title="IBM Cloud Terraform Generator", layout="wide")
 st.title("🚀 RVTools to IBM Cloud VPC")
 
+# --- Sidebar Configuration ---
 st.sidebar.header("Migration Settings")
 target_region = st.sidebar.selectbox(
     "Target IBM Region",
     ["us-south", "us-east", "eu-gb", "jp-tok"]
 )
-project_name = st.sidebar.text_input("Project Name", "my-ibm-migration")
 
+st.sidebar.header("Right-Sizing Settings")
+# Shortened option strings to fix E501
+modes = [
+    "Conservative (30%)", "IBM Standard (40%)",
+    "Moderate (50%)", "Aggressive (70%)", "Custom"
+]
+threshold_mode = st.sidebar.selectbox("Standard Thresholds", modes)
+
+if threshold_mode == "Custom":
+    utilization_threshold = st.sidebar.slider(
+        "Custom CPU Threshold (%)", 1, 100, 40
+    )
+else:
+    utilization_threshold = int(
+        ''.join(filter(str.isdigit, threshold_mode))
+    )
+
+project_name = st.sidebar.text_input("Project Name", "my-ibm-migration")
 uploaded_file = st.sidebar.file_uploader("Upload RVTools XLSX", type=["xlsx"])
 
-if uploaded_file:
-    df_vinfo = pd.read_excel(uploaded_file, sheet_name='vInfo')
-    df_vdisk = pd.read_excel(uploaded_file, sheet_name='vDisk')
-    st.success(f"Successfully loaded {len(df_vinfo)} VMs.")
+# --- Main Logic Block ---
+if uploaded_file is not None:
+    # 1. Load the data
+    df = pd.read_excel(uploaded_file, sheet_name='vInfo')
 
-    processed_vms = []
-    for index, row in df_vinfo.iterrows():
-        vm_name = row['VM']
-        cpu_usage_pct = row.get('CPU usage %', 100)
-        vm_disks = df_vdisk[df_vdisk['VM'] == vm_name]
-
-        disk_list = []
-        for d_idx, d_row in vm_disks.iterrows():
-            disk_list.append({
-                "label": d_row['Disk'],
-                "capacity_gb": int(d_row['Capacity MiB'] / 1024)
-            })
-
-        mapping = map_vmware_to_ibm_vpc(
-            row['CPUs'],
-            row['Memory'],
-            cpu_usage=cpu_usage_pct,
-            region=target_region
-        )
-
-        processed_vms.append({
-            "VM Name": vm_name,
-            "Original vCPU": row['CPUs'],
-            "IBM Profile": mapping['profile'],
-            "Right-Sized": "✅" if mapping['is_rightsized'] else "❌",
-            "Zone": mapping['zone'],
-            "Disks": disk_list
+    raw_data = []
+    for index, row in df.iterrows():
+        raw_data.append({
+            'VM Name': row.get('VM', 'Unknown'),
+            'vCPUs': row.get('CPUs', 1),
+            'RAM': row.get('Memory', 1024),
+            'CPU Usage': row.get('CPU Usage %', 100),
+            'Disks': []  # Fixed E261: Added two spaces before comment
         })
 
-    st.write("### Target IBM Cloud Configuration Preview")
-    st.dataframe(pd.DataFrame(processed_vms).drop(columns=['Disks']))
+    # 2. Process with Global Threshold
+    processed_vms = []
+    for vm in raw_data:
+        mapping = map_vmware_to_ibm_vpc(
+            vm['vCPUs'],
+            vm['RAM'],
+            vm['CPU Usage'],
+            target_region,
+            utilization_threshold
+        )
+        vm.update({
+            "IBM Profile": mapping['profile'],
+            "Right-Sized": "✅" if mapping['is_rightsized'] else "❌",
+            "Override": False
+        })
+        processed_vms.append(vm)
 
-    # Ensure this is inside the "if uploaded_file is not None:" block
+    st.write("### Review Migration Plan & Manual Overrides")
+
+    # 3. Interactive Table
+    edited_df = st.data_editor(
+        pd.DataFrame(processed_vms),
+        column_config={
+            "Override": st.column_config.CheckboxColumn(
+                "Keep Original?",
+                help="Ignore Right-Sizing for this VM",
+                default=False
+            )
+        },
+        disabled=["VM Name", "Original vCPU", "IBM Profile", "Right-Sized"],
+        hide_index=True
+    )
+
+    # 4. Build Button
     if st.button("Build Terraform Project"):
-        with st.status("Generating Migration Files...", expanded=True) as status:
-            try:
-                # 1. Capture the target zone from the first VM
-                selected_zone = processed_vms[0]['Zone'] if processed_vms else "us-east-1"
+        final_vms = edited_df.to_dict('records')
 
-                st.write("Rendering HCL templates...")
+        for vm in final_vms:
+            if vm['Override']:
+                orig_mapping = map_vmware_to_ibm_vpc(
+                    vm['vCPUs'], vm['RAM'], 100, target_region, 100
+                )
+                vm['IBM Profile'] = orig_mapping['profile']
+
+        with st.status("Generating Migration Files...") as status:
+            try:
+                selected_zone = f"{target_region}-1"
+
                 vsi_h, vpc_h, stor_h = render_terraform_templates(
-                    processed_vms, target_region, selected_zone
+                    final_vms, target_region, selected_zone
                 )
 
-                st.write("Generating variable files...")
                 var_h = generate_variables_hcl()
-                tfvars_h = generate_tfvars(target_region, selected_zone, project_name)
+                tfvars_h = generate_tfvars(
+                    target_region, selected_zone, project_name
+                )
 
-                st.write("Creating directory structure...")
                 create_terraform_structure(
                     project_name, vsi_h, vpc_h, stor_h, var_h, tfvars_h
                 )
 
-                status.update(label="Build Complete!", state="complete", expanded=False)
-                st.success(f"Project '{project_name}' created successfully!")
+                status.update(label="Build Complete!", state="complete")
+                st.success(f"Project '{project_name}' created!")
                 st.balloons()
-
             except Exception as e:
-                status.update(label="Build Failed", state="error")
-                st.error(f"An error occurred: {e}")
+                st.error(f"Error: {e}")
+else:
+    st.info("Please upload an RVTools XLSX file to begin.")
