@@ -39,16 +39,29 @@ uploaded_file = st.sidebar.file_uploader("Upload RVTools XLSX", type=["xlsx"])
 
 # --- Main Logic Block ---
 if uploaded_file is not None:
-    df = pd.read_excel(uploaded_file, sheet_name='vInfo')
+    # Read both tabs
+    df_vinfo = pd.read_excel(uploaded_file, sheet_name='vInfo')
+    df_vdisk = pd.read_excel(uploaded_file, sheet_name='vDisk')
+
+    # Group the disks by VM Name to get total capacity
+    # Note: Column names in RVTools are usually 'VM' and 'Capacity MB'
+    disk_summary = df_vdisk.groupby('VM')['Capacity MB'].sum().to_dict()
 
     raw_data = []
-    for index, row in df.iterrows():
+    for index, row in df_vinfo.iterrows():
+        vm_name = row.get('VM', 'Unknown')
+
+        # Pull the total disk capacity for this specific VM
+        total_capacity_mb = disk_summary.get(vm_name, 0)
+        total_capacity_gb = round(total_capacity_mb / 1024, 2)
+
         raw_data.append({
-            'VM Name': row.get('VM', 'Unknown'),
+            'VM Name': vm_name,
             'vCPUs': row.get('CPUs', 1),
             'RAM': row.get('Memory', 1024),
             'CPU Usage': row.get('CPU Usage %', 100),
-            'Disks': []
+            'Total Storage GB': total_capacity_gb,
+            'Storage Tier': '10iops-tier'  # Default to high-perf
         })
 
     # 2. Process with Global Threshold and CPU Validation
@@ -92,13 +105,18 @@ if uploaded_file is not None:
     edited_df = st.data_editor(
         pd.DataFrame(processed_vms),
         column_config={
-            "Override": st.column_config.CheckboxColumn(
-                "Keep Original?",
-                help="Ignore Right-Sizing for this VM",
-                default=False
+            "Override": st.column_config.CheckboxColumn("Keep Original?"),
+            "Total Storage GB": st.column_config.NumberColumn(
+                "Storage (GB)", help="Total aggregated disk capacity",
+                format="%d"
+            ),
+            "Storage Tier": st.column_config.SelectboxColumn(
+                "IBM Storage Tier",
+                options=["5iops-tier", "10iops-tier", "general-purpose"],
+                help="Select the IOPS performance tier for migration"
             )
         },
-        disabled=["VM Name", "IBM Profile", "Right-Sized"],
+        disabled=["VM Name", "IBM Profile", "Right-Sized", "Total Storage GB"],
         hide_index=True
     )
 
@@ -124,7 +142,12 @@ if uploaded_file is not None:
                     target_region, selected_zone, project_name
                 )
                 create_terraform_structure(
-                    project_name, vsi_h, vpc_h, stor_h, var_h, tfvars_h
+                    project_name,
+                    vsi_h,
+                    vpc_h,
+                    stor_h,
+                    var_h,
+                    tfvars_h
                 )
                 status.update(label="Build Complete!", state="complete")
                 st.success(f"Project '{project_name}' created!")
