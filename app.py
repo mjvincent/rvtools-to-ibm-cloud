@@ -8,20 +8,24 @@ from logic_engine import (
     generate_tfvars
 )
 
-# --- Table Configuration Constants ---
+# --- Table Configuration ---
 TABLE_CONFIG = {
     "Exclude?": st.column_config.CheckboxColumn("Exclude?"),
-    "High Perf?": st.column_config.CheckboxColumn("High Perf?"),
+    "Monthly Cost": st.column_config.NumberColumn(
+        "Monthly Cost",
+        format="$%.2f",
+        help="Estimated monthly cost in USD (730 hours)"
+    ),
     "Storage Tier": st.column_config.SelectboxColumn(
         "Tier",
         options=["3iops-tier", "5iops-tier", "10iops-tier"]
-    ),
-    "State": st.column_config.TextColumn("vCenter State")
+    )
 }
 
+# Added 'Monthly Cost' and 'Right-Sized' to disabled list
 DISABLED_COLS = [
     "VM Name", "Original Specs", "IBM Profile",
-    "Data Status", "Total Storage GB", "State"
+    "Data Status", "Total Storage GB", "Monthly Cost", "Right-Sized"
 ]
 
 st.set_page_config(page_title="IBM Cloud Terraform Generator", layout="wide")
@@ -32,7 +36,7 @@ st.sidebar.header("Migration Settings")
 target_region = st.sidebar.selectbox(
     "Target IBM Region", ["us-south", "us-east", "eu-gb", "jp-tok"]
 )
-# RE-IMPLEMENTED: Right-Sizing Slider Block
+
 st.sidebar.header("Right-Sizing Settings")
 modes = [
     "Conservative (30%)",
@@ -48,8 +52,8 @@ if threshold_mode == "Custom":
         "Custom CPU Threshold (%)", 1, 100, 40
     )
 else:
-    # Extracts the integer from the string (e.g., "40")
     utilization_threshold = int(''.join(filter(str.isdigit, threshold_mode)))
+
 project_name = st.sidebar.text_input("Project Name", "my-ibm-migration")
 uploaded_file = st.sidebar.file_uploader("Upload RVTools", type=["xlsx"])
 
@@ -71,9 +75,10 @@ if uploaded_file is not None:
         orig_cpu = row.get('CPUs', 1)
         orig_ram = row.get('Memory', 1024)
 
+        # Storage Calculation
         total_gb = round(disk_summary.get(vm_name, 0) / 1024, 2)
 
-        # 1. Telemetry Health Logic - Fixed E701 (No Colons on same line)
+        # Telemetry Health
         is_un_cpu = (usage is None or pd.isna(usage))
         is_un_disk = (total_gb <= 0.5)
 
@@ -84,9 +89,8 @@ if uploaded_file is not None:
             status_parts.append("Missing Storage")
         status_msg = " + ".join(status_parts) if status_parts else "Healthy"
 
-        # 2. Storage Tier Logic (Tightened for 3 IOPS)
+        # Storage Tiering Logic
         is_db = any(x in vm_name.upper() for x in ['SQL', 'DB', 'PROD', 'SAP'])
-
         if is_db:
             suggested_tier = '10iops-tier'
         elif not is_un_cpu and usage > 70:
@@ -94,10 +98,8 @@ if uploaded_file is not None:
         else:
             suggested_tier = '3iops-tier'
 
-        # 3. Mapping Call using the dynamic threshold from Sidebar
+        # Mapping Logic
         calc_usage = 100 if is_un_cpu else usage
-
-        # We pass utilization_threshold here instead of a hardcoded 40
         mapping = map_vmware_to_ibm_vpc(
             orig_cpu,
             orig_ram,
@@ -106,38 +108,57 @@ if uploaded_file is not None:
             utilization_threshold
         )
 
-        # Fixed E501: Vertical dictionary list
         processed_vms.append({
             'Exclude?': p_state == 'poweredOff',
             'VM Name': vm_name,
-            'State': p_state,
             'Original Specs': f"{orig_cpu}v / {orig_ram}M",
             'IBM Profile': mapping['profile'],
+            'Monthly Cost': mapping['monthly'],
+            'Right-Sized': "✅" if mapping['is_rightsized'] else "❌",
             'Storage Tier': suggested_tier,
-            'High Perf?': is_db,
-            'Data Status': status_msg,
             'Total Storage GB': total_gb,
-            'CPU Usage': usage if usage is not None else 0,
-            'Right-Sized': "⚠️" if (is_un_cpu or is_un_disk) else "✅"
+            'Data Status': status_msg,
+            'Usage': calc_usage
         })
 
-    # Display Metrics
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Total VMs", len(processed_vms))
-    ex_count = len([v for v in processed_vms if v['Exclude?']])
-    m2.metric("Excluded", ex_count)
-    cpu_df = pd.DataFrame(processed_vms)
-    avg_cpu_val = int(cpu_df['CPU Usage'].mean())
-    m3.metric("Avg CPU %", f"{avg_cpu_val}%")
+    # --- 1. Display Metrics (Only once!) ---
+    df_final = pd.DataFrame(processed_vms)
 
-    edited_df = st.data_editor(
-        pd.DataFrame(processed_vms),
-        column_config=TABLE_CONFIG,
-        disabled=DISABLED_COLS,
-        hide_index=True
+    total_vms = len(df_final)
+    active_vms = df_final[~df_final['Exclude?']]
+    total_monthly = active_vms['Monthly Cost'].sum()
+
+    # Calculate baseline for the 'delta' (savings) display
+    extracted_cpus = df_final['Original Specs'].str.extract(r'(\d+)')
+    baseline_cpu_total = extracted_cpus.astype(int)[0].sum()
+    baseline_total = baseline_cpu_total * 30  # Baseline estimate
+    savings = baseline_total - total_monthly
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Total VMs", total_vms)
+
+    m2.metric(
+        label="Total Monthly Spend",
+        value=f"${total_monthly:,.2f}",
+        delta=f"-${savings:,.2f} vs Baseline"
     )
 
-    # 4. Build Button Area
+    # For the Average metric, we only average VMs that HAVE data
+    # so the 100% "safety" values don't skew the results.
+    real_usage = df_final[df_final['Data Status'] == "Healthy"]['Usage']
+    avg_cpu_val = int(real_usage.mean()) if not real_usage.empty else 0
+    m3.metric("Avg Fleet Utilization", f"{avg_cpu_val}%")
+
+    # --- 2. Display the Table (Crucial: Must be ABOVE the button) ---
+    edited_df = st.data_editor(
+        df_final.drop(columns=['Usage']),
+        column_config=TABLE_CONFIG,
+        disabled=DISABLED_COLS,
+        hide_index=True,
+        use_container_width=True
+    )
+
+    # Build Button
     if st.button("Build Terraform Project"):
         final_vms = [
             v for v in edited_df.to_dict('records') if not v['Exclude?']
@@ -158,7 +179,7 @@ if uploaded_file is not None:
             except Exception as e:
                 st.error(f"Build Failed: {e}")
 
-    # 5. UI Legend (Move this OUTSIDE the button block)
+    # UI Legend
     st.write("---")
     st.write("### 🧭 UI Legend & Logic Guide")
     l_col1, l_col2, l_col3 = st.columns(3)
@@ -167,14 +188,13 @@ if uploaded_file is not None:
         st.markdown("**Status Icons**")
         st.write("✅ : VM is correctly right-sized.")
         st.write("❌ : Profile matches original specs (No savings).")
-        st.write("⚠️ : Missing data; reverted to Like-for-Like.")
 
     with l_col2:
         st.markdown("**Storage Tiering**")
         st.write("- **10 IOPS:** DB/PROD keywords found.")
-        st.write("- **5 IOPS:** CPU utilization > 70%.")
         st.write("- **3 IOPS:** Default for cost optimization.")
 
     with l_col3:
-        st.markdown("**Exclusion Rules**")
-        st.write("VMs with state `poweredOff` are auto-checked for exclusion.")
+        st.markdown("**Financials**")
+        st.write("- Prices based on 730-hour month.")
+        st.write("- Includes compute cost only (Storage extra).")
