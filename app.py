@@ -1,8 +1,9 @@
+import io
+import zipfile
 import streamlit as st
 import pandas as pd
 from logic_engine import (
     map_vmware_to_ibm_vpc,
-    create_terraform_structure,
     render_terraform_templates,
     generate_variables_hcl,
     generate_tfvars
@@ -11,14 +12,14 @@ from logic_engine import (
 # --- Table Configuration ---
 TABLE_CONFIG = {
     "Exclude?": st.column_config.CheckboxColumn("Exclude?"),
-    "Monthly Cost": st.column_config.NumberColumn(
-        "Monthly Cost",
-        format="$%.2f",
-        help="Estimated monthly cost in USD (730 hours)"
-    ),
+    "Compute (Mo)": st.column_config.NumberColumn("Compute (Mo)",
+                                                  format="$%.2f"),
+    "Storage (Mo)": st.column_config.NumberColumn("Storage (Mo)",
+                                                  format="$%.2f"),
+    "Total Monthly": st.column_config.NumberColumn("Total Monthly",
+                                                   format="$%.2f"),
     "Storage Tier": st.column_config.SelectboxColumn(
-        "Tier",
-        options=["3iops-tier", "5iops-tier", "10iops-tier"]
+        "Tier", options=["3iops-tier", "5iops-tier", "10iops-tier"]
     )
 }
 
@@ -98,14 +99,17 @@ if uploaded_file is not None:
         else:
             suggested_tier = '3iops-tier'
 
-        # Mapping Logic
         calc_usage = 100 if is_un_cpu else usage
+
+        # Mapping Logic
         mapping = map_vmware_to_ibm_vpc(
             orig_cpu,
             orig_ram,
             calc_usage,
             target_region,
-            utilization_threshold
+            utilization_threshold,
+            total_gb,        # New Argument 6
+            suggested_tier   # New Argument 7
         )
 
         processed_vms.append({
@@ -113,6 +117,8 @@ if uploaded_file is not None:
             'VM Name': vm_name,
             'Original Specs': f"{orig_cpu}v / {orig_ram}M",
             'IBM Profile': mapping['profile'],
+            'Compute (Mo)': mapping['compute_cost'],  # New Column
+            'Storage (Mo)': mapping['storage_cost'],  # New Column
             'Monthly Cost': mapping['monthly'],
             'Right-Sized': "✅" if mapping['is_rightsized'] else "❌",
             'Storage Tier': suggested_tier,
@@ -158,26 +164,70 @@ if uploaded_file is not None:
         use_container_width=True
     )
 
-    # Build Button
+    # 1. Prepare the data
+    csv_proposal = edited_df.to_csv(index=False).encode('utf-8')
+
+    # 2. Create the Download Button in the Sidebar or main area
+    st.sidebar.markdown("---")
+    st.sidebar.download_button(
+        label="📥 Download Business Case (CSV)",
+        data=csv_proposal,
+        file_name=f"{project_name}_proposal.csv",
+        mime="text/csv",
+        help="Download the full right-sized mapping with broken-down costs."
+    )
+
+    # Build Button Area
     if st.button("Build Terraform Project"):
-        final_vms = [
-            v for v in edited_df.to_dict('records') if not v['Exclude?']
-        ]
-        with st.status("🏗️ Building...") as status:
+        with st.status("🏗️ Packaging Terraform Project...") as status:
             try:
-                z = f"{target_region}-1"
+                # 1. Filter out excluded VMs
+                final_vms = [
+                    v for v in edited_df.to_dict('records')
+                    if not v['Exclude?']
+                ]
+
+                # 2. Generate the actual Terraform content strings
+                z_name = f"{target_region}-1"
                 vsi, vpc, stor = render_terraform_templates(
-                    final_vms, target_region, z
+                    final_vms, target_region, z_name
                 )
                 var = generate_variables_hcl()
-                tfv = generate_tfvars(target_region, z, project_name)
-                create_terraform_structure(
-                    project_name, vsi, vpc, stor, var, tfv
-                )
-                status.update(label="Success!", state="complete")
+                tfv = generate_tfvars(target_region, z_name, project_name)
+
+                # 3. Create an in-memory buffer for the zip file
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(
+                    zip_buffer, "a", zipfile.ZIP_DEFLATED, False
+                ) as zip_file:
+                    files_to_add = {
+                        "main.tf": vpc,
+                        "variables.tf": var,
+                        "terraform.tfvars": tfv,
+                        "modules/vsi/main.tf": vsi,
+                        "modules/storage/main.tf": stor
+                    }
+
+                    for f_path, content in files_to_add.items():
+                        zip_file.writestr(f_path, content)
+
+                # Store the zip in session state so it persists
+                st.session_state.zip_data = zip_buffer.getvalue()
+                status.update(label="Bundle Created!", state="complete")
                 st.snow()
             except Exception as e:
-                st.error(f"Build Failed: {e}")
+                st.error(f"Packaging Failed: {e}")
+
+    # 4. Display Persistent Download Button Outside the IF and STATUS blocks
+    if "zip_data" in st.session_state:
+        st.success("✅ Terraform Project is ready!")
+        st.download_button(
+            label="💾 Download Terraform Bundle (.zip)",
+            data=st.session_state.zip_data,
+            file_name=f"{project_name}.zip",
+            mime="application/zip",
+            use_container_width=True
+        )
 
     # UI Legend
     st.write("---")
@@ -186,15 +236,17 @@ if uploaded_file is not None:
 
     with l_col1:
         st.markdown("**Status Icons**")
-        st.write("✅ : VM is correctly right-sized.")
-        st.write("❌ : Profile matches original specs (No savings).")
+        st.write("✅ : VM is right-sized (IBM Spec < Original).")
+        st.write("❌ : No right-sizing possible (Safety Match).")
 
     with l_col2:
-        st.markdown("**Storage Tiering**")
-        st.write("- **10 IOPS:** DB/PROD keywords found.")
-        st.write("- **3 IOPS:** Default for cost optimization.")
+        st.markdown("**Storage Tiering (IOPS)**")
+        st.write("- **10 IOPS:** Triggered by 'DB', 'SQL', or 'SAP' keywords.")
+        st.write("- **5 IOPS:** Triggered by high CPU utilization (>70%).")
+        st.write("- **3 IOPS:** Standard tier for general workloads.")
 
     with l_col3:
-        st.markdown("**Financials**")
-        st.write("- Prices based on 730-hour month.")
-        st.write("- Includes compute cost only (Storage extra).")
+        st.markdown("**Baseline Savings Math**")
+        st.write("- **On-Prem Cost:** Estimated at $30/vCPU monthly.")
+        st.write("  *(Includes power, cooling, hardware, and licensing)*")
+        st.write("- **IBM Cost:** Actual VSI price + Tiered Storage.")

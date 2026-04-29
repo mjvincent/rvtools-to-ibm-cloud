@@ -1,8 +1,6 @@
 import os
 
 # --- STRATEGY B: ECONOMIC OPTIMIZER CATALOG ---
-# Hourly prices based on IBM Cloud US-South (Dallas) standard rates.
-# This serves as our "Price-to-Profile" map for right-sizing.
 IBM_VPC_CATALOG = [
     {"name": "cx2-2x4", "cpu": 2, "ram": 4, "hourly": 0.063},
     {"name": "bx2-2x8", "cpu": 2, "ram": 8, "hourly": 0.114},
@@ -16,55 +14,46 @@ IBM_VPC_CATALOG = [
 
 
 def find_cheapest_fit(target_cpu, target_ram):
-    """
-    Strategy B: Finds the lowest-priced profile that satisfies
-    the required CPU and RAM minimums.
-    """
-    # Filter for profiles that actually fit the requirements
+    """Finds the lowest-priced profile that fits requirements."""
     candidates = [
         p for p in IBM_VPC_CATALOG
         if p['cpu'] >= target_cpu and p['ram'] >= target_ram
     ]
-
     if not candidates:
-        # Fallback to a high-spec profile if no small fit found
         return {"name": "bx2-16x64", "cpu": 16, "ram": 64, "hourly": 0.912}
-
-    # Sort by price (Low to High)
     optimized = sorted(candidates, key=lambda x: x['hourly'])
     return optimized[0]
 
 
-def map_vmware_to_ibm_vpc(cpus, memory, usage, region, threshold):
-    """
-    Maps VMware to IBM VPC with Strategy B: Economic Optimization.
-    """
-    # Calculate required specs based on actual usage + user threshold
+def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
+                          threshold, storage_gb, tier):
+    """Strategy B: Full Solution Cost (Compute + Storage)."""
     util_factor = threshold / 100
     needed_cpu = max(1, round(cpus * util_factor))
-
-    # RAM is less flexible; keep 80% of original for safety buffer
     needed_ram = max(2, round((memory / 1024) * 0.8))
-
-    # Get the cheapest fit for the ACTUAL calculated need
     optimized = find_cheapest_fit(needed_cpu, needed_ram)
 
-    # Check if we successfully reduced the footprint
-    is_rightsized = optimized['cpu'] < cpus
+    tier_rates = {
+        "3iops-tier": 0.10,
+        "5iops-tier": 0.13,
+        "10iops-tier": 0.17
+    }
+
+    compute_monthly = round(optimized['hourly'] * 730, 2)
+    storage_monthly = round(storage_gb * tier_rates.get(tier, 0.10), 2)
+    total_monthly = round(compute_monthly + storage_monthly, 2)
 
     return {
         "profile": optimized['name'],
-        "hourly": optimized['hourly'],
-        "monthly": round(optimized['hourly'] * 730, 2),
-        "is_rightsized": is_rightsized
+        "compute_cost": compute_monthly,
+        "storage_cost": storage_monthly,
+        "monthly": total_monthly,
+        "is_rightsized": optimized['cpu'] < cpus
     }
 
 
 def render_terraform_templates(final_vms, region, zone):
-    """
-    Renders strings for VSI, VPC, and Storage based on selected VMs.
-    Ensures variables are mapped to the correct modular structure.
-    """
+    """Renders strings for VSI, VPC, and Storage based on selected VMs."""
     vsi_content = f"# VSI Configuration for {region}\n"
     vpc_content = f"# VPC Network Configuration for {zone}\n"
     storage_content = "# Block Storage Volume Configurations\n"
@@ -95,14 +84,11 @@ def generate_tfvars(region, zone, project):
     return f"region = \"{region}\"\nzone = \"{zone}\"\nproject = \"{project}\""
 
 
-def create_terraform_structure(
-    project_name, vsi, vpc, stor, var, tfv
-):
+def create_terraform_structure(project_name, vsi, vpc, stor, var, tfv):
     """Creates directory structure with modules for VSI, VPC, and Storage."""
     base_path = project_name
     module_path = os.path.join(base_path, "modules")
 
-    # Create the folder tree (Terraform Standard Module Structure)
     folders = [
         os.path.join(module_path, "vsi"),
         os.path.join(module_path, "vpc"),
@@ -112,7 +98,7 @@ def create_terraform_structure(
     for folder in folders:
         os.makedirs(folder, exist_ok=True)
 
-    # 1. Write the Root Files
+    # Write the Root Files using the 'os' module
     with open(os.path.join(base_path, "variables.tf"), "w") as f:
         f.write(var)
     with open(os.path.join(base_path, "terraform.tfvars"), "w") as f:
@@ -120,7 +106,7 @@ def create_terraform_structure(
     with open(os.path.join(base_path, "main.tf"), "w") as f:
         f.write("# Root Module calls modules/vpc\n" + vpc)
 
-    # 2. Write the Module Files
+    # Write the Module Files
     with open(os.path.join(module_path, "vsi", "main.tf"), "w") as f:
         f.write(vsi)
     with open(os.path.join(module_path, "storage", "main.tf"), "w") as f:
