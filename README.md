@@ -1,37 +1,26 @@
-# RVTools to IBM Cloud VPC Terraform Generator
+# IBM Cloud Migration Utility 
+🚀 **From Raw RVTools to Ready-to-Deploy Terraform in Seconds.**
 
-An automated assessment and migration tool designed to ingest VMware RVTools exports and generate production-ready IBM Cloud VPC Terraform code.
+This utility is a professional-grade migration tool designed to ingest VMware configuration data (RVTools) and output a fully right-sized, cost-optimized IBM Cloud VPC infrastructure plan. It implements **Strategy B (The Economic Optimizer)** to ensure workloads are not just moved, but transformed for maximum efficiency.
 
 ## 🚀 Key Features
 
-- **Automated Right-Sizing:** Maps VMware specs to the most cost-effective IBM VPC profiles.
-- **Intelligent Storage Tiering:** - `10iops-tier`: High-performance (Databases/Prod).
-  - `5iops-tier`: Standard performance (High-utilization Apps).
-  - `3iops-tier`: General Purpose (Standard workloads/Cost-optimized).
-- **Telemetry Validation:** Detects missing performance data and flags inconsistencies.
-- **Modular Terraform Output:** Generates a standard directory structure:
-  - `/modules/vsi`
-  - `/modules/vpc`
-  - `/modules/storage`
-- **Exclusion Logic:** Automatically filters out powered-off virtual machines.
+* **Automated Right-Sizing:** Maps VMware telemetry to the most cost-effective IBM VPC profiles (`cx2`, `bx2`, `mx2`) based on architect-selected utilization thresholds.
+* **Intelligent Storage Tiering:** * `10iops-tier`: High-performance (Triggered by DB/SAP/SQL keywords).
+    * `5iops-tier`: Standard performance (Triggered by high CPU utilization >70%).
+    * `3iops-tier`: General Purpose (Standard workloads/Cost-optimized).
+* **Full Solution Costing:** Provides a transparent monthly spend estimate, breaking down **Compute (VSI)** vs. **Block Storage** costs for each workload.
+* **Modular Terraform Output:** Generates a standard, deployment-ready directory structure delivered as a single `.zip` bundle:
+    * `/modules/vsi`
+    * `/modules/vpc`
+    * `/modules/storage`
+    * `main.tf`, `variables.tf`, & `terraform.tfvars`
+* **Executive Business Case:** Automatically calculates savings against an industry-standard **$30/vCPU On-Prem TCO** baseline.
 
-## 🛠️ Usage
+## 🛠️ Usage & Installation
 
 1. **Environment Setup:**
    ```bash
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
-- **Jinja2**: Templating engine for HCL generation.
-- **Pandas**: High-performance data manipulation for Excel parsing.
-
-## Latest Updates (April 2026)
-
-### 🛠️ Interactive Decision Engine
-The tool now features a "Human-in-the-Loop" workflow:
-* **Dynamic Thresholds:** Architects can select from Industry Standard (30%-70%) utilization thresholds to drive recommendations.
-* **Manual Overrides:** Users can individually override recommendations for mission-critical VMs directly in the web interface.
-* **Decoupled HCL:** The generation logic now produces modular Terraform code with a dedicated `.tfvars` file for environment-specific configuration.
-
----
-*Developed as a Technical Specialist tool for IBM Cloud Automation.*
