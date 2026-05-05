@@ -1,5 +1,3 @@
-import os
-
 # --- STRATEGY B: ECONOMIC OPTIMIZER CATALOG ---
 IBM_VPC_CATALOG = [
     {"name": "cx2-2x4", "cpu": 2, "ram": 4, "hourly": 0.063},
@@ -52,71 +50,130 @@ def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
     }
 
 
-def render_terraform_templates(final_vms, region, zone):
+def render_networking_templates(networks_data, vpc_name="migration-vpc"):
+    """
+    Renders VPC, Address Prefixes, and Subnets.
+    address_preference = manual is required for custom customer CIDRs.
+    """
+    vpc_safe = vpc_name.replace("-", "_")
+
+    hcl = f"""
+resource "ibm_is_vpc" "{vpc_safe}" {{
+  name = "{vpc_name}"
+  address_preference = "manual"
+}}
+"""
+
+    for i, net in enumerate(networks_data):
+        raw_name = net.get('name', 'unknown-net')
+        vlan_id = net.get('vlan')
+        cidr = net.get('cidr', f"10.0.{i+1}.0/24")
+
+        safe_res = raw_name.lower().replace(" ", "_").replace("-", "_")
+        if vlan_id and str(vlan_id).strip():
+            safe_res += f"_vlan_{vlan_id}"
+
+        hcl += f"""
+resource "ibm_is_vpc_address_prefix" "prefix_{safe_res}" {{
+  name = "prefix-{safe_res.replace('_', '-')}"
+  zone = var.zone
+  vpc  = ibm_is_vpc.{vpc_safe}.id
+  cidr = "{cidr}"
+}}
+
+resource "ibm_is_subnet" "{safe_res}" {{
+  name            = "{safe_res.replace('_', '-')}-subnet"
+  vpc             = ibm_is_vpc.{vpc_safe}.id
+  zone            = var.zone
+  ipv4_cidr_block = "{cidr}"
+  depends_on      = [ibm_is_vpc_address_prefix.prefix_{safe_res}]
+}}
+
+output "{safe_res}_id" {{
+  value = ibm_is_subnet.{safe_res}.id
+}}
+"""
+    return hcl
+
+
+# Removed unused import os
+
+# ... (Catalog and find_cheapest_fit remain the same) ...
+
+def render_terraform_templates(final_vms, unique_nets, region, zone):
     """Renders the Root main.tf and module contents."""
 
-    # --- ROOT main.tf ---
-    vpc_content = f"""# Root Module: IBM Cloud Infrastructure Deployment
-# Region: {region}
+    # 1. Call networking logic
+    net_hcl = render_networking_templates(unique_nets)
 
-terraform {{
-  required_providers {{
-    ibm = {{
+    # --- ROOT main.tf ---
+    # FIXED: Removed 'f' from the string below to solve F541
+    vpc_content = """# Root Module
+terraform {
+  required_providers {
+    ibm = {
       source  = "IBM-Cloud/ibm"
       version = ">= 1.70.0"
-    }}
-  }}
-}}
+    }
+  }
+}
 
-provider "ibm" {{
-  ibmcloud_api_key = var.ibmcloud_api_key
-  region           = var.region
-}}
+provider "ibm" {
+  region = var.region
+}
 
-module "storage" {{
+module "networking" {
+  source = "./modules/networking"
+  zone   = var.zone
+}
+
+module "storage" {
   source = "./modules/storage"
   zone   = var.zone
-}}
+}
 
-module "vsi" {{
+module "vsi" {
   source     = "./modules/vsi"
   zone       = var.zone
-  depends_on = [module.storage]
-}}
+  depends_on = [module.storage, module.networking]
+}
 """
 
     vsi_content = f"# VSI Module Configuration for {zone}\n"
     storage_content = f"# Block Storage Module for {zone}\n"
 
     for vm in final_vms:
-        # Fixed the line-break issue here
-        vm_name_raw = str(vm.get('VM Name', 'unknown'))
-        safe_name = vm_name_raw.replace(" ", "_").replace("-", "_")
-
-        profile = vm.get('IBM Profile', 'bx2-2x8')
+        vm_n_raw = str(vm.get('VM Name', 'unknown'))
+        safe_n = vm_n_raw.replace(" ", "_").replace("-", "_")
+        prof = vm.get('IBM Profile', 'bx2-2x8')
         tier = vm.get('Storage Tier', '3iops-tier')
-        size = vm.get('Total Storage GB', 10)
+        sz = vm.get('Total Storage GB', 10)
+
+        # FIXED: Shortened variable names to keep line under 79 (E501)
+        r_net = vm.get('Network', 'unknown-net')
+        t_sub_res = r_net.lower().replace(" ", "_").replace("-", "_")
 
         vsi_content += f"""
-resource "ibm_is_instance" "{safe_name}" {{
-  name    = "{safe_name}-vsi"
-  profile = "{profile}"
+resource "ibm_is_instance" "{safe_n}" {{
+  name    = "{safe_n}-vsi"
+  profile = "{prof}"
   zone    = var.zone
   primary_network_interface {{
-    name = "eth0"
+    name   = "eth0"
+    subnet = module.networking.{t_sub_res}_id
   }}
 }}
 """
         storage_content += f"""
-resource "ibm_is_volume" "{safe_name}_vol" {{
-  name     = "{safe_name}-vol"
+resource "ibm_is_volume" "{safe_n}_vol" {{
+  name     = "{safe_n}-vol"
   profile  = "{tier}"
   zone     = var.zone
-  capacity = {size}
+  capacity = {sz}
 }}
 """
 
-    return vsi_content, vpc_content, storage_content
+    return vsi_content, vpc_content, storage_content, net_hcl
 
 
 def generate_variables_hcl():
@@ -129,35 +186,8 @@ variable "project" { type = string }
 
 
 def generate_tfvars(region, zone, project):
-    """Outputs the specific values chosen in the Streamlit UI."""
+    """Outputs values chosen in Streamlit."""
     return f"""region  = "{region}"
 zone    = "{zone}"
 project = "{project}"
 """
-
-
-def create_terraform_structure(project_name, vsi, vpc, stor, var, tfv):
-    """Creates directory structure with modules."""
-    base_path = project_name
-    module_path = os.path.join(base_path, "modules")
-
-    folders = [
-        os.path.join(module_path, "vsi"),
-        os.path.join(module_path, "vpc"),
-        os.path.join(module_path, "storage")
-    ]
-
-    for folder in folders:
-        os.makedirs(folder, exist_ok=True)
-
-    with open(os.path.join(base_path, "variables.tf"), "w") as f:
-        f.write(var)
-    with open(os.path.join(base_path, "terraform.tfvars"), "w") as f:
-        f.write(tfv)
-    with open(os.path.join(base_path, "main.tf"), "w") as f:
-        f.write(vpc)
-
-    with open(os.path.join(module_path, "vsi", "main.tf"), "w") as f:
-        f.write(vsi)
-    with open(os.path.join(module_path, "storage", "main.tf"), "w") as f:
-        f.write(stor)
