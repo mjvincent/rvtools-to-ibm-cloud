@@ -1,63 +1,41 @@
-🧠 RVTools to IBM Cloud VPC: Right-Sizing & Resilience Logic
-1. The "Why" Behind the Logic
+# IBM Cloud VPC Infrastructure Mapping: Performance and Resilience Logic
 
-Standard migration tools often look only at Allocation (how much RAM/CPU is assigned). This tool focuses on Utilization and Contention (how the VM actually performs). Our goal is to ensure Day 1 stability in IBM Cloud VPC by identifying "stressed" workloads that cannot afford to be right-sized.
-2. Performance Safety Overrides: Understanding Contention
+## 1. Design Methodology
+The transition from on-premises VMware environments to IBM Cloud VPC requires an assessment model that prioritizes workload stability over simple resource allocation. This mapping engine utilizes a multi-factor analysis of utilization, contention, and networking metadata to ensure that destination profiles maintain performance parity.
 
-Before the tool suggests a smaller (cheaper) profile, it checks the source VM for signs of resource contention. We specifically track two "red flag" metrics: CPU Ready and CPU Co-Stop.
-A. CPU Ready (%RDY) — "The Waiting Room"
+## 2. Performance-Based Safety Overrides
+The engine evaluates source telemetry for indicators of resource contention. If a workload exhibits performance constraints on-premises, a "Safety Match" policy is enforced, preventing aggressive right-sizing and maintaining the original resource allocation to ensure stability post-migration.
 
-    Definition: CPU Ready measures the time a Virtual Machine is ready to run, but is forced to wait because the physical CPU resources are busy serving other workloads.
+### A. CPU Ready (%RDY): Contention Thresholds
+* **Definition**: CPU Ready represents the latency incurred when a virtual machine is ready to execute instructions but must wait for available physical CPU cycles.
+* **Threshold**: > 5.0%.
+* **Logic**: Sustained CPU Ready metrics above 5% indicate that the workload is already resource-starved. Right-sizing these instances during migration would likely induce performance degradation. Consequently, these workloads are matched to the nearest IBM Cloud VPC profile that meets or exceeds original allocations.
 
-    The Threshold: > 5.0%.
+### B. CPU Co-Stop (%CSTP): Multi-Core Synchronization
+* **Definition**: For multi-vCPU instances, Co-Stop measures the synchronization delay between virtual processors as they wait for simultaneous access to physical cores.
+* **Threshold**: > 3.0%.
+* **Logic**: Elevated Co-Stop values indicate architectural inefficiencies relative to the underlying host capacity. To mitigate risk, these workloads are flagged for exact resource matching, ensuring the transition to the VPC hypervisor does not exacerbate execution delays.
 
-    The Logic: If a VM spends more than 5% of its time waiting in the "queue" on-premises, it is already resource-constrained. Right-sizing this VM during migration would likely lead to an immediate performance outage in the cloud.
+## 3. Network Schema Discovery and Address Preservation
+To support complex migrations without requiring extensive IP re-addressing, the engine automates the discovery of on-premises networking schemas.
+* **Subnet Mirroring**: By extracting IPv4 metadata from the `vNetwork` and `vNIC` worksheets, the tool identifies existing CIDR blocks.
+* **Address Preference Configuration**: The engine programmatically sets VPC address preferences to `manual`. This enables the injection of specific customer address prefixes, allowing IBM Cloud Subnets to mirror the original on-premises IP architecture.
 
-B. CPU Co-Stop (%CSTP) — "The Sync Delay"
+## 4. Availability and Resilience Modeling (N+1)
+The logic engine calculates logical N+1 resilience to ensure the target IBM Cloud architecture aligns with enterprise availability requirements.
+* **Resilience Calculation**: The model identifies the largest single point of failure (maximum host speed) and subtracts it from the aggregate cluster capacity.
+* **Headroom Assessment**: Total current demand is compared against the remaining effective capacity. This ensures that the migration proposal accounts for sufficient headroom to sustain workload performance during host-level maintenance or failure events.
 
-    Definition: This metric applies specifically to VMs with multiple virtual CPUs (vCPUs). It measures the time the vCPUs spend waiting to be synchronized so they can execute instructions at the same time on the physical cores.
+## 5. Storage Throughput and IOPS Tiering
+Storage profiles are assigned using a hybrid logic model that accounts for both workload intent and observed performance requirements.
+* **Intent-Based Assignment**: Detection of specific strings (e.g., SQL, DB, SAP, PROD) in metadata triggers a default assignment to the 10 IOPS/GB tier.
+* **Utilization-Based Escalation**: Instances identified as high-utilization or those flagged for a Performance Safety Match are automatically escalated to higher-tier storage profiles to ensure maximum throughput headroom.
 
-    The Threshold: > 3.0%.
+## 6. Underutilized Asset Identification
+The engine audits the inventory to identify assets that may not require migration, thereby optimizing the destination footprint.
+* **Identification Criteria**: Instances with a "Powered On" state but exhibiting <5% CPU utilization and <100 MHz overall demand are categorized as underutilized.
+* **Recommendation**: These assets are flagged for review and potential decommissioning prior to migration to minimize unnecessary recurring costs.
 
-    The Logic: High Co-Stop indicates that a VM is "tripping over itself" because it has too many vCPUs for the underlying hardware to coordinate efficiently. This is a sign of architectural inefficiency that must be matched exactly (Safety Match) to ensure the workload doesn't degrade further during the transition to VPC.
-
-3. Decision Pillar 2: The N+1 Resilience Math (Availability Parity)
-
-While IBM handles physical hardware failover in VPC, this tool calculates Logical N+1 to ensure the target architecture matches the client's existing Service Level Agreements (SLAs).
-The Calculation
-
-We account for a "Worst Case Scenario" (the loss of the largest logical failure point):
-
-    Total Cluster Capacity (MHz).
-
-    Minus the capacity of the Largest Host in the source cluster.
-
-    Compare the remaining capacity against the Current Total Demand.
-
-Why this matters: For Dedicated Hosts, this ensures that if one host is down for maintenance, the remaining hosts have the headroom to support the evacuated VSIs.
-4. Decision Pillar 3: Zombie VM Detection
-
-To optimize cloud spend, the engine identifies "Ghost" workloads consuming resources without providing value.
-
-    Criteria: Power State: Powered On | CPU Utilization: < 5% | Total Demand: < 100 MHz.
-
-    The Action: These VMs are flagged for decommissioning, preventing unnecessary migration costs.
-
-5. Decision Pillar 4: Storage Performance & IOPS Tiering
-
-The engine utilizes a "Keyword + Performance" hybrid logic to assign the correct storage profile, ensuring enterprise-grade disk throughput for critical applications.
-A. Intent-Based Keyword Triggers
-
-Detection of these keywords in the VM Name or Environment automatically triggers a 10 IOPS/GB (Production Tier) default:
-
-    Environment Tags: prod, production, crit.
-
-    Workload Indicators: sql, db, oracle, sap, hana.
-
-B. Performance-Based Triggers
-
-    Disk Latency: If source telemetry shows sustained disk latency > 15ms, the engine upgrades the volume to 10 IOPS/GB regardless of the naming convention.
-
-    Contention Alignment: Any VM flagged for a Safety Match (due to high CPU Ready or Co-Stop) defaults to 10 IOPS/GB to ensure the entire infrastructure stack has maximum performance headroom.
-
-Michael Jones | Senior Cloud Architect | Master Certified Technical Specialist
+---
+**Author**: Michael Vincent Jones
+**Role**: Technical Specialist, IBM Automation
