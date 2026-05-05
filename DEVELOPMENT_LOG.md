@@ -1,16 +1,29 @@
-# Development Log: Multi-Tab Contention Analysis
+# Development Log: Multi-Tab Contention & Network Schema Discovery
 
 ## Overview
-Moving from single-tab mapping (vInfo) to a multi-tab correlation model using vInfo, vCPU, and vHost.
+Evolution from a single-tab compute calculator to a multi-tab correlation model and automated Landing Zone generator. 
 
 ## Technical Goals
-- [ ] Parse `vCPU` tab for performance metrics (Ready %, Co-Stop).
-- [ ] Parse `vHost` tab for physical headroom (pCores, Total MHz).
-- [ ] Implement **Starving VM** detection: If Ready % > 5%, override right-sizing for performance safety.
-- [ ] Implement **Zombie VM** detection: If Usage < 5% and Usage MHz < 100, flag for decommissioning.
-- [ ] Calculate **N+1 Cluster Resilience**: (Total Cluster MHz - Largest Host MHz) - Total Demand.
+- [x] **Compute Phase**: Parse `vCPU` for performance metrics (Ready %, Co-Stop).
+- [x] **Resilience Phase**: Parse `vHost` and `vCluster` for physical headroom (pCores, Total MHz).
+- [x] **Network Phase**: Implement Dynamic Schema Discovery from `vNetwork` and `vNIC`.
+- [x] **Logic Implementation**:
+    - **Starving VM Detection**: If Ready % > 5%, override right-sizing for performance safety.
+    - **Zombie VM Detection**: If Usage < 5% and Usage MHz < 100, flag for decommissioning.
+    - **N+1 Cluster Resilience**: (Total Cluster MHz - Largest Host MHz) - Total Demand.
+    - **VPC IP Mirroring**: Automated generation of Address Prefixes and Subnets using `manual` preference.
+- [x] **Modular Architecture**: Transition to modular HCL output (Networking, Storage, VSI).
 
-## Data Schema
-- **vInfo**: Anchor (List of VMs, Host assignments)
-- **vCPU**: Performance (Contention/MHz)
-- **vHost**: Infrastructure (Capacity/Headroom)
+## Data Schema Correlation
+- **vInfo**: Anchor (VM inventory, Powerstate, Network assignments).
+- **vNetwork**: Networking metadata (VLAN IDs, IPv4 Gateways, Port Groups).
+- **vCPU**: Performance telemetry (Contention, MHz demand, Limits).
+- **vHost**: Infrastructure capacity (Physical Cores, Host Speed).
+- **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
+
+## Milestones
+### May 5, 2026: Dynamic Networking & Modular HCL
+- Resolved `KeyError` issues via dynamic column discovery for non-standard RVTools exports.
+- Implemented automated CIDR extraction from `vNetwork` IPv4 column.
+- Developed modular Terraform bundle generator (ZIP) for tiered storage and networking.
+- Finalized PEP 8 compliance across `app.py` and `logic_engine.py`.
