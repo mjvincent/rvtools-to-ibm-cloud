@@ -1,35 +1,47 @@
-# RVTools to IBM Cloud VPC: Performance-Aware Migration
+# RVTools to IBM Cloud VPC: Automated Infrastructure Mapping
 
 ## Overview
-This tool automates the transformation of VMware RVTools exports into production-ready IBM Cloud VPC Terraform code. By correlating telemetry across multiple data silos, the engine ensures destination profiles are right-sized for actual performance demand, not just allocated specifications.
+This utility automates the conversion of VMware RVTools exports into modular IBM Cloud VPC Terraform configurations. By correlating performance telemetry and networking metadata across multiple data tabs, the engine generates infrastructure-as-code (IaC) that reflects actual utilization requirements rather than static allocations.
 
-## Core Features
+## Core Functional Logic
 
-### Performance-Driven Right-Sizing
-Unlike standard calculators, this tool detects **CPU Ready %** and **Co-Stop** spikes. If a workload is resource-constrained on-premises, the engine implements a "Safety Match" override, maintaining the original specifications to prevent Day 1 performance degradation in the cloud.
+### Network Schema Discovery
+The tool identifies on-premises network configurations by correlating data from the vNetwork and vInfo tabs.
+* **IP Range Mapping**: Extracts IPv4 gateways and addresses to define VPC Address Prefixes.
+* **Subnet Generation**: Automatically configures subnets using a manual address preference, ensuring original CIDR blocks are preserved in the target VPC environment.
+* **Resource Linking**: Maps individual Virtual Server Instances (VSIs) to their respective subnets based on on-premises port group assignments.
 
-### Infrastructure Resilience (N+1)
-The tool calculates cluster-wide headroom by identifying the largest failure point (Host Speed) and comparing total demand against the remaining effective capacity. This ensures that the migration proposal maintains enterprise-grade uptime.
+### Performance-Aware Right-Sizing
+The mapping engine evaluates compute requirements by analyzing specific performance metrics to mitigate the risk of post-migration performance degradation.
+* **Contention Analysis**: Monitors CPU Ready % and Co-Stop telemetry. If a workload shows signs of resource contention on-premises, the tool implements a "Safety Match" policy, maintaining the original core count and memory allocation.
+* **Utilization Thresholds**: Allows for the application of variable utilization factors (30% to 70%) to align suggested IBM VPC profiles with specific performance targets.
 
-### Zombie VM Identification
-Workloads that are powered on but show <5% utilization and <100 MHz overall demand are flagged. This allows migration teams to avoid migrating "ghost" assets, significantly reducing waste in the target environment.
+### Resource Efficiency Auditing
+The application performs an automated audit of the inventory to identify underutilized assets.
+* **Identification of Low-Utilization Assets**: Workloads exhibiting <5% CPU utilization and <100 MHz overall demand are flagged for review.
+* **Capacity Headroom (N+1)**: Calculates available cluster capacity by identifying the largest host speed and evaluating remaining aggregate capacity against total VM demand.
 
-## Technical Stack
-* **Python**: Data processing and logic engine.
-* **Pandas**: Cross-tab data correlation and transformation.
-* **Streamlit**: Interactive assessment dashboard.
-* **Terraform**: Automated HCL generation for IBM Cloud.
+## Technical Structure
+The application architecture is divided into three functional layers:
+1. **Data Processing**: Utilizes Pandas for cross-tabulation and normalization of RVTools telemetry.
+2. **Logic Engine**: Executes profile matching and storage tiering (3, 5, or 10 IOPS) based on workload characteristics.
+3. **Template Rendering**: Outputs HCL (HashiCorp Configuration Language) in a modular format including networking, storage, and VSI modules.
 
-## Data Schema Requirements
-To provide high-fidelity results, the following RVTools tabs are required:
-* `vInfo`: Baseline configuration.
-* `vCPU`: Performance telemetry (Overall MHz, Limit).
-* `vHost`: Physical host specifications.
-* `vCluster`: Aggregate capacity.
-* `vDisk`: Storage inventory.
+## Data Requirements
+Successful execution requires a standard RVTools XLSX export containing the following worksheets:
+* **vInfo**: Primary inventory, power states, and network assignments.
+* **vNetwork**: Networking metadata and IPv4 addressing.
+* **vCPU**: Detailed performance telemetry (MHz, Ready %, Limits).
+* **vHost / vCluster**: Physical infrastructure specifications and aggregate capacity.
+* **vDisk**: Storage capacity and disk inventory.
 
-## Usage
-1. Export a full RVTools workbook.
-2. Upload the `.xlsx` file to the dashboard.
-3. Review the N+1 Headroom and Density ratios.
-4. Export the Business Case (CSV) or download the complete Terraform Bundle (ZIP).
+## Execution
+1. Install dependencies: `pip install -r requirements.txt`
+2. Launch the utility: `streamlit run app.py`
+3. Upload the RVTools .xlsx file.
+4. Review the generated business case and performance metrics.
+5. Download the Terraform Bundle (ZIP) for deployment via IBM Cloud CLI or IBM Cloud Schematics.
+
+---
+**Author**: Michael Vincent Jones
+**Version**: 1.1.0
