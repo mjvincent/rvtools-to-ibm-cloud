@@ -333,13 +333,16 @@ if uploaded_file is not None:
             # Custom CIDR inputs for each network
             st.markdown("**Custom CIDRs per Subnet**")
             custom_cidrs = {}
-            for net in unique_nets:
+            for idx, net in enumerate(unique_nets):
                 net_name = net.get('name', 'unknown-net')
                 default_cidr = net.get('cidr', '10.0.0.0/24')
-                custom_cidrs[net_name] = st.text_input(
-                    f"{net_name} CIDR", 
+                sanitized_name = normalize_network_name(net_name)
+                net_key = f"{sanitized_name}_{idx}"
+                net['cidr_key'] = net_key
+                custom_cidrs[net_key] = st.text_input(
+                    f"{net_name} CIDR",
                     default_cidr,
-                    key=f"cidr_{net_name}"
+                    key=f"cidr_{net_key}"
                 )
 
     # --- 9. DATA TABLE ---

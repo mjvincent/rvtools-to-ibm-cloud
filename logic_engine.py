@@ -76,7 +76,8 @@ resource "ibm_is_vpc" "{vpc_safe}" {{
     for i, net in enumerate(networks_data):
         raw_name = net.get('name', 'unknown-net')
         vlan_id = net.get('vlan')
-        cidr = custom_cidrs.get(net.get('name'), net.get('cidr', f"10.0.{i+1}.0/24")) if custom_cidrs else net.get('cidr', f"10.0.{i+1}.0/24")
+        cidr_key = net.get('cidr_key', net.get('name'))
+        cidr = custom_cidrs.get(cidr_key, net.get('cidr', f"10.0.{i+1}.0/24")) if custom_cidrs else net.get('cidr', f"10.0.{i+1}.0/24")
 
         safe_res = raw_name.lower().replace(" ", "_").replace("-", "_")
         if vlan_id and str(vlan_id).strip():
