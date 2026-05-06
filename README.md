@@ -41,6 +41,14 @@ The dashboard now includes a potential savings metric and exports an enriched bu
 * Estimated monthly savings
 * Subnet mapping for Terraform
 * Security group mapping for Terraform (if enabled)
+* User override fields for Profile and Storage Tier to influence generated Terraform
+
+## Terraform Output Structure
+The exported ZIP bundle now produces a modular Terraform layout:
+* `main.tf`, `variables.tf`, `outputs.tf` at the root
+* `modules/networking/main.tf`, `variables.tf`, `outputs.tf`
+* `modules/storage/main.tf`, `variables.tf`, `outputs.tf`
+* `modules/vsi/main.tf`, `variables.tf`, `outputs.tf`
 
 ## Execution
 1. Install dependencies: `pip install -r requirements.txt`

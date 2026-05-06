@@ -11,6 +11,11 @@ IBM_VPC_CATALOG = [
 ]
 
 
+def get_catalog_profiles():
+    """Returns the list of supported IBM VPC profile names."""
+    return [profile['name'] for profile in IBM_VPC_CATALOG]
+
+
 def find_cheapest_fit(target_cpu, target_ram):
     """Finds the lowest-priced profile that fits requirements."""
     candidates = [
@@ -52,8 +57,7 @@ def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
 
 def render_networking_templates(networks_data, vpc_name="migration-vpc", enable_security_groups=True):
     """
-    Renders VPC, Address Prefixes, Subnets, and optional security groups.
-    address_preference = manual is required for custom customer CIDRs.
+    Renders the networking module main.tf content.
     """
     vpc_safe = vpc_name.replace("-", "_")
 
@@ -114,10 +118,6 @@ resource "ibm_is_security_group_rule" "internal_{safe_res}" {{
   protocol       = "all"
   remote         = "{cidr}"
 }}
-
-output "{safe_res}_sg_id" {{
-  value = ibm_is_security_group.sg_{safe_res}.id
-}}
 """
 
         hcl += f"""
@@ -125,24 +125,127 @@ output "{safe_res}_id" {{
   value = ibm_is_subnet.{safe_res}.id
 }}
 """
+
+        if enable_security_groups:
+            hcl += f"""
+output "{safe_res}_sg_id" {{
+  value = ibm_is_security_group.sg_{safe_res}.id
+}}
+"""
     return hcl
-# Removed unused import os
 
-# ... (Catalog and find_cheapest_fit remain the same) ...
 
-def render_terraform_templates(final_vms, unique_nets, region, zone, enable_security_groups=True):
-    """Renders the Root main.tf and module contents."""
+def render_networking_variables():
+    return """variable \"zone\" { type = string }
+variable \"project\" { type = string }
+"""
 
-    # 1. Call networking logic
-    net_hcl = render_networking_templates(
-        unique_nets,
-        enable_security_groups=enable_security_groups
-    )
 
-    # --- ROOT main.tf ---
-    # FIXED: Removed 'f' from the string below to solve F541
-    vpc_content = """# Root Module
-terraform {
+def render_networking_outputs(networks_data, enable_security_groups=True):
+    outputs = ""
+    for i, net in enumerate(networks_data):
+        raw_name = net.get('name', 'unknown-net')
+        vlan_id = net.get('vlan')
+        safe_res = raw_name.lower().replace(" ", "_").replace("-", "_")
+        if vlan_id and str(vlan_id).strip():
+            safe_res += f"_vlan_{vlan_id}"
+
+        outputs += f"""
+output \"{safe_res}_id\" {{
+  value = ibm_is_subnet.{safe_res}.id
+}}
+"""
+        if enable_security_groups:
+            outputs += f"""
+output \"{safe_res}_sg_id\" {{
+  value = ibm_is_security_group.sg_{safe_res}.id
+}}
+"""
+    return outputs
+
+
+def render_storage_variables():
+    return """variable \"zone\" { type = string }
+variable \"project\" { type = string }
+"""
+
+
+def render_storage_outputs():
+    return """output \"volume_ids\" {
+  value = [for v in ibm_is_volume : v.id]
+}
+"""
+
+
+def render_storage_templates(final_vms):
+    content = """# Storage module for VSI volumes\n"""
+    for vm in final_vms:
+        vm_n_raw = str(vm.get('VM Name', 'unknown'))
+        safe_n = vm_n_raw.replace(" ", "_").replace("-", "_")
+        tier = vm.get('Override Storage Tier') or vm.get('Storage Tier', '3iops-tier')
+        sz = vm.get('Total Storage GB', 10)
+
+        content += f"""
+resource "ibm_is_volume" "{safe_n}_vol" {{
+  name     = "{safe_n}-vol"
+  profile  = "{tier}"
+  zone     = var.zone
+  capacity = {sz}
+}}
+"""
+    return content
+
+
+def render_vsi_variables():
+    return """variable "zone" { type = string }
+variable "project" { type = string }
+"""
+
+
+def render_vsi_templates(final_vms, enable_security_groups=True):
+    content = """# VSI module for instance definitions\n"""
+    for vm in final_vms:
+        vm_n_raw = str(vm.get('VM Name', 'unknown'))
+        safe_n = vm_n_raw.replace(" ", "_").replace("-", "_")
+        prof = vm.get('Override Profile') or vm.get('IBM Profile', 'bx2-2x8')
+        r_net = vm.get('Network', 'unknown-net')
+        t_sub_res = r_net.lower().replace(" ", "_").replace("-", "_")
+
+        content += f"""
+resource "ibm_is_instance" "{safe_n}" {{
+  name    = "{safe_n}-vsi"
+  profile = "{prof}"
+  zone    = var.zone
+  primary_network_interface {{
+    name   = "eth0"
+    subnet = module.networking.{t_sub_res}_id
+"""
+        if enable_security_groups:
+            content += f"""
+    security_groups = [module.networking.{t_sub_res}_sg_id]
+"""
+        content += """
+  }}
+}}
+"""
+    return content
+
+
+def render_vsi_outputs(final_vms):
+    outputs = ""
+    for vm in final_vms:
+        vm_n_raw = str(vm.get('VM Name', 'unknown'))
+        safe_n = vm_n_raw.replace(" ", "_").replace("-", "_")
+        outputs += f"""
+output "{safe_n}_id" {{
+  value = ibm_is_instance.{safe_n}.id
+}}
+"""
+    return outputs
+
+
+def render_root_main():
+    return """terraform {
   required_providers {
     ibm = {
       source  = "IBM-Cloud/ibm"
@@ -156,63 +259,77 @@ provider "ibm" {
 }
 
 module "networking" {
-  source = "./modules/networking"
-  zone   = var.zone
+  source  = "./modules/networking"
+  zone    = var.zone
+  project = var.project
 }
 
 module "storage" {
-  source = "./modules/storage"
-  zone   = var.zone
+  source  = "./modules/storage"
+  zone    = var.zone
+  project = var.project
 }
 
 module "vsi" {
   source     = "./modules/vsi"
   zone       = var.zone
+  project    = var.project
   depends_on = [module.storage, module.networking]
 }
 """
 
-    vsi_content = f"# VSI Module Configuration for {zone}\n"
-    storage_content = f"# Block Storage Module for {zone}\n"
 
-    for vm in final_vms:
-        vm_n_raw = str(vm.get('VM Name', 'unknown'))
-        safe_n = vm_n_raw.replace(" ", "_").replace("-", "_")
-        prof = vm.get('IBM Profile', 'bx2-2x8')
-        tier = vm.get('Storage Tier', '3iops-tier')
-        sz = vm.get('Total Storage GB', 10)
-
-        # FIXED: Shortened variable names to keep line under 79 (E501)
-        r_net = vm.get('Network', 'unknown-net')
-        t_sub_res = r_net.lower().replace(" ", "_").replace("-", "_")
-
-        vsi_content += f"""
-resource "ibm_is_instance" "{safe_n}" {{
-  name    = "{safe_n}-vsi"
-  profile = "{prof}"
-  zone    = var.zone
-  primary_network_interface {{
-    name   = "eth0"
-    subnet = module.networking.{t_sub_res}_id
-"""
-        if enable_security_groups:
-            vsi_content += f"""
-    security_groups = [module.networking.{t_sub_res}_sg_id]
-"""
-        vsi_content += f"""
-  }}
-}}
-"""
-        storage_content += f"""
-resource "ibm_is_volume" "{safe_n}_vol" {{
-  name     = "{safe_n}-vol"
-  profile  = "{tier}"
-  zone     = var.zone
-  capacity = {sz}
-}}
+def render_root_variables():
+    return """variable "ibmcloud_api_key" { sensitive = true }
+variable "region" { type = string }
+variable "zone" { type = string }
+variable "project" { type = string }
 """
 
-    return vsi_content, vpc_content, storage_content, net_hcl
+
+def render_root_outputs():
+    return """output "project" {
+  value = var.project
+}
+output "region" {
+  value = var.region
+}
+output "zone" {
+  value = var.zone
+}
+"""
+
+
+def render_terraform_templates(final_vms, unique_nets, region, zone, enable_security_groups=True):
+    """Renders the Root main.tf and module contents."""
+
+    root_main = render_root_main()
+    root_vars = render_root_variables()
+    root_out = render_root_outputs()
+    net_hcl = render_networking_templates(unique_nets, enable_security_groups=enable_security_groups)
+    net_vars = render_networking_variables()
+    net_out = render_networking_outputs(unique_nets, enable_security_groups=enable_security_groups)
+    storage_main = render_storage_templates(final_vms)
+    storage_vars = render_storage_variables()
+    storage_out = render_storage_outputs()
+    vsi_main = render_vsi_templates(final_vms, enable_security_groups=enable_security_groups)
+    vsi_vars = render_vsi_variables()
+    vsi_out = render_vsi_outputs(final_vms)
+
+    return (
+        vsi_main,
+        root_main,
+        storage_main,
+        net_hcl,
+        root_vars,
+        root_out,
+        net_vars,
+        net_out,
+        vsi_vars,
+        vsi_out,
+        storage_vars,
+        storage_out
+    )
 
 
 def generate_variables_hcl():
