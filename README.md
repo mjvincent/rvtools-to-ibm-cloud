@@ -43,6 +43,9 @@ The dashboard now includes a potential savings metric and exports an enriched bu
 * Security group mapping for Terraform (if enabled)
 * User override fields for Profile and Storage Tier to influence generated Terraform
 
+## Streamlit Override Controls
+The Streamlit dashboard exposes editable override fields for `Override Profile` and `Override Storage Tier`. When set, these user-specified values are honored by the Terraform generator, allowing human-directed tuning of VSI sizing without changing the underlying migration logic.
+
 ## Terraform Output Structure
 The exported ZIP bundle now produces a modular Terraform layout:
 * `main.tf`, `variables.tf`, `outputs.tf` at the root
