@@ -69,6 +69,8 @@ The exported ZIP bundle now produces a modular Terraform layout:
 * `modules/storage/main.tf`, `variables.tf`, `outputs.tf`
 * `modules/vsi/main.tf`, `variables.tf`, `outputs.tf`
 
+![Terraform module layout example](docs/images/terraform_output_layout.png)
+
 ## Execution
 1. Install dependencies: `pip install -r requirements.txt`
 2. Launch the utility: `streamlit run app.py`
