@@ -1,7 +1,7 @@
 # Development Log: Multi-Tab Contention & Network Schema Discovery
 
 ## Overview
-Evolution from a single-tab compute calculator to a multi-tab correlation model and automated Landing Zone generator. 
+Evolution from a single-tab compute calculator to a multi-tab correlation model and automated Landing Zone generator.
 
 ## Technical Goals
 - [x] **Compute Phase**: Parse `vCPU` for performance metrics (Ready %, Co-Stop).
@@ -32,3 +32,4 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added Streamlit dashboard savings metric and monthly savings aggregation.
 - Exposed subnet/security group mapping values in the UI.
 - Included mapping fields and baseline cost data in the business-case CSV export.
+- Added user override support for IBM Profile and Storage Tier in the Streamlit data editor, with values honored during Terraform generation.

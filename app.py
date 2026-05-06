@@ -3,11 +3,15 @@ import zipfile
 import streamlit as st
 import pandas as pd
 from logic_engine import (
+    IBM_VPC_CATALOG,
+    get_catalog_profiles,
     map_vmware_to_ibm_vpc,
     render_terraform_templates,
-    generate_variables_hcl,
     generate_tfvars
 )
+
+PROFILE_OPTIONS = [""] + get_catalog_profiles()
+STORAGE_TIERS = ["3iops-tier", "5iops-tier", "10iops-tier"]
 
 # --- Table Configuration ---
 TABLE_CONFIG = {
@@ -28,14 +32,23 @@ TABLE_CONFIG = {
         "Total Monthly", format="$%.2f"
     ),
     "Storage Tier": st.column_config.SelectboxColumn(
-        "Tier", options=["3iops-tier", "5iops-tier", "10iops-tier"]
+        "Tier", options=STORAGE_TIERS
+    ),
+    "Override Storage Tier": st.column_config.SelectboxColumn(
+        "Override Storage Tier", options=[""] + STORAGE_TIERS
+    ),
+    "IBM Profile": st.column_config.SelectboxColumn(
+        "Profile", options=PROFILE_OPTIONS
+    ),
+    "Override Profile": st.column_config.SelectboxColumn(
+        "Override Profile", options=[""] + PROFILE_OPTIONS
     )
 }
 
 DISABLED_COLS = [
-    "VM Name", "Original Specs", "IBM Profile", "Data Status",
+    "VM Name", "Original Specs", "Data Status",
     "Total Storage GB", "Monthly Cost", "Right-Sized", "v_p_Ratio",
-    "Ready_Pct", "Overall_MHz", "Network", "Subnet", "Security Group",
+    "Ready_Pct", "Overall_MHz",
     "Baseline Cost (Mo)", "Savings (Mo)"
 ]
 
@@ -78,9 +91,28 @@ else:
     )))
 
 project_name = st.sidebar.text_input("Project Name", "my-ibm-migration")
+
+region_zones = {
+    "us-south": ["us-south-1", "us-south-2", "us-south-3"],
+    "us-east": ["us-east-1", "us-east-2", "us-east-3"],
+    "eu-gb": ["eu-gb-1"],
+    "jp-tok": ["jp-tok-1"]
+}
+
+target_zone = st.sidebar.selectbox(
+    "Target IBM Zone",
+    region_zones.get(target_region, [f"{target_region}-1"])
+)
+
 generate_security_groups = st.sidebar.checkbox(
     "Generate Security Groups", value=True
 )
+
+st.sidebar.markdown("---")
+st.sidebar.markdown(
+    "**Override Controls**: Edit any VM row below to customize the target profile, storage tier, subnet, or security group mapping for Terraform generation."
+)
+
 
 def normalize_network_name(name):
     cleaned = str(name).strip()
@@ -135,6 +167,13 @@ if uploaded_file is not None:
             d_cidr = f"10.0.{len(unique_nets) + 1}.0/24"
 
         unique_nets.append({'name': n_name, 'vlan': vlan, 'cidr': d_cidr})
+
+    # Update TABLE_CONFIG with dynamic Network options
+    TABLE_CONFIG["Network"] = st.column_config.SelectboxColumn(
+        "Network", options=[""] + [net.get('name', 'unknown-net') for net in unique_nets]
+    )
+    TABLE_CONFIG["Subnet"] = st.column_config.TextColumn("Subnet")
+    TABLE_CONFIG["Security Group"] = st.column_config.TextColumn("Security Group")
 
     # 4. STORAGE SUMMARY
     cap_c = next((c for c in df_vdisk.columns if 'Capacity' in c), None)
@@ -223,8 +262,8 @@ if uploaded_file is not None:
         )
         savings = round(max(0.0, baseline['monthly'] - mapping['monthly']), 2)
         normalized_net = normalize_network_name(vm_net or 'unknown-net')
-        subnet_value = f"module.networking.{normalized_net}_id"
-        sg_value = (
+        default_subnet = f"module.networking.{normalized_net}_id"
+        default_sg = (
             f"module.networking.{normalized_net}_sg_id"
             if generate_security_groups else "N/A"
         )
@@ -234,13 +273,15 @@ if uploaded_file is not None:
             'VM Name': vm_n,
             'Original Specs': f"{o_cpu}v / {o_ram}M",
             'IBM Profile': mapping['profile'],
+            'Override Profile': "",
             'Compute (Mo)': mapping['compute_cost'],
             'Storage (Mo)': mapping['storage_cost'],
             'Baseline Cost (Mo)': baseline['monthly'],
             'Savings (Mo)': savings,
             'Monthly Cost': mapping['monthly'],
-            'Subnet': subnet_value,
-            'Security Group': sg_value,
+            'Subnet': default_subnet,
+            'Security Group': default_sg,
+            'Override Storage Tier': "",
             'Right-Sized': "✅" if mapping['is_rightsized'] else "❌",
             'Storage Tier': s_tier,
             'Total Storage GB': t_gb,
@@ -297,27 +338,30 @@ if uploaded_file is not None:
                     v for v in edited_df.to_dict('records')
                     if not v['Exclude?']
                 ]
-                z_name = f"{target_region}-1"
 
-                vsi, vpc, stor, net = render_terraform_templates(
+                vsi, root_main, stor, net, root_vars, root_out, net_vars, net_out, vsi_vars, vsi_out, stor_vars, stor_out = render_terraform_templates(
                     final_vms,
                     unique_nets,
                     target_region,
-                    z_name,
-                    enable_security_groups=generate_security_groups
+                    target_zone,
+                    generate_security_groups
                 )
 
                 zip_b = io.BytesIO()
                 with zipfile.ZipFile(zip_b, "a") as zf:
-                    zf.writestr("main.tf", vpc)
-                    zf.writestr("variables.tf", generate_variables_hcl())
-                    zf.writestr(
-                        "terraform.tfvars",
-                        generate_tfvars(target_region, z_name, project_name)
-                    )
+                    zf.writestr("main.tf", root_main)
+                    zf.writestr("variables.tf", root_vars)
+                    zf.writestr("outputs.tf", root_out)
+                    zf.writestr("terraform.tfvars", generate_tfvars(target_region, target_zone, project_name))
                     zf.writestr("modules/networking/main.tf", net)
+                    zf.writestr("modules/networking/variables.tf", net_vars)
+                    zf.writestr("modules/networking/outputs.tf", net_out)
                     zf.writestr("modules/vsi/main.tf", vsi)
+                    zf.writestr("modules/vsi/variables.tf", vsi_vars)
+                    zf.writestr("modules/vsi/outputs.tf", vsi_out)
                     zf.writestr("modules/storage/main.tf", stor)
+                    zf.writestr("modules/storage/variables.tf", stor_vars)
+                    zf.writestr("modules/storage/outputs.tf", stor_out)
 
                 st.session_state['zip_data'] = zip_b.getvalue()
                 st.session_state['build_done'] = True
