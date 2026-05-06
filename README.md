@@ -58,6 +58,15 @@ The Streamlit data table uses the following override columns:
 * `Subnet` — displays the generated subnet mapping for the selected network
 * `Security Group` — displays the generated security group mapping when enabled
 
+### Terraform Overrides & Deployment Targets
+The `Terraform Overrides` expander exposes additional infrastructure configuration controls:
+* **VPC Name** — name the target IBM Cloud VPC resource
+* **Address Prefix Strategy** — choose `manual` to preserve generated CIDR prefixes, or `auto` to use provider-managed allocation
+* **Custom CIDR per Subnet** — override the generated subnet CIDR for each discovered network
+* **Deployment Target** — choose `Plain CLI` for local Terraform execution, or `IBM Schematics` for Schematics-managed deployment
+
+When `Plain CLI` is selected, the generated root `main.tf` uses a local Terraform backend configuration. For `IBM Schematics`, the bundle omits the backend block so Schematics can manage state.
+
 ![Streamlit override controls example](docs/images/streamlit_override_example.png)
 
 > Best practice: only set override values when you have validated that the target IBM Cloud profile and tier are supported for the workload and its storage requirements.
@@ -69,6 +78,8 @@ The exported ZIP bundle now produces a modular Terraform layout:
 * `modules/storage/main.tf`, `variables.tf`, `outputs.tf`
 * `modules/vsi/main.tf`, `variables.tf`, `outputs.tf`
 
+Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module.
+
 ![Terraform module layout example](docs/images/terraform_output_layout.png)
 
 ## Execution
@@ -78,10 +89,14 @@ The exported ZIP bundle now produces a modular Terraform layout:
 4. Review the generated business case, savings metrics, and network/security mappings.
 5. Download the Terraform Bundle (ZIP) for deployment via IBM Cloud CLI or IBM Cloud Schematics.
 
+## Further Reading
+For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`.
+
 ## Release Notes
 - Added a potential savings metric to the Streamlit dashboard.
 - Added per-VM baseline and savings values in the exported business case CSV.
 - Added subnet and security group mapping fields to the business case export to support Terraform wiring.
+- Added Terraform override controls for VPC naming, prefix strategy, custom CIDRs, and deployment target selection.
 
 ---
 **Author**: Michael Vincent Jones

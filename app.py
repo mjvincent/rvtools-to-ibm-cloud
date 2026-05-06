@@ -42,7 +42,9 @@ TABLE_CONFIG = {
     ),
     "Override Profile": st.column_config.SelectboxColumn(
         "Override Profile", options=[""] + PROFILE_OPTIONS
-    )
+    ),
+    "Subnet": st.column_config.TextColumn("Subnet"),
+    "Security Group": st.column_config.TextColumn("Security Group")
 }
 
 DISABLED_COLS = [
@@ -312,6 +314,34 @@ if uploaded_file is not None:
     z_vms = len(df_f[df_f['Data Status'].str.contains("Zombie")])
     m5.metric("Zombie VMs", z_vms)
 
+    # --- TERRAFORM OVERRIDES ---
+    with st.expander("Terraform Overrides"):
+        col1, col2 = st.columns(2)
+        with col1:
+            vpc_name = st.text_input("VPC Name", "migration-vpc")
+            address_prefix_strategy = st.selectbox(
+                "Address Prefix Strategy", 
+                ["manual", "auto"], 
+                index=0
+            )
+            deployment_target = st.selectbox(
+                "Deployment Target",
+                ["Plain CLI", "IBM Schematics"],
+                index=0
+            )
+        with col2:
+            # Custom CIDR inputs for each network
+            st.markdown("**Custom CIDRs per Subnet**")
+            custom_cidrs = {}
+            for net in unique_nets:
+                net_name = net.get('name', 'unknown-net')
+                default_cidr = net.get('cidr', '10.0.0.0/24')
+                custom_cidrs[net_name] = st.text_input(
+                    f"{net_name} CIDR", 
+                    default_cidr,
+                    key=f"cidr_{net_name}"
+                )
+
     # --- 9. DATA TABLE ---
     edited_df = st.data_editor(
         df_f,
@@ -344,7 +374,12 @@ if uploaded_file is not None:
                     unique_nets,
                     target_region,
                     target_zone,
-                    generate_security_groups
+                    generate_security_groups,
+                    vpc_name,
+                    custom_cidrs,
+                    address_prefix_strategy,
+                    deployment_target,
+                    project_name
                 )
 
                 zip_b = io.BytesIO()

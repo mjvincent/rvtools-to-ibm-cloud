@@ -7,7 +7,9 @@
 Standard VPC deployments utilize "Default Address Prefixes," which often result in IP ranges that overlap with existing on-premises sites or fail to match established customer IPAM standards. For enterprise migrations, maintaining IP persistence is often a prerequisite for application connectivity and security governance.
 
 ## Decision
-The engine now explicitly sets `address_preference = "manual"` within the VPC resource. It utilizes a **Network Schema Discovery** process to extract IPv4 metadata from the `vNetwork` and `vNIC` tabs, programmatically generating `ibm_is_vpc_address_prefix` resources that mirror the source environment.
+The engine now exposes an address prefix strategy option in the Streamlit UI. The default behavior remains `address_preference = "manual"` to preserve source CIDR mappings, but users may optionally select an `auto` strategy for provider-managed prefix allocation.
+
+The tool utilizes a **Network Schema Discovery** process to extract IPv4 metadata from the `vNetwork` and `vNIC` tabs, programmatically generating `ibm_is_vpc_address_prefix` resources that mirror the source environment when manual mode is selected.
 
 ## Consequences
 * **Positive**: Ensures 1:1 network parity between VMware Port Groups and IBM VPC Subnets; simplifies hybrid connectivity (Direct Link/Transit Gateway) by preventing CIDR overlaps.

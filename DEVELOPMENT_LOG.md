@@ -33,3 +33,5 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Exposed subnet/security group mapping values in the UI.
 - Included mapping fields and baseline cost data in the business-case CSV export.
 - Added user override support for IBM Profile and Storage Tier in the Streamlit data editor, with values honored during Terraform generation.
+- Added Terraform override controls for VPC name, address prefix strategy, custom CIDRs, and deployment target selection.
+- Added conditional backend behavior for Plain CLI vs IBM Schematics deployments.

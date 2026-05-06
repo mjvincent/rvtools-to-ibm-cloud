@@ -19,7 +19,7 @@ The engine evaluates source telemetry for indicators of resource contention. If 
 ## 3. Network Schema Discovery and Address Preservation
 To support complex migrations without requiring extensive IP re-addressing, the engine automates the discovery of on-premises networking schemas.
 * **Subnet Mirroring**: By extracting IPv4 metadata from the `vNetwork` and `vNIC` worksheets, the tool identifies existing CIDR blocks.
-* **Address Preference Configuration**: The engine programmatically sets VPC address preferences to `manual`. This enables the injection of specific customer address prefixes, allowing IBM Cloud Subnets to mirror the original on-premises IP architecture.
+* **Address Preference Configuration**: The engine exposes a user-selectable prefix strategy. The default `manual` mode preserves source CIDR mappings, while an optional `auto` mode allows provider-managed prefix allocation for simpler deployments.
 
 ## 4. Availability and Resilience Modeling (N+1)
 The logic engine calculates logical N+1 resilience to ensure the target IBM Cloud architecture aligns with enterprise availability requirements.

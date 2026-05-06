@@ -55,23 +55,28 @@ def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
     }
 
 
-def render_networking_templates(networks_data, vpc_name="migration-vpc", enable_security_groups=True):
+def render_networking_templates(networks_data, vpc_name="migration-vpc", enable_security_groups=True, custom_cidrs=None, address_prefix_strategy="manual", project_name="my-ibm-migration"):
     """
     Renders the networking module main.tf content.
     """
     vpc_safe = vpc_name.replace("-", "_")
+    address_preference = (
+        "manual" if address_prefix_strategy == "manual"
+        else "automatic"
+    )
 
     hcl = f"""
 resource "ibm_is_vpc" "{vpc_safe}" {{
   name = "{vpc_name}"
-  address_preference = "manual"
+  address_preference = "{address_preference}"
+  tags = ["project:{project_name}", "managed-by:rvtools-converter"]
 }}
 """
 
     for i, net in enumerate(networks_data):
         raw_name = net.get('name', 'unknown-net')
         vlan_id = net.get('vlan')
-        cidr = net.get('cidr', f"10.0.{i+1}.0/24")
+        cidr = custom_cidrs.get(net.get('name'), net.get('cidr', f"10.0.{i+1}.0/24")) if custom_cidrs else net.get('cidr', f"10.0.{i+1}.0/24")
 
         safe_res = raw_name.lower().replace(" ", "_").replace("-", "_")
         if vlan_id and str(vlan_id).strip():
@@ -91,6 +96,7 @@ resource "ibm_is_subnet" "{safe_res}" {{
   zone            = var.zone
   ipv4_cidr_block = "{cidr}"
   depends_on      = [ibm_is_vpc_address_prefix.prefix_{safe_res}]
+  tags            = ["project:{project_name}", "network:{safe_res}", "managed-by:rvtools-converter"]
 }}
 """
 
@@ -99,6 +105,7 @@ resource "ibm_is_subnet" "{safe_res}" {{
 resource "ibm_is_security_group" "sg_{safe_res}" {{
   name = "sg-{safe_res.replace('_', '-') }"
   vpc  = ibm_is_vpc.{vpc_safe}.id
+  tags = ["project:{project_name}", "network:{safe_res}", "managed-by:rvtools-converter"]
 }}
 
 resource "ibm_is_security_group_rule" "ssh_{safe_res}" {{
@@ -177,7 +184,7 @@ def render_storage_outputs():
 """
 
 
-def render_storage_templates(final_vms):
+def render_storage_templates(final_vms, project_name="my-ibm-migration"):
     content = """# Storage module for VSI volumes\n"""
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
@@ -191,6 +198,7 @@ resource "ibm_is_volume" "{safe_n}_vol" {{
   profile  = "{tier}"
   zone     = var.zone
   capacity = {sz}
+  tags     = ["project:{project_name}", "vm:{safe_n}", "managed-by:rvtools-converter"]
 }}
 """
     return content
@@ -202,7 +210,7 @@ variable "project" { type = string }
 """
 
 
-def render_vsi_templates(final_vms, enable_security_groups=True):
+def render_vsi_templates(final_vms, enable_security_groups=True, project_name="my-ibm-migration"):
     content = """# VSI module for instance definitions\n"""
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
@@ -224,8 +232,9 @@ resource "ibm_is_instance" "{safe_n}" {{
             content += f"""
     security_groups = [module.networking.{t_sub_res}_sg_id]
 """
-        content += """
+        content += f"""
   }}
+  tags = ["project:{project_name}", "vm:{safe_n}", "managed-by:rvtools-converter"]
 }}
 """
     return content
@@ -244,20 +253,33 @@ output "{safe_n}_id" {{
     return outputs
 
 
-def render_root_main():
-    return """terraform {
+def render_root_main(deployment_target="Plain CLI"):
+    hcl = """terraform {
   required_providers {
     ibm = {
       source  = "IBM-Cloud/ibm"
       version = ">= 1.70.0"
     }
   }
+"""
+    if deployment_target == "Plain CLI":
+        hcl += """
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+"""
+    else:
+        hcl += """
+  # IBM Schematics manages state for this deployment target.
+"""
+    hcl += """
 }
 
 provider "ibm" {
   region = var.region
 }
-
+"""
+    hcl += """
 module "networking" {
   source  = "./modules/networking"
   zone    = var.zone
@@ -277,6 +299,7 @@ module "vsi" {
   depends_on = [module.storage, module.networking]
 }
 """
+    return hcl
 
 
 def render_root_variables():
@@ -300,19 +323,19 @@ output "zone" {
 """
 
 
-def render_terraform_templates(final_vms, unique_nets, region, zone, enable_security_groups=True):
+def render_terraform_templates(final_vms, unique_nets, region, zone, enable_security_groups=True, vpc_name="migration-vpc", custom_cidrs=None, address_prefix_strategy="manual", deployment_target="Plain CLI", project_name="my-ibm-migration"):
     """Renders the Root main.tf and module contents."""
 
-    root_main = render_root_main()
+    root_main = render_root_main(deployment_target)
     root_vars = render_root_variables()
     root_out = render_root_outputs()
-    net_hcl = render_networking_templates(unique_nets, enable_security_groups=enable_security_groups)
+    net_hcl = render_networking_templates(unique_nets, vpc_name=vpc_name, enable_security_groups=enable_security_groups, custom_cidrs=custom_cidrs, address_prefix_strategy=address_prefix_strategy, project_name=project_name)
     net_vars = render_networking_variables()
     net_out = render_networking_outputs(unique_nets, enable_security_groups=enable_security_groups)
-    storage_main = render_storage_templates(final_vms)
+    storage_main = render_storage_templates(final_vms, project_name=project_name)
     storage_vars = render_storage_variables()
     storage_out = render_storage_outputs()
-    vsi_main = render_vsi_templates(final_vms, enable_security_groups=enable_security_groups)
+    vsi_main = render_vsi_templates(final_vms, enable_security_groups=enable_security_groups, project_name=project_name)
     vsi_vars = render_vsi_variables()
     vsi_out = render_vsi_outputs(final_vms)
 
