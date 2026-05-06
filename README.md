@@ -58,6 +58,8 @@ The Streamlit data table uses the following override columns:
 * `Subnet` — displays the generated subnet mapping for the selected network
 * `Security Group` — displays the generated security group mapping when enabled
 
+![Streamlit override controls example](docs/images/streamlit_override_example.png)
+
 > Best practice: only set override values when you have validated that the target IBM Cloud profile and tier are supported for the workload and its storage requirements.
 
 ## Terraform Output Structure
