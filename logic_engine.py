@@ -50,9 +50,9 @@ def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
     }
 
 
-def render_networking_templates(networks_data, vpc_name="migration-vpc"):
+def render_networking_templates(networks_data, vpc_name="migration-vpc", enable_security_groups=True):
     """
-    Renders VPC, Address Prefixes, and Subnets.
+    Renders VPC, Address Prefixes, Subnets, and optional security groups.
     address_preference = manual is required for custom customer CIDRs.
     """
     vpc_safe = vpc_name.replace("-", "_")
@@ -75,7 +75,7 @@ resource "ibm_is_vpc" "{vpc_safe}" {{
 
         hcl += f"""
 resource "ibm_is_vpc_address_prefix" "prefix_{safe_res}" {{
-  name = "prefix-{safe_res.replace('_', '-')}"
+  name = "prefix-{safe_res.replace('_', '-') }"
   zone = var.zone
   vpc  = ibm_is_vpc.{vpc_safe}.id
   cidr = "{cidr}"
@@ -88,23 +88,56 @@ resource "ibm_is_subnet" "{safe_res}" {{
   ipv4_cidr_block = "{cidr}"
   depends_on      = [ibm_is_vpc_address_prefix.prefix_{safe_res}]
 }}
+"""
 
+        if enable_security_groups:
+            hcl += f"""
+resource "ibm_is_security_group" "sg_{safe_res}" {{
+  name = "sg-{safe_res.replace('_', '-') }"
+  vpc  = ibm_is_vpc.{vpc_safe}.id
+}}
+
+resource "ibm_is_security_group_rule" "ssh_{safe_res}" {{
+  security_group = ibm_is_security_group.sg_{safe_res}.id
+  direction      = "inbound"
+  ip_version     = "ipv4"
+  protocol       = "tcp"
+  port_min       = 22
+  port_max       = 22
+  remote         = "0.0.0.0/0"
+}}
+
+resource "ibm_is_security_group_rule" "internal_{safe_res}" {{
+  security_group = ibm_is_security_group.sg_{safe_res}.id
+  direction      = "inbound"
+  ip_version     = "ipv4"
+  protocol       = "all"
+  remote         = "{cidr}"
+}}
+
+output "{safe_res}_sg_id" {{
+  value = ibm_is_security_group.sg_{safe_res}.id
+}}
+"""
+
+        hcl += f"""
 output "{safe_res}_id" {{
   value = ibm_is_subnet.{safe_res}.id
 }}
 """
     return hcl
-
-
 # Removed unused import os
 
 # ... (Catalog and find_cheapest_fit remain the same) ...
 
-def render_terraform_templates(final_vms, unique_nets, region, zone):
+def render_terraform_templates(final_vms, unique_nets, region, zone, enable_security_groups=True):
     """Renders the Root main.tf and module contents."""
 
     # 1. Call networking logic
-    net_hcl = render_networking_templates(unique_nets)
+    net_hcl = render_networking_templates(
+        unique_nets,
+        enable_security_groups=enable_security_groups
+    )
 
     # --- ROOT main.tf ---
     # FIXED: Removed 'f' from the string below to solve F541
@@ -161,6 +194,12 @@ resource "ibm_is_instance" "{safe_n}" {{
   primary_network_interface {{
     name   = "eth0"
     subnet = module.networking.{t_sub_res}_id
+"""
+        if enable_security_groups:
+            vsi_content += f"""
+    security_groups = [module.networking.{t_sub_res}_sg_id]
+"""
+        vsi_content += f"""
   }}
 }}
 """

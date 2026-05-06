@@ -71,6 +71,9 @@ else:
     )))
 
 project_name = st.sidebar.text_input("Project Name", "my-ibm-migration")
+generate_security_groups = st.sidebar.checkbox(
+    "Generate Security Groups", value=True
+)
 uploaded_file = st.sidebar.file_uploader("Upload RVTools", type=["xlsx"])
 
 if uploaded_file is not None:
@@ -263,7 +266,11 @@ if uploaded_file is not None:
                 z_name = f"{target_region}-1"
 
                 vsi, vpc, stor, net = render_terraform_templates(
-                    final_vms, unique_nets, target_region, z_name
+                    final_vms,
+                    unique_nets,
+                    target_region,
+                    z_name,
+                    enable_security_groups=generate_security_groups
                 )
 
                 zip_b = io.BytesIO()
