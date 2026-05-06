@@ -18,6 +18,12 @@ TABLE_CONFIG = {
     "Storage (Mo)": st.column_config.NumberColumn(
         "Storage (Mo)", format="$%.2f"
     ),
+    "Baseline Cost (Mo)": st.column_config.NumberColumn(
+        "Baseline Cost (Mo)", format="$%.2f"
+    ),
+    "Savings (Mo)": st.column_config.NumberColumn(
+        "Savings (Mo)", format="$%.2f"
+    ),
     "Total Monthly": st.column_config.NumberColumn(
         "Total Monthly", format="$%.2f"
     ),
@@ -29,7 +35,8 @@ TABLE_CONFIG = {
 DISABLED_COLS = [
     "VM Name", "Original Specs", "IBM Profile", "Data Status",
     "Total Storage GB", "Monthly Cost", "Right-Sized", "v_p_Ratio",
-    "Ready_Pct", "Overall_MHz", "Network"
+    "Ready_Pct", "Overall_MHz", "Network", "Subnet", "Security Group",
+    "Baseline Cost (Mo)", "Savings (Mo)"
 ]
 
 st.set_page_config(
@@ -74,6 +81,13 @@ project_name = st.sidebar.text_input("Project Name", "my-ibm-migration")
 generate_security_groups = st.sidebar.checkbox(
     "Generate Security Groups", value=True
 )
+
+def normalize_network_name(name):
+    cleaned = str(name).strip()
+    if not cleaned or cleaned.lower() == 'nan':
+        cleaned = 'unknown'
+    return cleaned.lower().replace(" ", "_").replace("-", "_")
+
 uploaded_file = st.sidebar.file_uploader("Upload RVTools", type=["xlsx"])
 
 if uploaded_file is not None:
@@ -163,7 +177,8 @@ if uploaded_file is not None:
         p_st = row.get('Powerstate', 'poweredOn')
         o_cpu, o_ram = row.get('CPUs', 1), row.get('Memory', 1024)
         h_n = row.get('Host', 'Unknown')
-        vm_net = str(row.get(vi_net_c, 'unknown')) if vi_net_c else 'unknown'
+        raw_vm_net = row.get(vi_net_c, None) if vi_net_c else None
+        vm_net = str(raw_vm_net).strip() if raw_vm_net is not None and not pd.isna(raw_vm_net) else 'unknown'
 
         perf = vcpu_m.get(vm_n, {'ready': 0, 'stop': 0, 'mhz': 0, 'limit': 0})
         host = h_cap.get(h_n, {'cores': 1, 'speed': 0})
@@ -202,6 +217,18 @@ if uploaded_file is not None:
             utilization_threshold, t_gb, s_tier
         )
 
+        baseline = map_vmware_to_ibm_vpc(
+            o_cpu, o_ram, 100, target_region,
+            100, t_gb, s_tier
+        )
+        savings = round(max(0.0, baseline['monthly'] - mapping['monthly']), 2)
+        normalized_net = normalize_network_name(vm_net or 'unknown-net')
+        subnet_value = f"module.networking.{normalized_net}_id"
+        sg_value = (
+            f"module.networking.{normalized_net}_sg_id"
+            if generate_security_groups else "N/A"
+        )
+
         processed_vms.append({
             'Exclude?': p_st == 'poweredOff',
             'VM Name': vm_n,
@@ -209,7 +236,11 @@ if uploaded_file is not None:
             'IBM Profile': mapping['profile'],
             'Compute (Mo)': mapping['compute_cost'],
             'Storage (Mo)': mapping['storage_cost'],
+            'Baseline Cost (Mo)': baseline['monthly'],
+            'Savings (Mo)': savings,
             'Monthly Cost': mapping['monthly'],
+            'Subnet': subnet_value,
+            'Security Group': sg_value,
             'Right-Sized': "✅" if mapping['is_rightsized'] else "❌",
             'Storage Tier': s_tier,
             'Total Storage GB': t_gb,
@@ -224,7 +255,7 @@ if uploaded_file is not None:
     df_f = pd.DataFrame(processed_vms)
     t_mo = df_f[~df_f['Exclude?']]['Monthly Cost'].sum()
 
-    m1, m2, m3, m4 = st.columns(4)
+    m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("Total VMs", len(df_f))
     m2.metric("Monthly Spend", f"${t_mo:,.2f}")
 
@@ -233,9 +264,12 @@ if uploaded_file is not None:
     t_v_mhz = df_vcpu['Overall'].sum()
     n_p_1 = (t_c_mhz - m_h_mhz) - t_v_mhz
 
+    t_savings = df_f[~df_f['Exclude?']]['Savings (Mo)'].sum()
+
     m3.metric("N+1 Headroom", f"{int(n_p_1):,} MHz")
+    m4.metric("Potential Savings", f"${t_savings:,.2f}")
     z_vms = len(df_f[df_f['Data Status'].str.contains("Zombie")])
-    m4.metric("Zombie VMs", z_vms)
+    m5.metric("Zombie VMs", z_vms)
 
     # --- 9. DATA TABLE ---
     edited_df = st.data_editor(

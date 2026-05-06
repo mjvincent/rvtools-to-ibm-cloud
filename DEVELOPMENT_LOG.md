@@ -27,3 +27,8 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Implemented automated CIDR extraction from `vNetwork` IPv4 column.
 - Developed modular Terraform bundle generator (ZIP) for tiered storage and networking.
 - Finalized PEP 8 compliance across `app.py` and `logic_engine.py`.
+
+### May 6, 2026: Business Case Enhancements
+- Added Streamlit dashboard savings metric and monthly savings aggregation.
+- Exposed subnet/security group mapping values in the UI.
+- Included mapping fields and baseline cost data in the business-case CSV export.

@@ -35,12 +35,24 @@ Successful execution requires a standard RVTools XLSX export containing the foll
 * **vHost / vCluster**: Physical infrastructure specifications and aggregate capacity.
 * **vDisk**: Storage capacity and disk inventory.
 
+## Business Case and Mapping Output
+The dashboard now includes a potential savings metric and exports an enriched business case CSV with per-VM data including:
+* Baseline cost estimate
+* Estimated monthly savings
+* Subnet mapping for Terraform
+* Security group mapping for Terraform (if enabled)
+
 ## Execution
 1. Install dependencies: `pip install -r requirements.txt`
 2. Launch the utility: `streamlit run app.py`
 3. Upload the RVTools .xlsx file.
-4. Review the generated business case and performance metrics.
+4. Review the generated business case, savings metrics, and network/security mappings.
 5. Download the Terraform Bundle (ZIP) for deployment via IBM Cloud CLI or IBM Cloud Schematics.
+
+## Release Notes
+- Added a potential savings metric to the Streamlit dashboard.
+- Added per-VM baseline and savings values in the exported business case CSV.
+- Added subnet and security group mapping fields to the business case export to support Terraform wiring.
 
 ---
 **Author**: Michael Vincent Jones

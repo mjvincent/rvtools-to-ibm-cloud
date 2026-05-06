@@ -33,6 +33,12 @@ Storage profiles are assigned using a hybrid logic model that accounts for both 
 
 ## 6. Underutilized Asset Identification
 The engine audits the inventory to identify assets that may not require migration, thereby optimizing the destination footprint.
+* **Cost Impact**: Instances flagged as underutilized are excellent candidates for decommissioning or consolidation prior to migration, reducing target cloud spend.
+
+## 7. Baseline Cost and Savings
+The tool now computes a baseline monthly cost estimate using a conservative 100% utilization model and calculates potential monthly savings based on the chosen right-sizing threshold.
+* **Baseline Cost**: Represents the target IBM Cloud cost if the VM were migrated without any optimization.
+* **Savings**: The difference between the baseline estimate and the selected mapped configuration.
 * **Identification Criteria**: Instances with a "Powered On" state but exhibiting <5% CPU utilization and <100 MHz overall demand are categorized as underutilized.
 * **Recommendation**: These assets are flagged for review and potential decommissioning prior to migration to minimize unnecessary recurring costs.
 
