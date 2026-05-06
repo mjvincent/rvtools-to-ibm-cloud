@@ -51,6 +51,13 @@ If the auto-generated profile is `bx2-2x8` but you want the instance to use `cx2
 
 If you want a lower-cost disk tier than the default recommendation, change `Override Storage Tier` from `5iops-tier` to `3iops-tier` for that row; the generated volume resource will then use the override tier.
 
+### Override Columns
+The Streamlit data table uses the following override columns:
+* `Override Profile` — choose an alternate IBM Cloud VSI profile
+* `Override Storage Tier` — choose an alternate storage IOPS tier
+* `Subnet` — displays the generated subnet mapping for the selected network
+* `Security Group` — displays the generated security group mapping when enabled
+
 > Best practice: only set override values when you have validated that the target IBM Cloud profile and tier are supported for the workload and its storage requirements.
 
 ## Terraform Output Structure
