@@ -49,6 +49,10 @@ The Streamlit dashboard exposes editable override fields for `Override Profile` 
 ### Example
 If the auto-generated profile is `bx2-2x8` but you want the instance to use `cx2-2x4`, set `Override Profile` to `cx2-2x4` for that row before clicking **Build Terraform Project**. The generated VSI resource will then use the override profile.
 
+If you want a lower-cost disk tier than the default recommendation, change `Override Storage Tier` from `5iops-tier` to `3iops-tier` for that row; the generated volume resource will then use the override tier.
+
+> Best practice: only set override values when you have validated that the target IBM Cloud profile and tier are supported for the workload and its storage requirements.
+
 ## Terraform Output Structure
 The exported ZIP bundle now produces a modular Terraform layout:
 * `main.tf`, `variables.tf`, `outputs.tf` at the root
