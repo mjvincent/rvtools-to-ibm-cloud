@@ -46,6 +46,9 @@ The dashboard now includes a potential savings metric and exports an enriched bu
 ## Streamlit Override Controls
 The Streamlit dashboard exposes editable override fields for `Override Profile` and `Override Storage Tier`. When set, these user-specified values are honored by the Terraform generator, allowing human-directed tuning of VSI sizing without changing the underlying migration logic.
 
+### Example
+If the auto-generated profile is `bx2-2x8` but you want the instance to use `cx2-2x4`, set `Override Profile` to `cx2-2x4` for that row before clicking **Build Terraform Project**. The generated VSI resource will then use the override profile.
+
 ## Terraform Output Structure
 The exported ZIP bundle now produces a modular Terraform layout:
 * `main.tf`, `variables.tf`, `outputs.tf` at the root
