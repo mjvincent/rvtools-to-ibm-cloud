@@ -51,3 +51,9 @@ When overrides are used:
 4. Confirm or override the CIDRs for each subnet.
 5. Select the appropriate deployment target.
 6. Build the Terraform project and download the ZIP bundle.
+
+
+## Relationship to Migration Handoff Files
+The Terraform override values are also reflected in the generated migration handoff files. If a user overrides a VSI profile, storage tier, subnet, or security group mapping before building the ZIP bundle, the manifest and CSV show both the recommended value and the effective value used for migration planning.
+
+The `image-import-variables.tfvars.example` file is provided as a placeholder for custom image IDs after VMware image conversion or replication. In this release, it is a handoff aid and is not automatically consumed by the generated VSI module.

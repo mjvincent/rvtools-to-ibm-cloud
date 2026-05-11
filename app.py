@@ -7,7 +7,11 @@ from logic_engine import (
     get_catalog_profiles,
     map_vmware_to_ibm_vpc,
     render_terraform_templates,
-    generate_tfvars
+    generate_tfvars,
+    generate_image_import_tfvars,
+    generate_migration_manifest,
+    generate_migration_runbook,
+    generate_vm_mapping_csv
 )
 
 PROFILE_OPTIONS = [""] + get_catalog_profiles()
@@ -50,7 +54,8 @@ TABLE_CONFIG = {
 DISABLED_COLS = [
     "VM Name", "Original Specs", "Data Status",
     "Total Storage GB", "Monthly Cost", "Right-Sized", "v_p_Ratio",
-    "Ready_Pct", "Overall_MHz",
+    "Ready_Pct", "Overall_MHz", "Power State", "Source IP",
+    "Guest OS", "Disk Count", "Host", "Cluster", "Datacenter",
     "Baseline Cost (Mo)", "Savings (Mo)"
 ]
 
@@ -181,8 +186,10 @@ if uploaded_file is not None:
     cap_c = next((c for c in df_vdisk.columns if 'Capacity' in c), None)
     vm_c = next((c for c in df_vdisk.columns if 'VM' in c), 'VM')
     disk_sum = {}
+    disk_count = {}
     if cap_c:
         disk_sum = df_vdisk.groupby(vm_c)[cap_c].sum().to_dict()
+        disk_count = df_vdisk.groupby(vm_c)[cap_c].count().to_dict()
 
     # 5. VCPU PERFORMANCE
     vcpu_m = {}
@@ -213,7 +220,8 @@ if uploaded_file is not None:
     )
 
     for _, row in df_vinfo.iterrows():
-        vm_n = row.get('VM', 'Unknown')
+        raw_vm_n = row.get('VM', 'Unknown')
+        vm_n = 'Unknown' if pd.isna(raw_vm_n) else str(raw_vm_n)
         usage = row.get('CPU Usage %')
         p_st = row.get('Powerstate', 'poweredOn')
         o_cpu, o_ram = row.get('CPUs', 1), row.get('Memory', 1024)
@@ -273,6 +281,16 @@ if uploaded_file is not None:
         processed_vms.append({
             'Exclude?': p_st == 'poweredOff',
             'VM Name': vm_n,
+            'Power State': p_st,
+            'Source IP': row.get('Primary IP Address', ''),
+            'Guest OS': row.get(
+                'OS according to the VMware Tools',
+                row.get('OS according to the configuration file', '')
+            ),
+            'Disk Count': disk_count.get(vm_n, row.get('Disks', 0)),
+            'Host': h_n,
+            'Cluster': row.get('Cluster', ''),
+            'Datacenter': row.get('Datacenter', ''),
             'Original Specs': f"{o_cpu}v / {o_ram}M",
             'IBM Profile': mapping['profile'],
             'Override Profile': "",
@@ -372,7 +390,7 @@ if uploaded_file is not None:
                     if not v['Exclude?']
                 ]
 
-                vsi, root_main, stor, net, root_vars, root_out, net_vars, net_out, vsi_vars, vsi_out, stor_vars, stor_out = render_terraform_templates(
+                terraform_files = render_terraform_templates(
                     final_vms,
                     unique_nets,
                     target_region,
@@ -384,13 +402,33 @@ if uploaded_file is not None:
                     deployment_target,
                     project_name
                 )
+                (
+                    vsi, root_main, stor, net, root_vars, root_out,
+                    net_vars, net_out, vsi_vars, vsi_out, stor_vars,
+                    stor_out
+                ) = terraform_files
+
+                migration_context = {
+                    'project_name': project_name,
+                    'target_region': target_region,
+                    'target_zone': target_zone,
+                    'vpc_name': vpc_name,
+                    'address_prefix_strategy': address_prefix_strategy,
+                    'deployment_target': deployment_target,
+                    'generate_security_groups': generate_security_groups
+                }
 
                 zip_b = io.BytesIO()
                 with zipfile.ZipFile(zip_b, "a") as zf:
                     zf.writestr("main.tf", root_main)
                     zf.writestr("variables.tf", root_vars)
                     zf.writestr("outputs.tf", root_out)
-                    zf.writestr("terraform.tfvars", generate_tfvars(target_region, target_zone, project_name))
+                    zf.writestr(
+                        "terraform.tfvars",
+                        generate_tfvars(
+                            target_region, target_zone, project_name
+                        )
+                    )
                     zf.writestr("modules/networking/main.tf", net)
                     zf.writestr("modules/networking/variables.tf", net_vars)
                     zf.writestr("modules/networking/outputs.tf", net_out)
@@ -400,6 +438,22 @@ if uploaded_file is not None:
                     zf.writestr("modules/storage/main.tf", stor)
                     zf.writestr("modules/storage/variables.tf", stor_vars)
                     zf.writestr("modules/storage/outputs.tf", stor_out)
+                    zf.writestr(
+                        "migration-manifest.json",
+                        generate_migration_manifest(final_vms, migration_context)
+                    )
+                    zf.writestr(
+                        "vm-mapping.csv",
+                        generate_vm_mapping_csv(final_vms)
+                    )
+                    zf.writestr(
+                        "image-import-variables.tfvars.example",
+                        generate_image_import_tfvars(final_vms)
+                    )
+                    zf.writestr(
+                        "migration-runbook.md",
+                        generate_migration_runbook(migration_context)
+                    )
 
                 st.session_state['zip_data'] = zip_b.getvalue()
                 st.session_state['build_done'] = True

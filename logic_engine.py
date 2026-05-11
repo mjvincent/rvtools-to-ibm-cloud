@@ -1,3 +1,7 @@
+import csv
+import io
+import json
+
 # --- STRATEGY B: ECONOMIC OPTIMIZER CATALOG ---
 IBM_VPC_CATALOG = [
     {"name": "cx2-2x4", "cpu": 2, "ram": 4, "hourly": 0.063},
@@ -53,6 +57,250 @@ def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
         "monthly": total_monthly,
         "is_rightsized": optimized['cpu'] < cpus
     }
+
+
+def _clean_value(value, default=""):
+    """Return JSON/CSV friendly values from pandas and Streamlit records."""
+    if value is None:
+        return default
+    try:
+        if value != value:
+            return default
+    except TypeError:
+        pass
+    if isinstance(value, str):
+        stripped = value.strip()
+        return default if stripped.lower() == "nan" else stripped
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except ValueError:
+            return default
+    return value
+
+
+def _safe_vm_key(value):
+    """Create a stable key for manifests and tfvars examples."""
+    cleaned = str(_clean_value(value, "unknown-vm"))
+    return cleaned.replace('"', '').replace("'", "")
+
+
+def _status_contains(vm, token):
+    return token.lower() in str(vm.get('Data Status', '')).lower()
+
+
+def _effective_profile(vm):
+    return _clean_value(vm.get('Override Profile')) or _clean_value(
+        vm.get('IBM Profile'), 'bx2-2x8'
+    )
+
+
+def _effective_storage_tier(vm):
+    return _clean_value(vm.get('Override Storage Tier')) or _clean_value(
+        vm.get('Storage Tier'), '3iops-tier'
+    )
+
+
+def _migration_vm_record(vm):
+    vm_name = _safe_vm_key(vm.get('VM Name'))
+    effective_profile = _effective_profile(vm)
+    effective_storage_tier = _effective_storage_tier(vm)
+    data_status = _clean_value(vm.get('Data Status'), 'Unknown')
+
+    return {
+        "vm_name": vm_name,
+        "source": {
+            "power_state": _clean_value(vm.get('Power State')),
+            "datacenter": _clean_value(vm.get('Datacenter')),
+            "cluster": _clean_value(vm.get('Cluster')),
+            "host": _clean_value(vm.get('Host')),
+            "network": _clean_value(vm.get('Network'), 'unknown-net'),
+            "ip_address": _clean_value(vm.get('Source IP')),
+            "guest_os": _clean_value(vm.get('Guest OS')),
+            "disk_count": _clean_value(vm.get('Disk Count'), 0),
+            "total_disk_gb": _clean_value(vm.get('Total Storage GB'), 0),
+            "original_specs": _clean_value(vm.get('Original Specs')),
+        },
+        "target": {
+            "recommended_profile": _clean_value(vm.get('IBM Profile')),
+            "override_profile": _clean_value(vm.get('Override Profile')),
+            "effective_profile": effective_profile,
+            "subnet": _clean_value(vm.get('Subnet')),
+            "security_group": _clean_value(vm.get('Security Group')),
+            "recommended_storage_tier": _clean_value(vm.get('Storage Tier')),
+            "override_storage_tier": _clean_value(
+                vm.get('Override Storage Tier')
+            ),
+            "effective_storage_tier": effective_storage_tier,
+            "custom_image_id": "replace-with-imported-image-id",
+            "custom_image_name": f"{vm_name}-custom-image",
+        },
+        "migration": {
+            "wave": "wave-01",
+            "cutover_group": "unassigned",
+            "priority": "medium",
+            "status": "planned",
+            "method": "image-import-or-replication-tool",
+            "requires_ip_preservation": bool(_clean_value(vm.get('Source IP'))),
+        },
+        "assessment": {
+            "data_status": data_status,
+            "right_sized": _clean_value(vm.get('Right-Sized')),
+            "high_contention": _status_contains(vm, 'High Contention'),
+            "cpu_throttled": _status_contains(vm, 'CPU Throttled'),
+            "underutilized": _status_contains(vm, 'Zombie VM'),
+            "ready_pct": _clean_value(vm.get('Ready_Pct'), 0),
+            "overall_mhz": _clean_value(vm.get('Overall_MHz'), 0),
+            "baseline_monthly_cost": _clean_value(
+                vm.get('Baseline Cost (Mo)'), 0
+            ),
+            "estimated_monthly_cost": _clean_value(vm.get('Monthly Cost'), 0),
+            "estimated_monthly_savings": _clean_value(
+                vm.get('Savings (Mo)'), 0
+            ),
+        },
+    }
+
+
+def generate_migration_manifest(final_vms, context):
+    """Create the tool-neutral migration handoff manifest."""
+    manifest = {
+        "schema_version": "1.0",
+        "package_type": "rvtools-to-ibm-cloud-migration-handoff",
+        "project": {
+            "name": _clean_value(context.get('project_name')),
+            "target_region": _clean_value(context.get('target_region')),
+            "target_zone": _clean_value(context.get('target_zone')),
+            "vpc_name": _clean_value(context.get('vpc_name')),
+            "address_prefix_strategy": _clean_value(
+                context.get('address_prefix_strategy'), 'manual'
+            ),
+            "deployment_target": _clean_value(
+                context.get('deployment_target'), 'Plain CLI'
+            ),
+            "security_groups_enabled": bool(
+                context.get('generate_security_groups', True)
+            ),
+        },
+        "handoff_files": {
+            "vm_mapping_csv": "vm-mapping.csv",
+            "runbook": "migration-runbook.md",
+            "image_import_tfvars_example": "image-import-variables.tfvars.example",
+        },
+        "virtual_machines": [
+            _migration_vm_record(vm) for vm in final_vms
+        ],
+    }
+    return json.dumps(manifest, indent=2, sort_keys=True)
+
+
+def generate_vm_mapping_csv(final_vms):
+    """Create a migration-team friendly source-to-target mapping CSV."""
+    output = io.StringIO()
+    fieldnames = [
+        "VM Name", "Power State", "Guest OS", "Source IP", "Source Network",
+        "Datacenter", "Cluster", "Host", "Disk Count", "Total Storage GB",
+        "Target Subnet", "Security Group", "Recommended Profile",
+        "Override Profile", "Effective Profile", "Storage Tier",
+        "Override Storage Tier", "Effective Storage Tier", "Custom Image ID",
+        "Migration Wave", "Cutover Group", "Migration Status",
+        "Data Status", "Monthly Cost", "Baseline Cost", "Savings"
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for vm in final_vms:
+        writer.writerow({
+            "VM Name": _safe_vm_key(vm.get('VM Name')),
+            "Power State": _clean_value(vm.get('Power State')),
+            "Guest OS": _clean_value(vm.get('Guest OS')),
+            "Source IP": _clean_value(vm.get('Source IP')),
+            "Source Network": _clean_value(vm.get('Network'), 'unknown-net'),
+            "Datacenter": _clean_value(vm.get('Datacenter')),
+            "Cluster": _clean_value(vm.get('Cluster')),
+            "Host": _clean_value(vm.get('Host')),
+            "Disk Count": _clean_value(vm.get('Disk Count'), 0),
+            "Total Storage GB": _clean_value(vm.get('Total Storage GB'), 0),
+            "Target Subnet": _clean_value(vm.get('Subnet')),
+            "Security Group": _clean_value(vm.get('Security Group')),
+            "Recommended Profile": _clean_value(vm.get('IBM Profile')),
+            "Override Profile": _clean_value(vm.get('Override Profile')),
+            "Effective Profile": _effective_profile(vm),
+            "Storage Tier": _clean_value(vm.get('Storage Tier')),
+            "Override Storage Tier": _clean_value(
+                vm.get('Override Storage Tier')
+            ),
+            "Effective Storage Tier": _effective_storage_tier(vm),
+            "Custom Image ID": "replace-with-imported-image-id",
+            "Migration Wave": "wave-01",
+            "Cutover Group": "unassigned",
+            "Migration Status": "planned",
+            "Data Status": _clean_value(vm.get('Data Status')),
+            "Monthly Cost": _clean_value(vm.get('Monthly Cost'), 0),
+            "Baseline Cost": _clean_value(vm.get('Baseline Cost (Mo)'), 0),
+            "Savings": _clean_value(vm.get('Savings (Mo)'), 0),
+        })
+    return output.getvalue()
+
+
+def generate_image_import_tfvars(final_vms):
+    """Create an example tfvars map for imported IBM Cloud custom images."""
+    lines = [
+        "# Populate these values after VMware images are converted, uploaded,",
+        "# and imported as IBM Cloud VPC custom images.",
+        "# This file is a handoff aid; wire the map into Terraform when you are",
+        "# ready to provision VSIs directly from imported images.",
+        "custom_image_ids = {",
+    ]
+    for vm in final_vms:
+        vm_name = _safe_vm_key(vm.get('VM Name'))
+        lines.append(f'  "{vm_name}" = "replace-with-imported-image-id"')
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
+def generate_migration_runbook(context):
+    """Create a customer-facing runbook for the generated handoff package."""
+    project = _clean_value(context.get('project_name'), 'my-ibm-migration')
+    region = _clean_value(context.get('target_region'), 'us-south')
+    zone = _clean_value(context.get('target_zone'), 'us-south-1')
+    vpc_name = _clean_value(context.get('vpc_name'), 'migration-vpc')
+    deployment_target = _clean_value(
+        context.get('deployment_target'), 'Plain CLI'
+    )
+
+    return f"""# Migration Handoff Runbook
+
+## Scope
+This runbook accompanies the Terraform bundle for `{project}`. It bridges the gap between the generated IBM Cloud VPC infrastructure and the separate image migration or replication process used to bring VMware workloads into IBM Cloud Virtual Servers for VPC.
+
+## Target Environment
+- IBM Cloud region: `{region}`
+- IBM Cloud zone: `{zone}`
+- VPC name: `{vpc_name}`
+- Deployment target: `{deployment_target}`
+
+## Generated Handoff Files
+- `migration-manifest.json`: Tool-neutral source-to-target mapping for each VM.
+- `vm-mapping.csv`: Spreadsheet-friendly migration planning view.
+- `image-import-variables.tfvars.example`: Placeholder map for imported custom image IDs.
+- `migration-runbook.md`: This operational guide.
+
+## Recommended Workflow
+1. Review `vm-mapping.csv` with the application, infrastructure, security, and migration teams.
+2. Confirm migration waves, cutover groups, and business priority for each VM.
+3. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
+4. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
+5. Upload converted images to IBM Cloud Object Storage when using custom image import.
+6. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
+7. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
+8. Apply the generated Terraform using the selected deployment target.
+9. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
+10. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
+
+## Notes
+Terraform builds the target VPC foundation and VSI definitions. It does not move VMDK files or perform application cutover by itself. Use the manifest and CSV as the handoff layer for RackWare, custom scripts, IBM Cloud image import, or a migration factory workflow.
+"""
 
 
 def render_networking_templates(networks_data, vpc_name="migration-vpc", enable_security_groups=True, custom_cidrs=None, address_prefix_strategy="manual", project_name="my-ibm-migration"):
