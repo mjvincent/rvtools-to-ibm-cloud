@@ -59,3 +59,10 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added `disk-mapping.csv` to the Terraform ZIP for source disk to target volume/attachment review.
 - Extended the migration manifest with source disk metadata and target data volume planning fields.
 - Documented the disk mapping behavior in the README, migration handoff guide, Terraform override notes, and ADR-006.
+
+### May 11, 2026: Multi-NIC Network Mapping
+- Added RVTools `vNetwork` detail preservation for per-VM NIC planning.
+- Changed VSI Terraform generation to render the first connected NIC as primary and additional connected NICs as secondary network interfaces.
+- Added `nic-mapping.csv` to the Terraform ZIP for primary, secondary, and disconnected NIC review.
+- Extended the migration manifest with per-NIC source network, IP, MAC, adapter, switch, and connected-state metadata.
+- Documented multi-NIC behavior in the README, migration handoff guide, Terraform override notes, and ADR-007.

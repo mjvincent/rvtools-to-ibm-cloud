@@ -192,6 +192,18 @@ def _vm_data_disks(vm):
     return [disk for disk in _vm_disks(vm) if not disk.get('is_boot')]
 
 
+def _vm_nics(vm):
+    nics = vm.get('Network Details') or []
+    return nics if isinstance(nics, list) else []
+
+
+def _connected_nics(vm):
+    return [
+        nic for nic in _vm_nics(vm)
+        if str(nic.get('connected', True)).lower() == "true"
+    ]
+
+
 def _status_contains(vm, token):
     return token.lower() in str(vm.get('Data Status', '')).lower()
 
@@ -224,6 +236,8 @@ def _migration_vm_record(vm):
             "network": _clean_value(vm.get('Network'), 'unknown-net'),
             "ip_address": _clean_value(vm.get('Source IP')),
             "guest_os": _clean_value(vm.get('Guest OS')),
+            "nic_count": _clean_value(vm.get('NIC Count'), 0),
+            "networks": _vm_nics(vm),
             "disk_count": _clean_value(vm.get('Disk Count'), 0),
             "total_disk_gb": _clean_value(vm.get('Total Storage GB'), 0),
             "original_specs": _clean_value(vm.get('Original Specs')),
@@ -313,6 +327,7 @@ def generate_migration_manifest(final_vms, context):
         "handoff_files": {
             "vm_mapping_csv": "vm-mapping.csv",
             "disk_mapping_csv": "disk-mapping.csv",
+            "nic_mapping_csv": "nic-mapping.csv",
             "runbook": "migration-runbook.md",
             "image_import_tfvars_example": "image-import-variables.tfvars.example",
         },
@@ -378,6 +393,64 @@ def generate_vm_mapping_csv(final_vms):
             "Baseline Cost": _clean_value(vm.get('Baseline Cost (Mo)'), 0),
             "Savings": _clean_value(vm.get('Savings (Mo)'), 0),
         })
+    return output.getvalue()
+
+
+def _nic_target(nic, enable_security_groups=True):
+    source_network = _clean_value(nic.get('network'), 'unknown-net')
+    safe_network = _safe_resource_name(source_network)
+    target = {
+        "subnet": f"module.networking.{safe_network}_id",
+        "security_group": "N/A",
+    }
+    if enable_security_groups:
+        target["security_group"] = f"module.networking.{safe_network}_sg_id"
+    return target
+
+
+def generate_nic_mapping_csv(final_vms, enable_security_groups=True):
+    """Create a per-NIC source-to-target mapping CSV."""
+    output = io.StringIO()
+    fieldnames = [
+        "VM Name", "NIC Label", "Role", "Planned", "Connected",
+        "Starts Connected", "Source Network", "Source IP", "IPv6 Address",
+        "MAC Address", "Adapter", "Switch", "Type", "Target Subnet",
+        "Target Security Group"
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for vm in final_vms:
+        vm_name = _safe_vm_key(vm.get('VM Name'))
+        connected_seen = 0
+        for nic in _vm_nics(vm):
+            connected = str(nic.get('connected', True)).lower() == "true"
+            planned = connected
+            role = "disconnected"
+            if connected:
+                role = "primary" if connected_seen == 0 else "secondary"
+                connected_seen += 1
+            target = _nic_target(nic, enable_security_groups)
+
+            writer.writerow({
+                "VM Name": vm_name,
+                "NIC Label": _clean_value(nic.get('label')),
+                "Role": role,
+                "Planned": planned,
+                "Connected": connected,
+                "Starts Connected": _clean_value(nic.get('starts_connected')),
+                "Source Network": _clean_value(nic.get('network')),
+                "Source IP": _clean_value(nic.get('ipv4')),
+                "IPv6 Address": _clean_value(nic.get('ipv6')),
+                "MAC Address": _clean_value(nic.get('mac_address')),
+                "Adapter": _clean_value(nic.get('adapter')),
+                "Switch": _clean_value(nic.get('switch')),
+                "Type": _clean_value(nic.get('type')),
+                "Target Subnet": target["subnet"] if planned else "",
+                "Target Security Group": (
+                    target["security_group"] if planned else ""
+                ),
+            })
     return output.getvalue()
 
 
@@ -471,6 +544,7 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 ## Generated Handoff Files
 - `migration-manifest.json`: Tool-neutral source-to-target mapping for each VM.
 - `vm-mapping.csv`: Spreadsheet-friendly migration planning view.
+- `nic-mapping.csv`: Per-NIC source-to-target network mapping view.
 - `disk-mapping.csv`: Per-disk boot/data volume mapping view.
 - `image-import-variables.tfvars.example`: Placeholder map for imported custom image IDs.
 - `migration-runbook.md`: This operational guide.
@@ -480,15 +554,16 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 2. Confirm migration waves, cutover groups, and business priority for each VM.
 3. Review image readiness status, firmware, boot disk size, and guest customization requirement for each VM.
 4. Resolve `Blocked` items before image import planning and assign owners for `Review` items.
-5. Review `disk-mapping.csv` to confirm boot disks are covered by imported images and data disks are created as attached block volumes.
-6. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
-7. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
-8. Upload converted images to IBM Cloud Object Storage when using custom image import.
-9. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
-10. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
-11. Apply the generated Terraform using the selected deployment target.
-12. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
-13. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
+5. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
+6. Review `disk-mapping.csv` to confirm boot disks are covered by imported images and data disks are created as attached block volumes.
+7. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
+8. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
+9. Upload converted images to IBM Cloud Object Storage when using custom image import.
+10. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
+11. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
+12. Apply the generated Terraform using the selected deployment target.
+13. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
+14. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
 
 ## Notes
 Terraform builds the target VPC foundation and VSI definitions. It does not move VMDK files or perform application cutover by itself. Use the manifest and CSV as the handoff layer for RackWare, custom scripts, IBM Cloud image import, or a migration factory workflow.
@@ -685,7 +760,17 @@ def render_vsi_templates(final_vms, enable_security_groups=True, project_name="m
         safe_n = _safe_resource_name(vm_n_raw)
         prof = vm.get('Override Profile') or vm.get('IBM Profile', 'bx2-2x8')
         r_net = vm.get('Network', 'unknown-net')
-        t_sub_res = r_net.lower().replace(" ", "_").replace("-", "_")
+        connected_nics = _connected_nics(vm)
+        if connected_nics:
+            primary_nic = connected_nics[0]
+            secondary_nics = connected_nics[1:]
+            t_sub_res = _safe_resource_name(
+                primary_nic.get('network') or r_net
+            )
+        else:
+            primary_nic = {}
+            secondary_nics = []
+            t_sub_res = _safe_resource_name(r_net)
 
         content += f"""
 resource "ibm_is_instance" "{safe_n}" {{
@@ -702,6 +787,22 @@ resource "ibm_is_instance" "{safe_n}" {{
 """
         content += f"""
   }}
+"""
+        for idx, nic in enumerate(secondary_nics, start=1):
+            nic_net = _safe_resource_name(nic.get('network') or r_net)
+            content += f"""
+  network_interfaces {{
+    name   = "eth{idx}"
+    subnet = module.networking.{nic_net}_id
+"""
+            if enable_security_groups:
+                content += f"""
+    security_groups = [module.networking.{nic_net}_sg_id]
+"""
+            content += """
+  }
+"""
+        content += f"""
   tags = ["project:{project_name}", "vm:{safe_n}", "managed-by:rvtools-converter"]
 }}
 """

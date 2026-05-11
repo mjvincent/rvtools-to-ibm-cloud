@@ -57,6 +57,11 @@ Storage sizing now preserves RVTools `vDisk` rows for target data volume plannin
 
 The per-disk mapping does not change compute right-sizing. It improves Terraform fidelity by avoiding a single aggregate volume that loses disk role, size, controller, and unit metadata.
 
+## 11. Multi-NIC Network Mapping
+Network mapping is evaluated separately from compute and storage right-sizing. The engine preserves RVTools `vNetwork` rows so connected source NICs can map to primary and secondary IBM Cloud VPC network interfaces.
+
+Disconnected NICs are retained in the handoff files for review but are not generated as active Terraform interfaces. This prevents inactive source adapters from being provisioned accidentally.
+
 ---
 **Author**: Michael Vincent Jones
 **Role**: Technical Specialist, IBM Automation

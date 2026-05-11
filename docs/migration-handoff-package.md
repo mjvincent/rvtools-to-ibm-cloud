@@ -15,10 +15,15 @@ Each VM now includes an `image_readiness` object with readiness status, reason t
 
 The manifest also preserves source disk detail from `vDisk`. Boot disks are marked as image-covered storage, and additional disks are listed as target data volumes for IBM Cloud block storage creation and attachment.
 
+The manifest preserves source NIC detail from `vNetwork`. Connected NICs are mapped to primary or secondary VPC network interfaces, while disconnected NICs remain visible for migration review.
+
 ### `vm-mapping.csv`
 A spreadsheet-friendly view of the same source-to-target mapping. This is intended for customer workshops, wave planning, and migration team review.
 
 The CSV includes readiness columns so application and migration teams can filter `Blocked` items before image import planning and assign owners for `Review` items.
+
+### `nic-mapping.csv`
+A per-NIC mapping file showing primary, secondary, and disconnected source adapters. It includes source network, IP, MAC address, adapter type, switch, target subnet, and target security group.
 
 ### `disk-mapping.csv`
 A per-disk mapping file that separates boot disks from data disks. Boot disks are marked as covered by the imported custom image. Data disks include target Terraform volume and attachment resource names.
@@ -38,11 +43,12 @@ A generated operational runbook that explains the recommended sequence: review m
 4. Review `vm-mapping.csv` with application and migration stakeholders.
 5. Use `migration-manifest.json` as the structured handoff for automation or migration tooling.
 6. Resolve image readiness `Blocked` items and review firmware, boot disk, OS, and guest customization concerns.
-7. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
-8. Import or replicate VMware images using the approved migration approach.
-9. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
-10. Apply Terraform using Plain CLI or IBM Schematics.
-11. Validate boot, network, storage, monitoring, backup, and application health before cutover.
+7. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
+8. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
+9. Import or replicate VMware images using the approved migration approach.
+10. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
+11. Apply Terraform using Plain CLI or IBM Schematics.
+12. Validate boot, network, storage, monitoring, backup, and application health before cutover.
 
 ## Current Scope
 This release creates the handoff package, image ID placeholders, and per-disk volume mapping. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.
