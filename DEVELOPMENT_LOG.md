@@ -44,3 +44,10 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added `migration-runbook.md` to guide image staging, Terraform apply, validation, and cutover activities.
 - Enriched per-VM processing with source IP, guest OS, disk count, host, cluster, datacenter, and power state metadata.
 - Documented the handoff package in the README, dedicated user guide, and ADR-004.
+
+### May 11, 2026: Image Readiness Assessment
+- Added advisory `Ready`, `Review`, and `Blocked` image readiness statuses for IBM Cloud VPC custom image planning.
+- Added firmware, boot disk size, guest customization, and readiness reason fields to the Streamlit table.
+- Added dashboard metrics for image-ready, image-review, and image-blocked VM counts.
+- Extended `migration-manifest.json`, `vm-mapping.csv`, and `migration-runbook.md` with image readiness data.
+- Documented the assessment in the README, migration handoff guide, image readiness guide, and ADR-005.

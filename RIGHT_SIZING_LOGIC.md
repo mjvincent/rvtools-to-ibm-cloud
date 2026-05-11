@@ -47,6 +47,11 @@ The same right-sizing, savings, storage, and network mapping outputs now feed a 
 
 This layer does not move VMware images directly. It provides the structured planning data needed by image import workflows, replication tools, partner migration tooling, or migration factory processes.
 
+## 9. Image Readiness Assessment
+Image readiness is evaluated separately from right-sizing. A workload can be a good compute-sizing candidate while still requiring image migration review because of boot disk size, missing firmware metadata, unrecognized guest OS data, or multi-disk layout.
+
+The readiness status is advisory and does not change the generated Terraform resources. It helps teams resolve IBM Cloud VPC custom image prerequisites before conversion, Cloud Object Storage staging, import, or migration-tool cutover.
+
 ---
 **Author**: Michael Vincent Jones
 **Role**: Technical Specialist, IBM Automation

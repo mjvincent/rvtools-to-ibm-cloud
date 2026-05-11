@@ -11,8 +11,12 @@ A tool-neutral JSON document containing project-level target settings and per-VM
 
 Use this file when integrating with scripts, RackWare-style workflows, migration factory tooling, or future adapters.
 
+Each VM now includes an `image_readiness` object with readiness status, reason text, firmware, boot disk size, expected guest customization, required image format, and Cloud Object Storage staging expectation.
+
 ### `vm-mapping.csv`
 A spreadsheet-friendly view of the same source-to-target mapping. This is intended for customer workshops, wave planning, and migration team review.
+
+The CSV includes readiness columns so application and migration teams can filter `Blocked` items before image import planning and assign owners for `Review` items.
 
 ### `image-import-variables.tfvars.example`
 A placeholder Terraform variables file for custom image IDs. Populate these values after VMware images have been converted, uploaded, and imported as IBM Cloud VPC custom images.
@@ -28,10 +32,11 @@ A generated operational runbook that explains the recommended sequence: review m
 3. Build and download the Terraform ZIP bundle.
 4. Review `vm-mapping.csv` with application and migration stakeholders.
 5. Use `migration-manifest.json` as the structured handoff for automation or migration tooling.
-6. Import or replicate VMware images using the approved migration approach.
-7. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
-8. Apply Terraform using Plain CLI or IBM Schematics.
-9. Validate boot, network, storage, monitoring, backup, and application health before cutover.
+6. Resolve image readiness `Blocked` items and review firmware, boot disk, OS, and guest customization concerns.
+7. Import or replicate VMware images using the approved migration approach.
+8. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
+9. Apply Terraform using Plain CLI or IBM Schematics.
+10. Validate boot, network, storage, monitoring, backup, and application health before cutover.
 
 ## Current Scope
 This release creates the handoff package and image ID placeholders. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.

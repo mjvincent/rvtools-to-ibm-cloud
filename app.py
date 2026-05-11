@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 from logic_engine import (
     IBM_VPC_CATALOG,
+    assess_image_readiness,
     get_catalog_profiles,
     map_vmware_to_ibm_vpc,
     render_terraform_templates,
@@ -48,7 +49,14 @@ TABLE_CONFIG = {
         "Override Profile", options=[""] + PROFILE_OPTIONS
     ),
     "Subnet": st.column_config.TextColumn("Subnet"),
-    "Security Group": st.column_config.TextColumn("Security Group")
+    "Security Group": st.column_config.TextColumn("Security Group"),
+    "Image Readiness": st.column_config.TextColumn("Image Readiness"),
+    "Readiness Reasons": st.column_config.TextColumn("Readiness Reasons"),
+    "Firmware": st.column_config.TextColumn("Firmware"),
+    "Boot Disk GB": st.column_config.NumberColumn(
+        "Boot Disk GB", format="%.2f"
+    ),
+    "Guest Customization": st.column_config.TextColumn("Guest Customization")
 }
 
 DISABLED_COLS = [
@@ -56,6 +64,8 @@ DISABLED_COLS = [
     "Total Storage GB", "Monthly Cost", "Right-Sized", "v_p_Ratio",
     "Ready_Pct", "Overall_MHz", "Power State", "Source IP",
     "Guest OS", "Disk Count", "Host", "Cluster", "Datacenter",
+    "Image Readiness", "Readiness Reasons", "Firmware", "Boot Disk GB",
+    "Guest Customization",
     "Baseline Cost (Mo)", "Savings (Mo)"
 ]
 
@@ -187,9 +197,20 @@ if uploaded_file is not None:
     vm_c = next((c for c in df_vdisk.columns if 'VM' in c), 'VM')
     disk_sum = {}
     disk_count = {}
+    boot_disk_gb = {}
     if cap_c:
         disk_sum = df_vdisk.groupby(vm_c)[cap_c].sum().to_dict()
         disk_count = df_vdisk.groupby(vm_c)[cap_c].count().to_dict()
+        sort_cols = []
+        for c_name in ["Unit #", "Disk Key", "Disk"]:
+            if c_name in df_vdisk.columns:
+                sort_cols.append(c_name)
+        disk_sort = df_vdisk.sort_values(sort_cols) if sort_cols else df_vdisk
+        for name, rows in disk_sort.groupby(vm_c):
+            if not pd.isna(name):
+                boot_disk_gb[str(name)] = round(
+                    rows.iloc[0].get(cap_c, 0) / 1024, 2
+                )
 
     # 5. VCPU PERFORMANCE
     vcpu_m = {}
@@ -240,6 +261,30 @@ if uploaded_file is not None:
         vp_ratio = round(t_vcpus / host['cores'], 1)
 
         t_gb = round(disk_sum.get(vm_n, 0) / 1024, 2)
+        b_gb = boot_disk_gb.get(vm_n)
+        if b_gb is None:
+            if row.get('Disks', 0) == 1 and t_gb > 0:
+                b_gb = t_gb
+            else:
+                provisioned_mib = row.get('Provisioned MiB', 0)
+                b_gb = (
+                    round(provisioned_mib / 1024, 2)
+                    if not pd.isna(provisioned_mib) and provisioned_mib
+                    else 0
+                )
+        guest_os = row.get(
+            'OS according to the VMware Tools',
+            row.get('OS according to the configuration file', '')
+        )
+        firmware = row.get('Firmware', '')
+        vm_disk_count = disk_count.get(vm_n, row.get('Disks', 0))
+        readiness = assess_image_readiness(
+            guest_os,
+            firmware,
+            b_gb,
+            vm_disk_count,
+            p_st
+        )
         is_db = any(x in vm_n.upper() for x in ['SQL', 'DB', 'PROD', 'SAP'])
         s_tier = '10iops-tier' if is_db else (
             '5iops-tier' if usage and usage > 70 else '3iops-tier'
@@ -283,11 +328,13 @@ if uploaded_file is not None:
             'VM Name': vm_n,
             'Power State': p_st,
             'Source IP': row.get('Primary IP Address', ''),
-            'Guest OS': row.get(
-                'OS according to the VMware Tools',
-                row.get('OS according to the configuration file', '')
-            ),
-            'Disk Count': disk_count.get(vm_n, row.get('Disks', 0)),
+            'Guest OS': guest_os,
+            'Disk Count': vm_disk_count,
+            'Firmware': readiness['firmware'],
+            'Boot Disk GB': readiness['boot_disk_gb'],
+            'Guest Customization': readiness['guest_customization'],
+            'Image Readiness': readiness['status'],
+            'Readiness Reasons': readiness['reasons'],
             'Host': h_n,
             'Cluster': row.get('Cluster', ''),
             'Datacenter': row.get('Datacenter', ''),
@@ -331,6 +378,21 @@ if uploaded_file is not None:
     m4.metric("Potential Savings", f"${t_savings:,.2f}")
     z_vms = len(df_f[df_f['Data Status'].str.contains("Zombie")])
     m5.metric("Zombie VMs", z_vms)
+
+    r1, r2, r3 = st.columns(3)
+    active_df = df_f[~df_f['Exclude?']]
+    r1.metric(
+        "Image Ready",
+        len(active_df[active_df['Image Readiness'] == "Ready"])
+    )
+    r2.metric(
+        "Image Review",
+        len(active_df[active_df['Image Readiness'] == "Review"])
+    )
+    r3.metric(
+        "Image Blocked",
+        len(active_df[active_df['Image Readiness'] == "Blocked"])
+    )
 
     # --- TERRAFORM OVERRIDES ---
     with st.expander("Terraform Overrides"):
@@ -489,3 +551,7 @@ if uploaded_file is not None:
     with l3:
         st.markdown("**Infrastructure Resilience**")
         st.write("- **N+1 Calculation:** (Cluster MHz - Max Host) - Demand.")
+    st.markdown("**Image Readiness**")
+    st.write("- **Ready:** No metadata blockers found for image planning.")
+    st.write("- **Review:** Metadata or multi-disk items need validation.")
+    st.write("- **Blocked:** Boot image exceeds IBM Cloud custom image limits.")
