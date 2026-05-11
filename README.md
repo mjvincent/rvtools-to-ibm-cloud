@@ -10,6 +10,7 @@ The tool identifies on-premises network configurations by correlating data from 
 * **IP Range Mapping**: Extracts IPv4 gateways and addresses to define VPC Address Prefixes.
 * **Subnet Generation**: Automatically configures subnets using a manual address preference, ensuring original CIDR blocks are preserved in the target VPC environment.
 * **Resource Linking**: Maps individual Virtual Server Instances (VSIs) to their respective subnets based on on-premises port group assignments.
+* **Multi-NIC Mapping**: Uses `vNetwork` rows to preserve primary and secondary NIC placement. Connected secondary NICs generate additional VSI network interfaces.
 
 ### Performance-Aware Right-Sizing
 The mapping engine evaluates compute requirements by analyzing specific performance metrics to mitigate the risk of post-migration performance degradation.
@@ -58,6 +59,7 @@ The dashboard now includes a potential savings metric and exports an enriched bu
 * Source metadata including IP address, guest OS, host, cluster, datacenter, and disk count for migration handoff planning
 * Image readiness status, readiness reasons, firmware, boot disk size, and guest customization requirement
 * Per-disk boot/data role, capacity, source controller metadata, and target volume attachment mapping
+* Per-NIC source network, IP, MAC, adapter, connected state, target subnet, and security group mapping
 
 ## Streamlit Override Controls
 The Streamlit dashboard exposes editable override fields for `Override Profile` and `Override Storage Tier`. When set, these user-specified values are honored by the Terraform generator, allowing human-directed tuning of VSI sizing without changing the underlying migration logic.
@@ -98,11 +100,12 @@ The exported ZIP bundle now produces a modular Terraform layout:
 Each ZIP bundle also includes a migration handoff package that bridges generated Terraform with image migration and cutover activities:
 * `migration-manifest.json` — tool-neutral source-to-target mapping for each VM
 * `vm-mapping.csv` — spreadsheet-friendly view for migration planning and customer review
+* `nic-mapping.csv` — per-NIC primary/secondary network interface mapping
 * `disk-mapping.csv` — per-disk boot/data mapping for volume creation and attachment review
 * `image-import-variables.tfvars.example` — placeholder map for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
-The handoff files include image readiness and disk mapping fields so migration teams can resolve boot image, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
+The handoff files include image readiness, NIC mapping, and disk mapping fields so migration teams can resolve boot image, network, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
 
 Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module.
 
@@ -127,7 +130,8 @@ For detailed Terraform override behavior and deployment target guidance, see `do
 - Added migration handoff files for source-to-target mapping, image import placeholders, and cutover runbook support.
 - Added image readiness assessment fields for IBM Cloud VPC custom image planning.
 - Added per-disk data volume generation, VSI volume attachments, and `disk-mapping.csv`.
+- Added multi-NIC network mapping, secondary VSI network interfaces, and `nic-mapping.csv`.
 
 ---
 **Author**: Michael Vincent Jones
-**Version**: 1.4.0
+**Version**: 1.5.0

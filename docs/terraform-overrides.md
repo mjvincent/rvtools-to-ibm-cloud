@@ -31,7 +31,7 @@ The generated ZIP bundle includes:
 * Root module files: `main.tf`, `variables.tf`, `outputs.tf`
 * `modules/networking`: VPC, address prefixes, subnets, and security groups
 * `modules/storage`: IBM Cloud data disk volumes
-* `modules/vsi`: VSI instances, network attachments, and data volume attachments
+* `modules/vsi`: VSI instances, primary/secondary network interfaces, and data volume attachments
 
 When overrides are used:
 * The selected `VPC Name` is applied to the VPC resource
@@ -61,3 +61,5 @@ The `image-import-variables.tfvars.example` file is provided as a placeholder fo
 Image readiness fields are advisory. `Ready`, `Review`, or `Blocked` values do not change Terraform generation, profile overrides, storage tier overrides, subnet CIDRs, backend selection, or module output. They are included to guide image migration planning before custom image import or replication workflows.
 
 Storage tier overrides apply to every generated data disk volume for that VM. The boot disk is not generated as an IBM Cloud block volume because it is expected to be covered by the imported custom image workflow.
+
+Custom CIDR overrides apply to every discovered source network from `vNetwork`, not only the primary VM network. Connected secondary NICs use the subnet and security group generated for their own source network. Disconnected NICs remain in `nic-mapping.csv` and the manifest but do not create Terraform network interfaces.

@@ -13,5 +13,6 @@ The tool utilizes a **Network Schema Discovery** process to extract IPv4 metadat
 
 ## Consequences
 * **Positive**: Ensures 1:1 network parity between VMware Port Groups and IBM VPC Subnets; simplifies hybrid connectivity (Direct Link/Transit Gateway) by preventing CIDR overlaps.
+* **Positive**: Supports primary and secondary NIC mapping by discovering all source networks represented in `vNetwork`.
 * **Positive**: Automated discovery removes the human error associated with manual IP entry during the Landing Zone build.
 * **Negative**: High dependency on the quality of the RVTools `vNetwork` data; if IP metadata is missing, the tool must revert to a deterministic fallback schema (10.x.x.x) to ensure the Terraform remains functional.

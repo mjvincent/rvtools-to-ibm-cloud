@@ -12,6 +12,7 @@ from logic_engine import (
     generate_disk_mapping_csv,
     generate_image_import_tfvars,
     generate_migration_manifest,
+    generate_nic_mapping_csv,
     generate_migration_runbook,
     generate_vm_mapping_csv
 )
@@ -66,7 +67,8 @@ DISABLED_COLS = [
     "Total Storage GB", "Monthly Cost", "Right-Sized", "v_p_Ratio",
     "Ready_Pct", "Overall_MHz", "Power State", "Source IP",
     "Guest OS", "Disk Count", "Host", "Cluster", "Datacenter",
-    "VM Key", "Data Disk Count",
+    "VM Key", "Data Disk Count", "NIC Count", "Primary Network",
+    "Primary IP",
     "Image Readiness", "Readiness Reasons", "Firmware", "Boot Disk GB",
     "Guest Customization",
     "Baseline Cost (Mo)", "Savings (Mo)"
@@ -178,25 +180,56 @@ if uploaded_file is not None:
         df.columns = df.columns.str.strip()
 
     # 3. NETWORKING EXTRACTION
+    df_vnetwork["_rvtools_vm_key"] = df_vnetwork.apply(
+        lambda row: get_row_identity(row, ""),
+        axis=1
+    )
+    nic_rows = df_vnetwork[df_vnetwork["_rvtools_vm_key"] != ""].copy()
+    nic_details = {}
+
+    sort_cols = []
+    for c_name in ["Internal Sort Column", "NIC label", "Mac Address"]:
+        if c_name in nic_rows.columns:
+            sort_cols.append(c_name)
+    nic_sort = nic_rows.sort_values(sort_cols) if sort_cols else nic_rows
+
+    for name, rows in nic_sort.groupby("_rvtools_vm_key"):
+        details = []
+        for idx, nic_row in enumerate(rows.to_dict("records")):
+            network = nic_row.get("Network", "")
+            if pd.isna(network) or not str(network).strip():
+                network = "unknown-net"
+            details.append({
+                "label": str(nic_row.get("NIC label", f"nic-{idx + 1}")),
+                "adapter": nic_row.get("Adapter", ""),
+                "network": str(network).strip(),
+                "switch": nic_row.get("Switch", ""),
+                "connected": nic_row.get("Connected", True),
+                "starts_connected": nic_row.get("Starts Connected", ""),
+                "mac_address": nic_row.get("Mac Address", ""),
+                "type": nic_row.get("Type", ""),
+                "ipv4": nic_row.get("IPv4 Address", ""),
+                "ipv6": nic_row.get("IPv6 Address", ""),
+                "planned": bool(nic_row.get("Connected", True))
+            })
+        nic_details[str(name)] = details
+
+    network_sources = {}
+    for details in nic_details.values():
+        for nic in details:
+            network_sources.setdefault(nic["network"], nic.get("ipv4", ""))
+
+    if not network_sources:
+        net_cols = [c for c in df_vinfo.columns if c.startswith("Network #")]
+        for _, row in df_vinfo.iterrows():
+            for col in net_cols:
+                value = row.get(col)
+                if value is not None and not pd.isna(value):
+                    network_sources.setdefault(str(value).strip(), "")
+
     unique_nets = []
-    v_net_cols = df_vnetwork.columns.tolist()
-
-    n_col = 'Network' if 'Network' in v_net_cols else v_net_cols[0]
-    v_col = 'VLAN ID' if 'VLAN ID' in v_net_cols else None
-    ip_col = 'IPv4 Address' if 'IPv4 Address' in v_net_cols else None
-
-    pull_cols = [n_col]
-    if v_col:
-        pull_cols.append(v_col)
-    if ip_col:
-        pull_cols.append(ip_col)
-
-    net_subset = df_vnetwork[pull_cols].drop_duplicates()
-
-    for _, row in net_subset.iterrows():
-        n_name = str(row[n_col])
-        vlan = str(row.get(v_col, '')) if v_col else ''
-        raw_ip = str(row.get(ip_col, '10.0.0.1')) if ip_col else '10.0.0.1'
+    for n_name, raw_ip in network_sources.items():
+        raw_ip = str(raw_ip) if raw_ip is not None and not pd.isna(raw_ip) else ''
 
         try:
             p = raw_ip.split('.')
@@ -207,7 +240,7 @@ if uploaded_file is not None:
         except Exception:
             d_cidr = f"10.0.{len(unique_nets) + 1}.0/24"
 
-        unique_nets.append({'name': n_name, 'vlan': vlan, 'cidr': d_cidr})
+        unique_nets.append({'name': n_name, 'vlan': '', 'cidr': d_cidr})
 
     # Update TABLE_CONFIG with dynamic Network options
     TABLE_CONFIG["Network"] = st.column_config.SelectboxColumn(
@@ -300,6 +333,28 @@ if uploaded_file is not None:
         h_n = row.get('Host', 'Unknown')
         raw_vm_net = row.get(vi_net_c, None) if vi_net_c else None
         vm_net = str(raw_vm_net).strip() if raw_vm_net is not None and not pd.isna(raw_vm_net) else 'unknown'
+        vm_nics = nic_details.get(vm_key, [])
+        if not vm_nics:
+            vm_nics = [{
+                "label": "Network adapter 1",
+                "adapter": "",
+                "network": vm_net,
+                "switch": "",
+                "connected": True,
+                "starts_connected": True,
+                "mac_address": "",
+                "type": "",
+                "ipv4": row.get('Primary IP Address', ''),
+                "ipv6": "",
+                "planned": True
+            }]
+        connected_nics = [
+            nic for nic in vm_nics
+            if str(nic.get("connected", True)).lower() == "true"
+        ]
+        primary_nic = connected_nics[0] if connected_nics else vm_nics[0]
+        vm_net = primary_nic.get("network", vm_net)
+        primary_ip = primary_nic.get("ipv4") or row.get('Primary IP Address', '')
 
         perf = vcpu_m.get(vm_key, {'ready': 0, 'stop': 0, 'mhz': 0, 'limit': 0})
         host = h_cap.get(h_n, {'cores': 1, 'speed': 0})
@@ -380,7 +435,11 @@ if uploaded_file is not None:
             'VM Key': vm_key,
             'VM Name': vm_n,
             'Power State': p_st,
-            'Source IP': row.get('Primary IP Address', ''),
+            'Source IP': primary_ip,
+            'NIC Count': len(vm_nics),
+            'Primary Network': vm_net,
+            'Primary IP': primary_ip,
+            'Network Details': vm_nics,
             'Guest OS': guest_os,
             'Disk Count': vm_disk_count,
             'Data Disk Count': max(0, len(vm_disk_details) - 1),
@@ -416,7 +475,10 @@ if uploaded_file is not None:
 
     # --- 8. DASHBOARD ---
     df_f = pd.DataFrame(processed_vms)
-    df_table = df_f.drop(columns=["Disk Details"], errors="ignore")
+    df_table = df_f.drop(
+        columns=["Disk Details", "Network Details"],
+        errors="ignore"
+    )
     t_mo = df_f[~df_f['Exclude?']]['Monthly Cost'].sum()
 
     m1, m2, m3, m4, m5 = st.columns(5)
@@ -509,6 +571,9 @@ if uploaded_file is not None:
                 ]
                 for vm in final_vms:
                     vm["Disk Details"] = disk_details.get(vm.get("VM Key"), [])
+                    vm["Network Details"] = nic_details.get(
+                        vm.get("VM Key"), []
+                    )
 
                 terraform_files = render_terraform_templates(
                     final_vms,
@@ -569,6 +634,12 @@ if uploaded_file is not None:
                     zf.writestr(
                         "disk-mapping.csv",
                         generate_disk_mapping_csv(final_vms)
+                    )
+                    zf.writestr(
+                        "nic-mapping.csv",
+                        generate_nic_mapping_csv(
+                            final_vms, generate_security_groups
+                        )
                     )
                     zf.writestr(
                         "image-import-variables.tfvars.example",
