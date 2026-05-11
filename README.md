@@ -21,6 +21,12 @@ The application performs an automated audit of the inventory to identify underut
 * **Identification of Low-Utilization Assets**: Workloads exhibiting <5% CPU utilization and <100 MHz overall demand are flagged for review.
 * **Capacity Headroom (N+1)**: Calculates available cluster capacity by identifying the largest host speed and evaluating remaining aggregate capacity against total VM demand.
 
+### Image Readiness Assessment
+The dashboard evaluates source VM metadata for IBM Cloud VPC custom image planning.
+* **Readiness Status**: Flags each workload as `Ready`, `Review`, or `Blocked`.
+* **Image Constraints**: Checks boot disk size against IBM Cloud custom image limits and records the required `qcow2` or `vhd` conversion target.
+* **Guest Preparation**: Identifies the expected guest customization path, such as `cloud-init` for Linux or `cloudbase-init` for Windows.
+
 ## Technical Structure
 The application architecture is divided into four functional layers:
 1. **Data Processing**: Utilizes Pandas for cross-tabulation and normalization of RVTools telemetry.
@@ -44,6 +50,7 @@ The dashboard now includes a potential savings metric and exports an enriched bu
 * Security group mapping for Terraform (if enabled)
 * User override fields for Profile and Storage Tier to influence generated Terraform
 * Source metadata including IP address, guest OS, host, cluster, datacenter, and disk count for migration handoff planning
+* Image readiness status, readiness reasons, firmware, boot disk size, and guest customization requirement
 
 ## Streamlit Override Controls
 The Streamlit dashboard exposes editable override fields for `Override Profile` and `Override Storage Tier`. When set, these user-specified values are honored by the Terraform generator, allowing human-directed tuning of VSI sizing without changing the underlying migration logic.
@@ -87,7 +94,7 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `image-import-variables.tfvars.example` — placeholder map for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
-The handoff files are intentionally tool-neutral. They can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
+The handoff files include image readiness fields so migration teams can resolve boot image, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
 
 Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module.
 
@@ -102,7 +109,7 @@ Generated resources include standardized naming and tags for project and managem
 6. Review the included migration handoff files before image import, replication, or cutover planning.
 
 ## Further Reading
-For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`.
+For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`.
 
 ## Release Notes
 - Added a potential savings metric to the Streamlit dashboard.
@@ -110,7 +117,8 @@ For detailed Terraform override behavior and deployment target guidance, see `do
 - Added subnet and security group mapping fields to the business case export to support Terraform wiring.
 - Added Terraform override controls for VPC naming, prefix strategy, custom CIDRs, and deployment target selection.
 - Added migration handoff files for source-to-target mapping, image import placeholders, and cutover runbook support.
+- Added image readiness assessment fields for IBM Cloud VPC custom image planning.
 
 ---
 **Author**: Michael Vincent Jones
-**Version**: 1.2.0
+**Version**: 1.3.0

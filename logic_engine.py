@@ -2,6 +2,9 @@ import csv
 import io
 import json
 
+IMAGE_MAX_GB = 250
+IMAGE_MIN_GB = 10
+
 # --- STRATEGY B: ECONOMIC OPTIMIZER CATALOG ---
 IBM_VPC_CATALOG = [
     {"name": "cx2-2x4", "cpu": 2, "ram": 4, "hourly": 0.063},
@@ -56,6 +59,88 @@ def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
         "storage_cost": storage_monthly,
         "monthly": total_monthly,
         "is_rightsized": optimized['cpu'] < cpus
+    }
+
+
+def _clean_text(value):
+    return str(_clean_value(value)).strip()
+
+
+def _clean_number(value, default=0):
+    value = _clean_value(value, default)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def assess_image_readiness(guest_os, firmware, boot_disk_gb,
+                           disk_count, power_state):
+    """
+    Assess whether VM metadata is ready for IBM Cloud VPC image planning.
+
+    This is advisory only. It does not automate conversion, COS upload, image
+    import, or Terraform provisioning from custom images.
+    """
+    reasons = []
+    blockers = []
+    guest_os_text = _clean_text(guest_os)
+    firmware_text = _clean_text(firmware)
+    power_text = _clean_text(power_state).lower()
+    boot_gb = round(_clean_number(boot_disk_gb, 0), 2)
+    disks = int(_clean_number(disk_count, 0))
+    os_lower = guest_os_text.lower()
+
+    if "windows" in os_lower:
+        guest_customization = "cloudbase-init required"
+    elif any(token in os_lower for token in [
+        "linux", "ubuntu", "debian", "red hat", "rhel",
+        "centos", "suse", "oracle"
+    ]):
+        guest_customization = "cloud-init required"
+    elif guest_os_text:
+        guest_customization = "validate guest initialization"
+        reasons.append("Guest OS not recognized by rule; confirm IBM OS value")
+    else:
+        guest_customization = "unknown"
+        reasons.append("Guest OS missing; confirm IBM OS value")
+
+    if not firmware_text:
+        reasons.append("Firmware missing; confirm BIOS or EFI boot mode")
+
+    if boot_gb <= 0:
+        reasons.append("Boot disk size missing; confirm image size")
+    elif boot_gb > IMAGE_MAX_GB:
+        blockers.append("Boot disk exceeds IBM Cloud custom image 250 GB limit")
+    elif boot_gb < IMAGE_MIN_GB:
+        reasons.append("Boot disk below 10 GB minimum; IBM rounds up to 10 GB")
+
+    if disks > 1:
+        reasons.append("Multiple disks detected; map data disks separately")
+
+    if power_text == "poweredoff":
+        reasons.append("VM is powered off; validate source state before export")
+
+    if blockers:
+        status = "Blocked"
+    elif reasons:
+        status = "Review"
+    else:
+        status = "Ready"
+        reasons.append(
+            "No metadata blockers found; convert to qcow2/vhd and stage in COS"
+        )
+
+    return {
+        "status": status,
+        "reasons": "; ".join(blockers + reasons),
+        "firmware": firmware_text,
+        "boot_disk_gb": boot_gb,
+        "guest_customization": guest_customization,
+        "required_image_format": "qcow2 or vhd",
+        "requires_cos_staging": True,
+        "max_custom_image_gb": IMAGE_MAX_GB,
+        "min_custom_image_gb": IMAGE_MIN_GB,
     }
 
 
@@ -159,6 +244,17 @@ def _migration_vm_record(vm):
                 vm.get('Savings (Mo)'), 0
             ),
         },
+        "image_readiness": {
+            "status": _clean_value(vm.get('Image Readiness'), 'Review'),
+            "reasons": _clean_value(vm.get('Readiness Reasons')),
+            "firmware": _clean_value(vm.get('Firmware')),
+            "boot_disk_gb": _clean_value(vm.get('Boot Disk GB'), 0),
+            "guest_customization": _clean_value(vm.get('Guest Customization')),
+            "required_image_format": "qcow2 or vhd",
+            "requires_cos_staging": True,
+            "max_custom_image_gb": IMAGE_MAX_GB,
+            "min_custom_image_gb": IMAGE_MIN_GB,
+        },
     }
 
 
@@ -200,6 +296,8 @@ def generate_vm_mapping_csv(final_vms):
     fieldnames = [
         "VM Name", "Power State", "Guest OS", "Source IP", "Source Network",
         "Datacenter", "Cluster", "Host", "Disk Count", "Total Storage GB",
+        "Firmware", "Boot Disk GB", "Guest Customization",
+        "Image Readiness", "Readiness Reasons",
         "Target Subnet", "Security Group", "Recommended Profile",
         "Override Profile", "Effective Profile", "Storage Tier",
         "Override Storage Tier", "Effective Storage Tier", "Custom Image ID",
@@ -221,6 +319,13 @@ def generate_vm_mapping_csv(final_vms):
             "Host": _clean_value(vm.get('Host')),
             "Disk Count": _clean_value(vm.get('Disk Count'), 0),
             "Total Storage GB": _clean_value(vm.get('Total Storage GB'), 0),
+            "Firmware": _clean_value(vm.get('Firmware')),
+            "Boot Disk GB": _clean_value(vm.get('Boot Disk GB'), 0),
+            "Guest Customization": _clean_value(
+                vm.get('Guest Customization')
+            ),
+            "Image Readiness": _clean_value(vm.get('Image Readiness')),
+            "Readiness Reasons": _clean_value(vm.get('Readiness Reasons')),
             "Target Subnet": _clean_value(vm.get('Subnet')),
             "Security Group": _clean_value(vm.get('Security Group')),
             "Recommended Profile": _clean_value(vm.get('IBM Profile')),
@@ -289,14 +394,16 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 ## Recommended Workflow
 1. Review `vm-mapping.csv` with the application, infrastructure, security, and migration teams.
 2. Confirm migration waves, cutover groups, and business priority for each VM.
-3. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
-4. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
-5. Upload converted images to IBM Cloud Object Storage when using custom image import.
-6. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
-7. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
-8. Apply the generated Terraform using the selected deployment target.
-9. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
-10. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
+3. Review image readiness status, firmware, boot disk size, and guest customization requirement for each VM.
+4. Resolve `Blocked` items before image import planning and assign owners for `Review` items.
+5. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
+6. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
+7. Upload converted images to IBM Cloud Object Storage when using custom image import.
+8. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
+9. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
+10. Apply the generated Terraform using the selected deployment target.
+11. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
+12. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
 
 ## Notes
 Terraform builds the target VPC foundation and VSI definitions. It does not move VMDK files or perform application cutover by itself. Use the manifest and CSV as the handoff layer for RackWare, custom scripts, IBM Cloud image import, or a migration factory workflow.
