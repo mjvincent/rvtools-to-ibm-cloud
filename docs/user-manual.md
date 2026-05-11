@@ -57,6 +57,7 @@ The following worksheets are required for the core workflow:
 | `vInfo` | VM inventory, CPU, memory, power state, source network, guest OS, host, cluster, datacenter, and general VM metadata. |
 | `vDisk` | Disk capacity and disk metadata. Used for total storage, boot/data disk split, and per-disk handoff mapping. |
 | `vCPU` | CPU performance metrics. Used for contention detection and right-sizing safety logic. |
+| `vMemory` | Memory telemetry. Used for memory readiness, pressure detection, and conservative RAM sizing. |
 | `vHost` | Host CPU speed and core capacity. Used for N+1 headroom and vCPU-to-pCore ratio. |
 | `vCluster` | Cluster CPU capacity. Used for N+1 headroom calculation. |
 | `vNetwork` | NIC, source network, IP, MAC, adapter, switch, and connection metadata. Used for multi-NIC mapping and target subnet/security group mapping. |
@@ -177,6 +178,15 @@ Count of non-excluded VMs that need owner review before migration planning.
 
 ### Migration Blocked
 Count of non-excluded VMs with source-side findings that should be remediated before export, replication, image import, or cutover scheduling.
+
+### Memory Ready
+Count of non-excluded VMs with no detected memory pressure or memory sizing constraints.
+
+### Memory Review
+Count of non-excluded VMs that need owner review for memory sizing, reservations, limits, hot-add, or light memory pressure.
+
+### Memory Blocked
+Count of non-excluded VMs with severe memory pressure or memory limits that should be remediated before resizing.
 
 ## Terraform Overrides
 The `Terraform Overrides` expander controls target infrastructure settings.
@@ -311,6 +321,42 @@ Count of connected USB devices from `vUSB`.
 ### `Health Warnings`
 Count of matched RVTools health warnings from `vHealth`.
 
+### `Memory Readiness`
+Advisory memory status: `Ready`, `Review`, or `Blocked`.
+
+### `Memory Readiness Reasons`
+Explanation of memory pressure, constraints, or sizing choices.
+
+### `Configured Memory MiB`
+Configured source VM memory from `vMemory` or `vInfo`.
+
+### `Active Memory MiB`
+Active memory observed in RVTools `vMemory`.
+
+### `Consumed Memory MiB`
+Consumed memory observed in RVTools `vMemory`.
+
+### `Ballooned Memory MiB`
+Memory ballooning observed in RVTools `vMemory`.
+
+### `Swapped Memory MiB`
+Swapped memory observed in RVTools `vMemory`.
+
+### `Memory Reservation MiB`
+Configured memory reservation from RVTools.
+
+### `Memory Limit MiB`
+Configured memory limit from RVTools. A positive limit below configured memory is treated as a blocker.
+
+### `Memory Hot Add`
+Indicates whether memory hot-add is enabled for the source VM.
+
+### `Sizing Memory MiB`
+Memory value used by the recommendation engine for IBM Cloud profile selection.
+
+### `Memory Sizing Basis`
+Explains why the sizing memory value was chosen.
+
 ### `Host`
 Source ESXi host.
 
@@ -363,7 +409,7 @@ CPU Ready percentage from RVTools.
 Observed CPU demand from RVTools.
 
 ## Readiness Assessments
-The application includes two separate readiness layers.
+The application includes three separate readiness layers.
 
 ### Image Readiness
 Image readiness focuses on IBM Cloud VPC custom image planning.
@@ -406,6 +452,26 @@ Common `Blocked` reasons:
 - Attached USB devices.
 - Severe health warning when available.
 
+### Memory Readiness
+Memory readiness focuses on RAM pressure and constraints before profile sizing.
+
+| Status | Meaning |
+| --- | --- |
+| `Ready` | No memory pressure or memory sizing constraints were detected. |
+| `Review` | Memory sizing should be validated because of reservations, hot-add, light pressure, or conservative reduction. |
+| `Blocked` | Severe swapping/ballooning or a memory limit below configured memory should be remediated before resizing. |
+
+Common `Review` reasons:
+- Memory reservation detected.
+- Memory hot-add enabled.
+- Active memory is materially below configured memory and a conservative reduction was applied.
+- Light swapping or ballooning exists.
+
+Common `Blocked` reasons:
+- Severe swapping.
+- Severe ballooning.
+- Memory limit below configured memory.
+
 ## Build Terraform Project
 Click `Build Terraform Project` after reviewing the table and override settings.
 
@@ -444,6 +510,7 @@ The ZIP bundle contains two categories of output:
 | `vm-mapping.csv` | Spreadsheet-friendly VM-level migration mapping. |
 | `nic-mapping.csv` | Per-NIC source-to-target network mapping. |
 | `disk-mapping.csv` | Per-disk boot/data mapping. |
+| `memory-readiness.csv` | VM-level memory pressure, constraint, and sizing review. |
 | `readiness-findings.csv` | Row-level migration readiness findings and remediation actions. |
 | `image-import-variables.tfvars.example` | Placeholder map for IBM Cloud custom image IDs after image import. |
 | `migration-runbook.md` | Operational runbook for migration planning and execution. |
@@ -472,7 +539,7 @@ The VSI module also generates data volume attachments for storage module outputs
 
 ## Migration Handoff Files
 ### `migration-manifest.json`
-A structured JSON document containing project settings and per-VM source, target, migration, assessment, image readiness, migration readiness, disk, and NIC data.
+A structured JSON document containing project settings and per-VM source, target, migration, assessment, image readiness, migration readiness, memory readiness, disk, and NIC data.
 
 Use it for:
 - Automation.
@@ -488,6 +555,7 @@ Use it to review:
 - Target profile and storage tier.
 - Image readiness.
 - Migration readiness.
+- Memory readiness and sizing memory.
 - Target subnet and security group.
 - Estimated cost and savings.
 
@@ -514,6 +582,17 @@ Use it to review:
 - Target attachment resource names.
 - Storage tier.
 
+### `memory-readiness.csv`
+A VM-level memory readiness and sizing file.
+
+Use it to review:
+- Configured, active, and consumed memory.
+- Swapping and ballooning.
+- Memory reservations and limits.
+- Memory hot-add status.
+- Sizing memory used for profile selection.
+- Recommended, overridden, and effective profile.
+
 ### `readiness-findings.csv`
 A row-level migration readiness worklist.
 
@@ -537,20 +616,22 @@ A generated operational runbook customized with project, region, zone, VPC name,
 2. Confirm which VMs are in scope.
 3. Exclude VMs that should not be migrated.
 4. Resolve `Image Readiness = Blocked` items.
-5. Resolve `Migration Readiness = Blocked` items.
-6. Assign owners for `Review` items.
-7. Review `nic-mapping.csv` for primary and secondary interface placement.
-8. Review `disk-mapping.csv` for data disk placement and sizing.
-9. Confirm IBM Cloud region, zone, VPC, subnet, and security group design.
-10. Confirm profile and storage tier overrides.
-11. Convert, replicate, or migrate images using the selected migration method.
-12. Upload converted images to IBM Cloud Object Storage when using custom image import.
-13. Import images as IBM Cloud VPC custom images.
-14. Record custom image IDs.
-15. Review generated Terraform.
-16. Apply Terraform using local CLI or IBM Schematics.
-17. Validate boot, network, storage attachment, monitoring, backup, security, and application health.
-18. Execute DNS, load balancer, IP, or application cutover steps.
+5. Resolve `Memory Readiness = Blocked` items.
+6. Resolve `Migration Readiness = Blocked` items.
+7. Assign owners for `Review` items.
+8. Review `memory-readiness.csv` for profile sizing validation.
+9. Review `nic-mapping.csv` for primary and secondary interface placement.
+10. Review `disk-mapping.csv` for data disk placement and sizing.
+11. Confirm IBM Cloud region, zone, VPC, subnet, and security group design.
+12. Confirm profile and storage tier overrides.
+13. Convert, replicate, or migrate images using the selected migration method.
+14. Upload converted images to IBM Cloud Object Storage when using custom image import.
+15. Import images as IBM Cloud VPC custom images.
+16. Record custom image IDs.
+17. Review generated Terraform.
+18. Apply Terraform using local CLI or IBM Schematics.
+19. Validate boot, network, storage attachment, monitoring, backup, security, and application health.
+20. Execute DNS, load balancer, IP, or application cutover steps.
 
 ## Limitations
 The application is a planning and generation tool. It does not:
@@ -584,6 +665,12 @@ Check `vNetwork` and `vInfo` for populated network or port group fields. If NIC 
 
 ### Migration readiness is mostly `Ready`
 Confirm optional tabs such as `vSnapshot`, `vTools`, `vCD`, `vUSB`, and `vHealth` were included in the RVTools export.
+
+### Memory readiness is mostly `Review`
+Check `vMemory`. Reservations, memory hot-add, and conservative active-memory reductions can trigger `Review`.
+
+### Memory readiness is `Blocked`
+Check `vMemory` for swapping, ballooning, or a positive memory limit below configured memory.
 
 ### Many VMs are marked `Review` for VMware Tools
 Review the `vTools` worksheet. Upgradeable tools, missing tools, heartbeat issues, application status concerns, or operation readiness concerns can trigger `Review`.
@@ -634,6 +721,9 @@ Assessment focused on custom image import prerequisites.
 ### Migration Readiness
 Assessment focused on source-side operational cleanup before migration.
 
+### Memory Readiness
+Assessment focused on memory pressure, constraints, and conservative RAM sizing.
+
 ### NIC
 Network interface card or virtual network adapter.
 
@@ -651,6 +741,7 @@ VMware virtual disk file format.
 - [Migration Handoff Package](migration-handoff-package.md)
 - [Image Readiness Assessment](image-readiness-assessment.md)
 - [Migration Readiness Assessment](migration-readiness-assessment.md)
+- [Memory Readiness and Sizing](memory-readiness-sizing.md)
 - [Terraform Overrides Reference](terraform-overrides.md)
 - [Right-Sizing Logic](../RIGHT_SIZING_LOGIC.md)
 - [Development Log](../DEVELOPMENT_LOG.md)

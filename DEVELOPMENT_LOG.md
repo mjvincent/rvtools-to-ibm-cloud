@@ -73,3 +73,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added `readiness-findings.csv` to the Terraform ZIP for row-level remediation planning.
 - Extended `migration-manifest.json`, `vm-mapping.csv`, and `migration-runbook.md` with migration readiness findings.
 - Documented the assessment in the README, migration handoff guide, Terraform override notes, dedicated migration readiness guide, and ADR-008.
+
+### May 11, 2026: Memory Readiness and Sizing
+- Added RVTools `vMemory` parsing for active, consumed, ballooned, swapped, reservation, limit, and hot-add telemetry.
+- Added advisory `Ready`, `Review`, and `Blocked` memory readiness statuses.
+- Updated IBM Cloud profile sizing to use conservative memory guidance while preserving configured memory under pressure, reservations, or limits.
+- Added dashboard metrics and disabled table fields for memory readiness and sizing basis.
+- Added `memory-readiness.csv` to the Terraform ZIP and extended `migration-manifest.json`, `vm-mapping.csv`, and `migration-runbook.md`.
+- Documented the feature in the README, user manual, right-sizing logic, migration handoff guide, Terraform override notes, memory readiness guide, and ADR-009.
