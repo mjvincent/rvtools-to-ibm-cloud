@@ -4,7 +4,9 @@ import streamlit as st
 import pandas as pd
 from logic_engine import (
     IBM_VPC_CATALOG,
+    SNAPSHOT_BLOCK_SIZE_MIB,
     assess_image_readiness,
+    make_readiness_finding,
     get_catalog_profiles,
     map_vmware_to_ibm_vpc,
     render_terraform_templates,
@@ -13,7 +15,9 @@ from logic_engine import (
     generate_image_import_tfvars,
     generate_migration_manifest,
     generate_nic_mapping_csv,
+    generate_readiness_findings_csv,
     generate_migration_runbook,
+    summarize_migration_readiness,
     generate_vm_mapping_csv
 )
 
@@ -59,7 +63,23 @@ TABLE_CONFIG = {
         "Boot Disk GB", format="%.2f"
     ),
     "Data Disk Count": st.column_config.NumberColumn("Data Disk Count"),
-    "Guest Customization": st.column_config.TextColumn("Guest Customization")
+    "Guest Customization": st.column_config.TextColumn("Guest Customization"),
+    "Migration Readiness": st.column_config.TextColumn(
+        "Migration Readiness"
+    ),
+    "Migration Readiness Reasons": st.column_config.TextColumn(
+        "Migration Readiness Reasons"
+    ),
+    "Snapshot Count": st.column_config.NumberColumn("Snapshot Count"),
+    "Snapshot Size MiB": st.column_config.NumberColumn(
+        "Snapshot Size MiB", format="%.2f"
+    ),
+    "VMware Tools Status": st.column_config.TextColumn(
+        "VMware Tools Status"
+    ),
+    "Mounted Media": st.column_config.TextColumn("Mounted Media"),
+    "USB Devices": st.column_config.NumberColumn("USB Devices"),
+    "Health Warnings": st.column_config.NumberColumn("Health Warnings")
 }
 
 DISABLED_COLS = [
@@ -71,6 +91,9 @@ DISABLED_COLS = [
     "Primary IP",
     "Image Readiness", "Readiness Reasons", "Firmware", "Boot Disk GB",
     "Guest Customization",
+    "Migration Readiness", "Migration Readiness Reasons",
+    "Snapshot Count", "Snapshot Size MiB", "VMware Tools Status",
+    "Mounted Media", "USB Devices", "Health Warnings",
     "Baseline Cost (Mo)", "Savings (Mo)"
 ]
 
@@ -163,21 +186,73 @@ def get_vm_display_name(row, fallback):
     return fallback
 
 
+def as_bool(value):
+    if value is None or pd.isna(value):
+        return False
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in ["true", "yes", "1", "connected"]
+
+
+def as_float(value, default=0.0):
+    if value is None or pd.isna(value):
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def clean_cell(value, default=""):
+    if value is None or pd.isna(value):
+        return default
+    text = str(value).strip()
+    return default if text.lower() == "nan" else text
+
+
+def is_unhealthy_status(value):
+    text = clean_cell(value).lower()
+    if not text:
+        return False
+    healthy_tokens = ["green", "ok", "toolsok", "running", "ready"]
+    if any(token in text for token in healthy_tokens):
+        return False
+    unhealthy_tokens = [
+        "gray", "red", "yellow", "not", "old", "upgrade", "error",
+        "fail", "false", "none", "unknown"
+    ]
+    return any(token in text for token in unhealthy_tokens)
+
+
 uploaded_file = st.sidebar.file_uploader("Upload RVTools", type=["xlsx"])
 
 if uploaded_file is not None:
     # 1. LOAD TABS
-    df_vinfo = pd.read_excel(uploaded_file, sheet_name='vInfo')
-    df_vdisk = pd.read_excel(uploaded_file, sheet_name='vDisk')
-    df_vcpu = pd.read_excel(uploaded_file, sheet_name='vCPU')
-    df_vhost = pd.read_excel(uploaded_file, sheet_name='vHost')
-    df_vcluster = pd.read_excel(uploaded_file, sheet_name='vCluster')
-    df_vnetwork = pd.read_excel(uploaded_file, sheet_name='vNetwork')
+    xls = pd.ExcelFile(uploaded_file)
+
+    def read_sheet(sheet_name):
+        if sheet_name in xls.sheet_names:
+            return pd.read_excel(xls, sheet_name=sheet_name)
+        return pd.DataFrame()
+
+    df_vinfo = read_sheet('vInfo')
+    df_vdisk = read_sheet('vDisk')
+    df_vcpu = read_sheet('vCPU')
+    df_vhost = read_sheet('vHost')
+    df_vcluster = read_sheet('vCluster')
+    df_vnetwork = read_sheet('vNetwork')
+    df_vsnapshot = read_sheet('vSnapshot')
+    df_vtools = read_sheet('vTools')
+    df_vcd = read_sheet('vCD')
+    df_vusb = read_sheet('vUSB')
+    df_vhealth = read_sheet('vHealth')
 
     # 2. CLEAN COLUMN NAMES
     for df in [df_vinfo, df_vdisk, df_vcpu, df_vhost,
-               df_vcluster, df_vnetwork]:
-        df.columns = df.columns.str.strip()
+               df_vcluster, df_vnetwork, df_vsnapshot, df_vtools,
+               df_vcd, df_vusb, df_vhealth]:
+        if not df.empty:
+            df.columns = df.columns.str.strip()
 
     # 3. NETWORKING EXTRACTION
     df_vnetwork["_rvtools_vm_key"] = df_vnetwork.apply(
@@ -316,7 +391,190 @@ if uploaded_file is not None:
             'cores': h_r.get('# Cores', 1)
         }
 
-    # 7. PROCESS VMS
+    # 7. MIGRATION READINESS INPUTS
+    snapshot_summary = {}
+    if not df_vsnapshot.empty:
+        df_vsnapshot["_rvtools_vm_key"] = df_vsnapshot.apply(
+            lambda row: get_row_identity(row, ""),
+            axis=1
+        )
+        snap_size_col = next(
+            (c for c in df_vsnapshot.columns if "Size MiB (total)" in c),
+            None
+        )
+        snap_rows = df_vsnapshot[df_vsnapshot["_rvtools_vm_key"] != ""].copy()
+        for name, rows in snap_rows.groupby("_rvtools_vm_key"):
+            total_size = 0.0
+            if snap_size_col:
+                total_size = sum(
+                    as_float(v) for v in rows[snap_size_col].tolist()
+                )
+            snapshot_summary[str(name)] = {
+                "count": len(rows),
+                "size_mib": round(total_size, 2),
+            }
+
+    tools_summary = {}
+    if not df_vtools.empty:
+        df_vtools["_rvtools_vm_key"] = df_vtools.apply(
+            lambda row: get_row_identity(row, ""),
+            axis=1
+        )
+        for _, tool_row in df_vtools.iterrows():
+            name = tool_row.get("_rvtools_vm_key", "")
+            if not name:
+                continue
+            tools_summary[str(name)] = {
+                "tools": clean_cell(tool_row.get("Tools")),
+                "version": clean_cell(tool_row.get("Tools Version")),
+                "upgradeable": clean_cell(tool_row.get("Upgradeable")),
+                "app_status": clean_cell(tool_row.get("App status")),
+                "heartbeat": clean_cell(tool_row.get("Heartbeat status")),
+                "operation_ready": clean_cell(tool_row.get("Operation Ready")),
+            }
+
+    mounted_media = {}
+    if not df_vcd.empty:
+        df_vcd["_rvtools_vm_key"] = df_vcd.apply(
+            lambda row: get_row_identity(row, ""),
+            axis=1
+        )
+        cd_rows = df_vcd[df_vcd["_rvtools_vm_key"] != ""].copy()
+        for name, rows in cd_rows.groupby("_rvtools_vm_key"):
+            media = []
+            for media_row in rows.to_dict("records"):
+                if (
+                    as_bool(media_row.get("Connected")) or
+                    as_bool(media_row.get("Starts Connected"))
+                ):
+                    device = clean_cell(media_row.get("Device Node"), "CD/DVD")
+                    media_type = clean_cell(
+                        media_row.get("Device Type"), "connected media"
+                    )
+                    media.append(f"{device}: {media_type}")
+            mounted_media[str(name)] = media
+
+    usb_summary = {}
+    if not df_vusb.empty:
+        df_vusb["_rvtools_vm_key"] = df_vusb.apply(
+            lambda row: get_row_identity(row, ""),
+            axis=1
+        )
+        usb_rows = df_vusb[df_vusb["_rvtools_vm_key"] != ""].copy()
+        for name, rows in usb_rows.groupby("_rvtools_vm_key"):
+            devices = []
+            for usb_row in rows.to_dict("records"):
+                if as_bool(usb_row.get("Connected")):
+                    device = clean_cell(usb_row.get("Device Node"), "USB")
+                    device_type = clean_cell(
+                        usb_row.get("Device Type"), "connected USB device"
+                    )
+                    devices.append(f"{device}: {device_type}")
+            usb_summary[str(name)] = devices
+
+    health_summary = {}
+    if not df_vhealth.empty:
+        for health_row in df_vhealth.to_dict("records"):
+            raw_name = clean_cell(health_row.get("Name"))
+            if not raw_name:
+                continue
+            health_summary.setdefault(raw_name, []).append({
+                "message": clean_cell(health_row.get("Message")),
+                "type": clean_cell(health_row.get("Message type")),
+            })
+
+    def build_migration_findings(vm_key, vm_name, power_state):
+        findings = []
+        snapshots = snapshot_summary.get(vm_key, {"count": 0, "size_mib": 0})
+        if snapshots["count"] > 0:
+            severity = (
+                "Blocked"
+                if snapshots["size_mib"] >= SNAPSHOT_BLOCK_SIZE_MIB
+                else "Review"
+            )
+            findings.append(make_readiness_finding(
+                "Active snapshots",
+                severity,
+                "vSnapshot",
+                (
+                    f"{snapshots['count']} snapshot(s), "
+                    f"{snapshots['size_mib']} MiB total"
+                ),
+                "Remove or consolidate snapshots before export/replication"
+            ))
+
+        media = mounted_media.get(vm_key, [])
+        if media:
+            findings.append(make_readiness_finding(
+                "Mounted CD/DVD media",
+                "Blocked",
+                "vCD",
+                "; ".join(media),
+                "Disconnect ISO or physical media before migration"
+            ))
+
+        usb_devices = usb_summary.get(vm_key, [])
+        if usb_devices:
+            findings.append(make_readiness_finding(
+                "Attached USB devices",
+                "Blocked",
+                "vUSB",
+                "; ".join(usb_devices),
+                "Remove USB dependencies or replace them with cloud-native access"
+            ))
+
+        tools = tools_summary.get(vm_key, {})
+        tools_parts = [
+            tools.get("tools"),
+            f"upgradeable={tools.get('upgradeable')}" if tools.get("upgradeable") else "",
+            f"heartbeat={tools.get('heartbeat')}" if tools.get("heartbeat") else "",
+            f"app={tools.get('app_status')}" if tools.get("app_status") else "",
+            f"operation_ready={tools.get('operation_ready')}" if tools.get("operation_ready") else "",
+        ]
+        tools_status = ", ".join([part for part in tools_parts if part])
+        if tools and (
+            is_unhealthy_status(tools.get("tools")) or
+            is_unhealthy_status(tools.get("heartbeat")) or
+            is_unhealthy_status(tools.get("app_status")) or
+            clean_cell(tools.get("upgradeable")).lower() == "yes" or
+            clean_cell(tools.get("operation_ready")).lower() == "false"
+        ):
+            findings.append(make_readiness_finding(
+                "VMware Tools status",
+                "Review",
+                "vTools",
+                tools_status,
+                "Update VMware Tools and verify guest heartbeat/application status"
+            ))
+
+        if clean_cell(power_state).lower() == "poweredoff":
+            findings.append(make_readiness_finding(
+                "Powered-off VM",
+                "Review",
+                "vInfo",
+                "VM is powered off in the source inventory",
+                "Confirm whether the VM should be migrated or excluded"
+            ))
+
+        for lookup_name in [vm_key, vm_name]:
+            for health in health_summary.get(lookup_name, []):
+                h_type = clean_cell(health.get("type"))
+                severity = (
+                    "Blocked"
+                    if h_type.lower() in ["error", "critical", "red"]
+                    else "Review"
+                )
+                findings.append(make_readiness_finding(
+                    "RVTools health warning",
+                    severity,
+                    "vHealth",
+                    f"{h_type}: {clean_cell(health.get('message'))}",
+                    "Review RVTools health finding and remediate before cutover"
+                ))
+
+        return findings
+
+    # 8. PROCESS VMS
     processed_vms = []
     vinfo_cols = df_vinfo.columns.tolist()
     vi_net_c = next(
@@ -392,6 +650,29 @@ if uploaded_file is not None:
             vm_disk_count,
             p_st
         )
+        vm_findings = build_migration_findings(vm_key, vm_n, p_st)
+        migration_readiness = summarize_migration_readiness(vm_findings)
+        vm_snapshots = snapshot_summary.get(
+            vm_key, {"count": 0, "size_mib": 0}
+        )
+        vm_tools = tools_summary.get(vm_key, {})
+        vm_tools_status = ", ".join([
+            part for part in [
+                vm_tools.get("tools"),
+                f"upgradeable={vm_tools.get('upgradeable')}"
+                if vm_tools.get("upgradeable") else "",
+                f"heartbeat={vm_tools.get('heartbeat')}"
+                if vm_tools.get("heartbeat") else "",
+                f"app={vm_tools.get('app_status')}"
+                if vm_tools.get("app_status") else "",
+            ]
+            if part
+        ])
+        vm_media = mounted_media.get(vm_key, [])
+        vm_usb = usb_summary.get(vm_key, [])
+        vm_health_count = len(health_summary.get(vm_key, [])) + len(
+            health_summary.get(vm_n, [])
+        )
         is_db = any(x in vm_n.upper() for x in ['SQL', 'DB', 'PROD', 'SAP'])
         s_tier = '10iops-tier' if is_db else (
             '5iops-tier' if usage and usage > 70 else '3iops-tier'
@@ -449,6 +730,15 @@ if uploaded_file is not None:
             'Guest Customization': readiness['guest_customization'],
             'Image Readiness': readiness['status'],
             'Readiness Reasons': readiness['reasons'],
+            'Migration Readiness': migration_readiness['status'],
+            'Migration Readiness Reasons': migration_readiness['reasons'],
+            'Readiness Findings': vm_findings,
+            'Snapshot Count': vm_snapshots['count'],
+            'Snapshot Size MiB': vm_snapshots['size_mib'],
+            'VMware Tools Status': vm_tools_status,
+            'Mounted Media': "; ".join(vm_media),
+            'USB Devices': len(vm_usb),
+            'Health Warnings': vm_health_count,
             'Host': h_n,
             'Cluster': row.get('Cluster', ''),
             'Datacenter': row.get('Datacenter', ''),
@@ -476,7 +766,7 @@ if uploaded_file is not None:
     # --- 8. DASHBOARD ---
     df_f = pd.DataFrame(processed_vms)
     df_table = df_f.drop(
-        columns=["Disk Details", "Network Details"],
+        columns=["Disk Details", "Network Details", "Readiness Findings"],
         errors="ignore"
     )
     t_mo = df_f[~df_f['Exclude?']]['Monthly Cost'].sum()
@@ -510,6 +800,20 @@ if uploaded_file is not None:
     r3.metric(
         "Image Blocked",
         len(active_df[active_df['Image Readiness'] == "Blocked"])
+    )
+
+    mr1, mr2, mr3 = st.columns(3)
+    mr1.metric(
+        "Migration Ready",
+        len(active_df[active_df['Migration Readiness'] == "Ready"])
+    )
+    mr2.metric(
+        "Migration Review",
+        len(active_df[active_df['Migration Readiness'] == "Review"])
+    )
+    mr3.metric(
+        "Migration Blocked",
+        len(active_df[active_df['Migration Readiness'] == "Blocked"])
     )
 
     # --- TERRAFORM OVERRIDES ---
@@ -573,6 +877,14 @@ if uploaded_file is not None:
                     vm["Disk Details"] = disk_details.get(vm.get("VM Key"), [])
                     vm["Network Details"] = nic_details.get(
                         vm.get("VM Key"), []
+                    )
+                    vm["Readiness Findings"] = next(
+                        (
+                            source.get("Readiness Findings", [])
+                            for source in processed_vms
+                            if source.get("VM Key") == vm.get("VM Key")
+                        ),
+                        []
                     )
 
                 terraform_files = render_terraform_templates(
@@ -642,6 +954,10 @@ if uploaded_file is not None:
                         )
                     )
                     zf.writestr(
+                        "readiness-findings.csv",
+                        generate_readiness_findings_csv(final_vms)
+                    )
+                    zf.writestr(
                         "image-import-variables.tfvars.example",
                         generate_image_import_tfvars(final_vms)
                     )
@@ -688,3 +1004,7 @@ if uploaded_file is not None:
     st.write("- **Ready:** No metadata blockers found for image planning.")
     st.write("- **Review:** Metadata or multi-disk items need validation.")
     st.write("- **Blocked:** Boot image exceeds IBM Cloud custom image limits.")
+    st.markdown("**Migration Readiness**")
+    st.write("- **Ready:** No migration blockers found in optional RVTools tabs.")
+    st.write("- **Review:** Snapshots, tools, power state, or health items need owner validation.")
+    st.write("- **Blocked:** Large snapshots, mounted media, USB devices, or severe health items should be remediated before migration.")

@@ -34,6 +34,13 @@ The dashboard evaluates source VM metadata for IBM Cloud VPC custom image planni
 * **Image Constraints**: Checks boot disk size against IBM Cloud custom image limits and records the required `qcow2` or `vhd` conversion target.
 * **Guest Preparation**: Identifies the expected guest customization path, such as `cloud-init` for Linux or `cloudbase-init` for Windows.
 
+### Migration Readiness Assessment
+The dashboard also evaluates operational migration prerequisites from optional RVTools tabs.
+* **Snapshot Review**: Uses `vSnapshot` to flag active snapshots and block large snapshot footprints before export or replication.
+* **Guest Health Signals**: Uses `vTools` to flag VMware Tools, heartbeat, application status, upgrade, and operation readiness concerns.
+* **Attached Device Cleanup**: Uses `vCD` and `vUSB` to block connected ISO/CD media or USB device dependencies before migration.
+* **Health Findings**: Uses `vHealth` where VM-level findings can be matched to the workload inventory.
+
 ## Technical Structure
 The application architecture is divided into four functional layers:
 1. **Data Processing**: Utilizes Pandas for cross-tabulation and normalization of RVTools telemetry.
@@ -48,6 +55,7 @@ Successful execution requires a standard RVTools XLSX export containing the foll
 * **vCPU**: Detailed performance telemetry (MHz, Ready %, Limits).
 * **vHost / vCluster**: Physical infrastructure specifications and aggregate capacity.
 * **vDisk**: Storage capacity and disk inventory.
+* **vSnapshot / vTools / vCD / vUSB / vHealth**: Optional migration readiness signals for snapshots, guest tools, attached media, USB devices, and health warnings.
 
 ## Business Case and Mapping Output
 The dashboard now includes a potential savings metric and exports an enriched business case CSV with per-VM data including:
@@ -58,6 +66,7 @@ The dashboard now includes a potential savings metric and exports an enriched bu
 * User override fields for Profile and Storage Tier to influence generated Terraform
 * Source metadata including IP address, guest OS, host, cluster, datacenter, and disk count for migration handoff planning
 * Image readiness status, readiness reasons, firmware, boot disk size, and guest customization requirement
+* Migration readiness status, readiness reasons, snapshot count/size, VMware Tools status, mounted media, USB device count, and health warning count
 * Per-disk boot/data role, capacity, source controller metadata, and target volume attachment mapping
 * Per-NIC source network, IP, MAC, adapter, connected state, target subnet, and security group mapping
 
@@ -102,10 +111,11 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `vm-mapping.csv` — spreadsheet-friendly view for migration planning and customer review
 * `nic-mapping.csv` — per-NIC primary/secondary network interface mapping
 * `disk-mapping.csv` — per-disk boot/data mapping for volume creation and attachment review
+* `readiness-findings.csv` — row-level migration readiness findings and remediation actions
 * `image-import-variables.tfvars.example` — placeholder map for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
-The handoff files include image readiness, NIC mapping, and disk mapping fields so migration teams can resolve boot image, network, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
+The handoff files include image readiness, migration readiness, NIC mapping, and disk mapping fields so migration teams can resolve boot image, snapshot, mounted media, guest tools, network, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
 
 Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module.
 
@@ -120,7 +130,7 @@ Generated resources include standardized naming and tags for project and managem
 6. Review the included migration handoff files before image import, replication, or cutover planning.
 
 ## Further Reading
-For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`.
+For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`.
 
 ## Release Notes
 - Added a potential savings metric to the Streamlit dashboard.
@@ -131,7 +141,8 @@ For detailed Terraform override behavior and deployment target guidance, see `do
 - Added image readiness assessment fields for IBM Cloud VPC custom image planning.
 - Added per-disk data volume generation, VSI volume attachments, and `disk-mapping.csv`.
 - Added multi-NIC network mapping, secondary VSI network interfaces, and `nic-mapping.csv`.
+- Added migration readiness assessment from RVTools snapshot, tools, CD, USB, and health tabs, including `readiness-findings.csv`.
 
 ---
 **Author**: Michael Vincent Jones
-**Version**: 1.5.0
+**Version**: 1.6.0
