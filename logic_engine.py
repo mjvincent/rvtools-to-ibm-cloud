@@ -6,6 +6,7 @@ import re
 
 IMAGE_MAX_GB = 250
 IMAGE_MIN_GB = 10
+SNAPSHOT_BLOCK_SIZE_MIB = 10240
 
 # --- STRATEGY B: ECONOMIC OPTIMIZER CATALOG ---
 IBM_VPC_CATALOG = [
@@ -204,6 +205,53 @@ def _connected_nics(vm):
     ]
 
 
+def _vm_findings(vm):
+    findings = vm.get('Readiness Findings') or []
+    return findings if isinstance(findings, list) else []
+
+
+def make_readiness_finding(finding_type, severity, source_tab, evidence,
+                           recommended_action):
+    """Create a normalized migration readiness finding record."""
+    return {
+        "finding_type": _clean_value(finding_type),
+        "severity": _clean_value(severity, "Review"),
+        "source_tab": _clean_value(source_tab),
+        "evidence": _clean_value(evidence),
+        "recommended_action": _clean_value(recommended_action),
+    }
+
+
+def summarize_migration_readiness(findings):
+    """Summarize VM migration readiness findings into Ready/Review/Blocked."""
+    clean_findings = [
+        finding for finding in findings
+        if isinstance(finding, dict) and _clean_value(finding.get('severity'))
+    ]
+    if not clean_findings:
+        return {
+            "status": "Ready",
+            "reasons": "No migration readiness blockers found",
+        }
+
+    severities = [
+        _clean_value(finding.get('severity')).lower()
+        for finding in clean_findings
+    ]
+    status = "Blocked" if "blocked" in severities else "Review"
+    reasons = []
+    for finding in clean_findings:
+        label = _clean_value(finding.get('finding_type'), 'Finding')
+        evidence = _clean_value(finding.get('evidence'))
+        reason = f"{label}: {evidence}" if evidence else label
+        reasons.append(reason)
+
+    return {
+        "status": status,
+        "reasons": "; ".join(reasons),
+    }
+
+
 def _status_contains(vm, token):
     return token.lower() in str(vm.get('Data Status', '')).lower()
 
@@ -301,6 +349,21 @@ def _migration_vm_record(vm):
             "max_custom_image_gb": IMAGE_MAX_GB,
             "min_custom_image_gb": IMAGE_MIN_GB,
         },
+        "migration_readiness": {
+            "status": _clean_value(vm.get('Migration Readiness'), 'Review'),
+            "reasons": _clean_value(vm.get('Migration Readiness Reasons')),
+            "snapshot_count": _clean_value(vm.get('Snapshot Count'), 0),
+            "snapshot_size_mib": _clean_value(
+                vm.get('Snapshot Size MiB'), 0
+            ),
+            "vmware_tools_status": _clean_value(
+                vm.get('VMware Tools Status')
+            ),
+            "mounted_media": _clean_value(vm.get('Mounted Media')),
+            "usb_devices": _clean_value(vm.get('USB Devices'), 0),
+            "health_warnings": _clean_value(vm.get('Health Warnings'), 0),
+            "findings": _vm_findings(vm),
+        },
     }
 
 
@@ -328,6 +391,7 @@ def generate_migration_manifest(final_vms, context):
             "vm_mapping_csv": "vm-mapping.csv",
             "disk_mapping_csv": "disk-mapping.csv",
             "nic_mapping_csv": "nic-mapping.csv",
+            "readiness_findings_csv": "readiness-findings.csv",
             "runbook": "migration-runbook.md",
             "image_import_tfvars_example": "image-import-variables.tfvars.example",
         },
@@ -346,6 +410,9 @@ def generate_vm_mapping_csv(final_vms):
         "Datacenter", "Cluster", "Host", "Disk Count", "Total Storage GB",
         "Firmware", "Boot Disk GB", "Guest Customization",
         "Image Readiness", "Readiness Reasons",
+        "Migration Readiness", "Migration Readiness Reasons",
+        "Snapshot Count", "Snapshot Size MiB", "VMware Tools Status",
+        "Mounted Media", "USB Devices", "Health Warnings",
         "Target Subnet", "Security Group", "Recommended Profile",
         "Override Profile", "Effective Profile", "Storage Tier",
         "Override Storage Tier", "Effective Storage Tier", "Custom Image ID",
@@ -374,6 +441,22 @@ def generate_vm_mapping_csv(final_vms):
             ),
             "Image Readiness": _clean_value(vm.get('Image Readiness')),
             "Readiness Reasons": _clean_value(vm.get('Readiness Reasons')),
+            "Migration Readiness": _clean_value(
+                vm.get('Migration Readiness')
+            ),
+            "Migration Readiness Reasons": _clean_value(
+                vm.get('Migration Readiness Reasons')
+            ),
+            "Snapshot Count": _clean_value(vm.get('Snapshot Count'), 0),
+            "Snapshot Size MiB": _clean_value(
+                vm.get('Snapshot Size MiB'), 0
+            ),
+            "VMware Tools Status": _clean_value(
+                vm.get('VMware Tools Status')
+            ),
+            "Mounted Media": _clean_value(vm.get('Mounted Media')),
+            "USB Devices": _clean_value(vm.get('USB Devices'), 0),
+            "Health Warnings": _clean_value(vm.get('Health Warnings'), 0),
             "Target Subnet": _clean_value(vm.get('Subnet')),
             "Security Group": _clean_value(vm.get('Security Group')),
             "Recommended Profile": _clean_value(vm.get('IBM Profile')),
@@ -393,6 +476,50 @@ def generate_vm_mapping_csv(final_vms):
             "Baseline Cost": _clean_value(vm.get('Baseline Cost (Mo)'), 0),
             "Savings": _clean_value(vm.get('Savings (Mo)'), 0),
         })
+    return output.getvalue()
+
+
+def generate_readiness_findings_csv(final_vms):
+    """Create a row-per-finding migration readiness CSV."""
+    output = io.StringIO()
+    fieldnames = [
+        "VM Name", "Migration Readiness", "Severity", "Finding Type",
+        "Source Tab", "Evidence", "Recommended Action"
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for vm in final_vms:
+        vm_name = _safe_vm_key(vm.get('VM Name'))
+        findings = _vm_findings(vm)
+        if not findings:
+            writer.writerow({
+                "VM Name": vm_name,
+                "Migration Readiness": _clean_value(
+                    vm.get('Migration Readiness'), 'Ready'
+                ),
+                "Severity": "Ready",
+                "Finding Type": "No findings",
+                "Source Tab": "",
+                "Evidence": "No migration readiness blockers found",
+                "Recommended Action": "Proceed with migration planning",
+            })
+            continue
+
+        for finding in findings:
+            writer.writerow({
+                "VM Name": vm_name,
+                "Migration Readiness": _clean_value(
+                    vm.get('Migration Readiness'), 'Review'
+                ),
+                "Severity": _clean_value(finding.get('severity'), 'Review'),
+                "Finding Type": _clean_value(finding.get('finding_type')),
+                "Source Tab": _clean_value(finding.get('source_tab')),
+                "Evidence": _clean_value(finding.get('evidence')),
+                "Recommended Action": _clean_value(
+                    finding.get('recommended_action')
+                ),
+            })
     return output.getvalue()
 
 
@@ -546,6 +673,7 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 - `vm-mapping.csv`: Spreadsheet-friendly migration planning view.
 - `nic-mapping.csv`: Per-NIC source-to-target network mapping view.
 - `disk-mapping.csv`: Per-disk boot/data volume mapping view.
+- `readiness-findings.csv`: Row-level migration readiness findings and remediation actions.
 - `image-import-variables.tfvars.example`: Placeholder map for imported custom image IDs.
 - `migration-runbook.md`: This operational guide.
 
@@ -553,17 +681,18 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 1. Review `vm-mapping.csv` with the application, infrastructure, security, and migration teams.
 2. Confirm migration waves, cutover groups, and business priority for each VM.
 3. Review image readiness status, firmware, boot disk size, and guest customization requirement for each VM.
-4. Resolve `Blocked` items before image import planning and assign owners for `Review` items.
-5. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
-6. Review `disk-mapping.csv` to confirm boot disks are covered by imported images and data disks are created as attached block volumes.
-7. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
-8. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
-9. Upload converted images to IBM Cloud Object Storage when using custom image import.
-10. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
-11. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
-12. Apply the generated Terraform using the selected deployment target.
-13. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
-14. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
+4. Review migration readiness status and resolve `Blocked` findings in `readiness-findings.csv` before scheduling replication or image export.
+5. Assign owners for `Review` findings such as VMware Tools status, minor snapshots, powered-off validation, or RVTools health warnings.
+6. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
+7. Review `disk-mapping.csv` to confirm boot disks are covered by imported images and data disks are created as attached block volumes.
+8. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
+9. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
+10. Upload converted images to IBM Cloud Object Storage when using custom image import.
+11. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
+12. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
+13. Apply the generated Terraform using the selected deployment target.
+14. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
+15. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
 
 ## Notes
 Terraform builds the target VPC foundation and VSI definitions. It does not move VMDK files or perform application cutover by itself. Use the manifest and CSV as the handoff layer for RackWare, custom scripts, IBM Cloud image import, or a migration factory workflow.

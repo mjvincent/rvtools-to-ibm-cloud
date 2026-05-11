@@ -66,3 +66,10 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added `nic-mapping.csv` to the Terraform ZIP for primary, secondary, and disconnected NIC review.
 - Extended the migration manifest with per-NIC source network, IP, MAC, adapter, switch, and connected-state metadata.
 - Documented multi-NIC behavior in the README, migration handoff guide, Terraform override notes, and ADR-007.
+
+### May 11, 2026: Migration Readiness Expansion
+- Added advisory `Ready`, `Review`, and `Blocked` migration readiness statuses using RVTools `vSnapshot`, `vTools`, `vCD`, `vUSB`, and `vHealth` data when present.
+- Added dashboard metrics and table fields for migration readiness, snapshot count/size, VMware Tools status, mounted media, USB device count, and health warning count.
+- Added `readiness-findings.csv` to the Terraform ZIP for row-level remediation planning.
+- Extended `migration-manifest.json`, `vm-mapping.csv`, and `migration-runbook.md` with migration readiness findings.
+- Documented the assessment in the README, migration handoff guide, Terraform override notes, dedicated migration readiness guide, and ADR-008.

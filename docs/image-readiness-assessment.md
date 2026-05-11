@@ -5,6 +5,8 @@ The image readiness assessment helps migration teams review VMware workloads bef
 
 The assessment is advisory. It does not change generated Terraform resources and does not automate VMDK conversion, Cloud Object Storage upload, or image import.
 
+This assessment is separate from the broader migration readiness assessment. Image readiness focuses on custom image prerequisites such as boot disk size, firmware, guest OS, and guest initialization requirements. Migration readiness focuses on operational cleanup items such as snapshots, mounted media, USB devices, VMware Tools status, and RVTools health findings.
+
 ## Status Values
 ### `Ready`
 No metadata blockers were found. The VM still needs normal migration activities such as image conversion to `qcow2` or `vhd`, Cloud Object Storage staging, IBM Cloud custom image import, and boot validation.

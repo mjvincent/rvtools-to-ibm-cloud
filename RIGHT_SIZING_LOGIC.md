@@ -62,6 +62,13 @@ Network mapping is evaluated separately from compute and storage right-sizing. T
 
 Disconnected NICs are retained in the handoff files for review but are not generated as active Terraform interfaces. This prevents inactive source adapters from being provisioned accidentally.
 
+## 12. Migration Readiness Assessment
+Migration readiness is evaluated separately from compute right-sizing, image readiness, disk mapping, and network mapping. The engine uses optional RVTools operational tabs to identify cleanup items that can affect replication, export, image conversion, or cutover.
+
+The assessment reads `vSnapshot`, `vTools`, `vCD`, `vUSB`, and matching `vHealth` rows when those tabs are present. It flags large snapshots, connected ISO/CD media, attached USB devices, VMware Tools/heartbeat/application status concerns, powered-off VMs, and health warnings.
+
+These findings are advisory. They do not change the chosen IBM Cloud profile, storage tier, subnet, security group, or generated Terraform modules. They create a remediation worklist in the dashboard, manifest, VM mapping CSV, runbook, and `readiness-findings.csv`.
+
 ---
 **Author**: Michael Vincent Jones
 **Role**: Technical Specialist, IBM Automation
