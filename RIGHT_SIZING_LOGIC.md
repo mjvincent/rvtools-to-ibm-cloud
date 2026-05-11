@@ -42,6 +42,11 @@ The tool now computes a baseline monthly cost estimate using a conservative 100%
 * **Identification Criteria**: Instances with a "Powered On" state but exhibiting <5% CPU utilization and <100 MHz overall demand are categorized as underutilized.
 * **Recommendation**: These assets are flagged for review and potential decommissioning prior to migration to minimize unnecessary recurring costs.
 
+## 8. Migration Handoff Package
+The same right-sizing, savings, storage, and network mapping outputs now feed a generated migration handoff package. The manifest and CSV preserve the recommendation context for each VM so migration teams can see why a workload received a given IBM Cloud VPC profile, storage tier, subnet, and security group mapping.
+
+This layer does not move VMware images directly. It provides the structured planning data needed by image import workflows, replication tools, partner migration tooling, or migration factory processes.
+
 ---
 **Author**: Michael Vincent Jones
 **Role**: Technical Specialist, IBM Automation

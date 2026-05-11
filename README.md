@@ -22,10 +22,11 @@ The application performs an automated audit of the inventory to identify underut
 * **Capacity Headroom (N+1)**: Calculates available cluster capacity by identifying the largest host speed and evaluating remaining aggregate capacity against total VM demand.
 
 ## Technical Structure
-The application architecture is divided into three functional layers:
+The application architecture is divided into four functional layers:
 1. **Data Processing**: Utilizes Pandas for cross-tabulation and normalization of RVTools telemetry.
 2. **Logic Engine**: Executes profile matching and storage tiering (3, 5, or 10 IOPS) based on workload characteristics.
 3. **Template Rendering**: Outputs HCL (HashiCorp Configuration Language) in a modular format including networking, storage, and VSI modules.
+4. **Migration Handoff**: Exports source-to-target mapping files that help migration teams connect generated Terraform to image import, replication, and cutover workflows.
 
 ## Data Requirements
 Successful execution requires a standard RVTools XLSX export containing the following worksheets:
@@ -42,6 +43,7 @@ The dashboard now includes a potential savings metric and exports an enriched bu
 * Subnet mapping for Terraform
 * Security group mapping for Terraform (if enabled)
 * User override fields for Profile and Storage Tier to influence generated Terraform
+* Source metadata including IP address, guest OS, host, cluster, datacenter, and disk count for migration handoff planning
 
 ## Streamlit Override Controls
 The Streamlit dashboard exposes editable override fields for `Override Profile` and `Override Storage Tier`. When set, these user-specified values are honored by the Terraform generator, allowing human-directed tuning of VSI sizing without changing the underlying migration logic.
@@ -78,6 +80,15 @@ The exported ZIP bundle now produces a modular Terraform layout:
 * `modules/storage/main.tf`, `variables.tf`, `outputs.tf`
 * `modules/vsi/main.tf`, `variables.tf`, `outputs.tf`
 
+## Migration Handoff Package
+Each ZIP bundle also includes a migration handoff package that bridges generated Terraform with image migration and cutover activities:
+* `migration-manifest.json` — tool-neutral source-to-target mapping for each VM
+* `vm-mapping.csv` — spreadsheet-friendly view for migration planning and customer review
+* `image-import-variables.tfvars.example` — placeholder map for IBM Cloud VPC custom image IDs after image import
+* `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
+
+The handoff files are intentionally tool-neutral. They can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
+
 Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module.
 
 ![Terraform module layout example](docs/images/terraform_output_layout.png)
@@ -88,16 +99,18 @@ Generated resources include standardized naming and tags for project and managem
 3. Upload the RVTools .xlsx file.
 4. Review the generated business case, savings metrics, and network/security mappings.
 5. Download the Terraform Bundle (ZIP) for deployment via IBM Cloud CLI or IBM Cloud Schematics.
+6. Review the included migration handoff files before image import, replication, or cutover planning.
 
 ## Further Reading
-For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`.
+For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`.
 
 ## Release Notes
 - Added a potential savings metric to the Streamlit dashboard.
 - Added per-VM baseline and savings values in the exported business case CSV.
 - Added subnet and security group mapping fields to the business case export to support Terraform wiring.
 - Added Terraform override controls for VPC naming, prefix strategy, custom CIDRs, and deployment target selection.
+- Added migration handoff files for source-to-target mapping, image import placeholders, and cutover runbook support.
 
 ---
 **Author**: Michael Vincent Jones
-**Version**: 1.1.0
+**Version**: 1.2.0

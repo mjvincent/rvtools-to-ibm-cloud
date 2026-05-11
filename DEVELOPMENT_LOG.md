@@ -35,3 +35,12 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added user override support for IBM Profile and Storage Tier in the Streamlit data editor, with values honored during Terraform generation.
 - Added Terraform override controls for VPC name, address prefix strategy, custom CIDRs, and deployment target selection.
 - Added conditional backend behavior for Plain CLI vs IBM Schematics deployments.
+
+
+### May 11, 2026: Migration Handoff Package
+- Added a generated `migration-manifest.json` file to the Terraform ZIP bundle for tool-neutral source-to-target mapping.
+- Added `vm-mapping.csv` for migration team review and customer workshop planning.
+- Added `image-import-variables.tfvars.example` to capture IBM Cloud VPC custom image IDs after image import.
+- Added `migration-runbook.md` to guide image staging, Terraform apply, validation, and cutover activities.
+- Enriched per-VM processing with source IP, guest OS, disk count, host, cluster, datacenter, and power state metadata.
+- Documented the handoff package in the README, dedicated user guide, and ADR-004.
