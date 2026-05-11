@@ -69,6 +69,13 @@ The assessment reads `vSnapshot`, `vTools`, `vCD`, `vUSB`, and matching `vHealth
 
 These findings are advisory. They do not change the chosen IBM Cloud profile, storage tier, subnet, security group, or generated Terraform modules. They create a remediation worklist in the dashboard, manifest, VM mapping CSV, runbook, and `readiness-findings.csv`.
 
+## 13. Memory Readiness and Sizing
+Memory sizing now uses RVTools `vMemory` telemetry in addition to the configured memory value from `vInfo`. The engine evaluates active memory, consumed memory, swapping, ballooning, reservations, memory limits, and hot-add status.
+
+The sizing model remains conservative. If swapping, ballooning, reservations, or memory limits are detected, the app preserves configured memory and flags the workload for review or remediation. If active memory is materially below configured memory and no pressure signals are present, the app can use a reduced sizing memory value with a 50 percent configured-memory floor.
+
+Memory readiness is advisory but does affect the recommended profile because IBM Cloud VSI profiles pair CPU and RAM. Users can still override the selected profile in the table before generating Terraform.
+
 ---
 **Author**: Michael Vincent Jones
 **Role**: Technical Specialist, IBM Automation

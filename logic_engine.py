@@ -7,6 +7,7 @@ import re
 IMAGE_MAX_GB = 250
 IMAGE_MIN_GB = 10
 SNAPSHOT_BLOCK_SIZE_MIB = 10240
+MEMORY_PRESSURE_MIB = 1024
 
 # --- STRATEGY B: ECONOMIC OPTIMIZER CATALOG ---
 IBM_VPC_CATALOG = [
@@ -39,11 +40,15 @@ def find_cheapest_fit(target_cpu, target_ram):
 
 
 def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
-                          threshold, storage_gb, tier):
+                          threshold, storage_gb, tier,
+                          memory_is_sizing=False):
     """Strategy B: Full Solution Cost (Compute + Storage)."""
     util_factor = threshold / 100
     needed_cpu = max(1, round(cpus * util_factor))
-    needed_ram = max(2, round((memory / 1024) * 0.8))
+    if memory_is_sizing:
+        needed_ram = max(2, round(memory / 1024))
+    else:
+        needed_ram = max(2, round((memory / 1024) * 0.8))
     optimized = find_cheapest_fit(needed_cpu, needed_ram)
 
     tier_rates = {
@@ -144,6 +149,141 @@ def assess_image_readiness(guest_os, firmware, boot_disk_gb,
         "requires_cos_staging": True,
         "max_custom_image_gb": IMAGE_MAX_GB,
         "min_custom_image_gb": IMAGE_MIN_GB,
+    }
+
+
+def _round_memory_mib(value):
+    memory = max(2048, _clean_number(value, 2048))
+    return int(math.ceil(memory / 1024) * 1024)
+
+
+def assess_memory_readiness(configured_mib, active_mib, consumed_mib,
+                            ballooned_mib, swapped_mib, reservation_mib,
+                            limit_mib, hot_add, source_available=True):
+    """
+    Assess memory pressure and return conservative sizing guidance.
+
+    This is advisory and uses RVTools vMemory telemetry. It avoids reducing
+    memory when pressure, reservations, or limits make sizing risky.
+    """
+    configured = _clean_number(configured_mib, 0)
+    active = _clean_number(active_mib, 0)
+    consumed = _clean_number(consumed_mib, 0)
+    ballooned = _clean_number(ballooned_mib, 0)
+    swapped = _clean_number(swapped_mib, 0)
+    reservation = _clean_number(reservation_mib, 0)
+    limit = _clean_number(limit_mib, -1)
+    hot_add_text = _clean_text(hot_add)
+    reasons = []
+    blockers = []
+
+    if not source_available and configured > 0:
+        return {
+            "status": "Review",
+            "reasons": "vMemory data missing; preserve configured memory",
+            "configured_mib": round(configured, 2),
+            "active_mib": active,
+            "consumed_mib": consumed,
+            "ballooned_mib": ballooned,
+            "swapped_mib": swapped,
+            "reservation_mib": reservation,
+            "limit_mib": limit,
+            "hot_add": hot_add_text,
+            "sizing_memory_mib": _round_memory_mib(configured),
+            "sizing_basis": "missing-vmemory-preserve-configured-memory",
+        }
+
+    if configured <= 0:
+        return {
+            "status": "Review",
+            "reasons": "vMemory data missing; preserve configured memory",
+            "configured_mib": 0,
+            "active_mib": active,
+            "consumed_mib": consumed,
+            "ballooned_mib": ballooned,
+            "swapped_mib": swapped,
+            "reservation_mib": reservation,
+            "limit_mib": limit,
+            "hot_add": hot_add_text,
+            "sizing_memory_mib": 2048,
+            "sizing_basis": "missing-vmemory",
+        }
+
+    pressure_threshold = max(MEMORY_PRESSURE_MIB, configured * 0.05)
+    severe_pressure = swapped >= pressure_threshold or ballooned >= pressure_threshold
+
+    if severe_pressure:
+        blockers.append(
+            "Severe memory pressure detected; preserve configured memory"
+        )
+    elif swapped > 0 or ballooned > 0:
+        reasons.append(
+            "Memory swapping or ballooning detected; validate before resizing"
+        )
+
+    if limit > 0 and limit < configured:
+        blockers.append(
+            "Memory limit is below configured memory; remove or validate limit"
+        )
+
+    if reservation > 0:
+        reasons.append(
+            "Memory reservation detected; confirm target sizing requirement"
+        )
+
+    if hot_add_text.lower() == "true":
+        reasons.append("Memory hot-add enabled; confirm guest support in target")
+
+    consumed_ratio = consumed / configured if configured else 0
+    active_ratio = active / configured if configured else 0
+    if consumed_ratio >= 0.9 and active <= 0:
+        reasons.append(
+            "Consumed memory is high and active memory is missing; preserve memory"
+        )
+
+    preserve_memory = bool(blockers) or swapped > 0 or ballooned > 0
+    preserve_memory = preserve_memory or reservation > 0
+    preserve_memory = preserve_memory or (consumed_ratio >= 0.9 and active <= 0)
+
+    if preserve_memory:
+        sizing_memory = configured
+        sizing_basis = "preserve-configured-memory"
+    elif active > 0 and active_ratio <= 0.5:
+        sizing_memory = max(active * 2, configured * 0.5, 2048)
+        sizing_basis = "active-memory-with-50-percent-floor"
+        reasons.append(
+            "Active memory is materially below configured memory; conservative reduction applied"
+        )
+    else:
+        sizing_memory = configured * 0.8
+        sizing_basis = "configured-memory-80-percent"
+
+    if reservation > 0:
+        sizing_memory = max(sizing_memory, reservation)
+
+    sizing_memory = max(2048, min(configured, _round_memory_mib(sizing_memory)))
+
+    if blockers:
+        status = "Blocked"
+    elif reasons:
+        status = "Review"
+    else:
+        status = "Ready"
+        reasons.append("No memory pressure or constraints detected")
+
+    return {
+        "status": status,
+        "reasons": "; ".join(blockers + reasons),
+        "configured_mib": round(configured, 2),
+        "active_mib": round(active, 2),
+        "consumed_mib": round(consumed, 2),
+        "ballooned_mib": round(ballooned, 2),
+        "swapped_mib": round(swapped, 2),
+        "reservation_mib": round(reservation, 2),
+        "limit_mib": round(limit, 2),
+        "hot_add": hot_add_text,
+        "sizing_memory_mib": sizing_memory,
+        "sizing_basis": sizing_basis,
     }
 
 
@@ -337,6 +477,30 @@ def _migration_vm_record(vm):
             "estimated_monthly_savings": _clean_value(
                 vm.get('Savings (Mo)'), 0
             ),
+            "memory_readiness": {
+                "status": _clean_value(vm.get('Memory Readiness'), 'Review'),
+                "reasons": _clean_value(vm.get('Memory Readiness Reasons')),
+                "configured_mib": _clean_value(
+                    vm.get('Configured Memory MiB'), 0
+                ),
+                "active_mib": _clean_value(vm.get('Active Memory MiB'), 0),
+                "consumed_mib": _clean_value(
+                    vm.get('Consumed Memory MiB'), 0
+                ),
+                "ballooned_mib": _clean_value(
+                    vm.get('Ballooned Memory MiB'), 0
+                ),
+                "swapped_mib": _clean_value(vm.get('Swapped Memory MiB'), 0),
+                "reservation_mib": _clean_value(
+                    vm.get('Memory Reservation MiB'), 0
+                ),
+                "limit_mib": _clean_value(vm.get('Memory Limit MiB'), 0),
+                "hot_add": _clean_value(vm.get('Memory Hot Add')),
+                "sizing_memory_mib": _clean_value(
+                    vm.get('Sizing Memory MiB'), 0
+                ),
+                "sizing_basis": _clean_value(vm.get('Memory Sizing Basis')),
+            },
         },
         "image_readiness": {
             "status": _clean_value(vm.get('Image Readiness'), 'Review'),
@@ -391,6 +555,7 @@ def generate_migration_manifest(final_vms, context):
             "vm_mapping_csv": "vm-mapping.csv",
             "disk_mapping_csv": "disk-mapping.csv",
             "nic_mapping_csv": "nic-mapping.csv",
+            "memory_readiness_csv": "memory-readiness.csv",
             "readiness_findings_csv": "readiness-findings.csv",
             "runbook": "migration-runbook.md",
             "image_import_tfvars_example": "image-import-variables.tfvars.example",
@@ -413,6 +578,11 @@ def generate_vm_mapping_csv(final_vms):
         "Migration Readiness", "Migration Readiness Reasons",
         "Snapshot Count", "Snapshot Size MiB", "VMware Tools Status",
         "Mounted Media", "USB Devices", "Health Warnings",
+        "Memory Readiness", "Memory Readiness Reasons",
+        "Configured Memory MiB", "Active Memory MiB",
+        "Consumed Memory MiB", "Ballooned Memory MiB",
+        "Swapped Memory MiB", "Memory Reservation MiB", "Memory Limit MiB",
+        "Memory Hot Add", "Sizing Memory MiB", "Memory Sizing Basis",
         "Target Subnet", "Security Group", "Recommended Profile",
         "Override Profile", "Effective Profile", "Storage Tier",
         "Override Storage Tier", "Effective Storage Tier", "Custom Image ID",
@@ -457,6 +627,38 @@ def generate_vm_mapping_csv(final_vms):
             "Mounted Media": _clean_value(vm.get('Mounted Media')),
             "USB Devices": _clean_value(vm.get('USB Devices'), 0),
             "Health Warnings": _clean_value(vm.get('Health Warnings'), 0),
+            "Memory Readiness": _clean_value(vm.get('Memory Readiness')),
+            "Memory Readiness Reasons": _clean_value(
+                vm.get('Memory Readiness Reasons')
+            ),
+            "Configured Memory MiB": _clean_value(
+                vm.get('Configured Memory MiB'), 0
+            ),
+            "Active Memory MiB": _clean_value(
+                vm.get('Active Memory MiB'), 0
+            ),
+            "Consumed Memory MiB": _clean_value(
+                vm.get('Consumed Memory MiB'), 0
+            ),
+            "Ballooned Memory MiB": _clean_value(
+                vm.get('Ballooned Memory MiB'), 0
+            ),
+            "Swapped Memory MiB": _clean_value(
+                vm.get('Swapped Memory MiB'), 0
+            ),
+            "Memory Reservation MiB": _clean_value(
+                vm.get('Memory Reservation MiB'), 0
+            ),
+            "Memory Limit MiB": _clean_value(
+                vm.get('Memory Limit MiB'), 0
+            ),
+            "Memory Hot Add": _clean_value(vm.get('Memory Hot Add')),
+            "Sizing Memory MiB": _clean_value(
+                vm.get('Sizing Memory MiB'), 0
+            ),
+            "Memory Sizing Basis": _clean_value(
+                vm.get('Memory Sizing Basis')
+            ),
             "Target Subnet": _clean_value(vm.get('Subnet')),
             "Security Group": _clean_value(vm.get('Security Group')),
             "Recommended Profile": _clean_value(vm.get('IBM Profile')),
@@ -520,6 +722,62 @@ def generate_readiness_findings_csv(final_vms):
                     finding.get('recommended_action')
                 ),
             })
+    return output.getvalue()
+
+
+def generate_memory_readiness_csv(final_vms):
+    """Create a VM-level memory readiness and sizing CSV."""
+    output = io.StringIO()
+    fieldnames = [
+        "VM Name", "Memory Readiness", "Memory Readiness Reasons",
+        "Configured Memory MiB", "Active Memory MiB", "Consumed Memory MiB",
+        "Ballooned Memory MiB", "Swapped Memory MiB",
+        "Memory Reservation MiB", "Memory Limit MiB", "Memory Hot Add",
+        "Sizing Memory MiB", "Memory Sizing Basis", "Recommended Profile",
+        "Override Profile", "Effective Profile"
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for vm in final_vms:
+        writer.writerow({
+            "VM Name": _safe_vm_key(vm.get('VM Name')),
+            "Memory Readiness": _clean_value(vm.get('Memory Readiness')),
+            "Memory Readiness Reasons": _clean_value(
+                vm.get('Memory Readiness Reasons')
+            ),
+            "Configured Memory MiB": _clean_value(
+                vm.get('Configured Memory MiB'), 0
+            ),
+            "Active Memory MiB": _clean_value(
+                vm.get('Active Memory MiB'), 0
+            ),
+            "Consumed Memory MiB": _clean_value(
+                vm.get('Consumed Memory MiB'), 0
+            ),
+            "Ballooned Memory MiB": _clean_value(
+                vm.get('Ballooned Memory MiB'), 0
+            ),
+            "Swapped Memory MiB": _clean_value(
+                vm.get('Swapped Memory MiB'), 0
+            ),
+            "Memory Reservation MiB": _clean_value(
+                vm.get('Memory Reservation MiB'), 0
+            ),
+            "Memory Limit MiB": _clean_value(
+                vm.get('Memory Limit MiB'), 0
+            ),
+            "Memory Hot Add": _clean_value(vm.get('Memory Hot Add')),
+            "Sizing Memory MiB": _clean_value(
+                vm.get('Sizing Memory MiB'), 0
+            ),
+            "Memory Sizing Basis": _clean_value(
+                vm.get('Memory Sizing Basis')
+            ),
+            "Recommended Profile": _clean_value(vm.get('IBM Profile')),
+            "Override Profile": _clean_value(vm.get('Override Profile')),
+            "Effective Profile": _effective_profile(vm),
+        })
     return output.getvalue()
 
 
@@ -673,6 +931,7 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 - `vm-mapping.csv`: Spreadsheet-friendly migration planning view.
 - `nic-mapping.csv`: Per-NIC source-to-target network mapping view.
 - `disk-mapping.csv`: Per-disk boot/data volume mapping view.
+- `memory-readiness.csv`: Memory pressure, reservation, limit, and sizing review.
 - `readiness-findings.csv`: Row-level migration readiness findings and remediation actions.
 - `image-import-variables.tfvars.example`: Placeholder map for imported custom image IDs.
 - `migration-runbook.md`: This operational guide.
@@ -681,18 +940,19 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 1. Review `vm-mapping.csv` with the application, infrastructure, security, and migration teams.
 2. Confirm migration waves, cutover groups, and business priority for each VM.
 3. Review image readiness status, firmware, boot disk size, and guest customization requirement for each VM.
-4. Review migration readiness status and resolve `Blocked` findings in `readiness-findings.csv` before scheduling replication or image export.
-5. Assign owners for `Review` findings such as VMware Tools status, minor snapshots, powered-off validation, or RVTools health warnings.
-6. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
-7. Review `disk-mapping.csv` to confirm boot disks are covered by imported images and data disks are created as attached block volumes.
-8. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
-9. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
-10. Upload converted images to IBM Cloud Object Storage when using custom image import.
-11. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
-12. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
-13. Apply the generated Terraform using the selected deployment target.
-14. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
-15. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
+4. Review memory readiness status and validate any VM with swapping, ballooning, reservations, limits, or hot-add dependencies.
+5. Review migration readiness status and resolve `Blocked` findings in `readiness-findings.csv` before scheduling replication or image export.
+6. Assign owners for `Review` findings such as VMware Tools status, minor snapshots, powered-off validation, or RVTools health warnings.
+7. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
+8. Review `disk-mapping.csv` to confirm boot disks are covered by imported images and data disks are created as attached block volumes.
+9. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
+10. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
+11. Upload converted images to IBM Cloud Object Storage when using custom image import.
+12. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
+13. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
+14. Apply the generated Terraform using the selected deployment target.
+15. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
+16. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
 
 ## Notes
 Terraform builds the target VPC foundation and VSI definitions. It does not move VMDK files or perform application cutover by itself. Use the manifest and CSV as the handoff layer for RackWare, custom scripts, IBM Cloud image import, or a migration factory workflow.

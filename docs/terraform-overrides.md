@@ -62,6 +62,8 @@ Image readiness fields are advisory. `Ready`, `Review`, or `Blocked` values do n
 
 Migration readiness fields are also advisory. Snapshot, VMware Tools, mounted media, USB, and health findings do not alter Terraform output. They are included in the dashboard and handoff files so teams can remediate source-side risks before export, replication, image import, or cutover.
 
+Memory readiness fields are advisory, but memory sizing can influence the recommended IBM Cloud VSI profile because profile selection depends on CPU and RAM. Severe swapping, ballooning, memory reservations, or memory limits preserve configured memory. Users can still choose `Override Profile` to force a different target profile before building Terraform.
+
 Storage tier overrides apply to every generated data disk volume for that VM. The boot disk is not generated as an IBM Cloud block volume because it is expected to be covered by the imported custom image workflow.
 
 Custom CIDR overrides apply to every discovered source network from `vNetwork`, not only the primary VM network. Connected secondary NICs use the subnet and security group generated for their own source network. Disconnected NICs remain in `nic-mapping.csv` and the manifest but do not create Terraform network interfaces.

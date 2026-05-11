@@ -6,6 +6,7 @@ from logic_engine import (
     IBM_VPC_CATALOG,
     SNAPSHOT_BLOCK_SIZE_MIB,
     assess_image_readiness,
+    assess_memory_readiness,
     make_readiness_finding,
     get_catalog_profiles,
     map_vmware_to_ibm_vpc,
@@ -13,6 +14,7 @@ from logic_engine import (
     generate_tfvars,
     generate_disk_mapping_csv,
     generate_image_import_tfvars,
+    generate_memory_readiness_csv,
     generate_migration_manifest,
     generate_nic_mapping_csv,
     generate_readiness_findings_csv,
@@ -79,7 +81,33 @@ TABLE_CONFIG = {
     ),
     "Mounted Media": st.column_config.TextColumn("Mounted Media"),
     "USB Devices": st.column_config.NumberColumn("USB Devices"),
-    "Health Warnings": st.column_config.NumberColumn("Health Warnings")
+    "Health Warnings": st.column_config.NumberColumn("Health Warnings"),
+    "Memory Readiness": st.column_config.TextColumn("Memory Readiness"),
+    "Memory Readiness Reasons": st.column_config.TextColumn(
+        "Memory Readiness Reasons"
+    ),
+    "Configured Memory MiB": st.column_config.NumberColumn(
+        "Configured Memory MiB"
+    ),
+    "Active Memory MiB": st.column_config.NumberColumn("Active Memory MiB"),
+    "Consumed Memory MiB": st.column_config.NumberColumn(
+        "Consumed Memory MiB"
+    ),
+    "Ballooned Memory MiB": st.column_config.NumberColumn(
+        "Ballooned Memory MiB"
+    ),
+    "Swapped Memory MiB": st.column_config.NumberColumn(
+        "Swapped Memory MiB"
+    ),
+    "Memory Reservation MiB": st.column_config.NumberColumn(
+        "Memory Reservation MiB"
+    ),
+    "Memory Limit MiB": st.column_config.NumberColumn("Memory Limit MiB"),
+    "Memory Hot Add": st.column_config.TextColumn("Memory Hot Add"),
+    "Sizing Memory MiB": st.column_config.NumberColumn("Sizing Memory MiB"),
+    "Memory Sizing Basis": st.column_config.TextColumn(
+        "Memory Sizing Basis"
+    )
 }
 
 DISABLED_COLS = [
@@ -94,6 +122,11 @@ DISABLED_COLS = [
     "Migration Readiness", "Migration Readiness Reasons",
     "Snapshot Count", "Snapshot Size MiB", "VMware Tools Status",
     "Mounted Media", "USB Devices", "Health Warnings",
+    "Memory Readiness", "Memory Readiness Reasons",
+    "Configured Memory MiB", "Active Memory MiB", "Consumed Memory MiB",
+    "Ballooned Memory MiB", "Swapped Memory MiB",
+    "Memory Reservation MiB", "Memory Limit MiB", "Memory Hot Add",
+    "Sizing Memory MiB", "Memory Sizing Basis",
     "Baseline Cost (Mo)", "Savings (Mo)"
 ]
 
@@ -238,6 +271,7 @@ if uploaded_file is not None:
     df_vinfo = read_sheet('vInfo')
     df_vdisk = read_sheet('vDisk')
     df_vcpu = read_sheet('vCPU')
+    df_vmemory = read_sheet('vMemory')
     df_vhost = read_sheet('vHost')
     df_vcluster = read_sheet('vCluster')
     df_vnetwork = read_sheet('vNetwork')
@@ -249,7 +283,7 @@ if uploaded_file is not None:
 
     # 2. CLEAN COLUMN NAMES
     for df in [df_vinfo, df_vdisk, df_vcpu, df_vhost,
-               df_vcluster, df_vnetwork, df_vsnapshot, df_vtools,
+               df_vmemory, df_vcluster, df_vnetwork, df_vsnapshot, df_vtools,
                df_vcd, df_vusb, df_vhealth]:
         if not df.empty:
             df.columns = df.columns.str.strip()
@@ -382,7 +416,29 @@ if uploaded_file is not None:
             'limit': v_r.get('Limit', 0)
         }
 
-    # 6. HOST CAPACITY
+    # 6. VMEMORY PERFORMANCE
+    memory_summary = {}
+    if not df_vmemory.empty:
+        df_vmemory["_rvtools_vm_key"] = df_vmemory.apply(
+            lambda row: get_row_identity(row, ""),
+            axis=1
+        )
+        for _, mem_row in df_vmemory.iterrows():
+            name = mem_row.get("_rvtools_vm_key", "")
+            if not name:
+                continue
+            memory_summary[str(name)] = {
+                "configured_mib": as_float(mem_row.get("Size MiB")),
+                "active_mib": as_float(mem_row.get("Active")),
+                "consumed_mib": as_float(mem_row.get("Consumed")),
+                "ballooned_mib": as_float(mem_row.get("Ballooned")),
+                "swapped_mib": as_float(mem_row.get("Swapped")),
+                "reservation_mib": as_float(mem_row.get("Reservation")),
+                "limit_mib": as_float(mem_row.get("Limit"), -1),
+                "hot_add": clean_cell(mem_row.get("Hot Add")),
+            }
+
+    # 7. HOST CAPACITY
     h_cap = {}
     for _, h_r in df_vhost.iterrows():
         h_n = h_r.get('Host')
@@ -391,7 +447,7 @@ if uploaded_file is not None:
             'cores': h_r.get('# Cores', 1)
         }
 
-    # 7. MIGRATION READINESS INPUTS
+    # 8. MIGRATION READINESS INPUTS
     snapshot_summary = {}
     if not df_vsnapshot.empty:
         df_vsnapshot["_rvtools_vm_key"] = df_vsnapshot.apply(
@@ -574,7 +630,7 @@ if uploaded_file is not None:
 
         return findings
 
-    # 8. PROCESS VMS
+    # 9. PROCESS VMS
     processed_vms = []
     vinfo_cols = df_vinfo.columns.tolist()
     vi_net_c = next(
@@ -652,6 +708,18 @@ if uploaded_file is not None:
         )
         vm_findings = build_migration_findings(vm_key, vm_n, p_st)
         migration_readiness = summarize_migration_readiness(vm_findings)
+        vm_memory = memory_summary.get(vm_key, {})
+        memory_readiness = assess_memory_readiness(
+            vm_memory.get("configured_mib", o_ram),
+            vm_memory.get("active_mib", 0),
+            vm_memory.get("consumed_mib", 0),
+            vm_memory.get("ballooned_mib", 0),
+            vm_memory.get("swapped_mib", 0),
+            vm_memory.get("reservation_mib", 0),
+            vm_memory.get("limit_mib", -1),
+            vm_memory.get("hot_add", ""),
+            source_available=vm_key in memory_summary
+        )
         vm_snapshots = snapshot_summary.get(
             vm_key, {"count": 0, "size_mib": 0}
         )
@@ -695,8 +763,8 @@ if uploaded_file is not None:
         c_use = 100 if (is_un_c or starve or throt) else usage
 
         mapping = map_vmware_to_ibm_vpc(
-            o_cpu, o_ram, c_use, target_region,
-            utilization_threshold, t_gb, s_tier
+            o_cpu, memory_readiness['sizing_memory_mib'], c_use, target_region,
+            utilization_threshold, t_gb, s_tier, memory_is_sizing=True
         )
 
         baseline = map_vmware_to_ibm_vpc(
@@ -733,6 +801,18 @@ if uploaded_file is not None:
             'Migration Readiness': migration_readiness['status'],
             'Migration Readiness Reasons': migration_readiness['reasons'],
             'Readiness Findings': vm_findings,
+            'Memory Readiness': memory_readiness['status'],
+            'Memory Readiness Reasons': memory_readiness['reasons'],
+            'Configured Memory MiB': memory_readiness['configured_mib'],
+            'Active Memory MiB': memory_readiness['active_mib'],
+            'Consumed Memory MiB': memory_readiness['consumed_mib'],
+            'Ballooned Memory MiB': memory_readiness['ballooned_mib'],
+            'Swapped Memory MiB': memory_readiness['swapped_mib'],
+            'Memory Reservation MiB': memory_readiness['reservation_mib'],
+            'Memory Limit MiB': memory_readiness['limit_mib'],
+            'Memory Hot Add': memory_readiness['hot_add'],
+            'Sizing Memory MiB': memory_readiness['sizing_memory_mib'],
+            'Memory Sizing Basis': memory_readiness['sizing_basis'],
             'Snapshot Count': vm_snapshots['count'],
             'Snapshot Size MiB': vm_snapshots['size_mib'],
             'VMware Tools Status': vm_tools_status,
@@ -814,6 +894,20 @@ if uploaded_file is not None:
     mr3.metric(
         "Migration Blocked",
         len(active_df[active_df['Migration Readiness'] == "Blocked"])
+    )
+
+    mem1, mem2, mem3 = st.columns(3)
+    mem1.metric(
+        "Memory Ready",
+        len(active_df[active_df['Memory Readiness'] == "Ready"])
+    )
+    mem2.metric(
+        "Memory Review",
+        len(active_df[active_df['Memory Readiness'] == "Review"])
+    )
+    mem3.metric(
+        "Memory Blocked",
+        len(active_df[active_df['Memory Readiness'] == "Blocked"])
     )
 
     # --- TERRAFORM OVERRIDES ---
@@ -954,6 +1048,10 @@ if uploaded_file is not None:
                         )
                     )
                     zf.writestr(
+                        "memory-readiness.csv",
+                        generate_memory_readiness_csv(final_vms)
+                    )
+                    zf.writestr(
                         "readiness-findings.csv",
                         generate_readiness_findings_csv(final_vms)
                     )
@@ -1008,3 +1106,7 @@ if uploaded_file is not None:
     st.write("- **Ready:** No migration blockers found in optional RVTools tabs.")
     st.write("- **Review:** Snapshots, tools, power state, or health items need owner validation.")
     st.write("- **Blocked:** Large snapshots, mounted media, USB devices, or severe health items should be remediated before migration.")
+    st.markdown("**Memory Readiness**")
+    st.write("- **Ready:** No memory pressure or constraints detected.")
+    st.write("- **Review:** Reservations, hot-add, light pressure, or sizing reductions need validation.")
+    st.write("- **Blocked:** Severe swapping/ballooning or memory limits should be remediated before resizing.")

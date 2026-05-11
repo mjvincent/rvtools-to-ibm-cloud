@@ -15,6 +15,8 @@ Each VM now includes an `image_readiness` object with readiness status, reason t
 
 Each VM also includes a `migration_readiness` object with readiness status, reason text, snapshot count and size, VMware Tools status, mounted media, USB device count, health warning count, and detailed findings when available.
 
+Each VM assessment also includes a `memory_readiness` object with readiness status, reason text, configured, active, consumed, ballooned, swapped, reservation, limit, hot-add, sizing memory, and sizing basis fields.
+
 The manifest also preserves source disk detail from `vDisk`. Boot disks are marked as image-covered storage, and additional disks are listed as target data volumes for IBM Cloud block storage creation and attachment.
 
 The manifest preserves source NIC detail from `vNetwork`. Connected NICs are mapped to primary or secondary VPC network interfaces, while disconnected NICs remain visible for migration review.
@@ -22,13 +24,16 @@ The manifest preserves source NIC detail from `vNetwork`. Connected NICs are map
 ### `vm-mapping.csv`
 A spreadsheet-friendly view of the same source-to-target mapping. This is intended for customer workshops, wave planning, and migration team review.
 
-The CSV includes image and migration readiness columns so application and migration teams can filter `Blocked` items before image import planning, replication, export, or cutover scheduling and assign owners for `Review` items.
+The CSV includes image, migration, and memory readiness columns so application and migration teams can filter `Blocked` items before image import planning, replication, export, or cutover scheduling and assign owners for `Review` items.
 
 ### `nic-mapping.csv`
 A per-NIC mapping file showing primary, secondary, and disconnected source adapters. It includes source network, IP, MAC address, adapter type, switch, target subnet, and target security group.
 
 ### `disk-mapping.csv`
 A per-disk mapping file that separates boot disks from data disks. Boot disks are marked as covered by the imported custom image. Data disks include target Terraform volume and attachment resource names.
+
+### `memory-readiness.csv`
+A VM-level memory readiness file showing memory pressure, reservations, limits, hot-add status, sizing memory, sizing basis, and effective profile context.
 
 ### `readiness-findings.csv`
 A row-level migration readiness file showing each detected finding, severity, source RVTools tab, evidence, and recommended action. This is the most direct remediation worklist for migration planning workshops.
@@ -48,15 +53,16 @@ A generated operational runbook that explains the recommended sequence: review m
 4. Review `vm-mapping.csv` with application and migration stakeholders.
 5. Use `migration-manifest.json` as the structured handoff for automation or migration tooling.
 6. Resolve image readiness `Blocked` items and review firmware, boot disk, OS, and guest customization concerns.
-7. Review `readiness-findings.csv` to remediate snapshots, mounted media, USB dependencies, VMware Tools concerns, and RVTools health findings.
-8. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
-9. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
-10. Import or replicate VMware images using the approved migration approach.
-11. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
-12. Apply Terraform using Plain CLI or IBM Schematics.
-13. Validate boot, network, storage, monitoring, backup, and application health before cutover.
+7. Review `memory-readiness.csv` to validate profile sizing, memory pressure, reservations, limits, and hot-add dependencies.
+8. Review `readiness-findings.csv` to remediate snapshots, mounted media, USB dependencies, VMware Tools concerns, and RVTools health findings.
+9. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
+10. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
+11. Import or replicate VMware images using the approved migration approach.
+12. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
+13. Apply Terraform using Plain CLI or IBM Schematics.
+14. Validate boot, network, storage, monitoring, backup, and application health before cutover.
 
 ## Current Scope
-This release creates the handoff package, image ID placeholders, per-disk volume mapping, multi-NIC mapping, and advisory migration readiness findings. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.
+This release creates the handoff package, image ID placeholders, per-disk volume mapping, multi-NIC mapping, memory readiness sizing, and advisory migration readiness findings. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.
 
 Those are intentionally left as later adapters so the handoff format can remain stable and tool-neutral.

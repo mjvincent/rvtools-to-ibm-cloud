@@ -16,6 +16,7 @@ The tool identifies on-premises network configurations by correlating data from 
 The mapping engine evaluates compute requirements by analyzing specific performance metrics to mitigate the risk of post-migration performance degradation.
 * **Contention Analysis**: Monitors CPU Ready % and Co-Stop telemetry. If a workload shows signs of resource contention on-premises, the tool implements a "Safety Match" policy, maintaining the original core count and memory allocation.
 * **Utilization Thresholds**: Allows for the application of variable utilization factors (30% to 70%) to align suggested IBM VPC profiles with specific performance targets.
+* **Memory-Aware Sizing**: Uses `vMemory` active, consumed, ballooned, swapped, reservation, limit, and hot-add data to avoid unsafe reductions and provide conservative RAM recommendations.
 
 ### Resource Efficiency Auditing
 The application performs an automated audit of the inventory to identify underutilized assets.
@@ -41,6 +42,12 @@ The dashboard also evaluates operational migration prerequisites from optional R
 * **Attached Device Cleanup**: Uses `vCD` and `vUSB` to block connected ISO/CD media or USB device dependencies before migration.
 * **Health Findings**: Uses `vHealth` where VM-level findings can be matched to the workload inventory.
 
+### Memory Readiness Assessment
+The dashboard evaluates memory pressure and sizing constraints from RVTools `vMemory`.
+* **Pressure Detection**: Flags swapping and ballooning before profile reductions are applied.
+* **Constraint Detection**: Captures reservations, memory limits, and hot-add dependencies for owner review.
+* **Sizing Guidance**: Uses active memory with a conservative floor when memory can be reduced safely.
+
 ## Technical Structure
 The application architecture is divided into four functional layers:
 1. **Data Processing**: Utilizes Pandas for cross-tabulation and normalization of RVTools telemetry.
@@ -53,6 +60,7 @@ Successful execution requires a standard RVTools XLSX export containing the foll
 * **vInfo**: Primary inventory, power states, and network assignments.
 * **vNetwork**: Networking metadata and IPv4 addressing.
 * **vCPU**: Detailed performance telemetry (MHz, Ready %, Limits).
+* **vMemory**: Memory telemetry for active, consumed, swapped, ballooned, reservation, limit, and hot-add data.
 * **vHost / vCluster**: Physical infrastructure specifications and aggregate capacity.
 * **vDisk**: Storage capacity and disk inventory.
 * **vSnapshot / vTools / vCD / vUSB / vHealth**: Optional migration readiness signals for snapshots, guest tools, attached media, USB devices, and health warnings.
@@ -67,6 +75,7 @@ The dashboard now includes a potential savings metric and exports an enriched bu
 * Source metadata including IP address, guest OS, host, cluster, datacenter, and disk count for migration handoff planning
 * Image readiness status, readiness reasons, firmware, boot disk size, and guest customization requirement
 * Migration readiness status, readiness reasons, snapshot count/size, VMware Tools status, mounted media, USB device count, and health warning count
+* Memory readiness status, pressure indicators, reservation/limit data, and sizing memory basis
 * Per-disk boot/data role, capacity, source controller metadata, and target volume attachment mapping
 * Per-NIC source network, IP, MAC, adapter, connected state, target subnet, and security group mapping
 
@@ -111,11 +120,12 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `vm-mapping.csv` — spreadsheet-friendly view for migration planning and customer review
 * `nic-mapping.csv` — per-NIC primary/secondary network interface mapping
 * `disk-mapping.csv` — per-disk boot/data mapping for volume creation and attachment review
+* `memory-readiness.csv` — VM-level memory pressure, constraint, and sizing review
 * `readiness-findings.csv` — row-level migration readiness findings and remediation actions
 * `image-import-variables.tfvars.example` — placeholder map for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
-The handoff files include image readiness, migration readiness, NIC mapping, and disk mapping fields so migration teams can resolve boot image, snapshot, mounted media, guest tools, network, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
+The handoff files include image readiness, migration readiness, memory readiness, NIC mapping, and disk mapping fields so migration teams can resolve boot image, snapshot, mounted media, guest tools, memory pressure, reservations, limits, network, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
 
 Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module.
 
@@ -133,7 +143,7 @@ Generated resources include standardized naming and tags for project and managem
 For a complete searchable guide to installation, RVTools inputs, web interface fields, dashboard metrics, readiness statuses, generated Terraform, ZIP contents, handoff files, troubleshooting, and glossary terms, see `docs/user-manual.md`.
 
 ## Further Reading
-Start with `docs/user-manual.md` for end-user operation. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`.
+Start with `docs/user-manual.md` for end-user operation. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`.
 
 ## Release Notes
 - Added a potential savings metric to the Streamlit dashboard.
@@ -146,7 +156,8 @@ Start with `docs/user-manual.md` for end-user operation. For detailed Terraform 
 - Added multi-NIC network mapping, secondary VSI network interfaces, and `nic-mapping.csv`.
 - Added migration readiness assessment from RVTools snapshot, tools, CD, USB, and health tabs, including `readiness-findings.csv`.
 - Added a comprehensive searchable user manual in `docs/user-manual.md`.
+- Added memory readiness and conservative RAM sizing using RVTools `vMemory`, including `memory-readiness.csv`.
 
 ---
 **Author**: Michael Vincent Jones
-**Version**: 1.6.0
+**Version**: 1.7.0
