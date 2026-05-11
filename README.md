@@ -129,8 +129,11 @@ Generated resources include standardized naming and tags for project and managem
 5. Download the Terraform Bundle (ZIP) for deployment via IBM Cloud CLI or IBM Cloud Schematics.
 6. Review the included migration handoff files before image import, replication, or cutover planning.
 
+## User Manual
+For a complete searchable guide to installation, RVTools inputs, web interface fields, dashboard metrics, readiness statuses, generated Terraform, ZIP contents, handoff files, troubleshooting, and glossary terms, see `docs/user-manual.md`.
+
 ## Further Reading
-For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`.
+Start with `docs/user-manual.md` for end-user operation. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`.
 
 ## Release Notes
 - Added a potential savings metric to the Streamlit dashboard.
@@ -142,6 +145,7 @@ For detailed Terraform override behavior and deployment target guidance, see `do
 - Added per-disk data volume generation, VSI volume attachments, and `disk-mapping.csv`.
 - Added multi-NIC network mapping, secondary VSI network interfaces, and `nic-mapping.csv`.
 - Added migration readiness assessment from RVTools snapshot, tools, CD, USB, and health tabs, including `readiness-findings.csv`.
+- Added a comprehensive searchable user manual in `docs/user-manual.md`.
 
 ---
 **Author**: Michael Vincent Jones
