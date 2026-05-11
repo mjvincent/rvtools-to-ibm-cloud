@@ -21,6 +21,12 @@ The application performs an automated audit of the inventory to identify underut
 * **Identification of Low-Utilization Assets**: Workloads exhibiting <5% CPU utilization and <100 MHz overall demand are flagged for review.
 * **Capacity Headroom (N+1)**: Calculates available cluster capacity by identifying the largest host speed and evaluating remaining aggregate capacity against total VM demand.
 
+### Per-Disk Volume Mapping
+The tool now preserves RVTools `vDisk` detail instead of collapsing all disks into one target volume.
+* **Boot Disk Separation**: The first discovered disk is treated as image-covered boot storage.
+* **Data Disk Volumes**: Additional disks generate IBM Cloud block volumes and VSI volume attachments.
+* **Disk Handoff**: A `disk-mapping.csv` file shows source disk metadata and target Terraform volume/attachment names.
+
 ### Image Readiness Assessment
 The dashboard evaluates source VM metadata for IBM Cloud VPC custom image planning.
 * **Readiness Status**: Flags each workload as `Ready`, `Review`, or `Blocked`.
@@ -51,6 +57,7 @@ The dashboard now includes a potential savings metric and exports an enriched bu
 * User override fields for Profile and Storage Tier to influence generated Terraform
 * Source metadata including IP address, guest OS, host, cluster, datacenter, and disk count for migration handoff planning
 * Image readiness status, readiness reasons, firmware, boot disk size, and guest customization requirement
+* Per-disk boot/data role, capacity, source controller metadata, and target volume attachment mapping
 
 ## Streamlit Override Controls
 The Streamlit dashboard exposes editable override fields for `Override Profile` and `Override Storage Tier`. When set, these user-specified values are honored by the Terraform generator, allowing human-directed tuning of VSI sizing without changing the underlying migration logic.
@@ -91,10 +98,11 @@ The exported ZIP bundle now produces a modular Terraform layout:
 Each ZIP bundle also includes a migration handoff package that bridges generated Terraform with image migration and cutover activities:
 * `migration-manifest.json` — tool-neutral source-to-target mapping for each VM
 * `vm-mapping.csv` — spreadsheet-friendly view for migration planning and customer review
+* `disk-mapping.csv` — per-disk boot/data mapping for volume creation and attachment review
 * `image-import-variables.tfvars.example` — placeholder map for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
-The handoff files include image readiness fields so migration teams can resolve boot image, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
+The handoff files include image readiness and disk mapping fields so migration teams can resolve boot image, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
 
 Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module.
 
@@ -118,7 +126,8 @@ For detailed Terraform override behavior and deployment target guidance, see `do
 - Added Terraform override controls for VPC naming, prefix strategy, custom CIDRs, and deployment target selection.
 - Added migration handoff files for source-to-target mapping, image import placeholders, and cutover runbook support.
 - Added image readiness assessment fields for IBM Cloud VPC custom image planning.
+- Added per-disk data volume generation, VSI volume attachments, and `disk-mapping.csv`.
 
 ---
 **Author**: Michael Vincent Jones
-**Version**: 1.3.0
+**Version**: 1.4.0

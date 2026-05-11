@@ -52,6 +52,11 @@ Image readiness is evaluated separately from right-sizing. A workload can be a g
 
 The readiness status is advisory and does not change the generated Terraform resources. It helps teams resolve IBM Cloud VPC custom image prerequisites before conversion, Cloud Object Storage staging, import, or migration-tool cutover.
 
+## 10. Per-Disk Storage Mapping
+Storage sizing now preserves RVTools `vDisk` rows for target data volume planning. The boot disk remains part of the custom image workflow, while each additional data disk generates a separate IBM Cloud block volume and VSI attachment.
+
+The per-disk mapping does not change compute right-sizing. It improves Terraform fidelity by avoiding a single aggregate volume that loses disk role, size, controller, and unit metadata.
+
 ---
 **Author**: Michael Vincent Jones
 **Role**: Technical Specialist, IBM Automation

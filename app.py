@@ -9,6 +9,7 @@ from logic_engine import (
     map_vmware_to_ibm_vpc,
     render_terraform_templates,
     generate_tfvars,
+    generate_disk_mapping_csv,
     generate_image_import_tfvars,
     generate_migration_manifest,
     generate_migration_runbook,
@@ -56,6 +57,7 @@ TABLE_CONFIG = {
     "Boot Disk GB": st.column_config.NumberColumn(
         "Boot Disk GB", format="%.2f"
     ),
+    "Data Disk Count": st.column_config.NumberColumn("Data Disk Count"),
     "Guest Customization": st.column_config.TextColumn("Guest Customization")
 }
 
@@ -64,6 +66,7 @@ DISABLED_COLS = [
     "Total Storage GB", "Monthly Cost", "Right-Sized", "v_p_Ratio",
     "Ready_Pct", "Overall_MHz", "Power State", "Source IP",
     "Guest OS", "Disk Count", "Host", "Cluster", "Datacenter",
+    "VM Key", "Data Disk Count",
     "Image Readiness", "Readiness Reasons", "Firmware", "Boot Disk GB",
     "Guest Customization",
     "Baseline Cost (Mo)", "Savings (Mo)"
@@ -137,6 +140,27 @@ def normalize_network_name(name):
         cleaned = 'unknown'
     return cleaned.lower().replace(" ", "_").replace("-", "_")
 
+
+def get_row_identity(row, fallback):
+    for col in ["VM", "VM UUID", "VM ID"]:
+        value = row.get(col)
+        if value is not None and not pd.isna(value):
+            cleaned = str(value).strip()
+            if cleaned:
+                return cleaned
+    return fallback
+
+
+def get_vm_display_name(row, fallback):
+    for col in ["VM", "DNS Name", "VM UUID", "VM ID"]:
+        value = row.get(col)
+        if value is not None and not pd.isna(value):
+            cleaned = str(value).strip()
+            if cleaned:
+                return cleaned
+    return fallback
+
+
 uploaded_file = st.sidebar.file_uploader("Upload RVTools", type=["xlsx"])
 
 if uploaded_file is not None:
@@ -194,28 +218,55 @@ if uploaded_file is not None:
 
     # 4. STORAGE SUMMARY
     cap_c = next((c for c in df_vdisk.columns if 'Capacity' in c), None)
-    vm_c = next((c for c in df_vdisk.columns if 'VM' in c), 'VM')
+    df_vdisk["_rvtools_vm_key"] = df_vdisk.apply(
+        lambda row: get_row_identity(row, ""),
+        axis=1
+    )
+    disk_rows = df_vdisk[df_vdisk["_rvtools_vm_key"] != ""].copy()
     disk_sum = {}
     disk_count = {}
     boot_disk_gb = {}
+    disk_details = {}
     if cap_c:
-        disk_sum = df_vdisk.groupby(vm_c)[cap_c].sum().to_dict()
-        disk_count = df_vdisk.groupby(vm_c)[cap_c].count().to_dict()
+        disk_sum = disk_rows.groupby("_rvtools_vm_key")[cap_c].sum().to_dict()
+        disk_count = (
+            disk_rows.groupby("_rvtools_vm_key")[cap_c].count().to_dict()
+        )
         sort_cols = []
         for c_name in ["Unit #", "Disk Key", "Disk"]:
             if c_name in df_vdisk.columns:
                 sort_cols.append(c_name)
-        disk_sort = df_vdisk.sort_values(sort_cols) if sort_cols else df_vdisk
-        for name, rows in disk_sort.groupby(vm_c):
-            if not pd.isna(name):
-                boot_disk_gb[str(name)] = round(
-                    rows.iloc[0].get(cap_c, 0) / 1024, 2
-                )
+        disk_sort = (
+            disk_rows.sort_values(sort_cols) if sort_cols else disk_rows
+        )
+        for name, rows in disk_sort.groupby("_rvtools_vm_key"):
+            details = []
+            for idx, disk_row in enumerate(rows.to_dict("records")):
+                capacity_gb = round(disk_row.get(cap_c, 0) / 1024, 2)
+                details.append({
+                    "disk": str(disk_row.get("Disk", f"disk-{idx + 1}")),
+                    "disk_key": disk_row.get("Disk Key", ""),
+                    "disk_path": disk_row.get("Disk Path", ""),
+                    "capacity_gb": capacity_gb,
+                    "capacity_mib": disk_row.get(cap_c, 0),
+                    "is_boot": idx == 0,
+                    "controller": disk_row.get("Controller", ""),
+                    "label": disk_row.get("Label", ""),
+                    "unit_number": disk_row.get("Unit #", ""),
+                    "scsi_unit": disk_row.get("SCSI Unit #", ""),
+                    "disk_mode": disk_row.get("Disk Mode", ""),
+                    "thin": disk_row.get("Thin", ""),
+                    "raw": disk_row.get("Raw", ""),
+                    "shared_bus": disk_row.get("Shared Bus", "")
+                })
+            disk_details[str(name)] = details
+            if details:
+                boot_disk_gb[str(name)] = details[0]["capacity_gb"]
 
     # 5. VCPU PERFORMANCE
     vcpu_m = {}
     for _, v_r in df_vcpu.iterrows():
-        name = v_r.get('VM')
+        name = get_row_identity(v_r, "")
         vcpu_m[name] = {
             'ready': v_r.get('CPU ready %', 0),
             'stop': v_r.get('CPU co-stop', 0),
@@ -240,9 +291,9 @@ if uploaded_file is not None:
         None
     )
 
-    for _, row in df_vinfo.iterrows():
-        raw_vm_n = row.get('VM', 'Unknown')
-        vm_n = 'Unknown' if pd.isna(raw_vm_n) else str(raw_vm_n)
+    for idx, row in df_vinfo.iterrows():
+        vm_key = get_row_identity(row, f"row-{idx + 1}")
+        vm_n = get_vm_display_name(row, f"Unknown-{idx + 1}")
         usage = row.get('CPU Usage %')
         p_st = row.get('Powerstate', 'poweredOn')
         o_cpu, o_ram = row.get('CPUs', 1), row.get('Memory', 1024)
@@ -250,7 +301,7 @@ if uploaded_file is not None:
         raw_vm_net = row.get(vi_net_c, None) if vi_net_c else None
         vm_net = str(raw_vm_net).strip() if raw_vm_net is not None and not pd.isna(raw_vm_net) else 'unknown'
 
-        perf = vcpu_m.get(vm_n, {'ready': 0, 'stop': 0, 'mhz': 0, 'limit': 0})
+        perf = vcpu_m.get(vm_key, {'ready': 0, 'stop': 0, 'mhz': 0, 'limit': 0})
         host = h_cap.get(h_n, {'cores': 1, 'speed': 0})
 
         starve = perf['ready'] > 5.0 or perf['stop'] > 3.0
@@ -260,8 +311,8 @@ if uploaded_file is not None:
         t_vcpus = df_vinfo[h_matches]['CPUs'].sum()
         vp_ratio = round(t_vcpus / host['cores'], 1)
 
-        t_gb = round(disk_sum.get(vm_n, 0) / 1024, 2)
-        b_gb = boot_disk_gb.get(vm_n)
+        t_gb = round(disk_sum.get(vm_key, 0) / 1024, 2)
+        b_gb = boot_disk_gb.get(vm_key)
         if b_gb is None:
             if row.get('Disks', 0) == 1 and t_gb > 0:
                 b_gb = t_gb
@@ -277,7 +328,8 @@ if uploaded_file is not None:
             row.get('OS according to the configuration file', '')
         )
         firmware = row.get('Firmware', '')
-        vm_disk_count = disk_count.get(vm_n, row.get('Disks', 0))
+        vm_disk_details = disk_details.get(vm_key, [])
+        vm_disk_count = disk_count.get(vm_key, row.get('Disks', 0))
         readiness = assess_image_readiness(
             guest_os,
             firmware,
@@ -325,11 +377,14 @@ if uploaded_file is not None:
 
         processed_vms.append({
             'Exclude?': p_st == 'poweredOff',
+            'VM Key': vm_key,
             'VM Name': vm_n,
             'Power State': p_st,
             'Source IP': row.get('Primary IP Address', ''),
             'Guest OS': guest_os,
             'Disk Count': vm_disk_count,
+            'Data Disk Count': max(0, len(vm_disk_details) - 1),
+            'Disk Details': vm_disk_details,
             'Firmware': readiness['firmware'],
             'Boot Disk GB': readiness['boot_disk_gb'],
             'Guest Customization': readiness['guest_customization'],
@@ -361,6 +416,7 @@ if uploaded_file is not None:
 
     # --- 8. DASHBOARD ---
     df_f = pd.DataFrame(processed_vms)
+    df_table = df_f.drop(columns=["Disk Details"], errors="ignore")
     t_mo = df_f[~df_f['Exclude?']]['Monthly Cost'].sum()
 
     m1, m2, m3, m4, m5 = st.columns(5)
@@ -427,7 +483,7 @@ if uploaded_file is not None:
 
     # --- 9. DATA TABLE ---
     edited_df = st.data_editor(
-        df_f,
+        df_table,
         column_config=TABLE_CONFIG,
         disabled=DISABLED_COLS,
         hide_index=True,
@@ -451,6 +507,8 @@ if uploaded_file is not None:
                     v for v in edited_df.to_dict('records')
                     if not v['Exclude?']
                 ]
+                for vm in final_vms:
+                    vm["Disk Details"] = disk_details.get(vm.get("VM Key"), [])
 
                 terraform_files = render_terraform_templates(
                     final_vms,
@@ -507,6 +565,10 @@ if uploaded_file is not None:
                     zf.writestr(
                         "vm-mapping.csv",
                         generate_vm_mapping_csv(final_vms)
+                    )
+                    zf.writestr(
+                        "disk-mapping.csv",
+                        generate_disk_mapping_csv(final_vms)
                     )
                     zf.writestr(
                         "image-import-variables.tfvars.example",

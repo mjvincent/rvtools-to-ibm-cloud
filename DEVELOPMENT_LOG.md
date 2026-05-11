@@ -51,3 +51,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added dashboard metrics for image-ready, image-review, and image-blocked VM counts.
 - Extended `migration-manifest.json`, `vm-mapping.csv`, and `migration-runbook.md` with image readiness data.
 - Documented the assessment in the README, migration handoff guide, image readiness guide, and ADR-005.
+
+### May 11, 2026: Per-Disk Volume Mapping
+- Added RVTools `vDisk` detail preservation for boot/data disk planning.
+- Changed generated storage from one aggregate volume per VM to one IBM Cloud block volume per non-boot data disk.
+- Added VSI volume attachment generation using storage module outputs passed into the VSI module.
+- Added `disk-mapping.csv` to the Terraform ZIP for source disk to target volume/attachment review.
+- Extended the migration manifest with source disk metadata and target data volume planning fields.
+- Documented the disk mapping behavior in the README, migration handoff guide, Terraform override notes, and ADR-006.
