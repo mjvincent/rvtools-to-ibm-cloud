@@ -1,6 +1,8 @@
 import csv
 import io
 import json
+import math
+import re
 
 IMAGE_MAX_GB = 250
 IMAGE_MIN_GB = 10
@@ -170,6 +172,26 @@ def _safe_vm_key(value):
     return cleaned.replace('"', '').replace("'", "")
 
 
+def _safe_resource_name(value):
+    cleaned = str(_clean_value(value, "unknown")).lower()
+    cleaned = re.sub(r"[^0-9a-zA-Z_]+", "_", cleaned)
+    cleaned = cleaned.strip("_")
+    if not cleaned:
+        cleaned = "unknown"
+    if cleaned[0].isdigit():
+        cleaned = f"r_{cleaned}"
+    return cleaned
+
+
+def _vm_disks(vm):
+    disks = vm.get('Disk Details') or []
+    return disks if isinstance(disks, list) else []
+
+
+def _vm_data_disks(vm):
+    return [disk for disk in _vm_disks(vm) if not disk.get('is_boot')]
+
+
 def _status_contains(vm, token):
     return token.lower() in str(vm.get('Data Status', '')).lower()
 
@@ -205,6 +227,7 @@ def _migration_vm_record(vm):
             "disk_count": _clean_value(vm.get('Disk Count'), 0),
             "total_disk_gb": _clean_value(vm.get('Total Storage GB'), 0),
             "original_specs": _clean_value(vm.get('Original Specs')),
+            "disks": _vm_disks(vm),
         },
         "target": {
             "recommended_profile": _clean_value(vm.get('IBM Profile')),
@@ -219,6 +242,15 @@ def _migration_vm_record(vm):
             "effective_storage_tier": effective_storage_tier,
             "custom_image_id": "replace-with-imported-image-id",
             "custom_image_name": f"{vm_name}-custom-image",
+            "data_volumes": [
+                {
+                    "source_disk": _clean_value(disk.get('disk')),
+                    "capacity_gb": _clean_value(disk.get('capacity_gb'), 0),
+                    "storage_tier": effective_storage_tier,
+                    "attachment": "generated"
+                }
+                for disk in _vm_data_disks(vm)
+            ],
         },
         "migration": {
             "wave": "wave-01",
@@ -280,6 +312,7 @@ def generate_migration_manifest(final_vms, context):
         },
         "handoff_files": {
             "vm_mapping_csv": "vm-mapping.csv",
+            "disk_mapping_csv": "disk-mapping.csv",
             "runbook": "migration-runbook.md",
             "image_import_tfvars_example": "image-import-variables.tfvars.example",
         },
@@ -348,6 +381,56 @@ def generate_vm_mapping_csv(final_vms):
     return output.getvalue()
 
 
+def generate_disk_mapping_csv(final_vms):
+    """Create a per-disk source-to-target mapping CSV."""
+    output = io.StringIO()
+    fieldnames = [
+        "VM Name", "Disk", "Role", "Capacity GB", "Target Action",
+        "Storage Tier", "Terraform Volume", "Attachment Resource",
+        "Disk Key", "Disk Path", "Controller", "Label", "Unit Number",
+        "SCSI Unit", "Disk Mode", "Thin", "Raw", "Shared Bus"
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for vm in final_vms:
+        vm_name = _safe_vm_key(vm.get('VM Name'))
+        safe_vm = _safe_resource_name(vm_name)
+        storage_tier = _effective_storage_tier(vm)
+        for index, disk in enumerate(_vm_disks(vm)):
+            role = "boot" if disk.get('is_boot') else "data"
+            safe_disk = _safe_resource_name(disk.get('disk') or f"disk_{index}")
+            volume_name = ""
+            attachment_name = ""
+            target_action = "covered-by-custom-image"
+            if role == "data":
+                volume_name = f"{safe_vm}_{safe_disk}_vol"
+                attachment_name = f"{safe_vm}_{safe_disk}_attach"
+                target_action = "create-and-attach-volume"
+
+            writer.writerow({
+                "VM Name": vm_name,
+                "Disk": _clean_value(disk.get('disk')),
+                "Role": role,
+                "Capacity GB": _clean_value(disk.get('capacity_gb'), 0),
+                "Target Action": target_action,
+                "Storage Tier": storage_tier,
+                "Terraform Volume": volume_name,
+                "Attachment Resource": attachment_name,
+                "Disk Key": _clean_value(disk.get('disk_key')),
+                "Disk Path": _clean_value(disk.get('disk_path')),
+                "Controller": _clean_value(disk.get('controller')),
+                "Label": _clean_value(disk.get('label')),
+                "Unit Number": _clean_value(disk.get('unit_number')),
+                "SCSI Unit": _clean_value(disk.get('scsi_unit')),
+                "Disk Mode": _clean_value(disk.get('disk_mode')),
+                "Thin": _clean_value(disk.get('thin')),
+                "Raw": _clean_value(disk.get('raw')),
+                "Shared Bus": _clean_value(disk.get('shared_bus')),
+            })
+    return output.getvalue()
+
+
 def generate_image_import_tfvars(final_vms):
     """Create an example tfvars map for imported IBM Cloud custom images."""
     lines = [
@@ -388,6 +471,7 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 ## Generated Handoff Files
 - `migration-manifest.json`: Tool-neutral source-to-target mapping for each VM.
 - `vm-mapping.csv`: Spreadsheet-friendly migration planning view.
+- `disk-mapping.csv`: Per-disk boot/data volume mapping view.
 - `image-import-variables.tfvars.example`: Placeholder map for imported custom image IDs.
 - `migration-runbook.md`: This operational guide.
 
@@ -396,14 +480,15 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 2. Confirm migration waves, cutover groups, and business priority for each VM.
 3. Review image readiness status, firmware, boot disk size, and guest customization requirement for each VM.
 4. Resolve `Blocked` items before image import planning and assign owners for `Review` items.
-5. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
-6. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
-7. Upload converted images to IBM Cloud Object Storage when using custom image import.
-8. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
-9. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
-10. Apply the generated Terraform using the selected deployment target.
-11. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
-12. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
+5. Review `disk-mapping.csv` to confirm boot disks are covered by imported images and data disks are created as attached block volumes.
+6. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
+7. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
+8. Upload converted images to IBM Cloud Object Storage when using custom image import.
+9. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
+10. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
+11. Apply the generated Terraform using the selected deployment target.
+12. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
+13. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
 
 ## Notes
 Terraform builds the target VPC foundation and VSI definitions. It does not move VMDK files or perform application cutover by itself. Use the manifest and CSV as the handoff layer for RackWare, custom scripts, IBM Cloud image import, or a migration factory workflow.
@@ -537,6 +622,10 @@ def render_storage_outputs():
     return """output \"volume_ids\" {
   value = [for v in ibm_is_volume : v.id]
 }
+
+output \"data_volume_ids\" {
+  value = local.data_volume_ids
+}
 """
 
 
@@ -544,25 +633,48 @@ def render_storage_templates(final_vms, project_name="my-ibm-migration"):
     content = """# Storage module for VSI volumes\n"""
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
-        safe_n = vm_n_raw.replace(" ", "_").replace("-", "_")
+        safe_n = _safe_resource_name(vm_n_raw)
         tier = vm.get('Override Storage Tier') or vm.get('Storage Tier', '3iops-tier')
-        sz = vm.get('Total Storage GB', 10)
+        for idx, disk in enumerate(_vm_data_disks(vm)):
+            disk_name = disk.get('disk') or f"disk_{idx + 1}"
+            safe_disk = _safe_resource_name(disk_name)
+            capacity = math.ceil(_clean_number(disk.get('capacity_gb'), 10))
+            capacity = max(10, capacity)
 
-        content += f"""
-resource "ibm_is_volume" "{safe_n}_vol" {{
-  name     = "{safe_n}-vol"
+            content += f"""
+resource "ibm_is_volume" "{safe_n}_{safe_disk}_vol" {{
+  name     = "{safe_n}-{safe_disk}-vol"
   profile  = "{tier}"
   zone     = var.zone
-  capacity = {sz}
-  tags     = ["project:{project_name}", "vm:{safe_n}", "managed-by:rvtools-converter"]
+  capacity = {capacity}
+  tags     = ["project:{project_name}", "vm:{safe_n}", "disk:{safe_disk}", "managed-by:rvtools-converter"]
 }}
 """
+    volume_map = []
+    for vm in final_vms:
+        vm_n_raw = str(vm.get('VM Name', 'unknown'))
+        safe_n = _safe_resource_name(vm_n_raw)
+        ids = []
+        for idx, disk in enumerate(_vm_data_disks(vm)):
+            disk_name = disk.get('disk') or f"disk_{idx + 1}"
+            safe_disk = _safe_resource_name(disk_name)
+            ids.append(f"ibm_is_volume.{safe_n}_{safe_disk}_vol.id")
+        values = ", ".join(ids)
+        volume_map.append(f'    "{safe_n}" = [{values}]')
+
+    content += "\nlocals {\n  data_volume_ids = {\n"
+    content += "\n".join(volume_map)
+    content += "\n  }\n}\n"
     return content
 
 
 def render_vsi_variables():
     return """variable "zone" { type = string }
 variable "project" { type = string }
+variable "data_volume_ids" {
+  type    = map(list(string))
+  default = {}
+}
 """
 
 
@@ -570,7 +682,7 @@ def render_vsi_templates(final_vms, enable_security_groups=True, project_name="m
     content = """# VSI module for instance definitions\n"""
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
-        safe_n = vm_n_raw.replace(" ", "_").replace("-", "_")
+        safe_n = _safe_resource_name(vm_n_raw)
         prof = vm.get('Override Profile') or vm.get('IBM Profile', 'bx2-2x8')
         r_net = vm.get('Network', 'unknown-net')
         t_sub_res = r_net.lower().replace(" ", "_").replace("-", "_")
@@ -593,6 +705,16 @@ resource "ibm_is_instance" "{safe_n}" {{
   tags = ["project:{project_name}", "vm:{safe_n}", "managed-by:rvtools-converter"]
 }}
 """
+        for idx, disk in enumerate(_vm_data_disks(vm)):
+            disk_name = disk.get('disk') or f"disk_{idx + 1}"
+            safe_disk = _safe_resource_name(disk_name)
+            content += f"""
+resource "ibm_is_instance_volume_attachment" "{safe_n}_{safe_disk}_attach" {{
+  instance = ibm_is_instance.{safe_n}.id
+  volume   = var.data_volume_ids["{safe_n}"][{idx}]
+  name     = "{safe_n}-{safe_disk}-attachment"
+}}
+"""
     return content
 
 
@@ -600,7 +722,7 @@ def render_vsi_outputs(final_vms):
     outputs = ""
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
-        safe_n = vm_n_raw.replace(" ", "_").replace("-", "_")
+        safe_n = _safe_resource_name(vm_n_raw)
         outputs += f"""
 output "{safe_n}_id" {{
   value = ibm_is_instance.{safe_n}.id
@@ -649,10 +771,11 @@ module "storage" {
 }
 
 module "vsi" {
-  source     = "./modules/vsi"
-  zone       = var.zone
-  project    = var.project
-  depends_on = [module.storage, module.networking]
+  source          = "./modules/vsi"
+  zone            = var.zone
+  project         = var.project
+  data_volume_ids = module.storage.data_volume_ids
+  depends_on      = [module.storage, module.networking]
 }
 """
     return hcl

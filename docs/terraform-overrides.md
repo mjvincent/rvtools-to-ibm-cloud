@@ -30,8 +30,8 @@ This selection does not change the generated resources, only the state managemen
 The generated ZIP bundle includes:
 * Root module files: `main.tf`, `variables.tf`, `outputs.tf`
 * `modules/networking`: VPC, address prefixes, subnets, and security groups
-* `modules/storage`: IBM Cloud volumes
-* `modules/vsi`: VSI instances and network attachments
+* `modules/storage`: IBM Cloud data disk volumes
+* `modules/vsi`: VSI instances, network attachments, and data volume attachments
 
 When overrides are used:
 * The selected `VPC Name` is applied to the VPC resource
@@ -59,3 +59,5 @@ The Terraform override values are also reflected in the generated migration hand
 The `image-import-variables.tfvars.example` file is provided as a placeholder for custom image IDs after VMware image conversion or replication. In this release, it is a handoff aid and is not automatically consumed by the generated VSI module.
 
 Image readiness fields are advisory. `Ready`, `Review`, or `Blocked` values do not change Terraform generation, profile overrides, storage tier overrides, subnet CIDRs, backend selection, or module output. They are included to guide image migration planning before custom image import or replication workflows.
+
+Storage tier overrides apply to every generated data disk volume for that VM. The boot disk is not generated as an IBM Cloud block volume because it is expected to be covered by the imported custom image workflow.
