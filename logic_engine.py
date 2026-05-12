@@ -5,6 +5,7 @@ import math
 import re
 
 from catalog_pricing import DEFAULT_STORAGE_TIER_RATES, STATIC_IBM_VPC_CATALOG
+from models import clean_value
 
 IMAGE_MAX_GB = 250
 IMAGE_MIN_GB = 10
@@ -298,22 +299,17 @@ def assess_memory_readiness(configured_mib, active_mib, consumed_mib,
 
 def _clean_value(value, default=""):
     """Return JSON/CSV friendly values from pandas and Streamlit records."""
-    if value is None:
-        return default
-    try:
-        if value != value:
-            return default
-    except TypeError:
-        pass
-    if isinstance(value, str):
-        stripped = value.strip()
-        return default if stripped.lower() == "nan" else stripped
-    if hasattr(value, "item"):
-        try:
-            return value.item()
-        except ValueError:
-            return default
+    return clean_value(value, default)
+
+
+def _as_record(value):
+    if hasattr(value, "to_record"):
+        return value.to_record()
     return value
+
+
+def _normalize_vms(final_vms):
+    return [_as_record(vm) for vm in final_vms]
 
 
 def _safe_vm_key(value):
@@ -334,7 +330,9 @@ def _safe_resource_name(value):
 
 
 def _vm_disks(vm):
+    vm = _as_record(vm)
     disks = vm.get('Disk Details') or []
+    disks = [_as_record(disk) for disk in disks]
     return disks if isinstance(disks, list) else []
 
 
@@ -343,7 +341,9 @@ def _vm_data_disks(vm):
 
 
 def _vm_nics(vm):
+    vm = _as_record(vm)
     nics = vm.get('Network Details') or []
+    nics = [_as_record(nic) for nic in nics]
     return nics if isinstance(nics, list) else []
 
 
@@ -355,7 +355,9 @@ def _connected_nics(vm):
 
 
 def _vm_findings(vm):
+    vm = _as_record(vm)
     findings = vm.get('Readiness Findings') or []
+    findings = [_as_record(finding) for finding in findings]
     return findings if isinstance(findings, list) else []
 
 
@@ -548,6 +550,7 @@ def _migration_vm_record(vm):
 
 def generate_migration_manifest(final_vms, context):
     """Create the tool-neutral migration handoff manifest."""
+    final_vms = _normalize_vms(final_vms)
     manifest = {
         "schema_version": "1.0",
         "package_type": "rvtools-to-ibm-cloud-migration-handoff",
@@ -592,6 +595,7 @@ def generate_migration_manifest(final_vms, context):
 
 def generate_vm_mapping_csv(final_vms):
     """Create a migration-team friendly source-to-target mapping CSV."""
+    final_vms = _normalize_vms(final_vms)
     output = io.StringIO()
     fieldnames = [
         "VM Name", "Power State", "Guest OS", "Source IP", "Source Network",
@@ -714,6 +718,7 @@ def generate_vm_mapping_csv(final_vms):
 
 def generate_readiness_findings_csv(final_vms):
     """Create a row-per-finding migration readiness CSV."""
+    final_vms = _normalize_vms(final_vms)
     output = io.StringIO()
     fieldnames = [
         "VM Name", "Migration Readiness", "Severity", "Finding Type",
@@ -758,6 +763,7 @@ def generate_readiness_findings_csv(final_vms):
 
 def generate_memory_readiness_csv(final_vms):
     """Create a VM-level memory readiness and sizing CSV."""
+    final_vms = _normalize_vms(final_vms)
     output = io.StringIO()
     fieldnames = [
         "VM Name", "Memory Readiness", "Memory Readiness Reasons",
@@ -826,6 +832,7 @@ def _nic_target(nic, enable_security_groups=True):
 
 def generate_nic_mapping_csv(final_vms, enable_security_groups=True):
     """Create a per-NIC source-to-target mapping CSV."""
+    final_vms = _normalize_vms(final_vms)
     output = io.StringIO()
     fieldnames = [
         "VM Name", "NIC Label", "Role", "Planned", "Connected",
@@ -872,6 +879,7 @@ def generate_nic_mapping_csv(final_vms, enable_security_groups=True):
 
 def generate_disk_mapping_csv(final_vms):
     """Create a per-disk source-to-target mapping CSV."""
+    final_vms = _normalize_vms(final_vms)
     output = io.StringIO()
     fieldnames = [
         "VM Name", "Disk", "Role", "Capacity GB", "Target Action",
@@ -922,6 +930,7 @@ def generate_disk_mapping_csv(final_vms):
 
 def generate_image_import_tfvars(final_vms):
     """Create an example tfvars map for imported IBM Cloud custom images."""
+    final_vms = _normalize_vms(final_vms)
     lines = [
         "# Populate these values after VMware images are converted, uploaded,",
         "# and imported as IBM Cloud VPC custom images.",
@@ -1125,6 +1134,7 @@ output \"data_volume_ids\" {
 
 
 def render_storage_templates(final_vms, project_name="my-ibm-migration"):
+    final_vms = _normalize_vms(final_vms)
     content = """# Storage module for VSI volumes\n"""
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
@@ -1174,6 +1184,7 @@ variable "data_volume_ids" {
 
 
 def render_vsi_templates(final_vms, enable_security_groups=True, project_name="my-ibm-migration"):
+    final_vms = _normalize_vms(final_vms)
     content = """# VSI module for instance definitions\n"""
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
@@ -1240,6 +1251,7 @@ resource "ibm_is_instance_volume_attachment" "{safe_n}_{safe_disk}_attach" {{
 
 
 def render_vsi_outputs(final_vms):
+    final_vms = _normalize_vms(final_vms)
     outputs = ""
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
@@ -1325,6 +1337,7 @@ output "zone" {
 
 def render_terraform_templates(final_vms, unique_nets, region, zone, enable_security_groups=True, vpc_name="migration-vpc", custom_cidrs=None, address_prefix_strategy="manual", deployment_target="Plain CLI", project_name="my-ibm-migration"):
     """Renders the Root main.tf and module contents."""
+    final_vms = _normalize_vms(final_vms)
 
     root_main = render_root_main(deployment_target)
     root_vars = render_root_variables()
