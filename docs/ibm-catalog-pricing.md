@@ -63,11 +63,13 @@ The optional cache file uses JSON:
 ```
 
 ## Environment Variables
-Live mode looks for:
+Live mode looks for `IBMCLOUD_API_KEY` in the running process environment first. If it is not present, the app also attempts to load a local `.env` file from the repository root.
 
 ```bash
 IBMCLOUD_API_KEY=...
 ```
+
+After creating or changing `.env`, restart Streamlit so the running process reloads the value.
 
 ## Limitations
 The app does not yet perform exact Global Catalog billing dimension resolution. IBM Cloud VPC profile names are discovered from the VPC API, while pricing confidence is tracked separately.

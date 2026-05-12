@@ -1,8 +1,13 @@
 import json
+import os
 import tempfile
 from pathlib import Path
 
-from catalog_pricing import get_pricing_catalog, pricing_status_summary
+from catalog_pricing import (
+    get_ibmcloud_api_key,
+    get_pricing_catalog,
+    pricing_status_summary,
+)
 from logic_engine import get_catalog_profiles, map_vmware_to_ibm_vpc
 
 
@@ -78,8 +83,24 @@ def test_live_catalog_without_api_key_falls_back_static():
     assert catalog["profiles"]
 
 
+def test_api_key_can_load_from_dotenv_file():
+    old_value = os.environ.pop("IBMCLOUD_API_KEY", None)
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text(
+                "IBMCLOUD_API_KEY=test-key-from-dotenv\n",
+                encoding="utf-8"
+            )
+            assert get_ibmcloud_api_key(env_path) == "test-key-from-dotenv"
+    finally:
+        if old_value is not None:
+            os.environ["IBMCLOUD_API_KEY"] = old_value
+
+
 if __name__ == "__main__":
     test_static_catalog_preserves_existing_profile_selection()
     test_cached_catalog_loads_profiles_and_pricing_metadata()
     test_live_catalog_without_api_key_falls_back_static()
+    test_api_key_can_load_from_dotenv_file()
     print("catalog pricing tests ok")

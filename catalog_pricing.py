@@ -28,6 +28,25 @@ def _now_utc():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+def get_ibmcloud_api_key(env_file=".env"):
+    """
+    Resolve the IBM Cloud API key from environment or a local .env file.
+
+    The key is never logged or returned in generated handoff files.
+    """
+    api_key = os.getenv("IBMCLOUD_API_KEY")
+    if api_key:
+        return api_key
+
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return ""
+
+    load_dotenv(env_file)
+    return os.getenv("IBMCLOUD_API_KEY", "")
+
+
 def _static_profile_index():
     return {profile["name"]: profile for profile in STATIC_IBM_VPC_CATALOG}
 
@@ -124,7 +143,8 @@ def load_cached_catalog(cache_path=DEFAULT_CACHE_PATH):
 
 
 def discover_live_catalog(region, api_key=None):
-    api_key = api_key or os.getenv("IBMCLOUD_API_KEY")
+    if api_key is None:
+        api_key = get_ibmcloud_api_key()
     if not api_key:
         return _static_catalog({
             "mode": "live",

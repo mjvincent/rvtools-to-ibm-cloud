@@ -154,6 +154,8 @@ Controls the source of IBM Cloud profile and pricing data.
 
 Pricing mode affects estimated cost and profile options, but does not change generated Terraform resource structure.
 
+For live mode, set `IBMCLOUD_API_KEY` in the shell that starts Streamlit or in a local `.env` file at the repository root. Restart Streamlit after creating or changing `.env`.
+
 ### Download Business Case CSV
 Exports the current table view as a CSV. This file is useful for stakeholder review before building the full Terraform project.
 
