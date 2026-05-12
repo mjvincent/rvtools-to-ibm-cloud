@@ -55,11 +55,12 @@ Pricing can run in static, cached, or live profile discovery mode.
 * **Live Profile Discovery**: Uses IBM Cloud VPC profile discovery when `IBMCLOUD_API_KEY` is available, while preserving explicit pricing confidence metadata.
 
 ## Technical Structure
-The application architecture is divided into four functional layers:
+The application architecture is divided into five functional layers:
 1. **Data Processing**: Utilizes Pandas for cross-tabulation and normalization of RVTools telemetry.
-2. **Logic Engine**: Executes profile matching and storage tiering (3, 5, or 10 IOPS) based on workload characteristics.
-3. **Template Rendering**: Outputs HCL (HashiCorp Configuration Language) in a modular format including networking, storage, and VSI modules.
-4. **Migration Handoff**: Exports source-to-target mapping files that help migration teams connect generated Terraform to image import, replication, and cutover workflows.
+2. **Normalized VM Data Model**: Uses dataclasses to carry source metadata, target recommendations, pricing, readiness, disk, and NIC detail between app layers.
+3. **Logic Engine**: Executes profile matching and storage tiering (3, 5, or 10 IOPS) based on workload characteristics.
+4. **Template Rendering**: Outputs HCL (HashiCorp Configuration Language) in a modular format including networking, storage, and VSI modules.
+5. **Migration Handoff**: Exports source-to-target mapping files that help migration teams connect generated Terraform to image import, replication, and cutover workflows.
 
 ## Data Requirements
 Successful execution requires a standard RVTools XLSX export containing the following worksheets:
@@ -150,7 +151,7 @@ Generated resources include standardized naming and tags for project and managem
 For a complete searchable guide to installation, RVTools inputs, web interface fields, dashboard metrics, readiness statuses, generated Terraform, ZIP contents, handoff files, troubleshooting, and glossary terms, see `docs/user-manual.md`.
 
 ## Further Reading
-Start with `docs/user-manual.md` for end-user operation. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`. For catalog pricing behavior, see `docs/ibm-catalog-pricing.md`.
+Start with `docs/user-manual.md` for end-user operation. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`. For catalog pricing behavior, see `docs/ibm-catalog-pricing.md`. For internal model architecture, see `docs/normalized-vm-data-model.md`.
 
 ## Release Notes
 - Added a potential savings metric to the Streamlit dashboard.
@@ -165,6 +166,7 @@ Start with `docs/user-manual.md` for end-user operation. For detailed Terraform 
 - Added a comprehensive searchable user manual in `docs/user-manual.md`.
 - Added memory readiness and conservative RAM sizing using RVTools `vMemory`, including `memory-readiness.csv`.
 - Added IBM catalog pricing modes with static, cached, and live profile discovery paths plus pricing confidence metadata.
+- Added a normalized VM dataclass model and moved old pricing/template experiments under `experiments/`.
 
 ---
 **Author**: Michael Vincent Jones

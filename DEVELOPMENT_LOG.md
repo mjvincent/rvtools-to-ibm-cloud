@@ -89,3 +89,10 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Preserved offline/static fallback behavior so demos and local assessment work do not require IBM credentials.
 - Added tests for static fallback, cached pricing, and live-mode fallback without an API key.
 - Documented the design in the README, user manual, right-sizing logic, pricing guide, and ADR-010.
+
+### May 12, 2026: Normalized VM Data Model
+- Expanded `models.py` into the canonical internal VM dataclass model with nested source, target, pricing, image, memory, migration, disk, NIC, and readiness finding records.
+- Updated the Streamlit processing path to build `MigrationVm` objects before converting to table rows at the UI boundary.
+- Preserved current CSV, manifest, Terraform ZIP, and UI table contracts through `from_record()` and `to_record()` compatibility adapters.
+- Moved old pricing API and Jinja template experiments into `experiments/` so production root files and smoke tests stay focused.
+- Documented the model in `docs/normalized-vm-data-model.md` and ADR-011.

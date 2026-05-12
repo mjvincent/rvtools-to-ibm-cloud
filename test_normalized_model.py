@@ -19,14 +19,39 @@ def sample_vm_record():
         "Network": "app-net",
         "Guest OS": "Red Hat Enterprise Linux 9 (64-bit)",
         "IBM Profile": "bx2-2x8",
+        "Override Profile": "",
         "Storage Tier": "5iops-tier",
+        "Override Storage Tier": "",
         "Subnet": "module.networking.app_net_id",
         "Security Group": "module.networking.app_net_sg_id",
+        "Compute (Mo)": 83.22,
+        "Storage (Mo)": 26.0,
+        "Monthly Cost": 109.22,
+        "Baseline Cost (Mo)": 192.4,
+        "Savings (Mo)": 83.18,
+        "Pricing Source": "static",
+        "Pricing Confidence": "fallback-static",
+        "Pricing Last Updated": "2026-05-12T00:00:00+00:00",
+        "Profile Hourly": 0.114,
         "Disk Count": 2,
+        "Data Disk Count": 1,
         "Total Storage GB": 200,
         "Image Readiness": "Review",
+        "Readiness Reasons": "Multiple disks detected",
         "Migration Readiness": "Review",
+        "Migration Readiness Reasons": "VMware Tools status: toolsOld",
         "Memory Readiness": "Ready",
+        "Memory Readiness Reasons": "No memory pressure",
+        "Configured Memory MiB": 8192,
+        "Active Memory MiB": 4096,
+        "Consumed Memory MiB": 6144,
+        "Ballooned Memory MiB": 0,
+        "Swapped Memory MiB": 0,
+        "Memory Reservation MiB": 0,
+        "Memory Limit MiB": -1,
+        "Memory Hot Add": "False",
+        "Sizing Memory MiB": 8192,
+        "Memory Sizing Basis": "preserve-configured-memory",
         "Disk Details": [
             {
                 "disk": "Hard disk 1",
@@ -79,9 +104,28 @@ def sample_vm_model():
         security_group="module.networking.app_net_sg_id",
         disk_count=2,
         total_storage_gb=200,
+        compute_cost_monthly=83.22,
+        storage_cost_monthly=26.0,
+        monthly_cost=109.22,
+        baseline_cost_monthly=192.4,
+        savings_monthly=83.18,
+        pricing_source="static",
+        pricing_confidence="fallback-static",
+        pricing_last_updated="2026-05-12T00:00:00+00:00",
+        profile_hourly=0.114,
+        data_disk_count=1,
         image_readiness="Review",
+        readiness_reasons="Multiple disks detected",
         migration_readiness="Review",
+        migration_readiness_reasons="VMware Tools status: toolsOld",
         memory_readiness="Ready",
+        memory_readiness_reasons="No memory pressure",
+        configured_memory_mib=8192,
+        active_memory_mib=4096,
+        consumed_memory_mib=6144,
+        memory_limit_mib=-1,
+        sizing_memory_mib=8192,
+        memory_sizing_basis="preserve-configured-memory",
         disks=[
             DiskMapping(disk="Hard disk 1", capacity_gb=80, is_boot=True),
             DiskMapping(disk="Hard disk 2", capacity_gb=120, is_boot=False),
@@ -120,6 +164,42 @@ def test_model_round_trips_from_legacy_record():
     assert record["Disk Details"][1]["capacity_gb"] == 120
     assert record["Network Details"][1]["network"] == "db-net"
     assert record["Readiness Findings"][0]["source_tab"] == "vTools"
+    assert record["Compute (Mo)"] == 83.22
+    assert record["Data Disk Count"] == 1
+
+
+def test_nested_records_are_canonical_views():
+    model = MigrationVm.from_record(sample_vm_record())
+
+    assert model.source.vm_name == "app-01"
+    assert model.source.disks[1].disk == "Hard disk 2"
+    assert model.target.effective_profile == "bx2-2x8"
+    assert model.target.compute_cost_monthly == 83.22
+    assert model.pricing.confidence == "fallback-static"
+    assert model.image.reasons == "Multiple disks detected"
+    assert model.memory.sizing_basis == "preserve-configured-memory"
+    assert model.migration.findings[0].recommended_action == "Update VMware Tools"
+
+
+def test_table_boundary_round_trip_preserves_user_edits():
+    processed_vm = sample_vm_model()
+    table_record = processed_vm.to_record()
+    table_record.pop("Disk Details")
+    table_record.pop("Network Details")
+    table_record.pop("Readiness Findings")
+    table_record["Override Profile"] = "cx2-2x4"
+    table_record["Override Storage Tier"] = "3iops-tier"
+
+    table_record["Disk Details"] = [disk.to_record() for disk in processed_vm.disks]
+    table_record["Network Details"] = [nic.to_record() for nic in processed_vm.nics]
+    table_record["Readiness Findings"] = [
+        finding.to_record() for finding in processed_vm.readiness_findings
+    ]
+    edited_vm = MigrationVm.from_record(table_record)
+
+    assert edited_vm.target.effective_profile == "cx2-2x4"
+    assert edited_vm.target.effective_storage_tier == "3iops-tier"
+    assert edited_vm.source.nics[1].network == "db-net"
 
 
 def test_exports_accept_normalized_vm_model():
@@ -132,6 +212,8 @@ def test_exports_accept_normalized_vm_model():
     assert vm_record["vm_name"] == "app-01"
     assert vm_record["target"]["data_volumes"][0]["source_disk"] == "Hard disk 2"
     assert vm_record["migration_readiness"]["findings"][0]["source_tab"] == "vTools"
+    assert vm_record["assessment"]["pricing"]["confidence"] == "fallback-static"
+    assert vm_record["assessment"]["memory_readiness"]["sizing_memory_mib"] == 8192
 
 
 def test_terraform_renderer_accepts_normalized_vm_model():
@@ -161,6 +243,8 @@ def test_nic_csv_accepts_model_and_preserves_roles():
 
 if __name__ == "__main__":
     test_model_round_trips_from_legacy_record()
+    test_nested_records_are_canonical_views()
+    test_table_boundary_round_trip_preserves_user_edits()
     test_exports_accept_normalized_vm_model()
     test_terraform_renderer_accepts_normalized_vm_model()
     test_nic_csv_accepts_model_and_preserves_roles()
