@@ -41,6 +41,16 @@ def get_ibmcloud_api_key(env_file=".env"):
     try:
         from dotenv import load_dotenv
     except ImportError:
+        path = Path(env_file)
+        if not path.exists():
+            return ""
+        for line in path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, value = stripped.split("=", 1)
+            if key.strip() == "IBMCLOUD_API_KEY":
+                return value.strip().strip('"').strip("'")
         return ""
 
     load_dotenv(env_file)
