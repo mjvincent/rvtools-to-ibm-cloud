@@ -2,6 +2,7 @@ import io
 import zipfile
 import streamlit as st
 import pandas as pd
+from catalog_pricing import get_pricing_catalog, pricing_status_summary
 from logic_engine import (
     IBM_VPC_CATALOG,
     SNAPSHOT_BLOCK_SIZE_MIB,
@@ -107,6 +108,14 @@ TABLE_CONFIG = {
     "Sizing Memory MiB": st.column_config.NumberColumn("Sizing Memory MiB"),
     "Memory Sizing Basis": st.column_config.TextColumn(
         "Memory Sizing Basis"
+    ),
+    "Pricing Source": st.column_config.TextColumn("Pricing Source"),
+    "Pricing Confidence": st.column_config.TextColumn("Pricing Confidence"),
+    "Pricing Last Updated": st.column_config.TextColumn(
+        "Pricing Last Updated"
+    ),
+    "Profile Hourly": st.column_config.NumberColumn(
+        "Profile Hourly", format="$%.4f"
     )
 }
 
@@ -127,6 +136,8 @@ DISABLED_COLS = [
     "Ballooned Memory MiB", "Swapped Memory MiB",
     "Memory Reservation MiB", "Memory Limit MiB", "Memory Hot Add",
     "Sizing Memory MiB", "Memory Sizing Basis",
+    "Pricing Source", "Pricing Confidence", "Pricing Last Updated",
+    "Profile Hourly",
     "Baseline Cost (Mo)", "Savings (Mo)"
 ]
 
@@ -181,6 +192,29 @@ target_zone = st.sidebar.selectbox(
     "Target IBM Zone",
     region_zones.get(target_region, [f"{target_region}-1"])
 )
+
+st.sidebar.header("Pricing Settings")
+pricing_mode_label = st.sidebar.selectbox(
+    "Pricing Mode",
+    ["Static fallback", "Cached IBM catalog", "Live IBM profile discovery"],
+    index=0
+)
+pricing_mode_map = {
+    "Static fallback": "static",
+    "Cached IBM catalog": "cached",
+    "Live IBM profile discovery": "live",
+}
+pricing_catalog = get_pricing_catalog(
+    pricing_mode_map[pricing_mode_label],
+    region=target_region
+)
+pricing_metadata = pricing_catalog.get("metadata", {})
+catalog_profiles = pricing_catalog.get("profiles", [])
+storage_tier_rates = pricing_catalog.get("storage_tier_rates")
+PROFILE_OPTIONS = [""] + get_catalog_profiles(catalog_profiles)
+st.sidebar.caption(pricing_status_summary(pricing_catalog))
+if pricing_metadata.get("status"):
+    st.sidebar.info(pricing_metadata["status"])
 
 generate_security_groups = st.sidebar.checkbox(
     "Generate Security Groups", value=True
@@ -764,12 +798,18 @@ if uploaded_file is not None:
 
         mapping = map_vmware_to_ibm_vpc(
             o_cpu, memory_readiness['sizing_memory_mib'], c_use, target_region,
-            utilization_threshold, t_gb, s_tier, memory_is_sizing=True
+            utilization_threshold, t_gb, s_tier, memory_is_sizing=True,
+            catalog=catalog_profiles,
+            storage_tier_rates=storage_tier_rates,
+            pricing_metadata=pricing_metadata
         )
 
         baseline = map_vmware_to_ibm_vpc(
             o_cpu, o_ram, 100, target_region,
-            100, t_gb, s_tier
+            100, t_gb, s_tier,
+            catalog=catalog_profiles,
+            storage_tier_rates=storage_tier_rates,
+            pricing_metadata=pricing_metadata
         )
         savings = round(max(0.0, baseline['monthly'] - mapping['monthly']), 2)
         normalized_net = normalize_network_name(vm_net or 'unknown-net')
@@ -830,6 +870,10 @@ if uploaded_file is not None:
             'Baseline Cost (Mo)': baseline['monthly'],
             'Savings (Mo)': savings,
             'Monthly Cost': mapping['monthly'],
+            'Pricing Source': mapping['pricing_source'],
+            'Pricing Confidence': mapping['pricing_confidence'],
+            'Pricing Last Updated': mapping['pricing_last_updated'],
+            'Profile Hourly': mapping['profile_hourly'],
             'Subnet': default_subnet,
             'Security Group': default_sg,
             'Override Storage Tier': "",
@@ -1006,7 +1050,13 @@ if uploaded_file is not None:
                     'vpc_name': vpc_name,
                     'address_prefix_strategy': address_prefix_strategy,
                     'deployment_target': deployment_target,
-                    'generate_security_groups': generate_security_groups
+                    'generate_security_groups': generate_security_groups,
+                    'pricing_mode': pricing_metadata.get('mode'),
+                    'pricing_source': pricing_metadata.get('source'),
+                    'pricing_confidence': pricing_metadata.get('confidence'),
+                    'pricing_last_updated': pricing_metadata.get(
+                        'last_updated'
+                    ),
                 }
 
                 zip_b = io.BytesIO()

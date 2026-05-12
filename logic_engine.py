@@ -4,44 +4,48 @@ import json
 import math
 import re
 
+from catalog_pricing import DEFAULT_STORAGE_TIER_RATES, STATIC_IBM_VPC_CATALOG
+
 IMAGE_MAX_GB = 250
 IMAGE_MIN_GB = 10
 SNAPSHOT_BLOCK_SIZE_MIB = 10240
 MEMORY_PRESSURE_MIB = 1024
 
 # --- STRATEGY B: ECONOMIC OPTIMIZER CATALOG ---
-IBM_VPC_CATALOG = [
-    {"name": "cx2-2x4", "cpu": 2, "ram": 4, "hourly": 0.063},
-    {"name": "bx2-2x8", "cpu": 2, "ram": 8, "hourly": 0.114},
-    {"name": "mx2-2x16", "cpu": 2, "ram": 16, "hourly": 0.158},
-    {"name": "cx2-4x8", "cpu": 4, "ram": 8, "hourly": 0.126},
-    {"name": "bx2-4x16", "cpu": 4, "ram": 16, "hourly": 0.228},
-    {"name": "mx2-4x32", "cpu": 4, "ram": 32, "hourly": 0.316},
-    {"name": "cx2-8x16", "cpu": 8, "ram": 16, "hourly": 0.252},
-    {"name": "bx2-8x32", "cpu": 8, "ram": 32, "hourly": 0.456},
-]
+IBM_VPC_CATALOG = STATIC_IBM_VPC_CATALOG
 
 
-def get_catalog_profiles():
+def get_catalog_profiles(catalog=None):
     """Returns the list of supported IBM VPC profile names."""
-    return [profile['name'] for profile in IBM_VPC_CATALOG]
+    active_catalog = catalog or IBM_VPC_CATALOG
+    return [profile['name'] for profile in active_catalog]
 
 
-def find_cheapest_fit(target_cpu, target_ram):
+def find_cheapest_fit(target_cpu, target_ram, catalog=None):
     """Finds the lowest-priced profile that fits requirements."""
+    active_catalog = catalog or IBM_VPC_CATALOG
     candidates = [
-        p for p in IBM_VPC_CATALOG
+        p for p in active_catalog
         if p['cpu'] >= target_cpu and p['ram'] >= target_ram
+        and p.get('hourly', 0) > 0
     ]
     if not candidates:
-        return {"name": "bx2-16x64", "cpu": 16, "ram": 64, "hourly": 0.912}
+        return {
+            "name": "bx2-16x64",
+            "cpu": 16,
+            "ram": 64,
+            "hourly": 0.912,
+            "pricing_source": "static-fallback",
+            "pricing_confidence": "fallback-static",
+        }
     optimized = sorted(candidates, key=lambda x: x['hourly'])
     return optimized[0]
 
 
 def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
                           threshold, storage_gb, tier,
-                          memory_is_sizing=False):
+                          memory_is_sizing=False, catalog=None,
+                          storage_tier_rates=None, pricing_metadata=None):
     """Strategy B: Full Solution Cost (Compute + Storage)."""
     util_factor = threshold / 100
     needed_cpu = max(1, round(cpus * util_factor))
@@ -49,13 +53,9 @@ def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
         needed_ram = max(2, round(memory / 1024))
     else:
         needed_ram = max(2, round((memory / 1024) * 0.8))
-    optimized = find_cheapest_fit(needed_cpu, needed_ram)
-
-    tier_rates = {
-        "3iops-tier": 0.10,
-        "5iops-tier": 0.13,
-        "10iops-tier": 0.17
-    }
+    optimized = find_cheapest_fit(needed_cpu, needed_ram, catalog=catalog)
+    tier_rates = storage_tier_rates or DEFAULT_STORAGE_TIER_RATES
+    pricing_metadata = pricing_metadata or {}
 
     compute_monthly = round(optimized['hourly'] * 730, 2)
     storage_monthly = round(storage_gb * tier_rates.get(tier, 0.10), 2)
@@ -66,7 +66,16 @@ def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
         "compute_cost": compute_monthly,
         "storage_cost": storage_monthly,
         "monthly": total_monthly,
-        "is_rightsized": optimized['cpu'] < cpus
+        "is_rightsized": optimized['cpu'] < cpus,
+        "pricing_source": optimized.get(
+            'pricing_source', pricing_metadata.get('source', 'static')
+        ),
+        "pricing_confidence": optimized.get(
+            'pricing_confidence',
+            pricing_metadata.get('confidence', 'fallback-static')
+        ),
+        "pricing_last_updated": pricing_metadata.get('last_updated', ''),
+        "profile_hourly": optimized.get('hourly', 0),
     }
 
 
@@ -477,6 +486,12 @@ def _migration_vm_record(vm):
             "estimated_monthly_savings": _clean_value(
                 vm.get('Savings (Mo)'), 0
             ),
+            "pricing": {
+                "source": _clean_value(vm.get('Pricing Source')),
+                "confidence": _clean_value(vm.get('Pricing Confidence')),
+                "last_updated": _clean_value(vm.get('Pricing Last Updated')),
+                "profile_hourly": _clean_value(vm.get('Profile Hourly'), 0),
+            },
             "memory_readiness": {
                 "status": _clean_value(vm.get('Memory Readiness'), 'Review'),
                 "reasons": _clean_value(vm.get('Memory Readiness Reasons')),
@@ -550,6 +565,14 @@ def generate_migration_manifest(final_vms, context):
             "security_groups_enabled": bool(
                 context.get('generate_security_groups', True)
             ),
+            "pricing": {
+                "mode": _clean_value(context.get('pricing_mode')),
+                "source": _clean_value(context.get('pricing_source')),
+                "confidence": _clean_value(context.get('pricing_confidence')),
+                "last_updated": _clean_value(
+                    context.get('pricing_last_updated')
+                ),
+            },
         },
         "handoff_files": {
             "vm_mapping_csv": "vm-mapping.csv",
@@ -583,6 +606,8 @@ def generate_vm_mapping_csv(final_vms):
         "Consumed Memory MiB", "Ballooned Memory MiB",
         "Swapped Memory MiB", "Memory Reservation MiB", "Memory Limit MiB",
         "Memory Hot Add", "Sizing Memory MiB", "Memory Sizing Basis",
+        "Pricing Source", "Pricing Confidence", "Pricing Last Updated",
+        "Profile Hourly",
         "Target Subnet", "Security Group", "Recommended Profile",
         "Override Profile", "Effective Profile", "Storage Tier",
         "Override Storage Tier", "Effective Storage Tier", "Custom Image ID",
@@ -659,6 +684,12 @@ def generate_vm_mapping_csv(final_vms):
             "Memory Sizing Basis": _clean_value(
                 vm.get('Memory Sizing Basis')
             ),
+            "Pricing Source": _clean_value(vm.get('Pricing Source')),
+            "Pricing Confidence": _clean_value(vm.get('Pricing Confidence')),
+            "Pricing Last Updated": _clean_value(
+                vm.get('Pricing Last Updated')
+            ),
+            "Profile Hourly": _clean_value(vm.get('Profile Hourly'), 0),
             "Target Subnet": _clean_value(vm.get('Subnet')),
             "Security Group": _clean_value(vm.get('Security Group')),
             "Recommended Profile": _clean_value(vm.get('IBM Profile')),

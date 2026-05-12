@@ -16,6 +16,7 @@ This tool does not move VMware workloads by itself. It does not convert VMDK fil
 - [End-to-End Workflow](#end-to-end-workflow)
 - [Sidebar Settings](#sidebar-settings)
 - [Dashboard Metrics](#dashboard-metrics)
+- [Pricing Settings](#pricing-settings)
 - [Terraform Overrides](#terraform-overrides)
 - [Main Table Reference](#main-table-reference)
 - [Editable Columns](#editable-columns)
@@ -142,6 +143,17 @@ The project name is used in generated Terraform variable values, tags, filenames
 ### Generate Security Groups
 When enabled, the networking module generates security groups and the VSI module references them. When disabled, generated security group references use `N/A` in the handoff files and security group resources are omitted.
 
+### Pricing Mode
+Controls the source of IBM Cloud profile and pricing data.
+
+| Value | Meaning |
+| --- | --- |
+| `Static fallback` | Uses bundled profile and price estimates. Works offline and without IBM credentials. |
+| `Cached IBM catalog` | Uses `data/ibm_vpc_pricing_cache.json` if present, otherwise falls back to static pricing. |
+| `Live IBM profile discovery` | Uses IBM Cloud VPC profile discovery when `IBMCLOUD_API_KEY` is available. Exact pricing is still marked by confidence metadata. |
+
+Pricing mode affects estimated cost and profile options, but does not change generated Terraform resource structure.
+
 ### Download Business Case CSV
 Exports the current table view as a CSV. This file is useful for stakeholder review before building the full Terraform project.
 
@@ -187,6 +199,25 @@ Count of non-excluded VMs that need owner review for memory sizing, reservations
 
 ### Memory Blocked
 Count of non-excluded VMs with severe memory pressure or memory limits that should be remediated before resizing.
+
+## Pricing Settings
+The app records pricing metadata so users can understand whether estimates came from static fallback data, a cache file, or live IBM profile discovery.
+
+### Pricing Source
+Where the price/profile data came from.
+
+### Pricing Confidence
+How trustworthy the price/profile mapping is. Examples include:
+- `fallback-static`
+- `cached-exact`
+- `profile-live-price-static`
+- `profile-live-price-missing`
+
+### Pricing Last Updated
+Timestamp from the cache or live discovery process when available.
+
+### Profile Hourly
+Hourly profile price used in the monthly compute estimate.
 
 ## Terraform Overrides
 The `Terraform Overrides` expander controls target infrastructure settings.
@@ -356,6 +387,18 @@ Memory value used by the recommendation engine for IBM Cloud profile selection.
 
 ### `Memory Sizing Basis`
 Explains why the sizing memory value was chosen.
+
+### `Pricing Source`
+Where the pricing value came from.
+
+### `Pricing Confidence`
+How confidently the app mapped the price to the profile.
+
+### `Pricing Last Updated`
+Timestamp for cached or live pricing metadata when available.
+
+### `Profile Hourly`
+Hourly profile value used in compute cost estimates.
 
 ### `Host`
 Source ESXi host.
@@ -556,6 +599,7 @@ Use it to review:
 - Image readiness.
 - Migration readiness.
 - Memory readiness and sizing memory.
+- Pricing source and confidence.
 - Target subnet and security group.
 - Estimated cost and savings.
 
@@ -645,6 +689,7 @@ The application is a planning and generation tool. It does not:
 - Validate IBM Cloud quota.
 - Validate target IP availability.
 - Validate every provider profile in every region.
+- Guarantee exact IBM billing catalog pricing unless pricing confidence indicates a trusted exact source.
 - Prove that `cloud-init` or `cloudbase-init` is installed inside the guest.
 - Decide application migration waves automatically.
 
@@ -690,6 +735,9 @@ Disable `Generate Security Groups` in the sidebar before building the ZIP.
 ### The ZIP was built before overrides were updated
 Change the overrides and click `Build Terraform Project` again. Download the newly generated ZIP.
 
+### Live pricing still says static price
+Live profile discovery and exact pricing are separate. If exact IBM catalog pricing cannot be safely mapped, the app uses known fallback pricing and labels the confidence as `profile-live-price-static`.
+
 ## Glossary
 ### Address Prefix
 An IBM Cloud VPC address range assigned to a zone before subnet creation.
@@ -724,6 +772,9 @@ Assessment focused on source-side operational cleanup before migration.
 ### Memory Readiness
 Assessment focused on memory pressure, constraints, and conservative RAM sizing.
 
+### Pricing Confidence
+Metadata that explains whether a price is static fallback, cached, live-profile/static-price, or missing.
+
 ### NIC
 Network interface card or virtual network adapter.
 
@@ -742,6 +793,7 @@ VMware virtual disk file format.
 - [Image Readiness Assessment](image-readiness-assessment.md)
 - [Migration Readiness Assessment](migration-readiness-assessment.md)
 - [Memory Readiness and Sizing](memory-readiness-sizing.md)
+- [IBM Catalog Pricing](ibm-catalog-pricing.md)
 - [Terraform Overrides Reference](terraform-overrides.md)
 - [Right-Sizing Logic](../RIGHT_SIZING_LOGIC.md)
 - [Development Log](../DEVELOPMENT_LOG.md)

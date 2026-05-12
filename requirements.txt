@@ -2,3 +2,7 @@ streamlit
 pandas
 openpyxl
 jinja2
+ibm-vpc
+ibm-platform-services
+ibm-cloud-sdk-core
+python-dotenv
