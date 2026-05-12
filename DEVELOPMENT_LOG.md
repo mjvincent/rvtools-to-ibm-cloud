@@ -81,3 +81,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added dashboard metrics and disabled table fields for memory readiness and sizing basis.
 - Added `memory-readiness.csv` to the Terraform ZIP and extended `migration-manifest.json`, `vm-mapping.csv`, and `migration-runbook.md`.
 - Documented the feature in the README, user manual, right-sizing logic, migration handoff guide, Terraform override notes, memory readiness guide, and ADR-009.
+
+### May 12, 2026: IBM Catalog Pricing Modes
+- Added `catalog_pricing.py` to separate static, cached, and live IBM Cloud profile/pricing behavior.
+- Added Pricing Mode controls to the Streamlit sidebar.
+- Added pricing source, confidence, last-updated timestamp, and profile hourly fields to the table, manifest, and VM mapping CSV.
+- Preserved offline/static fallback behavior so demos and local assessment work do not require IBM credentials.
+- Added tests for static fallback, cached pricing, and live-mode fallback without an API key.
+- Documented the design in the README, user manual, right-sizing logic, pricing guide, and ADR-010.

@@ -48,6 +48,12 @@ The dashboard evaluates memory pressure and sizing constraints from RVTools `vMe
 * **Constraint Detection**: Captures reservations, memory limits, and hot-add dependencies for owner review.
 * **Sizing Guidance**: Uses active memory with a conservative floor when memory can be reduced safely.
 
+### IBM Catalog Pricing
+Pricing can run in static, cached, or live profile discovery mode.
+* **Static Fallback**: Uses bundled profile and storage rates so the app works offline.
+* **Cached Catalog**: Uses `data/ibm_vpc_pricing_cache.json` when available.
+* **Live Profile Discovery**: Uses IBM Cloud VPC profile discovery when `IBMCLOUD_API_KEY` is available, while preserving explicit pricing confidence metadata.
+
 ## Technical Structure
 The application architecture is divided into four functional layers:
 1. **Data Processing**: Utilizes Pandas for cross-tabulation and normalization of RVTools telemetry.
@@ -76,6 +82,7 @@ The dashboard now includes a potential savings metric and exports an enriched bu
 * Image readiness status, readiness reasons, firmware, boot disk size, and guest customization requirement
 * Migration readiness status, readiness reasons, snapshot count/size, VMware Tools status, mounted media, USB device count, and health warning count
 * Memory readiness status, pressure indicators, reservation/limit data, and sizing memory basis
+* Pricing source, confidence, last-updated timestamp, and profile hourly value
 * Per-disk boot/data role, capacity, source controller metadata, and target volume attachment mapping
 * Per-NIC source network, IP, MAC, adapter, connected state, target subnet, and security group mapping
 
@@ -143,7 +150,7 @@ Generated resources include standardized naming and tags for project and managem
 For a complete searchable guide to installation, RVTools inputs, web interface fields, dashboard metrics, readiness statuses, generated Terraform, ZIP contents, handoff files, troubleshooting, and glossary terms, see `docs/user-manual.md`.
 
 ## Further Reading
-Start with `docs/user-manual.md` for end-user operation. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`.
+Start with `docs/user-manual.md` for end-user operation. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`. For catalog pricing behavior, see `docs/ibm-catalog-pricing.md`.
 
 ## Release Notes
 - Added a potential savings metric to the Streamlit dashboard.
@@ -157,7 +164,8 @@ Start with `docs/user-manual.md` for end-user operation. For detailed Terraform 
 - Added migration readiness assessment from RVTools snapshot, tools, CD, USB, and health tabs, including `readiness-findings.csv`.
 - Added a comprehensive searchable user manual in `docs/user-manual.md`.
 - Added memory readiness and conservative RAM sizing using RVTools `vMemory`, including `memory-readiness.csv`.
+- Added IBM catalog pricing modes with static, cached, and live profile discovery paths plus pricing confidence metadata.
 
 ---
 **Author**: Michael Vincent Jones
-**Version**: 1.7.0
+**Version**: 1.8.0

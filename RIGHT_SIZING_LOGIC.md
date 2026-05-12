@@ -76,6 +76,13 @@ The sizing model remains conservative. If swapping, ballooning, reservations, or
 
 Memory readiness is advisory but does affect the recommended profile because IBM Cloud VSI profiles pair CPU and RAM. Users can still override the selected profile in the table before generating Terraform.
 
+## 14. IBM Catalog Pricing Modes
+The app separates profile discovery from pricing confidence. Profile names come from either the bundled static catalog, a cached pricing file, or live IBM Cloud VPC profile discovery. Pricing values are tagged with source and confidence metadata so users can distinguish exact cached pricing from fallback estimates.
+
+Live mode uses the IBM Cloud VPC API for profile discovery when `IBMCLOUD_API_KEY` is available. It does not assume that a VPC profile name is the same as a Global Catalog pricing artifact name. If exact pricing cannot be safely mapped, the app falls back to known static rates and labels the pricing confidence accordingly.
+
+This keeps the assessment workflow stable while making future catalog integration safer and more transparent.
+
 ---
 **Author**: Michael Vincent Jones
 **Role**: Technical Specialist, IBM Automation
