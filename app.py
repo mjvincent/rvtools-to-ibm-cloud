@@ -23,6 +23,7 @@ from logic_engine import (
     summarize_migration_readiness,
     generate_vm_mapping_csv
 )
+from models import MigrationVm
 
 PROFILE_OPTIONS = [""] + get_catalog_profiles()
 STORAGE_TIERS = ["3iops-tier", "5iops-tier", "10iops-tier"]
@@ -819,7 +820,7 @@ if uploaded_file is not None:
             if generate_security_groups else "N/A"
         )
 
-        processed_vms.append({
+        processed_vms.append(MigrationVm.from_record({
             'Exclude?': p_st == 'poweredOff',
             'VM Key': vm_key,
             'VM Name': vm_n,
@@ -885,10 +886,10 @@ if uploaded_file is not None:
             'Ready_Pct': perf['ready'],
             'Overall_MHz': perf['mhz'],
             'Network': vm_net
-        })
+        }))
 
     # --- 8. DASHBOARD ---
-    df_f = pd.DataFrame(processed_vms)
+    df_f = pd.DataFrame([vm.to_record() for vm in processed_vms])
     df_table = df_f.drop(
         columns=["Disk Details", "Network Details", "Readiness Findings"],
         errors="ignore"
@@ -1007,11 +1008,12 @@ if uploaded_file is not None:
     if st.button("Build Terraform Project"):
         with st.status("🏗️ Packaging Project...") as status:
             try:
-                final_vms = [
+                final_vm_records = [
                     v for v in edited_df.to_dict('records')
                     if not v['Exclude?']
                 ]
-                for vm in final_vms:
+                final_vms = []
+                for vm in final_vm_records:
                     vm["Disk Details"] = disk_details.get(vm.get("VM Key"), [])
                     vm["Network Details"] = nic_details.get(
                         vm.get("VM Key"), []
@@ -1024,6 +1026,7 @@ if uploaded_file is not None:
                         ),
                         []
                     )
+                    final_vms.append(MigrationVm.from_record(vm))
 
                 terraform_files = render_terraform_templates(
                     final_vms,

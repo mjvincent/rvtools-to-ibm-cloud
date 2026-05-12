@@ -5,7 +5,7 @@ import math
 import re
 
 from catalog_pricing import DEFAULT_STORAGE_TIER_RATES, STATIC_IBM_VPC_CATALOG
-from models import clean_value
+from models import MigrationVm, clean_value
 
 IMAGE_MAX_GB = 250
 IMAGE_MIN_GB = 10
@@ -302,6 +302,12 @@ def _clean_value(value, default=""):
     return clean_value(value, default)
 
 
+def _as_vm(value):
+    if isinstance(value, MigrationVm):
+        return value
+    return MigrationVm.from_record(value)
+
+
 def _as_record(value):
     if hasattr(value, "to_record"):
         return value.to_record()
@@ -309,7 +315,7 @@ def _as_record(value):
 
 
 def _normalize_vms(final_vms):
-    return [_as_record(vm) for vm in final_vms]
+    return [_as_vm(vm) for vm in final_vms]
 
 
 def _safe_vm_key(value):
@@ -330,8 +336,8 @@ def _safe_resource_name(value):
 
 
 def _vm_disks(vm):
-    vm = _as_record(vm)
-    disks = vm.get('Disk Details') or []
+    vm = _as_vm(vm)
+    disks = vm.source.disks or vm.disks
     disks = [_as_record(disk) for disk in disks]
     return disks if isinstance(disks, list) else []
 
@@ -341,8 +347,8 @@ def _vm_data_disks(vm):
 
 
 def _vm_nics(vm):
-    vm = _as_record(vm)
-    nics = vm.get('Network Details') or []
+    vm = _as_vm(vm)
+    nics = vm.source.nics or vm.nics
     nics = [_as_record(nic) for nic in nics]
     return nics if isinstance(nics, list) else []
 
@@ -355,8 +361,8 @@ def _connected_nics(vm):
 
 
 def _vm_findings(vm):
-    vm = _as_record(vm)
-    findings = vm.get('Readiness Findings') or []
+    vm = _as_vm(vm)
+    findings = vm.migration.findings or vm.readiness_findings
     findings = [_as_record(finding) for finding in findings]
     return findings if isinstance(findings, list) else []
 
@@ -376,8 +382,8 @@ def make_readiness_finding(finding_type, severity, source_tab, evidence,
 def summarize_migration_readiness(findings):
     """Summarize VM migration readiness findings into Ready/Review/Blocked."""
     clean_findings = [
-        finding for finding in findings
-        if isinstance(finding, dict) and _clean_value(finding.get('severity'))
+        _as_record(finding) for finding in findings
+        if _clean_value(_as_record(finding).get('severity'))
     ]
     if not clean_findings:
         return {
