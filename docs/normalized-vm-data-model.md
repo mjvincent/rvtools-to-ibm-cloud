@@ -22,7 +22,8 @@ tests that intentionally exercise legacy inputs.
 - `ImageReadiness`: image planning status and supporting metadata.
 - `MemoryReadiness`: memory pressure, constraints, and sizing recommendation.
 - `MigrationReadiness`: operational migration status and detailed findings.
-- `DiskMapping`, `NicMapping`, and `ReadinessFinding`: repeated nested details.
+- `DiskMapping`, `PartitionMapping`, `NicMapping`, and `ReadinessFinding`:
+  repeated nested details.
 
 `MigrationVm` still exposes legacy top-level attributes for compatibility with
 the current UI and existing tests. During initialization it refreshes the nested
@@ -37,6 +38,10 @@ Findings`.
 `MigrationVm.to_record()` returns the same table-style shape used by the
 Streamlit data editor and current CSV/manifest generators. This prevents a data
 model refactor from changing user-visible ZIP contents or UI columns.
+
+Partition details are additive. Matched partitions are nested under their
+source disk, while unmatched `vPartition` rows are preserved at the VM source
+level for review.
 
 `logic_engine.py` remains a compatibility facade for existing imports. The
 focused implementation modules accept either `MigrationVm` instances or legacy

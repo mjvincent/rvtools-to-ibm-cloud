@@ -113,3 +113,10 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added Overview tab quality metrics and worksheet coverage detail.
 - Added `assessment-quality.json` and `assessment-quality.csv` to the Terraform ZIP and migration manifest.
 - Documented the advisory quality model in the README, user manual, migration handoff guide, and ADR-013.
+
+### May 13, 2026: vPartition Storage Planning
+- Added advisory RVTools `vPartition` parsing and disk-key correlation.
+- Preserved matched partition details on disk records and unmatched rows at VM level for review.
+- Added Storage tab partition coverage signals and `partition-mapping.csv`.
+- Extended disk mapping and manifest outputs with additive partition context without changing Terraform volume sizing.
+- Documented the advisory partition model in the README, user manual, storage logic, handoff guide, and ADR-014.

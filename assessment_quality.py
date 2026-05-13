@@ -8,6 +8,7 @@ REQUIRED_TABS = [
 ]
 
 OPTIONAL_READINESS_TABS = ["vSnapshot", "vTools", "vCD", "vUSB", "vHealth"]
+OPTIONAL_STORAGE_TABS = ["vPartition"]
 
 CONFIDENCE_RANK = {
     "High": 3,
@@ -19,6 +20,7 @@ CONFIDENCE_RANK = {
 TAB_IMPACTS = {
     "vInfo": "Primary VM inventory, scope, power state, guest OS, and fallback network/storage metadata.",
     "vDisk": "Detailed disk capacity and boot/data disk planning.",
+    "vPartition": "Partition-level capacity, consumed, and free-space context for storage planning.",
     "vCPU": "CPU demand, contention, throttling, and right-sizing safety signals.",
     "vMemory": "Memory pressure, constraints, and conservative RAM sizing.",
     "vHost": "Host CPU capacity for vCPU-to-pCore and headroom signals.",
@@ -127,6 +129,9 @@ def build_assessment_quality_report(sheets, available_sheet_names):
     ] + [
         _tab_record(tab, "Optional readiness", sheets, available_sheet_names)
         for tab in OPTIONAL_READINESS_TABS
+    ] + [
+        _tab_record(tab, "Optional storage detail", sheets, available_sheet_names)
+        for tab in OPTIONAL_STORAGE_TABS
     ]
 
     required_present = len([

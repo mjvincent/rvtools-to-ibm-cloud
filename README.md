@@ -28,6 +28,7 @@ The tool now preserves RVTools `vDisk` detail instead of collapsing all disks in
 * **Boot Disk Separation**: The first discovered disk is treated as image-covered boot storage.
 * **Data Disk Volumes**: Additional disks generate IBM Cloud block volumes and VSI volume attachments.
 * **Disk Handoff**: A `disk-mapping.csv` file shows source disk metadata and target Terraform volume/attachment names.
+* **Partition Context**: Optional `vPartition` rows add partition labels, capacity, consumed, and free-space context for review without changing generated volume sizes.
 
 ### Image Readiness Assessment
 The dashboard evaluates source VM metadata for IBM Cloud VPC custom image planning.
@@ -78,6 +79,7 @@ Successful execution requires a standard RVTools XLSX export containing the foll
 * **vMemory**: Memory telemetry for active, consumed, swapped, ballooned, reservation, limit, and hot-add data.
 * **vHost / vCluster**: Physical infrastructure specifications and aggregate capacity.
 * **vDisk**: Storage capacity and disk inventory.
+* **vPartition**: Optional partition-level capacity, consumed, and free-space details for storage planning review.
 * **vSnapshot / vTools / vCD / vUSB / vHealth**: Optional migration readiness signals for snapshots, guest tools, attached media, USB devices, and health warnings.
 
 ## Business Case and Mapping Output
@@ -94,6 +96,7 @@ The dashboard is organized as an assessment workbench with Overview, Readiness, 
 * Memory readiness status, pressure indicators, reservation/limit data, and sizing memory basis
 * Pricing source, confidence, last-updated timestamp, and profile hourly value
 * Per-disk boot/data role, capacity, source controller metadata, and target volume attachment mapping
+* Per-partition source capacity, consumed, free-space, and disk correlation context
 * Per-NIC source network, IP, MAC, adapter, connected state, target subnet, and security group mapping
 
 ## Streamlit Override Controls
@@ -137,6 +140,7 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `vm-mapping.csv` — spreadsheet-friendly view for migration planning and customer review
 * `nic-mapping.csv` — per-NIC primary/secondary network interface mapping
 * `disk-mapping.csv` — per-disk boot/data mapping for volume creation and attachment review
+* `partition-mapping.csv` — per-partition storage planning detail from RVTools `vPartition`
 * `memory-readiness.csv` — VM-level memory pressure, constraint, and sizing review
 * `readiness-findings.csv` — row-level migration readiness findings and remediation actions
 * `assessment-quality.json` / `assessment-quality.csv` — RVTools worksheet coverage and confidence report
@@ -172,6 +176,7 @@ Start with `docs/user-manual.md` for end-user operation. For detailed Terraform 
 - Added migration handoff files for source-to-target mapping, image import placeholders, and cutover runbook support.
 - Added image readiness assessment fields for IBM Cloud VPC custom image planning.
 - Added per-disk data volume generation, VSI volume attachments, and `disk-mapping.csv`.
+- Added advisory `vPartition` storage planning context, including `partition-mapping.csv`.
 - Added multi-NIC network mapping, secondary VSI network interfaces, and `nic-mapping.csv`.
 - Added migration readiness assessment from RVTools snapshot, tools, CD, USB, and health tabs, including `readiness-findings.csv`.
 - Added assessment quality reporting for RVTools worksheet coverage and confidence, including `assessment-quality.json` and `assessment-quality.csv`.

@@ -19,7 +19,7 @@ Each VM assessment also includes a `memory_readiness` object with readiness stat
 
 The manifest also includes an additive `assessment_quality` object with RVTools worksheet coverage, required and optional tab counts, and confidence values for inventory, storage, network, memory, migration readiness, and overall planning.
 
-The manifest also preserves source disk detail from `vDisk`. Boot disks are marked as image-covered storage, and additional disks are listed as target data volumes for IBM Cloud block storage creation and attachment.
+The manifest also preserves source disk detail from `vDisk`. Boot disks are marked as image-covered storage, and additional disks are listed as target data volumes for IBM Cloud block storage creation and attachment. Optional `vPartition` rows are included as advisory partition context when available.
 
 The manifest preserves source NIC detail from `vNetwork`. Connected NICs are mapped to primary or secondary VPC network interfaces, while disconnected NICs remain visible for migration review.
 
@@ -32,7 +32,10 @@ The CSV includes image, migration, and memory readiness columns so application a
 A per-NIC mapping file showing primary, secondary, and disconnected source adapters. It includes source network, IP, MAC address, adapter type, switch, target subnet, and target security group.
 
 ### `disk-mapping.csv`
-A per-disk mapping file that separates boot disks from data disks. Boot disks are marked as covered by the imported custom image. Data disks include target Terraform volume and attachment resource names.
+A per-disk mapping file that separates boot disks from data disks. Boot disks are marked as covered by the imported custom image. Data disks include target Terraform volume and attachment resource names. Partition summary columns are included when `vPartition` data is available.
+
+### `partition-mapping.csv`
+A row-level partition planning file showing partition label/path, capacity, consumed space, free space, free percentage, source disk key, and whether the row matched a `vDisk` record.
 
 ### `memory-readiness.csv`
 A VM-level memory readiness file showing memory pressure, reservations, limits, hot-add status, sizing memory, sizing basis, and effective profile context.
@@ -66,12 +69,13 @@ A generated operational runbook that explains the recommended sequence: review m
 9. Review `assessment-quality.csv` to confirm workbook coverage and confidence before finalizing migration waves.
 10. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
 11. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
-12. Import or replicate VMware images using the approved migration approach.
-13. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
-14. Apply Terraform using Plain CLI or IBM Schematics.
-15. Validate boot, network, storage, monitoring, backup, and application health before cutover.
+12. Review `partition-mapping.csv` for partition free-space context and unmatched partition rows.
+13. Import or replicate VMware images using the approved migration approach.
+14. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
+15. Apply Terraform using Plain CLI or IBM Schematics.
+16. Validate boot, network, storage, monitoring, backup, and application health before cutover.
 
 ## Current Scope
-This release creates the handoff package, image ID placeholders, per-disk volume mapping, multi-NIC mapping, memory readiness sizing, advisory migration readiness findings, and advisory assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.
+This release creates the handoff package, image ID placeholders, per-disk volume mapping, advisory partition mapping, multi-NIC mapping, memory readiness sizing, advisory migration readiness findings, and advisory assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.
 
 Those are intentionally left as later adapters so the handoff format can remain stable and tool-neutral.

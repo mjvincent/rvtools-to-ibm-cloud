@@ -38,6 +38,14 @@ def get_record_value(record, key, default=""):
     return getattr(record, key, default)
 
 
+def clean_number(value, default=0):
+    value = clean_value(value, default)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _prefer(current, nested, default=""):
     current_value = clean_value(current, default)
     nested_value = clean_value(nested, default)
@@ -46,6 +54,34 @@ def _prefer(current, nested, default=""):
     if current_value == default and nested_value not in ["", None, default]:
         return nested_value
     return current_value
+
+
+@dataclass
+class PartitionMapping:
+    disk: str = ""
+    disk_key: str = ""
+    capacity_mib: float = 0
+    consumed_mib: float = 0
+    free_mib: float = 0
+    free_pct: float = 0
+    matched: bool = False
+
+    @classmethod
+    def from_record(cls, record):
+        return cls(
+            disk=clean_value(get_record_value(record, "disk")),
+            disk_key=clean_value(get_record_value(record, "disk_key")),
+            capacity_mib=clean_value(get_record_value(record, "capacity_mib"), 0),
+            consumed_mib=clean_value(
+                get_record_value(record, "consumed_mib"), 0
+            ),
+            free_mib=clean_value(get_record_value(record, "free_mib"), 0),
+            free_pct=clean_value(get_record_value(record, "free_pct"), 0),
+            matched=as_bool(get_record_value(record, "matched")),
+        )
+
+    def to_record(self):
+        return self.__dict__.copy()
 
 
 @dataclass
@@ -64,10 +100,21 @@ class DiskMapping:
     thin: str = ""
     raw: str = ""
     shared_bus: str = ""
+    partitions: list = field(default_factory=list)
+    partition_count: int = 0
+    partition_labels: str = ""
+    partition_capacity_mib: float = 0
+    partition_consumed_mib: float = 0
+    partition_free_mib: float = 0
+    partition_free_pct: float = 0
 
     @classmethod
     def from_record(cls, record):
-        return cls(
+        partitions = [
+            PartitionMapping.from_record(partition)
+            for partition in get_record_value(record, "partitions", []) or []
+        ]
+        disk = cls(
             disk=clean_value(get_record_value(record, "disk")),
             capacity_gb=clean_value(get_record_value(record, "capacity_gb"), 0),
             capacity_mib=clean_value(get_record_value(record, "capacity_mib"), 0),
@@ -82,10 +129,69 @@ class DiskMapping:
             thin=clean_value(get_record_value(record, "thin")),
             raw=clean_value(get_record_value(record, "raw")),
             shared_bus=clean_value(get_record_value(record, "shared_bus")),
+            partitions=partitions,
+            partition_count=clean_value(
+                get_record_value(record, "partition_count"), 0
+            ),
+            partition_labels=clean_value(
+                get_record_value(record, "partition_labels")
+            ),
+            partition_capacity_mib=clean_value(
+                get_record_value(record, "partition_capacity_mib"), 0
+            ),
+            partition_consumed_mib=clean_value(
+                get_record_value(record, "partition_consumed_mib"), 0
+            ),
+            partition_free_mib=clean_value(
+                get_record_value(record, "partition_free_mib"), 0
+            ),
+            partition_free_pct=clean_value(
+                get_record_value(record, "partition_free_pct"), 0
+            ),
         )
+        disk.refresh_partition_summary()
+        return disk
+
+    def refresh_partition_summary(self):
+        self.partitions = [
+            partition
+            if isinstance(partition, PartitionMapping)
+            else PartitionMapping.from_record(partition)
+            for partition in self.partitions
+        ]
+        if not self.partitions:
+            return
+        self.partition_count = len(self.partitions)
+        self.partition_labels = ", ".join([
+            clean_value(partition.disk)
+            for partition in self.partitions
+            if clean_value(partition.disk)
+        ])
+        self.partition_capacity_mib = sum(
+            clean_number(partition.capacity_mib, 0)
+            for partition in self.partitions
+        )
+        self.partition_consumed_mib = sum(
+            clean_number(partition.consumed_mib, 0)
+            for partition in self.partitions
+        )
+        self.partition_free_mib = sum(
+            clean_number(partition.free_mib, 0)
+            for partition in self.partitions
+        )
+        if self.partition_capacity_mib:
+            self.partition_free_pct = round(
+                (self.partition_free_mib / self.partition_capacity_mib) * 100,
+                2
+            )
 
     def to_record(self):
-        return self.__dict__.copy()
+        self.refresh_partition_summary()
+        record = self.__dict__.copy()
+        record["partitions"] = [
+            partition.to_record() for partition in self.partitions
+        ]
+        return record
 
 
 @dataclass
@@ -166,6 +272,7 @@ class SourceMetadata:
     primary_network: str = ""
     primary_ip: str = ""
     disks: list = field(default_factory=list)
+    partitions: list = field(default_factory=list)
     nics: list = field(default_factory=list)
 
 
@@ -308,6 +415,7 @@ class MigrationVm:
     pricing_last_updated: str = ""
     profile_hourly: float = 0
     disks: list = field(default_factory=list)
+    partitions: list = field(default_factory=list)
     nics: list = field(default_factory=list)
     readiness_findings: list = field(default_factory=list)
     source: SourceMetadata = field(default_factory=SourceMetadata)
@@ -319,6 +427,9 @@ class MigrationVm:
 
     def __post_init__(self):
         self.disks = [self._disk(disk) for disk in self.disks]
+        self.partitions = [
+            self._partition(partition) for partition in self.partitions
+        ]
         self.nics = [self._nic(nic) for nic in self.nics]
         self.readiness_findings = [
             self._finding(finding) for finding in self.readiness_findings
@@ -328,6 +439,9 @@ class MigrationVm:
         ]
         self._pull_nested_defaults()
         self.disks = [self._disk(disk) for disk in self.disks]
+        self.partitions = [
+            self._partition(partition) for partition in self.partitions
+        ]
         self.nics = [self._nic(nic) for nic in self.nics]
         self.readiness_findings = [
             self._finding(finding) for finding in self.readiness_findings
@@ -337,6 +451,12 @@ class MigrationVm:
     @staticmethod
     def _disk(record):
         return record if isinstance(record, DiskMapping) else DiskMapping.from_record(record)
+
+    @staticmethod
+    def _partition(record):
+        if isinstance(record, PartitionMapping):
+            return record
+        return PartitionMapping.from_record(record)
 
     @staticmethod
     def _nic(record):
@@ -472,6 +592,10 @@ class MigrationVm:
             disks=[
                 DiskMapping.from_record(d)
                 for d in get_record_value(record, "Disk Details", []) or []
+            ],
+            partitions=[
+                PartitionMapping.from_record(p)
+                for p in get_record_value(record, "Partition Details", []) or []
             ],
             nics=[
                 NicMapping.from_record(n)
@@ -614,6 +738,8 @@ class MigrationVm:
         )
         if not self.disks:
             self.disks = list(self.source.disks)
+        if not self.partitions:
+            self.partitions = list(self.source.partitions)
         if not self.nics:
             self.nics = list(self.source.nics)
         if not self.readiness_findings:
@@ -637,6 +763,7 @@ class MigrationVm:
             primary_network=self.primary_network,
             primary_ip=self.primary_ip,
             disks=self.disks,
+            partitions=self.partitions,
             nics=self.nics,
         )
         self.target = TargetRecommendation(
@@ -694,6 +821,11 @@ class MigrationVm:
 
     def to_record(self):
         self._refresh_nested_records()
+        partition_count = sum(
+            clean_number(disk.partition_count, 0) for disk in self.disks
+        ) + len(self.partitions)
+        if float(partition_count).is_integer():
+            partition_count = int(partition_count)
         return {
             "Exclude?": self.exclude,
             "VM Key": self.vm_key,
@@ -708,6 +840,11 @@ class MigrationVm:
             "Disk Count": self.disk_count,
             "Data Disk Count": self.data_disk_count,
             "Disk Details": [disk.to_record() for disk in self.disks],
+            "Partition Details": [
+                partition.to_record() for partition in self.partitions
+            ],
+            "Partition Count": partition_count,
+            "Unmatched Partition Count": len(self.partitions),
             "Firmware": self.firmware,
             "Boot Disk GB": self.boot_disk_gb,
             "Guest Customization": self.guest_customization,

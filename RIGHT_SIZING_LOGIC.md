@@ -57,6 +57,8 @@ Storage sizing now preserves RVTools `vDisk` rows for target data volume plannin
 
 The per-disk mapping does not change compute right-sizing. It improves Terraform fidelity by avoiding a single aggregate volume that loses disk role, size, controller, and unit metadata.
 
+Optional RVTools `vPartition` rows are preserved as advisory partition context. They show partition labels, capacity, consumed space, free space, and free percentage where RVTools provides that data. Partition data does not change Terraform volume capacity, storage tier selection, or attachment generation in this release; generated volumes remain based on `vDisk` capacity.
+
 ## 11. Multi-NIC Network Mapping
 Network mapping is evaluated separately from compute and storage right-sizing. The engine preserves RVTools `vNetwork` rows so connected source NICs can map to primary and secondary IBM Cloud VPC network interfaces.
 

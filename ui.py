@@ -12,6 +12,7 @@ DISABLED_COLS = [
     "Guest OS", "Disk Count", "Host", "Cluster", "Datacenter",
     "VM Key", "Data Disk Count", "NIC Count", "Primary Network",
     "Primary IP",
+    "Partition Count", "Unmatched Partition Count",
     "Image Readiness", "Readiness Reasons", "Firmware", "Boot Disk GB",
     "Guest Customization",
     "Migration Readiness", "Migration Readiness Reasons",
@@ -159,7 +160,7 @@ NETWORK_COLUMNS = [
 STORAGE_COLUMNS = [
     "VM Name", "Disk Count", "Data Disk Count", "Total Storage GB",
     "Storage Tier", "Override Storage Tier", "Image Readiness",
-    "Boot Disk GB"
+    "Boot Disk GB", "Partition Count", "Unmatched Partition Count"
 ]
 
 
@@ -284,16 +285,74 @@ def render_network_planning(df_f, unique_nets):
     )
 
 
-def render_storage_planning(df_f):
-    c1, c2, c3 = st.columns(3)
+def _record(value):
+    return value.to_record() if hasattr(value, "to_record") else value
+
+
+def build_partition_planning_rows(vms):
+    rows = []
+    for vm in vms or []:
+        record = _record(vm)
+        vm_name = record.get("VM Name", "")
+        for disk in record.get("Disk Details", []) or []:
+            disk_name = disk.get("disk", "")
+            disk_key = disk.get("disk_key", "")
+            for partition in disk.get("partitions", []) or []:
+                rows.append({
+                    "VM Name": vm_name,
+                    "Disk": disk_name,
+                    "Disk Key": disk_key or partition.get("disk_key", ""),
+                    "Matched": True,
+                    "Partition": partition.get("disk", ""),
+                    "Capacity MiB": partition.get("capacity_mib", 0),
+                    "Consumed MiB": partition.get("consumed_mib", 0),
+                    "Free MiB": partition.get("free_mib", 0),
+                    "Free %": partition.get("free_pct", 0),
+                })
+        for partition in record.get("Partition Details", []) or []:
+            rows.append({
+                "VM Name": vm_name,
+                "Disk": "",
+                "Disk Key": partition.get("disk_key", ""),
+                "Matched": False,
+                "Partition": partition.get("disk", ""),
+                "Capacity MiB": partition.get("capacity_mib", 0),
+                "Consumed MiB": partition.get("consumed_mib", 0),
+                "Free MiB": partition.get("free_mib", 0),
+                "Free %": partition.get("free_pct", 0),
+            })
+    return rows
+
+
+def render_storage_planning(df_f, source_vms=None):
+    partition_rows = build_partition_planning_rows(source_vms)
+    high_free = [
+        row for row in partition_rows
+        if float(row.get("Free %") or 0) >= 50
+    ]
+    unmatched = [
+        row for row in partition_rows
+        if not row.get("Matched")
+    ]
+
+    c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Total Storage GB", f"{df_f['Total Storage GB'].sum():,.2f}")
     c2.metric("Data Disks", int(df_f["Data Disk Count"].sum()))
-    c3.metric("Image Blocked", _count_status(_active_df(df_f), "Image Readiness", "Blocked"))
+    c3.metric("Partitions", len(partition_rows))
+    c4.metric("Unmatched Partitions", len(unmatched))
+    c5.metric("High Free Partitions", len(high_free))
     st.dataframe(
         df_f[[col for col in STORAGE_COLUMNS if col in df_f.columns]],
         hide_index=True,
         use_container_width=True,
     )
+    if partition_rows:
+        st.subheader("Partition Details")
+        st.dataframe(
+            pd.DataFrame(partition_rows),
+            hide_index=True,
+            use_container_width=True,
+        )
 
 
 def merge_decision_edits(df_table, edited_decisions):
