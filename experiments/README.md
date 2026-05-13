@@ -10,4 +10,4 @@ experiments. These scripts may require IBM SDK packages, network access, and
 
 ## Templates
 `experiments/templates/` preserves older Jinja template experiments. The current
-Terraform renderer is implemented in `logic_engine.py`.
+Terraform rendering is implemented in `terraform_renderer.py`; `logic_engine.py` re-exports the supported renderer functions for compatibility.

@@ -83,6 +83,9 @@ Live mode uses the IBM Cloud VPC API for profile discovery when `IBMCLOUD_API_KE
 
 This keeps the assessment workflow stable while making future catalog integration safer and more transparent.
 
+## 15. Module Ownership
+Right-sizing and storage tier recommendation now live in `sizing.py`. Readiness policy lives in `assessments.py`, RVTools workbook correlation lives in `rvtools_parser.py`, Terraform HCL rendering lives in `terraform_renderer.py`, and migration handoff output lives in `handoff.py`. `logic_engine.py` remains as a compatibility facade for existing imports.
+
 ---
 **Author**: Michael Vincent Jones
 **Role**: Technical Specialist, IBM Automation

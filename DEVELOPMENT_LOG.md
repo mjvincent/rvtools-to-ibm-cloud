@@ -96,3 +96,9 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Preserved current CSV, manifest, Terraform ZIP, and UI table contracts through `from_record()` and `to_record()` compatibility adapters.
 - Moved old pricing API and Jinja template experiments into `experiments/` so production root files and smoke tests stay focused.
 - Documented the model in `docs/normalized-vm-data-model.md` and ADR-011.
+
+### May 13, 2026: Task 1 Module Split
+- Split the Streamlit application and logic engine into focused parser, assessment, sizing, Terraform renderer, handoff, and UI helper modules.
+- Kept `logic_engine.py` as a compatibility facade so existing tests and callers continue to use the same public imports.
+- Preserved current Streamlit columns, CSV headers, manifest structure, Terraform ZIP layout, and generated file names.
+- Added ADR-012 to document the module split and no-new-dependency decision.

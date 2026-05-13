@@ -2,8 +2,8 @@
 
 ## Purpose
 The normalized VM data model is the internal contract between RVTools parsing,
-readiness assessment, cost/profile recommendation, Terraform rendering, and
-migration handoff generation.
+RVTools parsing, readiness assessment, cost/profile recommendation,
+Terraform rendering, Streamlit display, and migration handoff generation.
 
 Earlier app code passed Streamlit table dictionaries through most layers. The
 current model keeps those dictionaries only at compatibility boundaries:
@@ -38,13 +38,18 @@ Findings`.
 Streamlit data editor and current CSV/manifest generators. This prevents a data
 model refactor from changing user-visible ZIP contents or UI columns.
 
-`logic_engine.py` public functions continue to accept either `MigrationVm`
-instances or legacy dictionaries. Inputs are normalized at the function boundary
-before rendering Terraform or handoff outputs.
+`logic_engine.py` remains a compatibility facade for existing imports. The
+focused implementation modules accept either `MigrationVm` instances or legacy
+dictionaries where public rendering and handoff functions historically allowed
+that shape. Inputs are normalized at the function boundary before rendering
+Terraform or handoff outputs.
 
 ## Development Guidance
-New parsing or assessment code should construct or update `MigrationVm` and its
-nested records directly, then call `to_record()` only when handing data to
+New parser or assessment code should construct or update `MigrationVm` and its
+nested records directly. `rvtools_parser.py` owns workbook correlation,
+`assessments.py` owns readiness policy, `sizing.py` owns profile/cost
+recommendation, `terraform_renderer.py` owns HCL output, and `handoff.py` owns
+manifest/CSV/runbook exports. Call `to_record()` only when handing data to
 Streamlit or legacy export code.
 
 New output adapters should accept `MigrationVm` objects and avoid depending on
