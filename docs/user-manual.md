@@ -42,8 +42,8 @@ This manual is intended for:
 
 ## Application Outcomes
 After uploading an RVTools XLSX export, the application can produce:
-- A Streamlit dashboard with VM count, monthly cost estimate, savings estimate, N+1 headroom, zombie VM count, image readiness counts, and migration readiness counts.
-- A per-VM planning table with right-sizing recommendations, override controls, source metadata, disk mapping, network mapping, and readiness assessments.
+- A Streamlit assessment workbench with focused Overview, Readiness, VM Review, Networks, Storage, and Export tabs.
+- A per-VM decision table with right-sizing recommendations, override controls, source metadata, disk mapping, network mapping, and readiness assessments available through focused views.
 - A downloadable business case CSV.
 - A downloadable Terraform ZIP bundle.
 - A migration handoff package inside the ZIP for migration planning and downstream tooling.
@@ -102,14 +102,35 @@ streamlit run app.py
 4. Select the right-sizing threshold.
 5. Enter the project name.
 6. Upload the RVTools workbook.
-7. Review dashboard metrics.
-8. Open `Terraform Overrides` and confirm the VPC name, address prefix strategy, deployment target, and subnet CIDRs.
-9. Review the VM table.
-10. Adjust editable override fields where needed.
-11. Download the business case CSV if needed.
-12. Click `Build Terraform Project`.
-13. Download the Terraform ZIP bundle.
-14. Review the generated Terraform and migration handoff files before applying or sharing with migration tooling.
+7. Review the `Overview` tab for estate health and recommended next actions.
+8. Review the `Readiness` tab and resolve `Blocked` items before migration execution.
+9. Use `VM Review` to adjust exclusion, profile, storage tier, network, subnet, and security group decisions.
+10. Use `Networks` and `Storage` to confirm placement and disk planning details.
+11. Use `Export` to confirm VPC name, address prefix strategy, deployment target, and subnet CIDRs.
+12. Download the business case CSV if needed.
+13. Click `Build Terraform Project`.
+14. Download the Terraform ZIP bundle.
+15. Review the generated Terraform and migration handoff files before applying or sharing with migration tooling.
+
+
+## Assessment Workbench Tabs
+### Overview
+Shows the estate-level health summary, in-scope and excluded VM counts, monthly estimate, potential savings, blocker count, and recommended next actions. Start here after each upload.
+
+### Readiness
+Groups image, migration, and memory readiness by `Blocked`, `Review`, and `Ready`. Blocked and Review rows are sorted first so remediation planning starts with the highest-impact items.
+
+### VM Review
+Shows the main decision fields instead of every generated column. Use this tab to exclude VMs and adjust profile, storage tier, network, subnet, or security group intent. Advanced generated fields remain available in the expander for audit and troubleshooting.
+
+### Networks
+Shows discovered networks, default CIDRs, VM network placement, multi-NIC count, and unknown network signals. Use this before export to confirm subnet and security group intent.
+
+### Storage
+Shows total storage, data disk counts, boot/data planning signals, storage tier choices, and image readiness context. Use this to validate data disk volume planning before package generation.
+
+### Export
+Contains Terraform deployment settings, custom CIDR fields, package readiness metrics, business case CSV download, and Terraform ZIP build/download controls.
 
 ## Sidebar Settings
 ### Target IBM Region
@@ -157,7 +178,7 @@ Pricing mode affects estimated cost and profile options, but does not change gen
 For live mode, set `IBMCLOUD_API_KEY` in the shell that starts Streamlit or in a local `.env` file at the repository root. Restart Streamlit after creating or changing `.env`.
 
 ### Download Business Case CSV
-Exports the current table view as a CSV. This file is useful for stakeholder review before building the full Terraform project.
+The Export tab downloads the current full planning table as a CSV. This file is useful for stakeholder review before building the full Terraform project.
 
 ## Dashboard Metrics
 ### Total VMs
@@ -222,7 +243,7 @@ Timestamp from the cache or live discovery process when available.
 Hourly profile price used in the monthly compute estimate.
 
 ## Terraform Overrides
-The `Terraform Overrides` expander controls target infrastructure settings.
+The `Export` tab controls target infrastructure settings.
 
 ### VPC Name
 The target IBM Cloud VPC name used in generated Terraform.
@@ -249,7 +270,7 @@ For each discovered network, the app creates a CIDR input. These CIDRs are used 
 Review these carefully before applying Terraform. The generated CIDRs are planning defaults and may need adjustment to fit the target IBM Cloud network design.
 
 ## Main Table Reference
-The main table is the primary review and override surface. Some columns are editable, while others are generated from RVTools data or application logic.
+The `VM Review` tab is the primary decision and override surface. It shows the key fields by default, while advanced generated fields remain available in an expander. Some columns are editable, while others are generated from RVTools data or application logic.
 
 ## Editable Columns
 ### `Exclude?`
@@ -518,7 +539,7 @@ Common `Blocked` reasons:
 - Memory limit below configured memory.
 
 ## Build Terraform Project
-Click `Build Terraform Project` after reviewing the table and override settings.
+On the `Export` tab, click `Build Terraform Project` after reviewing readiness, VM decisions, network placement, storage planning, and Terraform settings.
 
 The app packages:
 - Terraform root files.

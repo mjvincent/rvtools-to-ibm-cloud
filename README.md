@@ -75,7 +75,7 @@ Successful execution requires a standard RVTools XLSX export containing the foll
 * **vSnapshot / vTools / vCD / vUSB / vHealth**: Optional migration readiness signals for snapshots, guest tools, attached media, USB devices, and health warnings.
 
 ## Business Case and Mapping Output
-The dashboard now includes a potential savings metric and exports an enriched business case CSV with per-VM data including:
+The dashboard is organized as an assessment workbench with Overview, Readiness, VM Review, Networks, Storage, and Export tabs. It exports an enriched business case CSV with per-VM data including:
 * Baseline cost estimate
 * Estimated monthly savings
 * Subnet mapping for Terraform
@@ -145,9 +145,10 @@ Generated resources include standardized naming and tags for project and managem
 1. Install dependencies: `pip install -r requirements.txt`
 2. Launch the utility: `streamlit run app.py`
 3. Upload the RVTools .xlsx file.
-4. Review the generated business case, savings metrics, and network/security mappings.
-5. Download the Terraform Bundle (ZIP) for deployment via IBM Cloud CLI or IBM Cloud Schematics.
-6. Review the included migration handoff files before image import, replication, or cutover planning.
+4. Review the Overview and Readiness tabs, resolving Blocked items first.
+5. Use VM Review, Networks, and Storage to confirm overrides and placement.
+6. Use Export to download the business case CSV and build the Terraform Bundle ZIP for IBM Cloud CLI or IBM Cloud Schematics.
+7. Review the included migration handoff files before image import, replication, or cutover planning.
 
 ## User Manual
 For a complete searchable guide to installation, RVTools inputs, web interface fields, dashboard metrics, readiness statuses, generated Terraform, ZIP contents, handoff files, troubleshooting, and glossary terms, see `docs/user-manual.md`.
@@ -170,6 +171,7 @@ Start with `docs/user-manual.md` for end-user operation. For detailed Terraform 
 - Added IBM catalog pricing modes with static, cached, and live profile discovery paths plus pricing confidence metadata.
 - Added a normalized VM dataclass model and moved old pricing/template experiments under `experiments/`.
 - Split the monolithic Streamlit and logic engine code into parser, assessment, sizing, renderer, handoff, and UI helper modules while preserving output contracts.
+- Reframed the Streamlit interface as a tabbed assessment workbench with focused Overview, Readiness, VM Review, Networks, Storage, and Export views.
 
 ---
 **Author**: Michael Vincent Jones

@@ -102,3 +102,8 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Kept `logic_engine.py` as a compatibility facade so existing tests and callers continue to use the same public imports.
 - Preserved current Streamlit columns, CSV headers, manifest structure, Terraform ZIP layout, and generated file names.
 - Added ADR-012 to document the module split and no-new-dependency decision.
+
+### May 13, 2026: Assessment Workbench UI
+- Reframed the Streamlit UI around focused Overview, Readiness, VM Review, Networks, Storage, and Export tabs.
+- Reduced the default VM table to decision-oriented columns while keeping advanced generated fields available for audit.
+- Moved readiness guidance next to the readiness triage view and moved package controls into the Export workflow.
