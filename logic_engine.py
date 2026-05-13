@@ -12,6 +12,7 @@ from assessments import (
     SNAPSHOT_BLOCK_SIZE_MIB,
     assess_image_readiness,
     assess_memory_readiness,
+    assess_network_readiness,
     make_readiness_finding,
     summarize_migration_readiness,
 )
@@ -64,6 +65,7 @@ __all__ = [
     "IBM_VPC_CATALOG",
     "assess_image_readiness",
     "assess_memory_readiness",
+    "assess_network_readiness",
     "build_assessment_quality_report",
     "generate_assessment_quality_csv",
     "generate_assessment_quality_json",

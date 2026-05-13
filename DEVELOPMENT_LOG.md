@@ -120,3 +120,10 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added Storage tab partition coverage signals and `partition-mapping.csv`.
 - Extended disk mapping and manifest outputs with additive partition context without changing Terraform volume sizing.
 - Documented the advisory partition model in the README, user manual, storage logic, handoff guide, and ADR-014.
+
+### May 13, 2026: Network Readiness From Switch and Port Context
+- Added optional RVTools `vPort`, `dvPort`, `vSwitch`, and `dvSwitch` parsing for advisory network readiness.
+- Enriched per-NIC records with switch type, port group, VLAN/segment, port key, backing source tab, and match confidence.
+- Added Network readiness to the Streamlit readiness triage, Network Planning view, VM mapping CSV, NIC mapping CSV, and migration manifest.
+- Preserved Terraform primary/secondary/disconnected NIC behavior; switch and port context does not alter generated resources.
+- Documented the advisory network readiness model in the README, user manual, handoff guide, normalized model guide, dedicated network readiness guide, and ADR-015.

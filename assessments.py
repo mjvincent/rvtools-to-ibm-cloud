@@ -25,6 +25,13 @@ def _clean_number(value, default=0):
         return default
 
 
+def _clean_bool(value, default=False):
+    text = _clean_text(value).lower()
+    if not text:
+        return default
+    return text in ["true", "yes", "1", "connected", "poweredon"]
+
+
 def assess_image_readiness(guest_os, firmware, boot_disk_gb,
                            disk_count, power_state):
     """
@@ -245,6 +252,144 @@ def make_readiness_finding(finding_type, severity, source_tab, evidence,
         "source_tab": _clean_value(source_tab),
         "evidence": _clean_value(evidence),
         "recommended_action": _clean_value(recommended_action),
+    }
+
+
+def assess_network_readiness(nics, network_detail_available=False):
+    """
+    Assess source network metadata for migration planning.
+
+    The result is advisory. It enriches review and handoff outputs without
+    changing generated Terraform interfaces.
+    """
+    findings = []
+    connected_count = 0
+    detail_tabs = bool(network_detail_available)
+
+    for index, nic in enumerate(nics or []):
+        nic_record = _as_record(nic)
+        label = _clean_value(
+            nic_record.get("label"), f"Network adapter {index + 1}"
+        )
+        network = _clean_text(nic_record.get("network"))
+        connected = _clean_bool(nic_record.get("connected"), True)
+        planned = _clean_bool(nic_record.get("planned"), connected)
+        match_confidence = _clean_text(nic_record.get("match_confidence"))
+        backing_tab = _clean_text(nic_record.get("backing_source_tab"))
+        switch_type = _clean_text(nic_record.get("switch_type"))
+        vlan = _clean_text(nic_record.get("vlan"))
+        port_status = _clean_text(nic_record.get("port_status")).lower()
+        available_ports = _clean_number(
+            nic_record.get("available_ports"), None
+        )
+
+        if connected:
+            connected_count += 1
+            if not network or "unknown" in network.lower():
+                findings.append(make_readiness_finding(
+                    "Missing source network",
+                    "Review",
+                    "vNetwork",
+                    f"{label} is connected but has no usable network name",
+                    "Confirm source port group and target subnet mapping"
+                ))
+
+            if detail_tabs and not backing_tab:
+                findings.append(make_readiness_finding(
+                    "Missing switch/port backing",
+                    "Review",
+                    "vPort/dvPort",
+                    f"{label} on {network or 'unknown-net'} has no matched port evidence",
+                    "Review source switch or port group mapping before cutover"
+                ))
+
+            if match_confidence == "ambiguous":
+                findings.append(make_readiness_finding(
+                    "Ambiguous switch/port backing",
+                    "Review",
+                    backing_tab or "vPort/dvPort",
+                    f"{label} matched multiple switch/port rows",
+                    "Validate the intended source port group and target network"
+                ))
+            elif match_confidence == "unmatched" and detail_tabs:
+                findings.append(make_readiness_finding(
+                    "Unmatched switch/port backing",
+                    "Review",
+                    "vPort/dvPort",
+                    f"{label} did not match available switch/port rows",
+                    "Confirm switch inventory completeness and NIC placement"
+                ))
+
+            if switch_type and not vlan:
+                findings.append(make_readiness_finding(
+                    "Missing VLAN or segment evidence",
+                    "Review",
+                    backing_tab or "vSwitch/dvSwitch",
+                    f"{label} has {switch_type} backing without VLAN/segment detail",
+                    "Confirm source VLAN or distributed port group segment"
+                ))
+
+            if any(token in port_status for token in [
+                "blocked", "down", "error", "invalid", "disabled"
+            ]):
+                findings.append(make_readiness_finding(
+                    "Unusable source port",
+                    "Blocked",
+                    backing_tab or "vPort/dvPort",
+                    f"{label} port status is {port_status}",
+                    "Remediate source network backing before migration"
+                ))
+
+            if available_ports is not None and available_ports <= 0:
+                findings.append(make_readiness_finding(
+                    "No available source switch ports",
+                    "Blocked",
+                    backing_tab or "vSwitch/dvSwitch",
+                    f"{label} switch backing reports no available ports",
+                    "Validate switch or distributed switch capacity before migration"
+                ))
+        elif planned:
+            findings.append(make_readiness_finding(
+                "Disconnected NIC marked planned",
+                "Review",
+                "vNetwork",
+                f"{label} is disconnected but marked planned",
+                "Confirm whether this adapter should be connected after migration"
+            ))
+        else:
+            findings.append(make_readiness_finding(
+                "Disconnected source NIC",
+                "Review",
+                "vNetwork",
+                f"{label} is disconnected and retained for handoff review",
+                "Confirm whether the disconnected adapter is intentionally omitted"
+            ))
+
+    if connected_count == 0:
+        findings.append(make_readiness_finding(
+            "No connected NICs",
+            "Blocked",
+            "vNetwork",
+            "No connected source NICs were identified",
+            "Confirm source networking before migration planning"
+        ))
+
+    if not findings:
+        return {
+            "status": "Ready",
+            "reasons": "No network readiness blockers found",
+            "findings": [],
+        }
+
+    severities = [finding.get("severity") for finding in findings]
+    status = "Blocked" if "Blocked" in severities else "Review"
+    return {
+        "status": status,
+        "reasons": "; ".join([
+            finding.get("evidence", "") for finding in findings
+            if finding.get("evidence")
+        ]),
+        "findings": findings,
     }
 
 

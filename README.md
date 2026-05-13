@@ -11,6 +11,7 @@ The tool identifies on-premises network configurations by correlating data from 
 * **Subnet Generation**: Automatically configures subnets using a manual address preference, ensuring original CIDR blocks are preserved in the target VPC environment.
 * **Resource Linking**: Maps individual Virtual Server Instances (VSIs) to their respective subnets based on on-premises port group assignments.
 * **Multi-NIC Mapping**: Uses `vNetwork` rows to preserve primary and secondary NIC placement. Connected secondary NICs generate additional VSI network interfaces.
+* **Switch/Port Context**: Optional `vPort`, `dvPort`, `vSwitch`, and `dvSwitch` rows add advisory source switch, port group, VLAN/segment, and port evidence without changing generated Terraform interfaces.
 
 ### Performance-Aware Right-Sizing
 The mapping engine evaluates compute requirements by analyzing specific performance metrics to mitigate the risk of post-migration performance degradation.
@@ -42,6 +43,12 @@ The dashboard also evaluates operational migration prerequisites from optional R
 * **Guest Health Signals**: Uses `vTools` to flag VMware Tools, heartbeat, application status, upgrade, and operation readiness concerns.
 * **Attached Device Cleanup**: Uses `vCD` and `vUSB` to block connected ISO/CD media or USB device dependencies before migration.
 * **Health Findings**: Uses `vHealth` where VM-level findings can be matched to the workload inventory.
+
+### Network Readiness Assessment
+The dashboard evaluates source NIC metadata and optional switch/port backing.
+* **NIC Evidence**: Uses `vNetwork` as the primary NIC inventory and enriches it with `vPort`, `dvPort`, `vSwitch`, and `dvSwitch` when present.
+* **Advisory Status**: Flags `Ready`, `Review`, or `Blocked` network signals for migration planning while preserving Terraform output behavior.
+* **Handoff Detail**: Adds switch type, port group, VLAN/segment, port key, source tab, and match confidence to NIC planning outputs.
 
 ### Assessment Quality Report
 The dashboard reports RVTools worksheet coverage and advisory confidence before teams rely on sizing, readiness, network, or storage outputs.
@@ -75,6 +82,7 @@ The application is split into focused modules with `MigrationVm` as the internal
 Successful execution requires a standard RVTools XLSX export containing the following worksheets:
 * **vInfo**: Primary inventory, power states, and network assignments.
 * **vNetwork**: Networking metadata and IPv4 addressing.
+* **vPort / dvPort / vSwitch / dvSwitch**: Optional source switch and port context for network readiness review.
 * **vCPU**: Detailed performance telemetry (MHz, Ready %, Limits).
 * **vMemory**: Memory telemetry for active, consumed, swapped, ballooned, reservation, limit, and hot-add data.
 * **vHost / vCluster**: Physical infrastructure specifications and aggregate capacity.
@@ -93,11 +101,12 @@ The dashboard is organized as an assessment workbench with Overview, Readiness, 
 * Source metadata including IP address, guest OS, host, cluster, datacenter, and disk count for migration handoff planning
 * Image readiness status, readiness reasons, firmware, boot disk size, and guest customization requirement
 * Migration readiness status, readiness reasons, snapshot count/size, VMware Tools status, mounted media, USB device count, and health warning count
+* Network readiness status, readiness reasons, and source switch/port backing context
 * Memory readiness status, pressure indicators, reservation/limit data, and sizing memory basis
 * Pricing source, confidence, last-updated timestamp, and profile hourly value
 * Per-disk boot/data role, capacity, source controller metadata, and target volume attachment mapping
 * Per-partition source capacity, consumed, free-space, and disk correlation context
-* Per-NIC source network, IP, MAC, adapter, connected state, target subnet, and security group mapping
+* Per-NIC source network, IP, MAC, adapter, connected state, switch/port context, target subnet, and security group mapping
 
 ## Streamlit Override Controls
 The Streamlit dashboard exposes editable override fields for `Override Profile` and `Override Storage Tier`. When set, these user-specified values are honored by the Terraform generator, allowing human-directed tuning of VSI sizing without changing the underlying migration logic.
@@ -147,7 +156,7 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `image-import-variables.tfvars.example` — placeholder map for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
-The handoff files include image readiness, migration readiness, memory readiness, NIC mapping, and disk mapping fields so migration teams can resolve boot image, snapshot, mounted media, guest tools, memory pressure, reservations, limits, network, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
+The handoff files include image readiness, migration readiness, memory readiness, network readiness, NIC mapping, and disk mapping fields so migration teams can resolve boot image, snapshot, mounted media, guest tools, memory pressure, reservations, limits, switch/port backing, network, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
 
 Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module.
 
@@ -166,7 +175,7 @@ Generated resources include standardized naming and tags for project and managem
 For a complete searchable guide to installation, RVTools inputs, web interface fields, dashboard metrics, readiness statuses, generated Terraform, ZIP contents, handoff files, troubleshooting, and glossary terms, see `docs/user-manual.md`.
 
 ## Further Reading
-Start with `docs/user-manual.md` for end-user operation. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`. For catalog pricing behavior, see `docs/ibm-catalog-pricing.md`. For internal model architecture, see `docs/normalized-vm-data-model.md`.
+Start with `docs/user-manual.md` for end-user operation. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`. For network readiness guidance, see `docs/network-readiness-assessment.md`. For catalog pricing behavior, see `docs/ibm-catalog-pricing.md`. For internal model architecture, see `docs/normalized-vm-data-model.md`.
 
 ## Release Notes
 - Added a potential savings metric to the Streamlit dashboard.
@@ -182,6 +191,7 @@ Start with `docs/user-manual.md` for end-user operation. For detailed Terraform 
 - Added assessment quality reporting for RVTools worksheet coverage and confidence, including `assessment-quality.json` and `assessment-quality.csv`.
 - Added a comprehensive searchable user manual in `docs/user-manual.md`.
 - Added memory readiness and conservative RAM sizing using RVTools `vMemory`, including `memory-readiness.csv`.
+- Added advisory network readiness using optional RVTools switch and port tabs.
 - Added IBM catalog pricing modes with static, cached, and live profile discovery paths plus pricing confidence metadata.
 - Added a normalized VM dataclass model and moved old pricing/template experiments under `experiments/`.
 - Split the monolithic Streamlit and logic engine code into parser, assessment, sizing, renderer, handoff, and UI helper modules while preserving output contracts.

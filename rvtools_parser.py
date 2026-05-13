@@ -7,6 +7,7 @@ from assessments import (
     SNAPSHOT_BLOCK_SIZE_MIB,
     assess_image_readiness,
     assess_memory_readiness,
+    assess_network_readiness,
     make_readiness_finding,
     summarize_migration_readiness,
 )
@@ -102,6 +103,168 @@ def is_unhealthy_status(value):
     return any(token in text for token in unhealthy_tokens)
 
 
+def first_present(record, candidates, default=""):
+    for candidate in candidates:
+        value = record.get(candidate)
+        if value is not None and not pd.isna(value):
+            cleaned = str(value).strip()
+            if cleaned:
+                return cleaned
+    return default
+
+
+def normalize_match_key(value):
+    return clean_cell(value).lower()
+
+
+def row_matches_any(row, candidates, expected):
+    expected = normalize_match_key(expected)
+    if not expected:
+        return False
+    return any(
+        normalize_match_key(row.get(candidate)) == expected
+        for candidate in candidates
+    )
+
+
+def build_switch_contexts(df, switch_type, source_tab):
+    contexts = {}
+    if df.empty:
+        return contexts
+
+    for row in df.to_dict("records"):
+        switch_name = first_present(row, [
+            "Switch", "vSwitch", "dvSwitch", "Dvswitch", "DVSwitch",
+            "Name", "Switch Name", "Distributed Switch"
+        ])
+        if not switch_name:
+            continue
+        ports = as_float(first_present(row, [
+            "Ports", "Num Ports", "# Ports", "Number of Ports", "Port Count"
+        ]), 0)
+        used_ports = as_float(first_present(row, [
+            "Ports Used", "Used Ports", "Port Used", "Used"
+        ]), 0)
+        available_ports = ""
+        if ports:
+            available_ports = max(0, ports - used_ports)
+        contexts.setdefault(normalize_match_key(switch_name), {
+            "switch_type": switch_type,
+            "switch_name": switch_name,
+            "source_tab": source_tab,
+            "vlan": first_present(row, [
+                "VLAN", "VLAN ID", "Vlan", "Vlan ID", "Segment", "Network"
+            ]),
+            "mtu": first_present(row, ["MTU", "Mtu"]),
+            "port_count": ports,
+            "used_ports": used_ports,
+            "available_ports": available_ports,
+        })
+    return contexts
+
+
+def build_port_contexts(df, source_tab, switch_lookup):
+    contexts = []
+    if df.empty:
+        return contexts
+
+    for row in df.to_dict("records"):
+        switch_name = first_present(row, [
+            "Switch", "vSwitch", "dvSwitch", "Dvswitch", "DVSwitch",
+            "Switch Name", "Distributed Switch"
+        ])
+        switch_context = switch_lookup.get(normalize_match_key(switch_name), {})
+        port_group = first_present(row, [
+            "Port Group", "Portgroup", "Portgroup Name", "Network",
+            "Network Name", "DVPortgroup", "DV Portgroup", "dvPortgroup",
+            "Port Group Name"
+        ])
+        context = {
+            "source_tab": source_tab,
+            "vm": first_present(row, ["VM", "VM Name", "VM UUID", "VM ID"]),
+            "nic_label": first_present(row, [
+                "NIC label", "NIC Label", "Network Adapter", "Adapter"
+            ]),
+            "mac_address": first_present(row, [
+                "Mac Address", "MAC Address", "MAC", "Mac"
+            ]),
+            "network": port_group,
+            "port_group": port_group,
+            "switch": switch_name,
+            "switch_type": switch_context.get(
+                "switch_type",
+                "distributed" if source_tab == "dvPort" else "standard"
+            ),
+            "vlan": first_present(row, [
+                "VLAN", "VLAN ID", "Vlan", "Vlan ID", "Segment"
+            ], switch_context.get("vlan", "")),
+            "port_key": first_present(row, [
+                "Port", "Port Key", "Port ID", "Key", "Port Number"
+            ]),
+            "port_status": first_present(row, [
+                "Status", "Port Status", "Link Status", "State"
+            ]),
+            "mtu": switch_context.get("mtu", ""),
+            "available_ports": switch_context.get("available_ports", ""),
+        }
+        if context["vm"] or context["network"] or context["switch"]:
+            contexts.append(context)
+    return contexts
+
+
+def enrich_nic_with_network_context(nic, vm_key, vm_name, port_contexts):
+    candidates = []
+    for context in port_contexts:
+        score = 0
+        if (
+            row_matches_any(context, ["vm"], vm_key) or
+            row_matches_any(context, ["vm"], vm_name)
+        ):
+            score += 4
+        if row_matches_any(context, ["nic_label"], nic.get("label")):
+            score += 3
+        if row_matches_any(context, ["mac_address"], nic.get("mac_address")):
+            score += 3
+        if row_matches_any(context, ["network", "port_group"], nic.get("network")):
+            score += 2
+        if row_matches_any(context, ["switch"], nic.get("switch")):
+            score += 1
+        if score:
+            candidates.append((score, context))
+
+    if not candidates:
+        nic.update({
+            "switch_type": "",
+            "port_group": nic.get("network", ""),
+            "vlan": "",
+            "port_key": "",
+            "port_status": "",
+            "backing_source_tab": "",
+            "match_confidence": "unmatched" if port_contexts else "",
+            "available_ports": "",
+        })
+        return nic
+
+    max_score = max(score for score, _ in candidates)
+    best = [context for score, context in candidates if score == max_score]
+    context = best[0]
+    confidence = "matched" if len(best) == 1 else "ambiguous"
+
+    nic.update({
+        "switch_type": context.get("switch_type", ""),
+        "port_group": context.get("port_group") or nic.get("network", ""),
+        "vlan": context.get("vlan", ""),
+        "port_key": context.get("port_key", ""),
+        "port_status": context.get("port_status", ""),
+        "backing_source_tab": context.get("source_tab", ""),
+        "match_confidence": confidence,
+        "available_ports": context.get("available_ports", ""),
+    })
+    if context.get("switch") and not clean_cell(nic.get("switch")):
+        nic["switch"] = context.get("switch")
+    return nic
+
+
 
 
 def parse_rvtools_workbook(
@@ -138,11 +301,16 @@ def parse_rvtools_workbook(
     df_vusb = read_sheet('vUSB')
     df_vhealth = read_sheet('vHealth')
     df_vpartition = read_sheet('vPartition')
+    df_vport = read_sheet('vPort')
+    df_dvport = read_sheet('dvPort')
+    df_vswitch = read_sheet('vSwitch')
+    df_dvswitch = read_sheet('dvSwitch')
 
     # 2. CLEAN COLUMN NAMES
     for df in [df_vinfo, df_vdisk, df_vcpu, df_vhost,
                df_vmemory, df_vcluster, df_vnetwork, df_vsnapshot, df_vtools,
-               df_vcd, df_vusb, df_vhealth, df_vpartition]:
+               df_vcd, df_vusb, df_vhealth, df_vpartition, df_vport,
+               df_dvport, df_vswitch, df_dvswitch]:
         if not df.empty:
             df.columns = df.columns.str.strip()
 
@@ -160,6 +328,10 @@ def parse_rvtools_workbook(
         "vUSB": df_vusb,
         "vHealth": df_vhealth,
         "vPartition": df_vpartition,
+        "vPort": df_vport,
+        "dvPort": df_dvport,
+        "vSwitch": df_vswitch,
+        "dvSwitch": df_dvswitch,
     }
     assessment_quality = build_assessment_quality_report(
         workbook_sheets,
@@ -167,6 +339,19 @@ def parse_rvtools_workbook(
     )
 
     # 3. NETWORKING EXTRACTION
+    switch_contexts = {}
+    switch_contexts.update(
+        build_switch_contexts(df_vswitch, "standard", "vSwitch")
+    )
+    switch_contexts.update(
+        build_switch_contexts(df_dvswitch, "distributed", "dvSwitch")
+    )
+    port_contexts = (
+        build_port_contexts(df_vport, "vPort", switch_contexts) +
+        build_port_contexts(df_dvport, "dvPort", switch_contexts)
+    )
+    network_detail_available = bool(port_contexts or switch_contexts)
+
     df_vnetwork["_rvtools_vm_key"] = df_vnetwork.apply(
         lambda row: get_row_identity(row, ""),
         axis=1
@@ -186,7 +371,7 @@ def parse_rvtools_workbook(
             network = nic_row.get("Network", "")
             if pd.isna(network) or not str(network).strip():
                 network = "unknown-net"
-            details.append({
+            nic_detail = {
                 "label": str(nic_row.get("NIC label", f"nic-{idx + 1}")),
                 "adapter": nic_row.get("Adapter", ""),
                 "network": str(network).strip(),
@@ -197,8 +382,11 @@ def parse_rvtools_workbook(
                 "type": nic_row.get("Type", ""),
                 "ipv4": nic_row.get("IPv4 Address", ""),
                 "ipv6": nic_row.get("IPv6 Address", ""),
-                "planned": bool(nic_row.get("Connected", True))
-            })
+                "planned": as_bool(nic_row.get("Connected", True))
+            }
+            details.append(enrich_nic_with_network_context(
+                nic_detail, str(name), "", port_contexts
+            ))
         nic_details[str(name)] = details
 
     network_sources = {}
@@ -583,11 +771,17 @@ def parse_rvtools_workbook(
                 "type": "",
                 "ipv4": row.get('Primary IP Address', ''),
                 "ipv6": "",
-                "planned": True
+                "planned": True,
             }]
+            vm_nics = [
+                enrich_nic_with_network_context(
+                    nic, vm_key, vm_n, port_contexts
+                )
+                for nic in vm_nics
+            ]
         connected_nics = [
             nic for nic in vm_nics
-            if str(nic.get("connected", True)).lower() == "true"
+            if as_bool(nic.get("connected", True))
         ]
         primary_nic = connected_nics[0] if connected_nics else vm_nics[0]
         vm_net = primary_nic.get("network", vm_net)
@@ -632,6 +826,10 @@ def parse_rvtools_workbook(
         )
         vm_findings = build_migration_findings(vm_key, vm_n, p_st)
         migration_readiness = summarize_migration_readiness(vm_findings)
+        network_readiness = assess_network_readiness(
+            vm_nics,
+            network_detail_available=network_detail_available
+        )
         vm_memory = memory_summary.get(vm_key, {})
         memory_readiness = assess_memory_readiness(
             vm_memory.get("configured_mib", o_ram),
@@ -734,6 +932,9 @@ def parse_rvtools_workbook(
             'Migration Readiness': migration_readiness['status'],
             'Migration Readiness Reasons': migration_readiness['reasons'],
             'Readiness Findings': vm_findings,
+            'Network Readiness': network_readiness['status'],
+            'Network Readiness Reasons': network_readiness['reasons'],
+            'Network Readiness Findings': network_readiness['findings'],
             'Memory Readiness': memory_readiness['status'],
             'Memory Readiness Reasons': memory_readiness['reasons'],
             'Configured Memory MiB': memory_readiness['configured_mib'],
