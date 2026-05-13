@@ -737,8 +737,8 @@ def generate_image_import_tfvars(final_vms):
     lines = [
         "# Populate these values after VMware images are converted, uploaded,",
         "# and imported as IBM Cloud VPC custom images.",
-        "# This file is a handoff aid; wire the map into Terraform when you are",
-        "# ready to provision VSIs directly from imported images.",
+        "# Copy this file, replace every placeholder, and pass it to Terraform",
+        "# with -var-file when provisioning VSIs from the imported images.",
         "custom_image_ids = {",
     ]
     for vm in final_vms:
@@ -776,7 +776,7 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 - `disk-mapping.csv`: Per-disk boot/data volume mapping view.
 - `memory-readiness.csv`: Memory pressure, reservation, limit, and sizing review.
 - `readiness-findings.csv`: Row-level migration readiness findings and remediation actions.
-- `image-import-variables.tfvars.example`: Placeholder map for imported custom image IDs.
+- `image-import-variables.tfvars.example`: Terraform varfile template for imported custom image IDs.
 - `migration-runbook.md`: This operational guide.
 
 ## Recommended Workflow
@@ -792,7 +792,7 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 10. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
 11. Upload converted images to IBM Cloud Object Storage when using custom image import.
 12. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
-13. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and decide whether to wire those IDs into the VSI module.
+13. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and pass the populated file to Terraform with `-var-file`.
 14. Apply the generated Terraform using the selected deployment target.
 15. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
 16. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.

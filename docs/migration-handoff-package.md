@@ -52,9 +52,9 @@ A structured workbook-level quality report showing RVTools worksheet coverage, r
 A spreadsheet-friendly version of the worksheet coverage report for customer review and planning workshops.
 
 ### `image-import-variables.tfvars.example`
-A placeholder Terraform variables file for custom image IDs. Populate these values after VMware images have been converted, uploaded, and imported as IBM Cloud VPC custom images.
+A Terraform varfile template for custom image IDs. Populate these values after VMware images have been converted, uploaded, and imported as IBM Cloud VPC custom images.
 
-The file is intentionally an example in this release. It gives teams a stable place to record image IDs before the VSI module is wired to provision directly from imported images.
+The generated VSI module consumes the `custom_image_ids` map. Copy this example, replace each placeholder with the imported image ID for the matching VM key, and pass the populated file to Terraform with `-var-file`.
 
 ### `migration-runbook.md`
 A generated operational runbook that explains the recommended sequence: review mappings, validate readiness, stage or import images, update image IDs, apply Terraform, validate the target environment, and execute cutover.
@@ -73,11 +73,11 @@ A generated operational runbook that explains the recommended sequence: review m
 11. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
 12. Review `partition-mapping.csv` for partition free-space context and unmatched partition rows.
 13. Import or replicate VMware images using the approved migration approach.
-14. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
+14. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example` and pass the populated file to Terraform with `-var-file`.
 15. Apply Terraform using Plain CLI or IBM Schematics.
 16. Validate boot, network, storage, monitoring, backup, and application health before cutover.
 
 ## Current Scope
-This release creates the handoff package, image ID placeholders, per-disk volume mapping, advisory partition mapping, multi-NIC mapping, network readiness, memory readiness sizing, advisory migration readiness findings, and advisory assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.
+This release creates the handoff package, custom image ID varfile template, per-disk volume mapping, advisory partition mapping, multi-NIC mapping, network readiness, memory readiness sizing, advisory migration readiness findings, and advisory assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.
 
 Those are intentionally left as later adapters so the handoff format can remain stable and tool-neutral.

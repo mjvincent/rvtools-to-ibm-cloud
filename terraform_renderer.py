@@ -1,3 +1,4 @@
+import json
 import math
 import re
 
@@ -42,6 +43,12 @@ def _safe_resource_name(value):
     if cleaned[0].isdigit():
         cleaned = f"r_{cleaned}"
     return cleaned
+
+
+def _safe_vm_key(value):
+    """Create a stable key shared with image import tfvars examples."""
+    cleaned = str(_clean_value(value, "unknown-vm"))
+    return cleaned.replace('"', '').replace("'", "")
 
 
 def _vm_disks(vm):
@@ -246,6 +253,17 @@ resource "ibm_is_volume" "{safe_n}_{safe_disk}_vol" {{
 def render_vsi_variables():
     return """variable "zone" { type = string }
 variable "project" { type = string }
+variable "custom_image_ids" {
+  type = map(string)
+
+  validation {
+    condition = alltrue([
+      for image_id in values(var.custom_image_ids) :
+      length(trimspace(image_id)) > 0 && trimspace(image_id) != "replace-with-imported-image-id"
+    ])
+    error_message = "custom_image_ids must contain real imported IBM Cloud VPC custom image IDs, not blank or placeholder values."
+  }
+}
 variable "data_volume_ids" {
   type    = map(list(string))
   default = {}
@@ -259,6 +277,7 @@ def render_vsi_templates(final_vms, enable_security_groups=True, project_name="m
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
         safe_n = _safe_resource_name(vm_n_raw)
+        image_key = _safe_vm_key(vm.get('VM Name'))
         prof = vm.get('Override Profile') or vm.get('IBM Profile', 'bx2-2x8')
         r_net = vm.get('Network', 'unknown-net')
         connected_nics = _connected_nics(vm)
@@ -276,6 +295,7 @@ def render_vsi_templates(final_vms, enable_security_groups=True, project_name="m
         content += f"""
 resource "ibm_is_instance" "{safe_n}" {{
   name    = "{safe_n}-vsi"
+  image   = var.custom_image_ids[{json.dumps(image_key)}]
   profile = "{prof}"
   zone    = var.zone
   primary_network_interface {{
@@ -377,6 +397,7 @@ module "vsi" {
   source          = "./modules/vsi"
   zone            = var.zone
   project         = var.project
+  custom_image_ids = var.custom_image_ids
   data_volume_ids = module.storage.data_volume_ids
   depends_on      = [module.storage, module.networking]
 }
@@ -389,6 +410,17 @@ def render_root_variables():
 variable "region" { type = string }
 variable "zone" { type = string }
 variable "project" { type = string }
+variable "custom_image_ids" {
+  type = map(string)
+
+  validation {
+    condition = alltrue([
+      for image_id in values(var.custom_image_ids) :
+      length(trimspace(image_id)) > 0 && trimspace(image_id) != "replace-with-imported-image-id"
+    ])
+    error_message = "custom_image_ids must contain real imported IBM Cloud VPC custom image IDs, not blank or placeholder values."
+  }
+}
 """
 
 
@@ -444,6 +476,17 @@ def generate_variables_hcl():
 variable "region" { type = string }
 variable "zone" { type = string }
 variable "project" { type = string }
+variable "custom_image_ids" {
+  type = map(string)
+
+  validation {
+    condition = alltrue([
+      for image_id in values(var.custom_image_ids) :
+      length(trimspace(image_id)) > 0 && trimspace(image_id) != "replace-with-imported-image-id"
+    ])
+    error_message = "custom_image_ids must contain real imported IBM Cloud VPC custom image IDs, not blank or placeholder values."
+  }
+}
 """
 
 

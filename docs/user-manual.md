@@ -601,7 +601,7 @@ The app packages:
 - Storage module files.
 - VSI module files.
 - Migration handoff files.
-- Image import placeholder variables.
+- Image import variable template.
 - Generated runbook.
 
 After the build completes, click `Download Terraform Bundle`.
@@ -635,7 +635,7 @@ The ZIP bundle contains two categories of output:
 | `readiness-findings.csv` | Row-level migration readiness findings and remediation actions. |
 | `assessment-quality.json` | Structured RVTools worksheet coverage and confidence report. |
 | `assessment-quality.csv` | Spreadsheet-friendly worksheet coverage and confidence report. |
-| `image-import-variables.tfvars.example` | Placeholder map for IBM Cloud custom image IDs after image import. |
+| `image-import-variables.tfvars.example` | Terraform varfile template for IBM Cloud custom image IDs after image import. |
 | `migration-runbook.md` | Operational runbook for migration planning and execution. |
 
 ## Terraform Output Reference
@@ -657,6 +657,8 @@ Volume capacity is based on `vDisk` capacity. Optional `vPartition` data is expo
 
 ### VSI Module
 Generates IBM Cloud Virtual Server for VPC resources.
+
+Each generated VSI uses `image = var.custom_image_ids["<VM Name>"]`. Populate the `custom_image_ids` map after IBM Cloud custom image import by copying `image-import-variables.tfvars.example`, replacing the placeholders, and passing the populated file to Terraform with `-var-file`.
 
 The first connected NIC is rendered as the primary network interface. Additional connected NICs are rendered as secondary network interfaces. Disconnected NICs remain visible in handoff files but are not generated as active Terraform interfaces.
 
@@ -752,9 +754,9 @@ Use them to review:
 - Overall confidence before sharing migration wave plans.
 
 ### `image-import-variables.tfvars.example`
-A placeholder file for custom image IDs after conversion and import.
+A Terraform varfile template for custom image IDs after conversion and import.
 
-This file is not automatically consumed by the current VSI module. It provides a stable place to capture image IDs for a later image-import automation phase.
+The generated VSI module consumes the `custom_image_ids` map. Copy this file, replace every placeholder with the imported IBM Cloud VPC custom image ID for the matching VM, and pass the populated file to Terraform with `-var-file`.
 
 ### `migration-runbook.md`
 A generated operational runbook customized with project, region, zone, VPC name, deployment target, and recommended workflow.

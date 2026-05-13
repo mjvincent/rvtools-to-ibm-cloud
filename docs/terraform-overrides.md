@@ -56,9 +56,9 @@ When overrides are used:
 ## Relationship to Migration Handoff Files
 The Terraform override values are also reflected in the generated migration handoff files. If a user overrides a VSI profile, storage tier, subnet, or security group mapping before building the ZIP bundle, the manifest and CSV show both the recommended value and the effective value used for migration planning.
 
-The `image-import-variables.tfvars.example` file is provided as a placeholder for custom image IDs after VMware image conversion or replication. In this release, it is a handoff aid and is not automatically consumed by the generated VSI module.
+The `image-import-variables.tfvars.example` file is a Terraform varfile template for custom image IDs after VMware image conversion or replication. Copy it, replace every placeholder with the imported IBM Cloud VPC custom image ID for that VM, and pass the populated file to Terraform with `-var-file`.
 
-Image readiness fields are advisory. `Ready`, `Review`, or `Blocked` values do not change Terraform generation, profile overrides, storage tier overrides, subnet CIDRs, backend selection, or module output. They are included to guide image migration planning before custom image import or replication workflows.
+Image readiness fields are advisory. `Ready`, `Review`, or `Blocked` values do not change Terraform generation, profile overrides, storage tier overrides, subnet CIDRs, backend selection, or module output. They are included to guide image migration planning before custom image import or replication workflows. Terraform provisioning still requires a valid `custom_image_ids` entry for each generated VSI.
 
 Migration readiness fields are also advisory. Snapshot, VMware Tools, mounted media, USB, and health findings do not alter Terraform output. They are included in the dashboard and handoff files so teams can remediate source-side risks before export, replication, image import, or cutover.
 

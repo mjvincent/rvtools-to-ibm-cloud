@@ -153,12 +153,12 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `memory-readiness.csv` — VM-level memory pressure, constraint, and sizing review
 * `readiness-findings.csv` — row-level migration readiness findings and remediation actions
 * `assessment-quality.json` / `assessment-quality.csv` — RVTools worksheet coverage and confidence report
-* `image-import-variables.tfvars.example` — placeholder map for IBM Cloud VPC custom image IDs after image import
+* `image-import-variables.tfvars.example` — Terraform varfile template for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
 The handoff files include image readiness, migration readiness, memory readiness, network readiness, NIC mapping, and disk mapping fields so migration teams can resolve boot image, snapshot, mounted media, guest tools, memory pressure, reservations, limits, switch/port backing, network, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
 
-Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module.
+Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module. Imported image IDs are supplied through the `custom_image_ids` Terraform map, using the VM keys emitted in `image-import-variables.tfvars.example`.
 
 ![Terraform module layout example](docs/images/terraform_output_layout.png)
 
