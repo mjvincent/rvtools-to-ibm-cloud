@@ -13,6 +13,12 @@ def sample_vm():
                 "connected": True,
                 "ipv4": "10.0.1.10",
                 "mac_address": "00:50:56:aa:bb:01",
+                "switch_type": "standard",
+                "port_group": "app-net",
+                "vlan": "101",
+                "port_key": "12",
+                "backing_source_tab": "vPort",
+                "match_confidence": "matched",
             },
             {
                 "label": "Network adapter 2",
@@ -61,7 +67,17 @@ def test_nic_mapping_marks_disconnected_as_unplanned():
     assert "backup-net" in csv_text
 
 
+def test_nic_mapping_includes_switch_port_context_columns():
+    csv_text = generate_nic_mapping_csv([sample_vm()])
+
+    assert "Switch Type" in csv_text
+    assert "Port Group" in csv_text
+    assert "Backing Source Tab" in csv_text
+    assert "matched" in csv_text
+
+
 if __name__ == "__main__":
     test_secondary_connected_nic_generates_inline_interface()
     test_nic_mapping_marks_disconnected_as_unplanned()
+    test_nic_mapping_includes_switch_port_context_columns()
     print("nic mapping tests ok")

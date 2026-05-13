@@ -1,7 +1,7 @@
 import math
 import re
 
-from models import MigrationVm, clean_value
+from models import MigrationVm, as_bool, clean_value
 
 
 def _clean_value(value, default=""):
@@ -65,7 +65,7 @@ def _vm_nics(vm):
 def _connected_nics(vm):
     return [
         nic for nic in _vm_nics(vm)
-        if str(nic.get('connected', True)).lower() == "true"
+        if as_bool(nic.get('connected', True), True)
     ]
 
 

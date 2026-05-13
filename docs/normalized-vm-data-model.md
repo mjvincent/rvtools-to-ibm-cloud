@@ -21,6 +21,7 @@ tests that intentionally exercise legacy inputs.
   rate.
 - `ImageReadiness`: image planning status and supporting metadata.
 - `MemoryReadiness`: memory pressure, constraints, and sizing recommendation.
+- `NetworkReadiness`: advisory source NIC and switch/port readiness status.
 - `MigrationReadiness`: operational migration status and detailed findings.
 - `DiskMapping`, `PartitionMapping`, `NicMapping`, and `ReadinessFinding`:
   repeated nested details.
@@ -42,6 +43,12 @@ model refactor from changing user-visible ZIP contents or UI columns.
 Partition details are additive. Matched partitions are nested under their
 source disk, while unmatched `vPartition` rows are preserved at the VM source
 level for review.
+
+Network readiness details are additive. `NicMapping` keeps the existing
+network, IP, MAC, adapter, switch, and connection fields, and may also include
+switch type, port group, VLAN/segment, port key, port status, backing source
+tab, match confidence, and available-port evidence from optional network-detail
+worksheets.
 
 `logic_engine.py` remains a compatibility facade for existing imports. The
 focused implementation modules accept either `MigrationVm` instances or legacy

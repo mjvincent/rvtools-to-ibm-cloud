@@ -207,6 +207,14 @@ class NicMapping:
     ipv4: str = ""
     ipv6: str = ""
     planned: bool = True
+    switch_type: str = ""
+    port_group: str = ""
+    vlan: str = ""
+    port_key: str = ""
+    port_status: str = ""
+    backing_source_tab: str = ""
+    match_confidence: str = ""
+    available_ports: object = ""
 
     @classmethod
     def from_record(cls, record):
@@ -224,6 +232,20 @@ class NicMapping:
             ipv4=clean_value(get_record_value(record, "ipv4")),
             ipv6=clean_value(get_record_value(record, "ipv6")),
             planned=as_bool(get_record_value(record, "planned", True), True),
+            switch_type=clean_value(get_record_value(record, "switch_type")),
+            port_group=clean_value(get_record_value(record, "port_group")),
+            vlan=clean_value(get_record_value(record, "vlan")),
+            port_key=clean_value(get_record_value(record, "port_key")),
+            port_status=clean_value(get_record_value(record, "port_status")),
+            backing_source_tab=clean_value(
+                get_record_value(record, "backing_source_tab")
+            ),
+            match_confidence=clean_value(
+                get_record_value(record, "match_confidence")
+            ),
+            available_ports=clean_value(
+                get_record_value(record, "available_ports")
+            ),
         )
 
     def to_record(self):
@@ -338,6 +360,13 @@ class MemoryReadiness:
 
 
 @dataclass
+class NetworkReadiness:
+    status: str = "Review"
+    reasons: str = ""
+    findings: list = field(default_factory=list)
+
+
+@dataclass
 class MigrationReadiness:
     status: str = "Review"
     reasons: str = ""
@@ -394,6 +423,8 @@ class MigrationVm:
     migration_readiness_reasons: str = ""
     memory_readiness: str = "Review"
     memory_readiness_reasons: str = ""
+    network_readiness: str = "Review"
+    network_readiness_reasons: str = ""
     configured_memory_mib: float = 0
     active_memory_mib: float = 0
     consumed_memory_mib: float = 0
@@ -418,11 +449,13 @@ class MigrationVm:
     partitions: list = field(default_factory=list)
     nics: list = field(default_factory=list)
     readiness_findings: list = field(default_factory=list)
+    network_readiness_findings: list = field(default_factory=list)
     source: SourceMetadata = field(default_factory=SourceMetadata)
     target: TargetRecommendation = field(default_factory=TargetRecommendation)
     pricing: PricingMetadata = field(default_factory=PricingMetadata)
     image: ImageReadiness = field(default_factory=ImageReadiness)
     memory: MemoryReadiness = field(default_factory=MemoryReadiness)
+    network_status: NetworkReadiness = field(default_factory=NetworkReadiness)
     migration: MigrationReadiness = field(default_factory=MigrationReadiness)
 
     def __post_init__(self):
@@ -433,6 +466,12 @@ class MigrationVm:
         self.nics = [self._nic(nic) for nic in self.nics]
         self.readiness_findings = [
             self._finding(finding) for finding in self.readiness_findings
+        ]
+        self.network_readiness_findings = [
+            self._finding(finding) for finding in self.network_readiness_findings
+        ]
+        self.network_status.findings = [
+            self._finding(finding) for finding in self.network_status.findings
         ]
         self.migration.findings = [
             self._finding(finding) for finding in self.migration.findings
@@ -445,6 +484,9 @@ class MigrationVm:
         self.nics = [self._nic(nic) for nic in self.nics]
         self.readiness_findings = [
             self._finding(finding) for finding in self.readiness_findings
+        ]
+        self.network_readiness_findings = [
+            self._finding(finding) for finding in self.network_readiness_findings
         ]
         self._refresh_nested_records()
 
@@ -541,6 +583,12 @@ class MigrationVm:
             memory_readiness_reasons=clean_value(
                 get_record_value(record, "Memory Readiness Reasons")
             ),
+            network_readiness=clean_value(
+                get_record_value(record, "Network Readiness"), "Review"
+            ),
+            network_readiness_reasons=clean_value(
+                get_record_value(record, "Network Readiness Reasons")
+            ),
             configured_memory_mib=clean_value(
                 get_record_value(record, "Configured Memory MiB"), 0
             ),
@@ -604,6 +652,12 @@ class MigrationVm:
             readiness_findings=[
                 ReadinessFinding.from_record(f)
                 for f in get_record_value(record, "Readiness Findings", []) or []
+            ],
+            network_readiness_findings=[
+                ReadinessFinding.from_record(f)
+                for f in get_record_value(
+                    record, "Network Readiness Findings", []
+                ) or []
             ],
         )
 
@@ -716,6 +770,12 @@ class MigrationVm:
         self.memory_sizing_basis = _prefer(
             self.memory_sizing_basis, self.memory.sizing_basis
         )
+        self.network_readiness = _prefer(
+            self.network_readiness, self.network_status.status, "Review"
+        )
+        self.network_readiness_reasons = _prefer(
+            self.network_readiness_reasons, self.network_status.reasons
+        )
         self.migration_readiness = _prefer(
             self.migration_readiness, self.migration.status, "Review"
         )
@@ -744,6 +804,8 @@ class MigrationVm:
             self.nics = list(self.source.nics)
         if not self.readiness_findings:
             self.readiness_findings = list(self.migration.findings)
+        if not self.network_readiness_findings:
+            self.network_readiness_findings = list(self.network_status.findings)
 
     def _refresh_nested_records(self):
         self.source = SourceMetadata(
@@ -807,6 +869,11 @@ class MigrationVm:
             sizing_memory_mib=self.sizing_memory_mib,
             sizing_basis=self.memory_sizing_basis,
         )
+        self.network_status = NetworkReadiness(
+            status=self.network_readiness,
+            reasons=self.network_readiness_reasons,
+            findings=self.network_readiness_findings,
+        )
         self.migration = MigrationReadiness(
             status=self.migration_readiness,
             reasons=self.migration_readiness_reasons,
@@ -854,6 +921,12 @@ class MigrationVm:
             "Migration Readiness Reasons": self.migration_readiness_reasons,
             "Readiness Findings": [
                 finding.to_record() for finding in self.readiness_findings
+            ],
+            "Network Readiness": self.network_readiness,
+            "Network Readiness Reasons": self.network_readiness_reasons,
+            "Network Readiness Findings": [
+                finding.to_record()
+                for finding in self.network_readiness_findings
             ],
             "Memory Readiness": self.memory_readiness,
             "Memory Readiness Reasons": self.memory_readiness_reasons,

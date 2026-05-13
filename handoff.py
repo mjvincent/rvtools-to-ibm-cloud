@@ -4,7 +4,7 @@ import json
 import re
 
 from assessments import IMAGE_MAX_GB, IMAGE_MIN_GB
-from models import MigrationVm, clean_value
+from models import MigrationVm, as_bool, clean_value
 
 
 def _clean_value(value, default=""):
@@ -105,6 +105,13 @@ def _vm_nics(vm):
 def _vm_findings(vm):
     vm = _as_vm(vm)
     findings = vm.migration.findings or vm.readiness_findings
+    findings = [_as_record(finding) for finding in findings]
+    return findings if isinstance(findings, list) else []
+
+
+def _vm_network_findings(vm):
+    vm = _as_vm(vm)
+    findings = vm.network_status.findings or vm.network_readiness_findings
     findings = [_as_record(finding) for finding in findings]
     return findings if isinstance(findings, list) else []
 
@@ -252,6 +259,11 @@ def _migration_vm_record(vm):
             "health_warnings": _clean_value(vm.get('Health Warnings'), 0),
             "findings": _vm_findings(vm),
         },
+        "network_readiness": {
+            "status": _clean_value(vm.get('Network Readiness'), 'Review'),
+            "reasons": _clean_value(vm.get('Network Readiness Reasons')),
+            "findings": _vm_network_findings(vm),
+        },
     }
 
 
@@ -317,6 +329,7 @@ def generate_vm_mapping_csv(final_vms):
         "Snapshot Count", "Snapshot Size MiB", "VMware Tools Status",
         "Mounted Media", "USB Devices", "Health Warnings",
         "Memory Readiness", "Memory Readiness Reasons",
+        "Network Readiness", "Network Readiness Reasons",
         "Configured Memory MiB", "Active Memory MiB",
         "Consumed Memory MiB", "Ballooned Memory MiB",
         "Swapped Memory MiB", "Memory Reservation MiB", "Memory Limit MiB",
@@ -370,6 +383,10 @@ def generate_vm_mapping_csv(final_vms):
             "Memory Readiness": _clean_value(vm.get('Memory Readiness')),
             "Memory Readiness Reasons": _clean_value(
                 vm.get('Memory Readiness Reasons')
+            ),
+            "Network Readiness": _clean_value(vm.get('Network Readiness')),
+            "Network Readiness Reasons": _clean_value(
+                vm.get('Network Readiness Reasons')
             ),
             "Configured Memory MiB": _clean_value(
                 vm.get('Configured Memory MiB'), 0
@@ -548,7 +565,9 @@ def generate_nic_mapping_csv(final_vms, enable_security_groups=True):
     fieldnames = [
         "VM Name", "NIC Label", "Role", "Planned", "Connected",
         "Starts Connected", "Source Network", "Source IP", "IPv6 Address",
-        "MAC Address", "Adapter", "Switch", "Type", "Target Subnet",
+        "MAC Address", "Adapter", "Switch", "Switch Type", "Port Group",
+        "VLAN / Segment", "Port Key", "Port Status", "Backing Source Tab",
+        "Match Confidence", "Network Readiness", "Type", "Target Subnet",
         "Target Security Group"
     ]
     writer = csv.DictWriter(output, fieldnames=fieldnames)
@@ -558,7 +577,7 @@ def generate_nic_mapping_csv(final_vms, enable_security_groups=True):
         vm_name = _safe_vm_key(vm.get('VM Name'))
         connected_seen = 0
         for nic in _vm_nics(vm):
-            connected = str(nic.get('connected', True)).lower() == "true"
+            connected = as_bool(nic.get('connected', True), True)
             planned = connected
             role = "disconnected"
             if connected:
@@ -579,6 +598,18 @@ def generate_nic_mapping_csv(final_vms, enable_security_groups=True):
                 "MAC Address": _clean_value(nic.get('mac_address')),
                 "Adapter": _clean_value(nic.get('adapter')),
                 "Switch": _clean_value(nic.get('switch')),
+                "Switch Type": _clean_value(nic.get('switch_type')),
+                "Port Group": _clean_value(nic.get('port_group')),
+                "VLAN / Segment": _clean_value(nic.get('vlan')),
+                "Port Key": _clean_value(nic.get('port_key')),
+                "Port Status": _clean_value(nic.get('port_status')),
+                "Backing Source Tab": _clean_value(
+                    nic.get('backing_source_tab')
+                ),
+                "Match Confidence": _clean_value(nic.get('match_confidence')),
+                "Network Readiness": _clean_value(
+                    vm.get('Network Readiness'), 'Review'
+                ),
                 "Type": _clean_value(nic.get('type')),
                 "Target Subnet": target["subnet"] if planned else "",
                 "Target Security Group": (

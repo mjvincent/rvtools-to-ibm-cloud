@@ -75,6 +75,10 @@ These worksheets improve readiness and storage planning context but are not requ
 | `vUSB` | Detects connected USB devices. USB dependencies can block migration readiness. |
 | `vHealth` | Provides RVTools health findings where they can be associated with a workload. |
 | `vPartition` | Provides partition labels, capacity, consumed space, free space, and free percentage for storage planning review. |
+| `vPort` | Provides standard switch port and port group context for network readiness review. |
+| `dvPort` | Provides distributed switch port and distributed port group context for network readiness review. |
+| `vSwitch` | Provides standard switch backing, VLAN, MTU, and port capacity context. |
+| `dvSwitch` | Provides distributed switch backing, VLAN/segment, MTU, and port capacity context. |
 
 If an optional readiness tab is missing, the related readiness checks are skipped. Missing optional tabs do not block ZIP generation.
 The Assessment Quality report still records missing optional tabs so reviewers can see when migration readiness confidence is based on partial workbook coverage.
@@ -121,13 +125,13 @@ streamlit run app.py
 Shows the estate-level health summary, in-scope and excluded VM counts, monthly estimate, potential savings, blocker count, assessment quality summary, and recommended next actions. Start here after each upload.
 
 ### Readiness
-Groups image, migration, and memory readiness by `Blocked`, `Review`, and `Ready`. Blocked and Review rows are sorted first so remediation planning starts with the highest-impact items.
+Groups image, migration, memory, and network readiness by `Blocked`, `Review`, and `Ready`. Blocked and Review rows are sorted first so remediation planning starts with the highest-impact items.
 
 ### VM Review
 Shows the main decision fields instead of every generated column. Use this tab to exclude VMs and adjust profile, storage tier, network, subnet, or security group intent. Advanced generated fields remain available in the expander for audit and troubleshooting.
 
 ### Networks
-Shows discovered networks, default CIDRs, VM network placement, multi-NIC count, and unknown network signals. Use this before export to confirm subnet and security group intent.
+Shows discovered networks, default CIDRs, VM network placement, multi-NIC count, unknown network signals, and source switch/port context when optional network detail tabs are present. Use this before export to confirm subnet, security group, and NIC placement intent.
 
 ### Storage
 Shows total storage, data disk counts, boot/data planning signals, partition coverage, storage tier choices, and image readiness context. Use this to validate data disk volume planning before package generation.
@@ -247,6 +251,11 @@ Shows how many required worksheets are present and populated out of the required
 Shows how many optional readiness worksheets are present and populated out of `vSnapshot`, `vTools`, `vCD`, `vUSB`, and `vHealth`.
 
 Missing optional readiness tabs lower migration readiness confidence, but they do not create `Blocked` findings by themselves.
+
+### Network Detail Tabs
+Shows how many optional network-detail worksheets are present and populated out of `vPort`, `dvPort`, `vSwitch`, and `dvSwitch`.
+
+Missing network-detail tabs do not block Terraform generation. When present, they improve network planning evidence and can create advisory `Review` or `Blocked` network readiness findings.
 
 ### Missing or Empty Tabs
 Counts worksheets that are missing from the workbook or present with no rows. Open the worksheet coverage details expander to see the tab name, category, row count, confidence, and planning impact.
@@ -409,6 +418,12 @@ Advisory memory status: `Ready`, `Review`, or `Blocked`.
 ### `Memory Readiness Reasons`
 Explanation of memory pressure, constraints, or sizing choices.
 
+### `Network Readiness`
+Advisory network planning status: `Ready`, `Review`, or `Blocked`.
+
+### `Network Readiness Reasons`
+Explanation of source NIC, switch, port group, VLAN/segment, or port-capacity findings.
+
 ### `Configured Memory MiB`
 Configured source VM memory from `vMemory` or `vInfo`.
 
@@ -503,7 +518,7 @@ CPU Ready percentage from RVTools.
 Observed CPU demand from RVTools.
 
 ## Readiness Assessments
-The application includes three separate readiness layers.
+The application includes four separate readiness layers.
 
 ### Image Readiness
 Image readiness focuses on IBM Cloud VPC custom image planning.
@@ -566,6 +581,17 @@ Common `Blocked` reasons:
 - Severe ballooning.
 - Memory limit below configured memory.
 
+### Network Readiness
+Network readiness focuses on source NIC metadata and optional switch/port evidence before migration waves are finalized.
+
+| Status | Meaning |
+| --- | --- |
+| `Ready` | Connected NICs have usable source network metadata and matched switch/port evidence when optional detail tabs are present. |
+| `Review` | Missing, ambiguous, disconnected, or incomplete switch/port context should be validated. |
+| `Blocked` | Explicit unusable source port or no-port-capacity evidence should be remediated before migration. |
+
+Network readiness is advisory. It does not change generated Terraform subnet, security group, primary NIC, or secondary NIC behavior.
+
 ## Build Terraform Project
 On the `Export` tab, click `Build Terraform Project` after reviewing readiness, VM decisions, network placement, storage planning, and Terraform settings.
 
@@ -602,7 +628,7 @@ The ZIP bundle contains two categories of output:
 | `modules/vsi/outputs.tf` | VSI module outputs. |
 | `migration-manifest.json` | Structured source-to-target migration handoff document. |
 | `vm-mapping.csv` | Spreadsheet-friendly VM-level migration mapping. |
-| `nic-mapping.csv` | Per-NIC source-to-target network mapping. |
+| `nic-mapping.csv` | Per-NIC source-to-target network mapping with optional switch/port context. |
 | `disk-mapping.csv` | Per-disk boot/data mapping. |
 | `partition-mapping.csv` | Per-partition storage planning detail from RVTools `vPartition`. |
 | `memory-readiness.csv` | VM-level memory pressure, constraint, and sizing review. |
@@ -638,7 +664,7 @@ The VSI module also generates data volume attachments for storage module outputs
 
 ## Migration Handoff Files
 ### `migration-manifest.json`
-A structured JSON document containing project settings and per-VM source, target, migration, assessment, image readiness, migration readiness, memory readiness, disk, and NIC data.
+A structured JSON document containing project settings and per-VM source, target, migration, assessment, image readiness, migration readiness, memory readiness, network readiness, disk, and NIC data.
 
 Use it for:
 - Automation.
@@ -655,6 +681,7 @@ Use it to review:
 - Image readiness.
 - Migration readiness.
 - Memory readiness and sizing memory.
+- Network readiness.
 - Pricing source and confidence.
 - Target subnet and security group.
 - Estimated cost and savings.
@@ -669,6 +696,7 @@ Use it to review:
 - Source network.
 - Source IP.
 - MAC address.
+- Switch type, port group, VLAN/segment, port key, backing source tab, and match confidence when optional network-detail tabs are available.
 - Target subnet.
 - Target security group.
 
@@ -719,6 +747,7 @@ Workbook-level quality reports showing required and optional RVTools tab coverag
 Use them to review:
 - Missing or empty required tabs.
 - Missing optional readiness tabs.
+- Missing optional network-detail tabs.
 - Whether network or storage planning used fallback metadata from `vInfo`.
 - Overall confidence before sharing migration wave plans.
 
@@ -737,21 +766,22 @@ A generated operational runbook customized with project, region, zone, VPC name,
 4. Resolve `Image Readiness = Blocked` items.
 5. Resolve `Memory Readiness = Blocked` items.
 6. Resolve `Migration Readiness = Blocked` items.
-7. Assign owners for `Review` items.
-8. Review `memory-readiness.csv` for profile sizing validation.
-9. Review `nic-mapping.csv` for primary and secondary interface placement.
-10. Review `disk-mapping.csv` for data disk placement and sizing.
-11. Review `partition-mapping.csv` for partition free-space context and unmatched partition rows.
-12. Confirm IBM Cloud region, zone, VPC, subnet, and security group design.
-13. Confirm profile and storage tier overrides.
-14. Convert, replicate, or migrate images using the selected migration method.
-15. Upload converted images to IBM Cloud Object Storage when using custom image import.
-16. Import images as IBM Cloud VPC custom images.
-17. Record custom image IDs.
-18. Review generated Terraform.
-19. Apply Terraform using local CLI or IBM Schematics.
-20. Validate boot, network, storage attachment, monitoring, backup, security, and application health.
-21. Execute DNS, load balancer, IP, or application cutover steps.
+7. Resolve `Network Readiness = Blocked` items.
+8. Assign owners for `Review` items.
+9. Review `memory-readiness.csv` for profile sizing validation.
+10. Review `nic-mapping.csv` for primary, secondary, and source switch/port interface placement.
+11. Review `disk-mapping.csv` for data disk placement and sizing.
+12. Review `partition-mapping.csv` for partition free-space context and unmatched partition rows.
+13. Confirm IBM Cloud region, zone, VPC, subnet, and security group design.
+14. Confirm profile and storage tier overrides.
+15. Convert, replicate, or migrate images using the selected migration method.
+16. Upload converted images to IBM Cloud Object Storage when using custom image import.
+17. Import images as IBM Cloud VPC custom images.
+18. Record custom image IDs.
+19. Review generated Terraform.
+20. Apply Terraform using local CLI or IBM Schematics.
+21. Validate boot, network, storage attachment, monitoring, backup, security, and application health.
+22. Execute DNS, load balancer, IP, or application cutover steps.
 
 ## Limitations
 The application is a planning and generation tool. It does not:
@@ -789,6 +819,9 @@ Check the optional `vPartition` worksheet. Rows with missing `Disk Key` values m
 
 ### Networks show as `unknown`
 Check `vNetwork` and `vInfo` for populated network or port group fields. If NIC rows are missing, the app falls back to available `vInfo` network data.
+
+### Network readiness is mostly `Review`
+Check optional `vPort`, `dvPort`, `vSwitch`, and `dvSwitch` exports. Missing or ambiguous switch/port evidence can trigger review findings even when Terraform network generation can continue.
 
 ### Migration readiness is mostly `Ready`
 Confirm optional tabs such as `vSnapshot`, `vTools`, `vCD`, `vUSB`, and `vHealth` were included in the RVTools export.
@@ -854,6 +887,9 @@ Assessment focused on source-side operational cleanup before migration.
 ### Memory Readiness
 Assessment focused on memory pressure, constraints, and conservative RAM sizing.
 
+### Network Readiness
+Assessment focused on source NIC, switch, port group, VLAN/segment, and port evidence for migration planning.
+
 ### Pricing Confidence
 Metadata that explains whether a price is static fallback, cached, live-profile/static-price, or missing.
 
@@ -878,6 +914,7 @@ VMware virtual disk file format.
 - [Image Readiness Assessment](image-readiness-assessment.md)
 - [Migration Readiness Assessment](migration-readiness-assessment.md)
 - [Memory Readiness and Sizing](memory-readiness-sizing.md)
+- [Network Readiness Assessment](network-readiness-assessment.md)
 - [IBM Catalog Pricing](ibm-catalog-pricing.md)
 - [Terraform Overrides Reference](terraform-overrides.md)
 - [Right-Sizing Logic](../RIGHT_SIZING_LOGIC.md)

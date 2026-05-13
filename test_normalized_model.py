@@ -40,6 +40,8 @@ def sample_vm_record():
         "Readiness Reasons": "Multiple disks detected",
         "Migration Readiness": "Review",
         "Migration Readiness Reasons": "VMware Tools status: toolsOld",
+        "Network Readiness": "Ready",
+        "Network Readiness Reasons": "No network readiness blockers found",
         "Memory Readiness": "Ready",
         "Memory Readiness Reasons": "No memory pressure",
         "Configured Memory MiB": 8192,
@@ -70,6 +72,11 @@ def sample_vm_record():
                 "network": "app-net",
                 "connected": True,
                 "ipv4": "10.0.1.10",
+                "switch_type": "standard",
+                "port_group": "app-net",
+                "vlan": "101",
+                "backing_source_tab": "vPort",
+                "match_confidence": "matched",
             },
             {
                 "label": "Network adapter 2",
@@ -78,6 +85,7 @@ def sample_vm_record():
                 "ipv4": "10.0.2.10",
             },
         ],
+        "Network Readiness Findings": [],
         "Readiness Findings": [
             {
                 "finding_type": "VMware Tools status",
@@ -118,6 +126,8 @@ def sample_vm_model():
         readiness_reasons="Multiple disks detected",
         migration_readiness="Review",
         migration_readiness_reasons="VMware Tools status: toolsOld",
+        network_readiness="Ready",
+        network_readiness_reasons="No network readiness blockers found",
         memory_readiness="Ready",
         memory_readiness_reasons="No memory pressure",
         configured_memory_mib=8192,
@@ -136,6 +146,11 @@ def sample_vm_model():
                 network="app-net",
                 connected=True,
                 ipv4="10.0.1.10",
+                switch_type="standard",
+                port_group="app-net",
+                vlan="101",
+                backing_source_tab="vPort",
+                match_confidence="matched",
             ),
             NicMapping(
                 label="Network adapter 2",
@@ -164,6 +179,8 @@ def test_model_round_trips_from_legacy_record():
     assert record["Disk Details"][1]["capacity_gb"] == 120
     assert record["Network Details"][1]["network"] == "db-net"
     assert record["Readiness Findings"][0]["source_tab"] == "vTools"
+    assert record["Network Readiness"] == "Ready"
+    assert record["Network Details"][0]["switch_type"] == "standard"
     assert record["Compute (Mo)"] == 83.22
     assert record["Data Disk Count"] == 1
 
@@ -178,6 +195,7 @@ def test_nested_records_are_canonical_views():
     assert model.pricing.confidence == "fallback-static"
     assert model.image.reasons == "Multiple disks detected"
     assert model.memory.sizing_basis == "preserve-configured-memory"
+    assert model.network_status.status == "Ready"
     assert model.migration.findings[0].recommended_action == "Update VMware Tools"
 
 
@@ -214,6 +232,7 @@ def test_exports_accept_normalized_vm_model():
     assert vm_record["migration_readiness"]["findings"][0]["source_tab"] == "vTools"
     assert vm_record["assessment"]["pricing"]["confidence"] == "fallback-static"
     assert vm_record["assessment"]["memory_readiness"]["sizing_memory_mib"] == 8192
+    assert vm_record["network_readiness"]["status"] == "Ready"
 
 
 def test_terraform_renderer_accepts_normalized_vm_model():

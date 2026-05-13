@@ -9,6 +9,7 @@ REQUIRED_TABS = [
 
 OPTIONAL_READINESS_TABS = ["vSnapshot", "vTools", "vCD", "vUSB", "vHealth"]
 OPTIONAL_STORAGE_TABS = ["vPartition"]
+OPTIONAL_NETWORK_TABS = ["vPort", "dvPort", "vSwitch", "dvSwitch"]
 
 CONFIDENCE_RANK = {
     "High": 3,
@@ -26,6 +27,10 @@ TAB_IMPACTS = {
     "vHost": "Host CPU capacity for vCPU-to-pCore and headroom signals.",
     "vCluster": "Cluster capacity for estate-level headroom signals.",
     "vNetwork": "NIC, port group, IP, MAC, switch, and subnet mapping confidence.",
+    "vPort": "Standard switch port and port group context for source NIC review.",
+    "dvPort": "Distributed switch port and distributed port group context for source NIC review.",
+    "vSwitch": "Standard switch backing, VLAN, MTU, and port-capacity context.",
+    "dvSwitch": "Distributed switch backing, VLAN/segment, MTU, and port-capacity context.",
     "vSnapshot": "Snapshot cleanup and migration readiness findings.",
     "vTools": "VMware Tools, heartbeat, app status, and guest operation readiness.",
     "vCD": "Connected ISO/CD media migration blockers.",
@@ -64,6 +69,13 @@ def _network_fallback_available(sheets):
     return any(
         "Network" in str(column) or "Port" in str(column)
         for column in df_vinfo.columns
+    )
+
+
+def _network_detail_available(sheets):
+    return any(
+        sheets.get(tab_name) is not None and not sheets.get(tab_name).empty
+        for tab_name in OPTIONAL_NETWORK_TABS
     )
 
 
@@ -108,6 +120,13 @@ def _domain_confidence(tab_rows, tab_name):
     return row["confidence"] if row else "Low"
 
 
+def _network_confidence(tab_rows, sheets):
+    base = _domain_confidence(tab_rows, "vNetwork")
+    if base == "Low" and _network_detail_available(sheets):
+        return "Medium"
+    return base
+
+
 def _migration_readiness_confidence(tab_rows):
     optional_rows = [
         row for row in tab_rows if row["category"] == "Optional readiness"
@@ -132,6 +151,9 @@ def build_assessment_quality_report(sheets, available_sheet_names):
     ] + [
         _tab_record(tab, "Optional storage detail", sheets, available_sheet_names)
         for tab in OPTIONAL_STORAGE_TABS
+    ] + [
+        _tab_record(tab, "Optional network detail", sheets, available_sheet_names)
+        for tab in OPTIONAL_NETWORK_TABS
     ]
 
     required_present = len([
@@ -142,13 +164,17 @@ def build_assessment_quality_report(sheets, available_sheet_names):
         row for row in tab_rows
         if row["category"] == "Optional readiness" and row["status"] == "Present"
     ])
+    optional_network_present = len([
+        row for row in tab_rows
+        if row["category"] == "Optional network detail" and row["status"] == "Present"
+    ])
     missing_or_empty = len([
         row for row in tab_rows if row["status"] in ["Missing", "Empty"]
     ])
 
     inventory_confidence = _domain_confidence(tab_rows, "vInfo")
     storage_confidence = _domain_confidence(tab_rows, "vDisk")
-    network_confidence = _domain_confidence(tab_rows, "vNetwork")
+    network_confidence = _network_confidence(tab_rows, sheets)
     memory_confidence = _domain_confidence(tab_rows, "vMemory")
     migration_confidence = _migration_readiness_confidence(tab_rows)
     overall_confidence = _confidence_min([
@@ -172,6 +198,8 @@ def build_assessment_quality_report(sheets, available_sheet_names):
             "required_tabs_total": len(REQUIRED_TABS),
             "optional_readiness_tabs_present": optional_present,
             "optional_readiness_tabs_total": len(OPTIONAL_READINESS_TABS),
+            "optional_network_detail_tabs_present": optional_network_present,
+            "optional_network_detail_tabs_total": len(OPTIONAL_NETWORK_TABS),
             "missing_or_empty_tabs": missing_or_empty,
         },
         "tabs": tab_rows,
