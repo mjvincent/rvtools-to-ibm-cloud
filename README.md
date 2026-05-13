@@ -55,12 +55,14 @@ Pricing can run in static, cached, or live profile discovery mode.
 * **Live Profile Discovery**: Uses IBM Cloud VPC profile discovery when `IBMCLOUD_API_KEY` is available, while preserving explicit pricing confidence metadata.
 
 ## Technical Structure
-The application architecture is divided into five functional layers:
-1. **Data Processing**: Utilizes Pandas for cross-tabulation and normalization of RVTools telemetry.
-2. **Normalized VM Data Model**: Uses dataclasses to carry source metadata, target recommendations, pricing, readiness, disk, and NIC detail between app layers.
-3. **Logic Engine**: Executes profile matching and storage tiering (3, 5, or 10 IOPS) based on workload characteristics.
-4. **Template Rendering**: Outputs HCL (HashiCorp Configuration Language) in a modular format including networking, storage, and VSI modules.
-5. **Migration Handoff**: Exports source-to-target mapping files that help migration teams connect generated Terraform to image import, replication, and cutover workflows.
+The application is split into focused modules with `MigrationVm` as the internal contract:
+1. **Streamlit Orchestration (`app.py`)**: Coordinates sidebar settings, upload flow, table editing, package build, and downloads.
+2. **RVTools Parsing (`rvtools_parser.py`)**: Loads worksheets, correlates RVTools tabs, and builds normalized VM records.
+3. **Assessments and Sizing (`assessments.py`, `sizing.py`)**: Evaluates readiness, profile matching, storage tiering, baseline cost, and savings.
+4. **Terraform Rendering (`terraform_renderer.py`)**: Outputs HCL in a modular format including networking, storage, and VSI modules.
+5. **Migration Handoff (`handoff.py`)**: Exports source-to-target mapping files that connect generated Terraform to image import, replication, and cutover workflows.
+
+`logic_engine.py` remains as a compatibility facade for existing tests and callers while the implementation lives in the focused modules above.
 
 ## Data Requirements
 Successful execution requires a standard RVTools XLSX export containing the following worksheets:
@@ -167,6 +169,7 @@ Start with `docs/user-manual.md` for end-user operation. For detailed Terraform 
 - Added memory readiness and conservative RAM sizing using RVTools `vMemory`, including `memory-readiness.csv`.
 - Added IBM catalog pricing modes with static, cached, and live profile discovery paths plus pricing confidence metadata.
 - Added a normalized VM dataclass model and moved old pricing/template experiments under `experiments/`.
+- Split the monolithic Streamlit and logic engine code into parser, assessment, sizing, renderer, handoff, and UI helper modules while preserving output contracts.
 
 ---
 **Author**: Michael Vincent Jones
