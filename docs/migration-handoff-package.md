@@ -17,6 +17,8 @@ Each VM also includes a `migration_readiness` object with readiness status, reas
 
 Each VM assessment also includes a `memory_readiness` object with readiness status, reason text, configured, active, consumed, ballooned, swapped, reservation, limit, hot-add, sizing memory, and sizing basis fields.
 
+The manifest also includes an additive `assessment_quality` object with RVTools worksheet coverage, required and optional tab counts, and confidence values for inventory, storage, network, memory, migration readiness, and overall planning.
+
 The manifest also preserves source disk detail from `vDisk`. Boot disks are marked as image-covered storage, and additional disks are listed as target data volumes for IBM Cloud block storage creation and attachment.
 
 The manifest preserves source NIC detail from `vNetwork`. Connected NICs are mapped to primary or secondary VPC network interfaces, while disconnected NICs remain visible for migration review.
@@ -38,6 +40,12 @@ A VM-level memory readiness file showing memory pressure, reservations, limits, 
 ### `readiness-findings.csv`
 A row-level migration readiness file showing each detected finding, severity, source RVTools tab, evidence, and recommended action. This is the most direct remediation worklist for migration planning workshops.
 
+### `assessment-quality.json`
+A structured workbook-level quality report showing RVTools worksheet coverage, row counts, confidence, and planning impact. Use it to understand whether sizing, readiness, storage, and network planning signals are based on complete workbook data or fallback metadata.
+
+### `assessment-quality.csv`
+A spreadsheet-friendly version of the worksheet coverage report for customer review and planning workshops.
+
 ### `image-import-variables.tfvars.example`
 A placeholder Terraform variables file for custom image IDs. Populate these values after VMware images have been converted, uploaded, and imported as IBM Cloud VPC custom images.
 
@@ -55,14 +63,15 @@ A generated operational runbook that explains the recommended sequence: review m
 6. Resolve image readiness `Blocked` items and review firmware, boot disk, OS, and guest customization concerns.
 7. Review `memory-readiness.csv` to validate profile sizing, memory pressure, reservations, limits, and hot-add dependencies.
 8. Review `readiness-findings.csv` to remediate snapshots, mounted media, USB dependencies, VMware Tools concerns, and RVTools health findings.
-9. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
-10. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
-11. Import or replicate VMware images using the approved migration approach.
-12. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
-13. Apply Terraform using Plain CLI or IBM Schematics.
-14. Validate boot, network, storage, monitoring, backup, and application health before cutover.
+9. Review `assessment-quality.csv` to confirm workbook coverage and confidence before finalizing migration waves.
+10. Review `nic-mapping.csv` to confirm primary and secondary network interface placement.
+11. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
+12. Import or replicate VMware images using the approved migration approach.
+13. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example`.
+14. Apply Terraform using Plain CLI or IBM Schematics.
+15. Validate boot, network, storage, monitoring, backup, and application health before cutover.
 
 ## Current Scope
-This release creates the handoff package, image ID placeholders, per-disk volume mapping, multi-NIC mapping, memory readiness sizing, and advisory migration readiness findings. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.
+This release creates the handoff package, image ID placeholders, per-disk volume mapping, multi-NIC mapping, memory readiness sizing, advisory migration readiness findings, and advisory assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.
 
 Those are intentionally left as later adapters so the handoff format can remain stable and tool-neutral.

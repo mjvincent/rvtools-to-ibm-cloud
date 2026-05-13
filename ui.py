@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 from sizing import get_catalog_profiles
 
@@ -207,6 +208,40 @@ def render_estate_summary(df_f):
         )
     else:
         st.success("No readiness blockers or review signals were detected for in-scope VMs.")
+
+
+def render_assessment_quality(report):
+    summary = (report or {}).get("summary", {})
+    tabs = (report or {}).get("tabs", [])
+    required_present = summary.get("required_tabs_present", 0)
+    required_total = summary.get("required_tabs_total", 0)
+    optional_present = summary.get("optional_readiness_tabs_present", 0)
+    optional_total = summary.get("optional_readiness_tabs_total", 0)
+
+    st.subheader("Assessment Quality")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Overall Confidence", summary.get("overall_confidence", "Low"))
+    c2.metric("Required Tabs", f"{required_present}/{required_total}")
+    c3.metric("Optional Readiness Tabs", f"{optional_present}/{optional_total}")
+    c4.metric("Missing or Empty Tabs", summary.get("missing_or_empty_tabs", 0))
+
+    confidence = summary.get("overall_confidence", "Low")
+    if confidence == "High":
+        st.success("RVTools coverage supports high-confidence planning signals.")
+    elif confidence == "Medium":
+        st.info("RVTools coverage is usable, with some fallback or partial confidence signals.")
+    else:
+        st.warning("RVTools coverage is limited. Review missing or empty tabs before relying on planning outputs.")
+
+    with st.expander("Worksheet coverage details"):
+        if tabs:
+            st.dataframe(
+                pd.DataFrame(tabs),
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.write("No worksheet quality data is available.")
 
 
 def render_readiness_triage(df_f):
