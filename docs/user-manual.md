@@ -65,7 +65,7 @@ The following worksheets are required for the core workflow:
 | `vNetwork` | NIC, source network, IP, MAC, adapter, switch, and connection metadata. Used for multi-NIC mapping and target subnet/security group mapping. |
 
 ## Optional RVTools Inputs
-These worksheets improve readiness assessment but are not required for Terraform generation:
+These worksheets improve readiness and storage planning context but are not required for Terraform generation:
 
 | RVTools worksheet | Purpose |
 | --- | --- |
@@ -74,8 +74,9 @@ These worksheets improve readiness assessment but are not required for Terraform
 | `vCD` | Detects connected or starts-connected CD/DVD and ISO media. Connected media can block migration readiness. |
 | `vUSB` | Detects connected USB devices. USB dependencies can block migration readiness. |
 | `vHealth` | Provides RVTools health findings where they can be associated with a workload. |
+| `vPartition` | Provides partition labels, capacity, consumed space, free space, and free percentage for storage planning review. |
 
-If an optional tab is missing, the related readiness checks are skipped. Missing optional tabs do not block ZIP generation.
+If an optional readiness tab is missing, the related readiness checks are skipped. Missing optional tabs do not block ZIP generation.
 The Assessment Quality report still records missing optional tabs so reviewers can see when migration readiness confidence is based on partial workbook coverage.
 
 ## Installation and Launch
@@ -129,7 +130,7 @@ Shows the main decision fields instead of every generated column. Use this tab t
 Shows discovered networks, default CIDRs, VM network placement, multi-NIC count, and unknown network signals. Use this before export to confirm subnet and security group intent.
 
 ### Storage
-Shows total storage, data disk counts, boot/data planning signals, storage tier choices, and image readiness context. Use this to validate data disk volume planning before package generation.
+Shows total storage, data disk counts, boot/data planning signals, partition coverage, storage tier choices, and image readiness context. Use this to validate data disk volume planning before package generation.
 
 ### Export
 Contains Terraform deployment settings, custom CIDR fields, package readiness metrics, business case CSV download, and Terraform ZIP build/download controls.
@@ -603,6 +604,7 @@ The ZIP bundle contains two categories of output:
 | `vm-mapping.csv` | Spreadsheet-friendly VM-level migration mapping. |
 | `nic-mapping.csv` | Per-NIC source-to-target network mapping. |
 | `disk-mapping.csv` | Per-disk boot/data mapping. |
+| `partition-mapping.csv` | Per-partition storage planning detail from RVTools `vPartition`. |
 | `memory-readiness.csv` | VM-level memory pressure, constraint, and sizing review. |
 | `readiness-findings.csv` | Row-level migration readiness findings and remediation actions. |
 | `assessment-quality.json` | Structured RVTools worksheet coverage and confidence report. |
@@ -624,6 +626,8 @@ Generates:
 
 ### Storage Module
 Generates IBM Cloud block volumes for non-boot data disks. Boot disks are expected to be covered by the custom image or migration-tool workflow.
+
+Volume capacity is based on `vDisk` capacity. Optional `vPartition` data is exported for planning review but does not change generated Terraform storage resources.
 
 ### VSI Module
 Generates IBM Cloud Virtual Server for VPC resources.
@@ -677,6 +681,16 @@ Use it to review:
 - Target data volume names.
 - Target attachment resource names.
 - Storage tier.
+- Partition count and summarized partition free-space context when `vPartition` is available.
+
+### `partition-mapping.csv`
+A row-level partition mapping file.
+
+Use it to review:
+- Source partition labels or drive paths.
+- Partition capacity, consumed space, free space, and free percentage.
+- Whether a partition matched a source disk by `Disk Key`.
+- Unmatched partition rows that need VMware owner validation.
 
 ### `memory-readiness.csv`
 A VM-level memory readiness and sizing file.
@@ -727,16 +741,17 @@ A generated operational runbook customized with project, region, zone, VPC name,
 8. Review `memory-readiness.csv` for profile sizing validation.
 9. Review `nic-mapping.csv` for primary and secondary interface placement.
 10. Review `disk-mapping.csv` for data disk placement and sizing.
-11. Confirm IBM Cloud region, zone, VPC, subnet, and security group design.
-12. Confirm profile and storage tier overrides.
-13. Convert, replicate, or migrate images using the selected migration method.
-14. Upload converted images to IBM Cloud Object Storage when using custom image import.
-15. Import images as IBM Cloud VPC custom images.
-16. Record custom image IDs.
-17. Review generated Terraform.
-18. Apply Terraform using local CLI or IBM Schematics.
-19. Validate boot, network, storage attachment, monitoring, backup, security, and application health.
-20. Execute DNS, load balancer, IP, or application cutover steps.
+11. Review `partition-mapping.csv` for partition free-space context and unmatched partition rows.
+12. Confirm IBM Cloud region, zone, VPC, subnet, and security group design.
+13. Confirm profile and storage tier overrides.
+14. Convert, replicate, or migrate images using the selected migration method.
+15. Upload converted images to IBM Cloud Object Storage when using custom image import.
+16. Import images as IBM Cloud VPC custom images.
+17. Record custom image IDs.
+18. Review generated Terraform.
+19. Apply Terraform using local CLI or IBM Schematics.
+20. Validate boot, network, storage attachment, monitoring, backup, security, and application health.
+21. Execute DNS, load balancer, IP, or application cutover steps.
 
 ## Limitations
 The application is a planning and generation tool. It does not:
@@ -768,6 +783,9 @@ Check the `vCPU` worksheet. Missing CPU metrics can cause the VM to be flagged w
 
 ### A VM has missing storage data
 Check the `vDisk` worksheet and confirm capacity columns are populated.
+
+### Partition data is missing or unmatched
+Check the optional `vPartition` worksheet. Rows with missing `Disk Key` values may appear as unmatched partition records when they cannot be safely correlated to a `vDisk` row.
 
 ### Networks show as `unknown`
 Check `vNetwork` and `vInfo` for populated network or port group fields. If NIC rows are missing, the app falls back to available `vInfo` network data.
@@ -838,6 +856,9 @@ Assessment focused on memory pressure, constraints, and conservative RAM sizing.
 
 ### Pricing Confidence
 Metadata that explains whether a price is static fallback, cached, live-profile/static-price, or missing.
+
+### Partition Mapping
+Advisory storage planning detail from RVTools `vPartition`. It does not change generated IBM Cloud block volume size.
 
 ### NIC
 Network interface card or virtual network adapter.

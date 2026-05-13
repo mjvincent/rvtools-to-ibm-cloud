@@ -37,6 +37,12 @@ def _base_sheets():
         "vCD": _sheet([{"VM": "app-01", "Connected": False}]),
         "vUSB": _sheet([{"VM": "app-01", "Connected": False}]),
         "vHealth": _sheet([{"Name": "app-01", "Message": "ok"}]),
+        "vPartition": _sheet([{
+            "VM": "app-01",
+            "Disk Key": "2000",
+            "Disk": "C:\\",
+            "Capacity MiB": 81920,
+        }]),
     }
 
 
@@ -103,6 +109,16 @@ def test_quality_export_generators_have_stable_shape():
     assert csv_rows[0]["Confidence"] == "High"
 
 
+def test_quality_report_includes_vpartition_as_optional_storage_detail():
+    sheets = _base_sheets()
+    report = build_assessment_quality_report(sheets, sheets.keys())
+    partition = next(row for row in report["tabs"] if row["tab"] == "vPartition")
+
+    assert partition["category"] == "Optional storage detail"
+    assert partition["status"] == "Present"
+    assert partition["confidence"] == "High"
+
+
 def test_manifest_includes_assessment_quality_additively():
     sheets = _base_sheets()
     report = build_assessment_quality_report(sheets, sheets.keys())
@@ -122,5 +138,6 @@ if __name__ == "__main__":
     test_quality_report_marks_present_required_empty_as_low_confidence()
     test_quality_report_uses_vinfo_fallback_for_network_and_storage()
     test_quality_export_generators_have_stable_shape()
+    test_quality_report_includes_vpartition_as_optional_storage_detail()
     test_manifest_includes_assessment_quality_additively()
     print("assessment quality tests ok")

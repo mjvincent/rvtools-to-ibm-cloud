@@ -16,6 +16,7 @@ from handoff import (
     generate_migration_manifest,
     generate_migration_runbook,
     generate_nic_mapping_csv,
+    generate_partition_mapping_csv,
     generate_readiness_findings_csv,
     generate_vm_mapping_csv,
 )
@@ -135,7 +136,10 @@ if uploaded_file is not None:
 
     df_f = pd.DataFrame([vm.to_record() for vm in processed_vms])
     df_table = df_f.drop(
-        columns=["Disk Details", "Network Details", "Readiness Findings"],
+        columns=[
+            "Disk Details", "Partition Details", "Network Details",
+            "Readiness Findings"
+        ],
         errors="ignore"
     )
     table_config = build_table_config(unique_nets, catalog_profiles)
@@ -194,7 +198,7 @@ if uploaded_file is not None:
         render_network_planning(edited_df, unique_nets)
 
     with storage:
-        render_storage_planning(edited_df)
+        render_storage_planning(edited_df, processed_vms)
 
     with export:
         st.subheader("Terraform Package")
@@ -256,6 +260,14 @@ if uploaded_file is not None:
                     final_vms = []
                     for vm in final_vm_records:
                         vm["Disk Details"] = disk_details.get(vm.get("VM Key"), [])
+                        vm["Partition Details"] = next(
+                            (
+                                source.get("Partition Details", [])
+                                for source in processed_vms
+                                if source.get("VM Key") == vm.get("VM Key")
+                            ),
+                            []
+                        )
                         vm["Network Details"] = nic_details.get(
                             vm.get("VM Key"), []
                         )
@@ -343,6 +355,10 @@ if uploaded_file is not None:
                         zf.writestr(
                             "disk-mapping.csv",
                             generate_disk_mapping_csv(final_vms)
+                        )
+                        zf.writestr(
+                            "partition-mapping.csv",
+                            generate_partition_mapping_csv(final_vms)
                         )
                         zf.writestr(
                             "nic-mapping.csv",

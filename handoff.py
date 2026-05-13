@@ -12,6 +12,14 @@ def _clean_value(value, default=""):
     return clean_value(value, default)
 
 
+def _clean_number(value, default=0):
+    value = _clean_value(value, default)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _as_vm(value):
     if isinstance(value, MigrationVm):
         return value
@@ -50,6 +58,37 @@ def _vm_disks(vm):
     disks = vm.source.disks or vm.disks
     disks = [_as_record(disk) for disk in disks]
     return disks if isinstance(disks, list) else []
+
+
+def _disk_partitions(disk):
+    partitions = disk.get('partitions', [])
+    partitions = [_as_record(partition) for partition in partitions]
+    return partitions if isinstance(partitions, list) else []
+
+
+def _vm_unmatched_partitions(vm):
+    vm = _as_vm(vm)
+    partitions = vm.source.partitions or vm.partitions
+    partitions = [_as_record(partition) for partition in partitions]
+    return partitions if isinstance(partitions, list) else []
+
+
+def _vm_partitions(vm):
+    partitions = []
+    for disk in _vm_disks(vm):
+        for partition in _disk_partitions(disk):
+            record = partition.copy()
+            record.setdefault("source_disk", disk.get('disk'))
+            record.setdefault("source_disk_key", disk.get('disk_key'))
+            record["matched"] = True
+            partitions.append(record)
+    for partition in _vm_unmatched_partitions(vm):
+        record = partition.copy()
+        record.setdefault("source_disk", "")
+        record.setdefault("source_disk_key", record.get('disk_key', ""))
+        record["matched"] = False
+        partitions.append(record)
+    return partitions
 
 
 def _vm_data_disks(vm):
@@ -108,6 +147,7 @@ def _migration_vm_record(vm):
             "total_disk_gb": _clean_value(vm.get('Total Storage GB'), 0),
             "original_specs": _clean_value(vm.get('Original Specs')),
             "disks": _vm_disks(vm),
+            "partitions": _vm_partitions(vm),
         },
         "target": {
             "recommended_profile": _clean_value(vm.get('IBM Profile')),
@@ -248,6 +288,7 @@ def generate_migration_manifest(final_vms, context):
             "vm_mapping_csv": "vm-mapping.csv",
             "disk_mapping_csv": "disk-mapping.csv",
             "nic_mapping_csv": "nic-mapping.csv",
+            "partition_mapping_csv": "partition-mapping.csv",
             "memory_readiness_csv": "memory-readiness.csv",
             "readiness_findings_csv": "readiness-findings.csv",
             "assessment_quality_json": "assessment-quality.json",
@@ -554,6 +595,8 @@ def generate_disk_mapping_csv(final_vms):
     fieldnames = [
         "VM Name", "Disk", "Role", "Capacity GB", "Target Action",
         "Storage Tier", "Terraform Volume", "Attachment Resource",
+        "Partition Count", "Partition Labels", "Partition Capacity MiB",
+        "Partition Consumed MiB", "Partition Free MiB", "Partition Free %",
         "Disk Key", "Disk Path", "Controller", "Label", "Unit Number",
         "SCSI Unit", "Disk Mode", "Thin", "Raw", "Shared Bus"
     ]
@@ -565,6 +608,25 @@ def generate_disk_mapping_csv(final_vms):
         safe_vm = _safe_resource_name(vm_name)
         storage_tier = _effective_storage_tier(vm)
         for index, disk in enumerate(_vm_disks(vm)):
+            partitions = _disk_partitions(disk)
+            partition_capacity = sum(
+                _clean_number(partition.get('capacity_mib'), 0)
+                for partition in partitions
+            )
+            partition_consumed = sum(
+                _clean_number(partition.get('consumed_mib'), 0)
+                for partition in partitions
+            )
+            partition_free = sum(
+                _clean_number(partition.get('free_mib'), 0)
+                for partition in partitions
+            )
+            partition_free_pct = ""
+            if partition_capacity:
+                partition_free_pct = round(
+                    (partition_free / partition_capacity) * 100,
+                    2
+                )
             role = "boot" if disk.get('is_boot') else "data"
             safe_disk = _safe_resource_name(disk.get('disk') or f"disk_{index}")
             volume_name = ""
@@ -584,6 +646,16 @@ def generate_disk_mapping_csv(final_vms):
                 "Storage Tier": storage_tier,
                 "Terraform Volume": volume_name,
                 "Attachment Resource": attachment_name,
+                "Partition Count": len(partitions),
+                "Partition Labels": ", ".join([
+                    _clean_value(partition.get('disk'))
+                    for partition in partitions
+                    if _clean_value(partition.get('disk'))
+                ]),
+                "Partition Capacity MiB": partition_capacity,
+                "Partition Consumed MiB": partition_consumed,
+                "Partition Free MiB": partition_free,
+                "Partition Free %": partition_free_pct,
                 "Disk Key": _clean_value(disk.get('disk_key')),
                 "Disk Path": _clean_value(disk.get('disk_path')),
                 "Controller": _clean_value(disk.get('controller')),
@@ -594,6 +666,36 @@ def generate_disk_mapping_csv(final_vms):
                 "Thin": _clean_value(disk.get('thin')),
                 "Raw": _clean_value(disk.get('raw')),
                 "Shared Bus": _clean_value(disk.get('shared_bus')),
+            })
+    return output.getvalue()
+
+
+def generate_partition_mapping_csv(final_vms):
+    """Create a row-per-partition storage planning CSV."""
+    final_vms = _normalize_vms(final_vms)
+    output = io.StringIO()
+    fieldnames = [
+        "VM Name", "Disk", "Disk Key", "Matched To Disk", "Partition",
+        "Capacity MiB", "Consumed MiB", "Free MiB", "Free %"
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for vm in final_vms:
+        vm_name = _safe_vm_key(vm.get('VM Name'))
+        for partition in _vm_partitions(vm):
+            writer.writerow({
+                "VM Name": vm_name,
+                "Disk": _clean_value(partition.get('source_disk')),
+                "Disk Key": _clean_value(
+                    partition.get('source_disk_key') or partition.get('disk_key')
+                ),
+                "Matched To Disk": bool(partition.get('matched')),
+                "Partition": _clean_value(partition.get('disk')),
+                "Capacity MiB": _clean_value(partition.get('capacity_mib'), 0),
+                "Consumed MiB": _clean_value(partition.get('consumed_mib'), 0),
+                "Free MiB": _clean_value(partition.get('free_mib'), 0),
+                "Free %": _clean_value(partition.get('free_pct'), 0),
             })
     return output.getvalue()
 

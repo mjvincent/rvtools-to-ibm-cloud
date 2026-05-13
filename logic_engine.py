@@ -27,6 +27,7 @@ from handoff import (
     generate_migration_manifest,
     generate_migration_runbook,
     generate_nic_mapping_csv,
+    generate_partition_mapping_csv,
     generate_readiness_findings_csv,
     generate_vm_mapping_csv,
 )
@@ -78,6 +79,7 @@ __all__ = [
     "generate_migration_manifest",
     "generate_migration_runbook",
     "generate_nic_mapping_csv",
+    "generate_partition_mapping_csv",
     "generate_readiness_findings_csv",
     "generate_vm_mapping_csv",
     "generate_tfvars",

@@ -66,4 +66,6 @@ Memory readiness fields are advisory, but memory sizing can influence the recomm
 
 Storage tier overrides apply to every generated data disk volume for that VM. The boot disk is not generated as an IBM Cloud block volume because it is expected to be covered by the imported custom image workflow.
 
+Optional `vPartition` data is advisory. It appears in storage planning views and handoff files, but it does not change storage tier overrides, generated block volume capacity, or data volume attachment behavior.
+
 Custom CIDR overrides apply to every discovered source network from `vNetwork`, not only the primary VM network. Connected secondary NICs use the subnet and security group generated for their own source network. Disconnected NICs remain in `nic-mapping.csv` and the manifest but do not create Terraform network interfaces.

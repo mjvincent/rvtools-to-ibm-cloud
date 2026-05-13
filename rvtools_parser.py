@@ -77,6 +77,17 @@ def clean_cell(value, default=""):
     return default if text.lower() == "nan" else text
 
 
+def clean_disk_key(value):
+    cleaned = clean_cell(value)
+    try:
+        numeric = float(cleaned)
+        if numeric.is_integer():
+            return str(int(numeric))
+    except (TypeError, ValueError):
+        pass
+    return cleaned
+
+
 def is_unhealthy_status(value):
     text = clean_cell(value).lower()
     if not text:
@@ -126,11 +137,12 @@ def parse_rvtools_workbook(
     df_vcd = read_sheet('vCD')
     df_vusb = read_sheet('vUSB')
     df_vhealth = read_sheet('vHealth')
+    df_vpartition = read_sheet('vPartition')
 
     # 2. CLEAN COLUMN NAMES
     for df in [df_vinfo, df_vdisk, df_vcpu, df_vhost,
                df_vmemory, df_vcluster, df_vnetwork, df_vsnapshot, df_vtools,
-               df_vcd, df_vusb, df_vhealth]:
+               df_vcd, df_vusb, df_vhealth, df_vpartition]:
         if not df.empty:
             df.columns = df.columns.str.strip()
 
@@ -147,6 +159,7 @@ def parse_rvtools_workbook(
         "vCD": df_vcd,
         "vUSB": df_vusb,
         "vHealth": df_vhealth,
+        "vPartition": df_vpartition,
     }
     assessment_quality = build_assessment_quality_report(
         workbook_sheets,
@@ -217,6 +230,33 @@ def parse_rvtools_workbook(
         unique_nets.append({'name': n_name, 'vlan': '', 'cidr': d_cidr})
 
     # 4. STORAGE SUMMARY
+    partitions_by_vm = {}
+    if not df_vpartition.empty:
+        df_vpartition["_rvtools_vm_key"] = df_vpartition.apply(
+            lambda row: get_row_identity(row, ""),
+            axis=1
+        )
+        partition_rows = df_vpartition[
+            df_vpartition["_rvtools_vm_key"] != ""
+        ].copy()
+        for name, rows in partition_rows.groupby("_rvtools_vm_key"):
+            partitions = []
+            for partition_row in rows.to_dict("records"):
+                partitions.append({
+                    "disk": clean_cell(partition_row.get("Disk")),
+                    "disk_key": clean_disk_key(partition_row.get("Disk Key")),
+                    "capacity_mib": as_float(
+                        partition_row.get("Capacity MiB")
+                    ),
+                    "consumed_mib": as_float(
+                        partition_row.get("Consumed MiB")
+                    ),
+                    "free_mib": as_float(partition_row.get("Free MiB")),
+                    "free_pct": as_float(partition_row.get("Free % ")),
+                    "matched": False,
+                })
+            partitions_by_vm[str(name)] = partitions
+
     cap_c = next((c for c in df_vdisk.columns if 'Capacity' in c), None)
     df_vdisk["_rvtools_vm_key"] = df_vdisk.apply(
         lambda row: get_row_identity(row, ""),
@@ -227,6 +267,7 @@ def parse_rvtools_workbook(
     disk_count = {}
     boot_disk_gb = {}
     disk_details = {}
+    unmatched_partition_details = {}
     if cap_c:
         disk_sum = disk_rows.groupby("_rvtools_vm_key")[cap_c].sum().to_dict()
         disk_count = (
@@ -241,11 +282,22 @@ def parse_rvtools_workbook(
         )
         for name, rows in disk_sort.groupby("_rvtools_vm_key"):
             details = []
+            vm_partitions = partitions_by_vm.get(str(name), [])
+            matched_partition_indexes = set()
             for idx, disk_row in enumerate(rows.to_dict("records")):
                 capacity_gb = round(disk_row.get(cap_c, 0) / 1024, 2)
+                disk_key = clean_disk_key(disk_row.get("Disk Key", ""))
+                disk_partitions = []
+                if disk_key:
+                    for p_idx, partition in enumerate(vm_partitions):
+                        if clean_cell(partition.get("disk_key")) == disk_key:
+                            matched = partition.copy()
+                            matched["matched"] = True
+                            disk_partitions.append(matched)
+                            matched_partition_indexes.add(p_idx)
                 details.append({
                     "disk": str(disk_row.get("Disk", f"disk-{idx + 1}")),
-                    "disk_key": disk_row.get("Disk Key", ""),
+                    "disk_key": disk_key,
                     "disk_path": disk_row.get("Disk Path", ""),
                     "capacity_gb": capacity_gb,
                     "capacity_mib": disk_row.get(cap_c, 0),
@@ -257,9 +309,22 @@ def parse_rvtools_workbook(
                     "disk_mode": disk_row.get("Disk Mode", ""),
                     "thin": disk_row.get("Thin", ""),
                     "raw": disk_row.get("Raw", ""),
-                    "shared_bus": disk_row.get("Shared Bus", "")
+                    "shared_bus": disk_row.get("Shared Bus", ""),
+                    "partitions": disk_partitions,
                 })
+            unmatched = [
+                partition
+                for p_idx, partition in enumerate(vm_partitions)
+                if p_idx not in matched_partition_indexes
+            ]
+            if len(details) == 1 and unmatched:
+                details[0]["partitions"].extend([
+                    {**partition, "matched": True}
+                    for partition in unmatched
+                ])
+                unmatched = []
             disk_details[str(name)] = details
+            unmatched_partition_details[str(name)] = unmatched
             if details:
                 boot_disk_gb[str(name)] = details[0]["capacity_gb"]
 
@@ -556,6 +621,7 @@ def parse_rvtools_workbook(
         )
         firmware = row.get('Firmware', '')
         vm_disk_details = disk_details.get(vm_key, [])
+        vm_unmatched_partitions = unmatched_partition_details.get(vm_key, [])
         vm_disk_count = disk_count.get(vm_key, row.get('Disks', 0))
         readiness = assess_image_readiness(
             guest_os,
@@ -654,6 +720,12 @@ def parse_rvtools_workbook(
             'Disk Count': vm_disk_count,
             'Data Disk Count': max(0, len(vm_disk_details) - 1),
             'Disk Details': vm_disk_details,
+            'Partition Details': vm_unmatched_partitions,
+            'Partition Count': (
+                sum(len(disk.get("partitions", [])) for disk in vm_disk_details)
+                + len(vm_unmatched_partitions)
+            ),
+            'Unmatched Partition Count': len(vm_unmatched_partitions),
             'Firmware': readiness['firmware'],
             'Boot Disk GB': readiness['boot_disk_gb'],
             'Guest Customization': readiness['guest_customization'],
