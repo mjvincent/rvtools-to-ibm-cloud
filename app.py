@@ -5,6 +5,10 @@ import pandas as pd
 import streamlit as st
 
 from catalog_pricing import get_pricing_catalog, pricing_status_summary
+from assessment_quality import (
+    generate_assessment_quality_csv,
+    generate_assessment_quality_json,
+)
 from handoff import (
     generate_disk_mapping_csv,
     generate_image_import_tfvars,
@@ -23,6 +27,7 @@ from ui import (
     DISABLED_COLS,
     build_table_config,
     merge_decision_edits,
+    render_assessment_quality,
     render_estate_summary,
     render_network_planning,
     render_readiness_legend,
@@ -126,6 +131,7 @@ if uploaded_file is not None:
     unique_nets = parsed.unique_nets
     disk_details = parsed.disk_details
     nic_details = parsed.nic_details
+    assessment_quality = parsed.assessment_quality
 
     df_f = pd.DataFrame([vm.to_record() for vm in processed_vms])
     df_table = df_f.drop(
@@ -154,6 +160,7 @@ if uploaded_file is not None:
         st.write("2. Validate Review items with workload owners and VMware administrators.")
         st.write("3. Confirm profile, storage tier, network, subnet, and security group overrides in VM Review.")
         st.write("4. Confirm Terraform deployment settings in Export and build the package.")
+        render_assessment_quality(assessment_quality)
 
     with readiness:
         render_readiness_legend()
@@ -294,6 +301,7 @@ if uploaded_file is not None:
                         'pricing_last_updated': pricing_metadata.get(
                             'last_updated'
                         ),
+                        'assessment_quality': assessment_quality,
                     }
 
                     zip_b = io.BytesIO()
@@ -319,6 +327,14 @@ if uploaded_file is not None:
                         zf.writestr(
                             "migration-manifest.json",
                             generate_migration_manifest(final_vms, migration_context)
+                        )
+                        zf.writestr(
+                            "assessment-quality.json",
+                            generate_assessment_quality_json(assessment_quality)
+                        )
+                        zf.writestr(
+                            "assessment-quality.csv",
+                            generate_assessment_quality_csv(assessment_quality)
                         )
                         zf.writestr(
                             "vm-mapping.csv",

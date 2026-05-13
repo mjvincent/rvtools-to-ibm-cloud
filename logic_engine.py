@@ -15,6 +15,11 @@ from assessments import (
     make_readiness_finding,
     summarize_migration_readiness,
 )
+from assessment_quality import (
+    build_assessment_quality_report,
+    generate_assessment_quality_csv,
+    generate_assessment_quality_json,
+)
 from handoff import (
     generate_disk_mapping_csv,
     generate_image_import_tfvars,
@@ -58,6 +63,9 @@ __all__ = [
     "IBM_VPC_CATALOG",
     "assess_image_readiness",
     "assess_memory_readiness",
+    "build_assessment_quality_report",
+    "generate_assessment_quality_csv",
+    "generate_assessment_quality_json",
     "make_readiness_finding",
     "summarize_migration_readiness",
     "find_cheapest_fit",

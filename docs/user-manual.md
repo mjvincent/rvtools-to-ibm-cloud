@@ -16,6 +16,7 @@ This tool does not move VMware workloads by itself. It does not convert VMDK fil
 - [End-to-End Workflow](#end-to-end-workflow)
 - [Sidebar Settings](#sidebar-settings)
 - [Dashboard Metrics](#dashboard-metrics)
+- [Assessment Quality](#assessment-quality)
 - [Pricing Settings](#pricing-settings)
 - [Terraform Overrides](#terraform-overrides)
 - [Main Table Reference](#main-table-reference)
@@ -75,6 +76,7 @@ These worksheets improve readiness assessment but are not required for Terraform
 | `vHealth` | Provides RVTools health findings where they can be associated with a workload. |
 
 If an optional tab is missing, the related readiness checks are skipped. Missing optional tabs do not block ZIP generation.
+The Assessment Quality report still records missing optional tabs so reviewers can see when migration readiness confidence is based on partial workbook coverage.
 
 ## Installation and Launch
 Run the application from the repository root.
@@ -115,7 +117,7 @@ streamlit run app.py
 
 ## Assessment Workbench Tabs
 ### Overview
-Shows the estate-level health summary, in-scope and excluded VM counts, monthly estimate, potential savings, blocker count, and recommended next actions. Start here after each upload.
+Shows the estate-level health summary, in-scope and excluded VM counts, monthly estimate, potential savings, blocker count, assessment quality summary, and recommended next actions. Start here after each upload.
 
 ### Readiness
 Groups image, migration, and memory readiness by `Blocked`, `Review`, and `Ready`. Blocked and Review rows are sorted first so remediation planning starts with the highest-impact items.
@@ -222,6 +224,31 @@ Count of non-excluded VMs that need owner review for memory sizing, reservations
 
 ### Memory Blocked
 Count of non-excluded VMs with severe memory pressure or memory limits that should be remediated before resizing.
+
+## Assessment Quality
+The `Overview` tab includes an advisory Assessment Quality report. It explains how complete the uploaded RVTools workbook is before teams rely on sizing, readiness, network, or storage outputs.
+
+The report does not block package generation and does not change readiness statuses, Terraform resources, VM exclusions, or cost estimates.
+
+### Overall Confidence
+The conservative rollup across inventory, storage, network, memory, and migration readiness confidence.
+
+| Value | Meaning |
+| --- | --- |
+| `High` | The relevant worksheets are present and populated. |
+| `Medium` | The app can continue with fallback data or partial coverage. Review before using outputs for migration waves. |
+| `Low` | One or more important planning areas are missing, empty, or based on no optional readiness coverage. |
+
+### Required Tabs
+Shows how many required worksheets are present and populated out of the required set: `vInfo`, `vDisk`, `vCPU`, `vMemory`, `vHost`, `vCluster`, and `vNetwork`.
+
+### Optional Readiness Tabs
+Shows how many optional readiness worksheets are present and populated out of `vSnapshot`, `vTools`, `vCD`, `vUSB`, and `vHealth`.
+
+Missing optional readiness tabs lower migration readiness confidence, but they do not create `Blocked` findings by themselves.
+
+### Missing or Empty Tabs
+Counts worksheets that are missing from the workbook or present with no rows. Open the worksheet coverage details expander to see the tab name, category, row count, confidence, and planning impact.
 
 ## Pricing Settings
 The app records pricing metadata so users can understand whether estimates came from static fallback data, a cache file, or live IBM profile discovery.
@@ -578,6 +605,8 @@ The ZIP bundle contains two categories of output:
 | `disk-mapping.csv` | Per-disk boot/data mapping. |
 | `memory-readiness.csv` | VM-level memory pressure, constraint, and sizing review. |
 | `readiness-findings.csv` | Row-level migration readiness findings and remediation actions. |
+| `assessment-quality.json` | Structured RVTools worksheet coverage and confidence report. |
+| `assessment-quality.csv` | Spreadsheet-friendly worksheet coverage and confidence report. |
 | `image-import-variables.tfvars.example` | Placeholder map for IBM Cloud custom image IDs after image import. |
 | `migration-runbook.md` | Operational runbook for migration planning and execution. |
 
@@ -670,6 +699,15 @@ Use it to assign owners for:
 - VMware Tools remediation.
 - Health warning review.
 
+### `assessment-quality.json` and `assessment-quality.csv`
+Workbook-level quality reports showing required and optional RVTools tab coverage, row counts, confidence, and planning impact.
+
+Use them to review:
+- Missing or empty required tabs.
+- Missing optional readiness tabs.
+- Whether network or storage planning used fallback metadata from `vInfo`.
+- Overall confidence before sharing migration wave plans.
+
 ### `image-import-variables.tfvars.example`
 A placeholder file for custom image IDs after conversion and import.
 
@@ -721,6 +759,9 @@ Treat all recommendations as planning guidance that must be reviewed by the appr
 ## Troubleshooting
 ### Upload fails or sheets are missing
 Confirm the file is an RVTools XLSX export and not a CSV or manually edited workbook. Confirm the required worksheets are present.
+
+### Assessment quality confidence is low
+Open the Assessment Quality details in `Overview` or review `assessment-quality.csv`. Re-export RVTools with required worksheets and optional readiness tabs when possible.
 
 ### A VM has missing CPU data
 Check the `vCPU` worksheet. Missing CPU metrics can cause the VM to be flagged with `Missing CPU`.

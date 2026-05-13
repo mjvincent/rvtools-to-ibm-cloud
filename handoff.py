@@ -250,9 +250,12 @@ def generate_migration_manifest(final_vms, context):
             "nic_mapping_csv": "nic-mapping.csv",
             "memory_readiness_csv": "memory-readiness.csv",
             "readiness_findings_csv": "readiness-findings.csv",
+            "assessment_quality_json": "assessment-quality.json",
+            "assessment_quality_csv": "assessment-quality.csv",
             "runbook": "migration-runbook.md",
             "image_import_tfvars_example": "image-import-variables.tfvars.example",
         },
+        "assessment_quality": context.get("assessment_quality", {}),
         "virtual_machines": [
             _migration_vm_record(vm) for vm in final_vms
         ],

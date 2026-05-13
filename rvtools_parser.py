@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from assessment_quality import build_assessment_quality_report
 from assessments import (
     SNAPSHOT_BLOCK_SIZE_MIB,
     assess_image_readiness,
@@ -19,6 +20,7 @@ class ParsedRvtoolsWorkbook:
     unique_nets: list
     disk_details: dict
     nic_details: dict
+    assessment_quality: dict
     df_vcluster: object
     df_vhost: object
     df_vcpu: object
@@ -131,6 +133,25 @@ def parse_rvtools_workbook(
                df_vcd, df_vusb, df_vhealth]:
         if not df.empty:
             df.columns = df.columns.str.strip()
+
+    workbook_sheets = {
+        "vInfo": df_vinfo,
+        "vDisk": df_vdisk,
+        "vCPU": df_vcpu,
+        "vMemory": df_vmemory,
+        "vHost": df_vhost,
+        "vCluster": df_vcluster,
+        "vNetwork": df_vnetwork,
+        "vSnapshot": df_vsnapshot,
+        "vTools": df_vtools,
+        "vCD": df_vcd,
+        "vUSB": df_vusb,
+        "vHealth": df_vhealth,
+    }
+    assessment_quality = build_assessment_quality_report(
+        workbook_sheets,
+        xls.sheet_names
+    )
 
     # 3. NETWORKING EXTRACTION
     df_vnetwork["_rvtools_vm_key"] = df_vnetwork.apply(
@@ -693,6 +714,7 @@ def parse_rvtools_workbook(
         unique_nets=unique_nets,
         disk_details=disk_details,
         nic_details=nic_details,
+        assessment_quality=assessment_quality,
         df_vcluster=df_vcluster,
         df_vhost=df_vhost,
         df_vcpu=df_vcpu,

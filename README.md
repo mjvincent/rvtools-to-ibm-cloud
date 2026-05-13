@@ -42,6 +42,12 @@ The dashboard also evaluates operational migration prerequisites from optional R
 * **Attached Device Cleanup**: Uses `vCD` and `vUSB` to block connected ISO/CD media or USB device dependencies before migration.
 * **Health Findings**: Uses `vHealth` where VM-level findings can be matched to the workload inventory.
 
+### Assessment Quality Report
+The dashboard reports RVTools worksheet coverage and advisory confidence before teams rely on sizing, readiness, network, or storage outputs.
+* **Tab Coverage**: Shows required and optional RVTools tabs as `Present`, `Missing`, or `Empty`.
+* **Planning Confidence**: Summarizes inventory, storage, network, memory, migration readiness, and overall confidence.
+* **Handoff Output**: Adds `assessment-quality.json` and `assessment-quality.csv` to the Terraform ZIP for customer review and downstream planning.
+
 ### Memory Readiness Assessment
 The dashboard evaluates memory pressure and sizing constraints from RVTools `vMemory`.
 * **Pressure Detection**: Flags swapping and ballooning before profile reductions are applied.
@@ -76,6 +82,7 @@ Successful execution requires a standard RVTools XLSX export containing the foll
 
 ## Business Case and Mapping Output
 The dashboard is organized as an assessment workbench with Overview, Readiness, VM Review, Networks, Storage, and Export tabs. It exports an enriched business case CSV with per-VM data including:
+* RVTools worksheet coverage and assessment confidence summary
 * Baseline cost estimate
 * Estimated monthly savings
 * Subnet mapping for Terraform
@@ -132,6 +139,7 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `disk-mapping.csv` — per-disk boot/data mapping for volume creation and attachment review
 * `memory-readiness.csv` — VM-level memory pressure, constraint, and sizing review
 * `readiness-findings.csv` — row-level migration readiness findings and remediation actions
+* `assessment-quality.json` / `assessment-quality.csv` — RVTools worksheet coverage and confidence report
 * `image-import-variables.tfvars.example` — placeholder map for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
@@ -166,6 +174,7 @@ Start with `docs/user-manual.md` for end-user operation. For detailed Terraform 
 - Added per-disk data volume generation, VSI volume attachments, and `disk-mapping.csv`.
 - Added multi-NIC network mapping, secondary VSI network interfaces, and `nic-mapping.csv`.
 - Added migration readiness assessment from RVTools snapshot, tools, CD, USB, and health tabs, including `readiness-findings.csv`.
+- Added assessment quality reporting for RVTools worksheet coverage and confidence, including `assessment-quality.json` and `assessment-quality.csv`.
 - Added a comprehensive searchable user manual in `docs/user-manual.md`.
 - Added memory readiness and conservative RAM sizing using RVTools `vMemory`, including `memory-readiness.csv`.
 - Added IBM catalog pricing modes with static, cached, and live profile discovery paths plus pricing confidence metadata.
