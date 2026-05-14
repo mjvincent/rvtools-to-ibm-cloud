@@ -68,6 +68,8 @@ Pricing can run in static, cached, or live profile discovery mode.
 * **Cached Catalog**: Uses `data/ibm_vpc_pricing_cache.json` when available.
 * **Live Profile Discovery**: Uses IBM Cloud VPC profile discovery when `IBMCLOUD_API_KEY` is available, while preserving explicit pricing confidence metadata.
 
+Use `scripts/generate_pricing_cache.py` to generate the cached catalog from live IBM VPC profile discovery. The supported generator writes transparent confidence metadata and does not claim exact IBM billing catalog prices.
+
 ## Technical Structure
 The application is split into focused modules with `MigrationVm` as the internal contract:
 1. **Streamlit Orchestration (`app.py`)**: Coordinates sidebar settings, upload flow, table editing, package build, and downloads.

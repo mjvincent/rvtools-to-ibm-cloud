@@ -182,6 +182,14 @@ Controls the source of IBM Cloud profile and pricing data.
 
 Pricing mode affects estimated cost and profile options, but does not change generated Terraform resource structure.
 
+Populate the cached catalog with the supported standalone generator:
+
+```bash
+python scripts/generate_pricing_cache.py --region us-south
+```
+
+Use `--dry-run` to validate credentials and profile discovery without writing the cache file.
+
 For live mode, set `IBMCLOUD_API_KEY` in the shell that starts Streamlit or in a local `.env` file at the repository root. Restart Streamlit after creating or changing `.env`.
 
 ### Download Business Case CSV

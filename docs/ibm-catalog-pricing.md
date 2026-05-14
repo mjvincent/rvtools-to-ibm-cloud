@@ -12,6 +12,22 @@ Uses bundled profile and storage prices. This is the safest default for demos, o
 ### Cached IBM Catalog
 Loads `data/ibm_vpc_pricing_cache.json` when present. Use this mode when a trusted pricing sync process has generated a cache file.
 
+Generate the supported cache file with:
+
+```bash
+python scripts/generate_pricing_cache.py --region us-south
+```
+
+The generator uses live IBM VPC profile discovery and the app's existing static mapped prices. It writes `source=trusted-cache-generator` and `confidence=profile-live-price-static` so downstream estimates remain transparent.
+
+Use `--dry-run` to validate credentials and profile discovery without writing a file:
+
+```bash
+python scripts/generate_pricing_cache.py --region us-south --dry-run
+```
+
+Use `--output` to write a cache somewhere other than `data/ibm_vpc_pricing_cache.json`, and `--env-file` to load `IBMCLOUD_API_KEY` from a non-default env file.
+
 ### Live IBM Profile Discovery
 Uses the IBM Cloud VPC API to discover available instance profiles for the selected region when `IBMCLOUD_API_KEY` is available.
 
@@ -69,9 +85,11 @@ Live mode looks for `IBMCLOUD_API_KEY` in the running process environment first.
 IBMCLOUD_API_KEY=...
 ```
 
-After creating or changing `.env`, restart Streamlit so the running process reloads the value.
+After creating or changing `.env`, restart Streamlit so the running process reloads the value. The standalone cache generator also reads `IBMCLOUD_API_KEY` from the process environment or the env file passed with `--env-file`.
 
 ## Limitations
 The app does not yet perform exact Global Catalog billing dimension resolution. IBM Cloud VPC profile names are discovered from the VPC API, while pricing confidence is tracked separately.
 
 Treat estimates as planning guidance unless `Pricing Confidence` comes from a trusted exact pricing cache or a future verified IBM pricing mapper.
+
+The old scripts under `experiments/pricing/` are retained as research artifacts. Use `scripts/generate_pricing_cache.py` as the supported cache-generation path.
