@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 venv/
 
+# macOS Finder metadata
+.DS_Store
+
 # Generated Terraform output
 my-ibm-migration/
 *.zip
@@ -13,4 +16,3 @@ my-ibm-migration/
 # Old files we don't need anymore
 parser.py
 .env
-
