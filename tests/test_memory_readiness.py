@@ -138,13 +138,3 @@ def test_sizing_memory_is_not_reduced_twice():
         memory_is_sizing=True,
     )
     assert mapping["profile"] == "bx2-2x8"
-
-
-if __name__ == "__main__":
-    test_memory_ready_uses_conservative_active_sizing()
-    test_memory_pressure_blocks_resizing()
-    test_memory_limit_below_configured_blocks()
-    test_missing_vmemory_preserves_configured_memory()
-    test_memory_handoff_outputs_include_memory_fields()
-    test_sizing_memory_is_not_reduced_twice()
-    print("memory readiness tests ok")

@@ -6,3 +6,4 @@ ibm-vpc
 ibm-platform-services
 ibm-cloud-sdk-core
 python-dotenv
+pytest

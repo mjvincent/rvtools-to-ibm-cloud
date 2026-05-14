@@ -37,10 +37,3 @@ def test_review_multi_disk_unknown_os():
     assert result["status"] == "Review"
     assert "Guest OS missing" in result["reasons"]
     assert "Multiple disks" in result["reasons"]
-
-
-if __name__ == "__main__":
-    test_ready_linux_vm()
-    test_blocked_oversized_boot_disk()
-    test_review_multi_disk_unknown_os()
-    print("image readiness tests ok")

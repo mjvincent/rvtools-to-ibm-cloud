@@ -1,15 +1,15 @@
 import csv
 import io
 import json
+from pathlib import Path
 
-from logic_engine import (
-    generate_migration_manifest,
-    generate_nic_mapping_csv,
-    render_terraform_templates,
-)
+import pandas as pd
+import pytest
+
 from models import DiskMapping, MigrationVm, NicMapping, ReadinessFinding
 
 
+@pytest.fixture
 def sample_vm_record():
     return {
         "VM Key": "vm-001",
@@ -55,16 +55,8 @@ def sample_vm_record():
         "Sizing Memory MiB": 8192,
         "Memory Sizing Basis": "preserve-configured-memory",
         "Disk Details": [
-            {
-                "disk": "Hard disk 1",
-                "capacity_gb": 80,
-                "is_boot": True,
-            },
-            {
-                "disk": "Hard disk 2",
-                "capacity_gb": 120,
-                "is_boot": False,
-            },
+            {"disk": "Hard disk 1", "capacity_gb": 80, "is_boot": True},
+            {"disk": "Hard disk 2", "capacity_gb": 120, "is_boot": False},
         ],
         "Network Details": [
             {
@@ -98,6 +90,7 @@ def sample_vm_record():
     }
 
 
+@pytest.fixture
 def sample_vm_model():
     return MigrationVm(
         vm_key="vm-001",
@@ -171,100 +164,173 @@ def sample_vm_model():
     )
 
 
-def test_model_round_trips_from_legacy_record():
-    model = MigrationVm.from_record(sample_vm_record())
-    record = model.to_record()
-
-    assert record["VM Name"] == "app-01"
-    assert record["Disk Details"][1]["capacity_gb"] == 120
-    assert record["Network Details"][1]["network"] == "db-net"
-    assert record["Readiness Findings"][0]["source_tab"] == "vTools"
-    assert record["Network Readiness"] == "Ready"
-    assert record["Network Details"][0]["switch_type"] == "standard"
-    assert record["Compute (Mo)"] == 83.22
-    assert record["Data Disk Count"] == 1
-
-
-def test_nested_records_are_canonical_views():
-    model = MigrationVm.from_record(sample_vm_record())
-
-    assert model.source.vm_name == "app-01"
-    assert model.source.disks[1].disk == "Hard disk 2"
-    assert model.target.effective_profile == "bx2-2x8"
-    assert model.target.compute_cost_monthly == 83.22
-    assert model.pricing.confidence == "fallback-static"
-    assert model.image.reasons == "Multiple disks detected"
-    assert model.memory.sizing_basis == "preserve-configured-memory"
-    assert model.network_status.status == "Ready"
-    assert model.migration.findings[0].recommended_action == "Update VMware Tools"
-
-
-def test_table_boundary_round_trip_preserves_user_edits():
-    processed_vm = sample_vm_model()
-    table_record = processed_vm.to_record()
-    table_record.pop("Disk Details")
-    table_record.pop("Network Details")
-    table_record.pop("Readiness Findings")
-    table_record["Override Profile"] = "cx2-2x4"
-    table_record["Override Storage Tier"] = "3iops-tier"
-
-    table_record["Disk Details"] = [disk.to_record() for disk in processed_vm.disks]
-    table_record["Network Details"] = [nic.to_record() for nic in processed_vm.nics]
-    table_record["Readiness Findings"] = [
-        finding.to_record() for finding in processed_vm.readiness_findings
-    ]
-    edited_vm = MigrationVm.from_record(table_record)
-
-    assert edited_vm.target.effective_profile == "cx2-2x4"
-    assert edited_vm.target.effective_storage_tier == "3iops-tier"
-    assert edited_vm.source.nics[1].network == "db-net"
-
-
-def test_exports_accept_normalized_vm_model():
-    vm = sample_vm_model()
-    manifest = json.loads(
-        generate_migration_manifest([vm], {"project_name": "demo"})
-    )
-    vm_record = manifest["virtual_machines"][0]
-
-    assert vm_record["vm_name"] == "app-01"
-    assert vm_record["target"]["data_volumes"][0]["source_disk"] == "Hard disk 2"
-    assert vm_record["migration_readiness"]["findings"][0]["source_tab"] == "vTools"
-    assert vm_record["assessment"]["pricing"]["confidence"] == "fallback-static"
-    assert vm_record["assessment"]["memory_readiness"]["sizing_memory_mib"] == 8192
-    assert vm_record["network_readiness"]["status"] == "Ready"
-
-
-def test_terraform_renderer_accepts_normalized_vm_model():
-    files = render_terraform_templates(
-        [sample_vm_model()],
-        [
-            {"name": "app-net", "vlan": "", "cidr": "10.0.1.0/24"},
-            {"name": "db-net", "vlan": "", "cidr": "10.0.2.0/24"},
+@pytest.fixture
+def disk_vm_record():
+    return {
+        "VM Name": "app-01",
+        "Network": "app-net",
+        "IBM Profile": "bx2-2x8",
+        "Storage Tier": "5iops-tier",
+        "Disk Details": [
+            {
+                "disk": "Hard disk 1",
+                "capacity_gb": 80,
+                "is_boot": True,
+                "disk_key": "2000",
+                "unit_number": 0,
+            },
+            {
+                "disk": "Hard disk 2",
+                "capacity_gb": 120,
+                "is_boot": False,
+                "disk_key": "2001",
+                "unit_number": 1,
+            },
         ],
-        "us-south",
-        "us-south-1",
-    )
-    vsi_main, storage_main = files[0], files[2]
-
-    assert "app_01_hard_disk_2_vol" in storage_main
-    assert "module.networking.db_net_id" in vsi_main
+    }
 
 
-def test_nic_csv_accepts_model_and_preserves_roles():
-    rows = list(csv.DictReader(io.StringIO(generate_nic_mapping_csv([
-        sample_vm_model()
-    ]))))
+@pytest.fixture
+def partition_workbook():
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        pd.DataFrame([{
+            "VM": "app-01",
+            "Powerstate": "poweredOn",
+            "CPUs": 2,
+            "Memory": 8192,
+            "Host": "host-01",
+            "Disks": 2,
+            "Provisioned MiB": 153600,
+            "CPU Usage %": 20,
+            "Network #1": "app-net",
+            "Primary IP Address": "10.0.1.10",
+            "OS according to the VMware Tools": "Microsoft Windows Server 2022",
+        }]).to_excel(writer, sheet_name="vInfo", index=False)
+        pd.DataFrame([
+            {
+                "VM": "app-01",
+                "Disk": "Hard disk 1",
+                "Disk Key": "2000",
+                "Capacity MiB": 81920,
+                "Unit #": 0,
+            },
+            {
+                "VM": "app-01",
+                "Disk": "Hard disk 2",
+                "Disk Key": "2001",
+                "Capacity MiB": 71680,
+                "Unit #": 1,
+            },
+        ]).to_excel(writer, sheet_name="vDisk", index=False)
+        pd.DataFrame([
+            {
+                "VM": "app-01",
+                "Disk Key": "2000",
+                "Disk": "C:\\",
+                "Capacity MiB": 61440,
+                "Consumed MiB": 40960,
+                "Free MiB": 20480,
+                "Free % ": 33,
+            },
+            {
+                "VM": "app-01",
+                "Disk Key": "2001",
+                "Disk": "D:\\",
+                "Capacity MiB": 51200,
+                "Consumed MiB": 10240,
+                "Free MiB": 40960,
+                "Free % ": 80,
+            },
+            {
+                "VM": "app-01",
+                "Disk": "E:\\",
+                "Capacity MiB": 10240,
+                "Consumed MiB": 5120,
+                "Free MiB": 5120,
+                "Free % ": 50,
+            },
+        ]).to_excel(writer, sheet_name="vPartition", index=False)
+        pd.DataFrame([{
+            "VM": "app-01",
+            "Overall": 100,
+            "CPU ready %": 0,
+            "CPU co-stop": 0,
+            "Limit": 0,
+        }]).to_excel(writer, sheet_name="vCPU", index=False)
+        pd.DataFrame([{
+            "VM": "app-01",
+            "Size MiB": 8192,
+            "Active": 4096,
+            "Consumed": 6144,
+            "Ballooned": 0,
+            "Swapped": 0,
+            "Reservation": 0,
+            "Limit": -1,
+            "Hot Add": "False",
+        }]).to_excel(writer, sheet_name="vMemory", index=False)
+        pd.DataFrame([{
+            "Host": "host-01",
+            "Speed": 2400,
+            "# Cores": 8,
+        }]).to_excel(writer, sheet_name="vHost", index=False)
+        pd.DataFrame([{
+            "Cluster": "cluster-01",
+            "TotalCpu": 19200,
+        }]).to_excel(writer, sheet_name="vCluster", index=False)
+        pd.DataFrame([{
+            "VM": "app-01",
+            "Network": "app-net",
+            "Connected": True,
+            "IPv4 Address": "10.0.1.10",
+        }]).to_excel(writer, sheet_name="vNetwork", index=False)
+    output.seek(0)
+    return output
 
-    assert rows[0]["Role"] == "primary"
-    assert rows[1]["Role"] == "secondary"
+
+@pytest.fixture
+def sample_live_catalog():
+    return {
+        "profiles": [
+            {
+                "name": "bx2-2x8",
+                "cpu": 2,
+                "ram": 8,
+                "hourly": 0.114,
+                "pricing_source": "live-profile-static-price",
+                "pricing_confidence": "profile-live-price-static",
+                "family": "bx2",
+            }
+        ],
+        "storage_tier_rates": {"3iops-tier": 0.10},
+        "metadata": {
+            "mode": "live",
+            "source": "ibm-vpc-profile-api",
+            "confidence": "profile-live-price-static",
+            "region": "us-south",
+            "last_updated": "2026-05-14T00:00:00+00:00",
+            "status": "Live IBM profile discovery succeeded",
+        },
+    }
 
 
-if __name__ == "__main__":
-    test_model_round_trips_from_legacy_record()
-    test_nested_records_are_canonical_views()
-    test_table_boundary_round_trip_preserves_user_edits()
-    test_exports_accept_normalized_vm_model()
-    test_terraform_renderer_accepts_normalized_vm_model()
-    test_nic_csv_accepts_model_and_preserves_roles()
-    print("normalized model tests ok")
+@pytest.fixture
+def parse_csv_rows():
+    return lambda text: list(csv.DictReader(io.StringIO(text)))
+
+
+@pytest.fixture
+def parse_json():
+    return json.loads
+
+
+@pytest.fixture
+def assert_matches_snapshot():
+    snapshot_dir = Path(__file__).parent / "snapshots"
+
+    def _assert_matches_snapshot(name, actual):
+        expected = (snapshot_dir / name).read_text(encoding="utf-8")
+        normalized_actual = actual.replace("\r\n", "\n")
+        assert normalized_actual == expected
+
+    return _assert_matches_snapshot

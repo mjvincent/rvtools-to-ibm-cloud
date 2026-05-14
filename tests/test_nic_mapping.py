@@ -74,10 +74,3 @@ def test_nic_mapping_includes_switch_port_context_columns():
     assert "Port Group" in csv_text
     assert "Backing Source Tab" in csv_text
     assert "matched" in csv_text
-
-
-if __name__ == "__main__":
-    test_secondary_connected_nic_generates_inline_interface()
-    test_nic_mapping_marks_disconnected_as_unplanned()
-    test_nic_mapping_includes_switch_port_context_columns()
-    print("nic mapping tests ok")

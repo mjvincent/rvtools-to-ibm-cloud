@@ -96,11 +96,3 @@ def test_api_key_can_load_from_dotenv_file():
     finally:
         if old_value is not None:
             os.environ["IBMCLOUD_API_KEY"] = old_value
-
-
-if __name__ == "__main__":
-    test_static_catalog_preserves_existing_profile_selection()
-    test_cached_catalog_loads_profiles_and_pricing_metadata()
-    test_live_catalog_without_api_key_falls_back_static()
-    test_api_key_can_load_from_dotenv_file()
-    print("catalog pricing tests ok")

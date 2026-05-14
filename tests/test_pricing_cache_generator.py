@@ -13,38 +13,13 @@ from scripts.generate_pricing_cache import (
 )
 
 
-def sample_live_catalog():
-    return {
-        "profiles": [
-            {
-                "name": "bx2-2x8",
-                "cpu": 2,
-                "ram": 8,
-                "hourly": 0.114,
-                "pricing_source": "live-profile-static-price",
-                "pricing_confidence": "profile-live-price-static",
-                "family": "bx2",
-            }
-        ],
-        "storage_tier_rates": {"3iops-tier": 0.10},
-        "metadata": {
-            "mode": "live",
-            "source": "ibm-vpc-profile-api",
-            "confidence": "profile-live-price-static",
-            "region": "us-south",
-            "last_updated": "2026-05-14T00:00:00+00:00",
-            "status": "Live IBM profile discovery succeeded",
-        },
-    }
-
-
-def test_build_trusted_cache_sets_expected_metadata():
+def test_build_trusted_cache_sets_expected_metadata(sample_live_catalog):
     with patch(
         "scripts.generate_pricing_cache.get_ibmcloud_api_key",
         return_value="test-key",
     ), patch(
         "scripts.generate_pricing_cache.discover_live_catalog",
-        return_value=sample_live_catalog(),
+        return_value=sample_live_catalog,
     ):
         cache = build_trusted_cache(region="us-south", env_file=".env")
 
@@ -124,11 +99,3 @@ def build_sample_cache():
             "status": "Trusted cache generated for tests.",
         },
     }
-
-
-if __name__ == "__main__":
-    test_build_trusted_cache_sets_expected_metadata()
-    test_dry_run_does_not_write_cache_file()
-    test_output_path_is_honored()
-    test_missing_api_key_exits_cleanly()
-    print("pricing cache generator tests ok")

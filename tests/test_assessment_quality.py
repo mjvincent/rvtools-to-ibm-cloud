@@ -162,16 +162,3 @@ def test_manifest_includes_assessment_quality_additively():
     assert manifest["handoff_files"]["assessment_quality_json"] == "assessment-quality.json"
     assert manifest["handoff_files"]["assessment_quality_csv"] == "assessment-quality.csv"
     assert manifest["assessment_quality"]["summary"]["overall_confidence"] == "High"
-
-
-if __name__ == "__main__":
-    test_quality_report_high_confidence_when_all_tabs_present()
-    test_quality_report_lowers_migration_confidence_for_missing_optional_tabs()
-    test_quality_report_marks_present_required_empty_as_low_confidence()
-    test_quality_report_uses_vinfo_fallback_for_network_and_storage()
-    test_quality_export_generators_have_stable_shape()
-    test_quality_report_includes_vpartition_as_optional_storage_detail()
-    test_quality_report_includes_optional_network_detail_tabs()
-    test_quality_report_uses_network_detail_when_vnetwork_missing()
-    test_manifest_includes_assessment_quality_additively()
-    print("assessment quality tests ok")

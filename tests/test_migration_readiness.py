@@ -116,11 +116,3 @@ def test_handoff_outputs_include_migration_readiness_fields():
     migration_readiness = manifest["virtual_machines"][0]["migration_readiness"]
     assert migration_readiness["status"] == "Blocked"
     assert migration_readiness["findings"][0]["finding_type"] == "Active snapshots"
-
-
-if __name__ == "__main__":
-    test_migration_readiness_ready_without_findings()
-    test_migration_readiness_review_for_review_findings()
-    test_migration_readiness_blocked_wins_over_review()
-    test_handoff_outputs_include_migration_readiness_fields()
-    print("migration readiness tests ok")

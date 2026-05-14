@@ -1,0 +1,7 @@
+# Populate these values after VMware images are converted, uploaded,
+# and imported as IBM Cloud VPC custom images.
+# Copy this file, replace every placeholder, and pass it to Terraform
+# with -var-file when provisioning VSIs from the imported images.
+custom_image_ids = {
+  "app-01" = "replace-with-imported-image-id"
+}

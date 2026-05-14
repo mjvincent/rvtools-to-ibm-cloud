@@ -1,0 +1,3 @@
+VM Name,Disk,Role,Capacity GB,Target Action,Storage Tier,Terraform Volume,Attachment Resource,Partition Count,Partition Labels,Partition Capacity MiB,Partition Consumed MiB,Partition Free MiB,Partition Free %,Disk Key,Disk Path,Controller,Label,Unit Number,SCSI Unit,Disk Mode,Thin,Raw,Shared Bus
+app-01,Hard disk 1,boot,80,covered-by-custom-image,5iops-tier,,,0,,0,0,0,,2000,,,,0,,,,,
+app-01,Hard disk 2,data,120,create-and-attach-volume,5iops-tier,app_01_hard_disk_2_vol,app_01_hard_disk_2_attach,0,,0,0,0,,2001,,,,1,,,,,

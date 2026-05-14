@@ -8,35 +8,9 @@ from logic_engine import (
 )
 
 
-def sample_vm():
-    return {
-        "VM Name": "app-01",
-        "Network": "app-net",
-        "IBM Profile": "bx2-2x8",
-        "Storage Tier": "5iops-tier",
-        "Disk Details": [
-            {
-                "disk": "Hard disk 1",
-                "capacity_gb": 80,
-                "is_boot": True,
-                "disk_key": "2000",
-                "unit_number": 0,
-            },
-            {
-                "disk": "Hard disk 2",
-                "capacity_gb": 120,
-                "is_boot": False,
-                "disk_key": "2001",
-                "unit_number": 1,
-            },
-        ],
-    }
-
-
-def test_data_disk_volume_and_attachment_generation():
-    vm = sample_vm()
+def test_data_disk_volume_and_attachment_generation(disk_vm_record):
     files = render_terraform_templates(
-        [vm],
+        [disk_vm_record],
         [{"name": "app-net", "vlan": "", "cidr": "10.0.1.0/24"}],
         "us-south",
         "us-south-1",
@@ -49,10 +23,9 @@ def test_data_disk_volume_and_attachment_generation():
     assert "data_volume_ids = module.storage.data_volume_ids" in root_main
 
 
-def test_custom_image_ids_are_wired_into_vsi_generation():
-    vm = sample_vm()
+def test_custom_image_ids_are_wired_into_vsi_generation(disk_vm_record):
     files = render_terraform_templates(
-        [vm],
+        [disk_vm_record],
         [{"name": "app-net", "vlan": "", "cidr": "10.0.1.0/24"}],
         "us-south",
         "us-south-1",
@@ -67,36 +40,27 @@ def test_custom_image_ids_are_wired_into_vsi_generation():
     assert 'image   = var.custom_image_ids["app-01"]' in vsi_main
 
 
-def test_image_import_tfvars_matches_vsi_image_key():
-    tfvars = generate_image_import_tfvars([sample_vm()])
+def test_image_import_tfvars_matches_vsi_image_key(disk_vm_record):
+    tfvars = generate_image_import_tfvars([disk_vm_record])
 
     assert '"app-01" = "replace-with-imported-image-id"' in tfvars
     assert "pass it to Terraform" in tfvars
     assert "wire the map into Terraform" not in tfvars
 
 
-def test_disk_mapping_exports_boot_and_data_roles():
-    csv_text = generate_disk_mapping_csv([sample_vm()])
+def test_disk_mapping_exports_boot_and_data_roles(disk_vm_record):
+    csv_text = generate_disk_mapping_csv([disk_vm_record])
 
     assert "covered-by-custom-image" in csv_text
     assert "create-and-attach-volume" in csv_text
     assert "app_01_hard_disk_2_vol" in csv_text
 
 
-def test_manifest_includes_source_disks_and_target_data_volumes():
+def test_manifest_includes_source_disks_and_target_data_volumes(disk_vm_record):
     manifest = json.loads(
-        generate_migration_manifest([sample_vm()], {"project_name": "demo"})
+        generate_migration_manifest([disk_vm_record], {"project_name": "demo"})
     )
     vm_record = manifest["virtual_machines"][0]
 
     assert len(vm_record["source"]["disks"]) == 2
     assert vm_record["target"]["data_volumes"][0]["source_disk"] == "Hard disk 2"
-
-
-if __name__ == "__main__":
-    test_data_disk_volume_and_attachment_generation()
-    test_custom_image_ids_are_wired_into_vsi_generation()
-    test_image_import_tfvars_matches_vsi_image_key()
-    test_disk_mapping_exports_boot_and_data_roles()
-    test_manifest_includes_source_disks_and_target_data_volumes()
-    print("disk mapping tests ok")

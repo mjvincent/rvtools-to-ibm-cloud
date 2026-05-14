@@ -80,6 +80,22 @@ The application is split into focused modules with `MigrationVm` as the internal
 
 `logic_engine.py` remains as a compatibility facade for existing tests and callers while the implementation lives in the focused modules above.
 
+## Development Testing
+Install dependencies, then run the pytest suite from the repository root:
+
+```bash
+python -m pytest
+```
+
+Targeted checks can run by file, for example:
+
+```bash
+python -m pytest tests/test_catalog_pricing.py
+python -m pytest tests/test_disk_mapping.py
+```
+
+The pytest configuration collects tests only from `tests/`; old API research under `experiments/` is not part of the supported suite. Snapshot expectations live under `tests/snapshots/` and should be reviewed when generated Terraform, CSV, or manifest outputs intentionally change. See `docs/testing.md` for the fixture and snapshot workflow.
+
 ## Data Requirements
 Successful execution requires a standard RVTools XLSX export containing the following worksheets:
 * **vInfo**: Primary inventory, power states, and network assignments.

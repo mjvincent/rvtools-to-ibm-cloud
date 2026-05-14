@@ -1,6 +1,7 @@
 # Python artifacts
 __pycache__/
 *.pyc
+.pytest_cache/
 venv/
 
 # macOS Finder metadata

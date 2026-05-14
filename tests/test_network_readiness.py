@@ -210,12 +210,3 @@ def test_blocked_port_status_is_advisory_and_does_not_change_terraform():
 
     assert readiness["status"] == "Blocked"
     assert "module.networking.app_net_id" in files[0]
-
-
-if __name__ == "__main__":
-    test_standard_switch_context_enriches_nic_and_ready_status()
-    test_distributed_switch_context_enriches_nic_and_ready_status()
-    test_missing_optional_network_detail_tabs_preserve_ready_behavior()
-    test_ambiguous_port_matches_are_review_not_guessed()
-    test_blocked_port_status_is_advisory_and_does_not_change_terraform()
-    print("network readiness tests ok")
