@@ -331,6 +331,7 @@ class PricingMetadata:
     source: str = ""
     confidence: str = ""
     last_updated: str = ""
+    status: str = ""
     profile_hourly: float = 0
 
 
@@ -444,6 +445,7 @@ class MigrationVm:
     pricing_source: str = ""
     pricing_confidence: str = ""
     pricing_last_updated: str = ""
+    pricing_status: str = ""
     profile_hourly: float = 0
     disks: list = field(default_factory=list)
     partitions: list = field(default_factory=list)
@@ -636,6 +638,7 @@ class MigrationVm:
             pricing_last_updated=clean_value(
                 get_record_value(record, "Pricing Last Updated")
             ),
+            pricing_status=clean_value(get_record_value(record, "Pricing Status")),
             profile_hourly=clean_value(get_record_value(record, "Profile Hourly"), 0),
             disks=[
                 DiskMapping.from_record(d)
@@ -722,6 +725,7 @@ class MigrationVm:
         self.pricing_last_updated = _prefer(
             self.pricing_last_updated, self.pricing.last_updated
         )
+        self.pricing_status = _prefer(self.pricing_status, self.pricing.status)
         self.profile_hourly = _prefer(
             self.profile_hourly, self.pricing.profile_hourly, 0
         )
@@ -846,6 +850,7 @@ class MigrationVm:
             source=self.pricing_source,
             confidence=self.pricing_confidence,
             last_updated=self.pricing_last_updated,
+            status=self.pricing_status,
             profile_hourly=self.profile_hourly,
         )
         self.image = ImageReadiness(
@@ -960,6 +965,7 @@ class MigrationVm:
             "Pricing Source": self.pricing_source,
             "Pricing Confidence": self.pricing_confidence,
             "Pricing Last Updated": self.pricing_last_updated,
+            "Pricing Status": self.pricing_status,
             "Profile Hourly": self.profile_hourly,
             "Subnet": self.subnet,
             "Security Group": self.security_group,

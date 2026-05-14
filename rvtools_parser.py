@@ -967,6 +967,7 @@ def parse_rvtools_workbook(
             'Pricing Source': mapping['pricing_source'],
             'Pricing Confidence': mapping['pricing_confidence'],
             'Pricing Last Updated': mapping['pricing_last_updated'],
+            'Pricing Status': mapping.get('pricing_status', ''),
             'Profile Hourly': mapping['profile_hourly'],
             'Subnet': default_subnet,
             'Security Group': default_sg,

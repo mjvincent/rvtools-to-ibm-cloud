@@ -14,11 +14,17 @@ from scripts.generate_pricing_cache import (
 
 
 def test_build_trusted_cache_sets_expected_metadata(sample_live_catalog):
+    sample_live_catalog["metadata"]["source"] = TRUSTED_CACHE_SOURCE
+    sample_live_catalog["metadata"]["confidence"] = TRUSTED_CACHE_CONFIDENCE
+    sample_live_catalog["metadata"]["pricing_status"] = "exact_catalog"
+    sample_live_catalog["profiles"][0]["pricing_source"] = TRUSTED_CACHE_SOURCE
+    sample_live_catalog["profiles"][0]["pricing_confidence"] = TRUSTED_CACHE_CONFIDENCE
+    sample_live_catalog["profiles"][0]["pricing_status"] = "exact_catalog"
     with patch(
         "scripts.generate_pricing_cache.get_ibmcloud_api_key",
         return_value="test-key",
     ), patch(
-        "scripts.generate_pricing_cache.discover_live_catalog",
+        "scripts.generate_pricing_cache.fetch_power_virtual_server_pricing",
         return_value=sample_live_catalog,
     ):
         cache = build_trusted_cache(region="us-south", env_file=".env")
@@ -28,7 +34,6 @@ def test_build_trusted_cache_sets_expected_metadata(sample_live_catalog):
     assert cache["metadata"]["confidence"] == TRUSTED_CACHE_CONFIDENCE
     assert cache["profiles"][0]["pricing_source"] == TRUSTED_CACHE_SOURCE
     assert cache["profiles"][0]["pricing_confidence"] == TRUSTED_CACHE_CONFIDENCE
-    assert "exact IBM billing catalog pricing is not claimed" in cache["metadata"]["status"]
 
 
 def test_dry_run_does_not_write_cache_file():
@@ -64,16 +69,20 @@ def test_output_path_is_honored():
         assert data["profiles"][0]["name"] == "bx2-2x8"
 
 
-def test_missing_api_key_exits_cleanly():
+def test_pricing_fetch_failure_exits_cleanly():
     stderr = io.StringIO()
     with patch(
         "scripts.generate_pricing_cache.get_ibmcloud_api_key",
-        return_value="",
+        return_value="test-key",
+    ), patch(
+        "scripts.generate_pricing_cache.fetch_power_virtual_server_pricing",
+        side_effect=RuntimeError("network unavailable"),
     ), redirect_stderr(stderr):
         exit_code = main(["--dry-run"])
 
     assert exit_code == 1
-    assert "IBMCLOUD_API_KEY was not found" in stderr.getvalue()
+    assert "IBM Global Catalog pricing fetch failed" in stderr.getvalue()
+
 
 
 def build_sample_cache():

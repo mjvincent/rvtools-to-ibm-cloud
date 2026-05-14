@@ -206,6 +206,7 @@ def _migration_vm_record(vm):
                 "source": _clean_value(vm.get('Pricing Source')),
                 "confidence": _clean_value(vm.get('Pricing Confidence')),
                 "last_updated": _clean_value(vm.get('Pricing Last Updated')),
+                "status": _clean_value(vm.get('Pricing Status')),
                 "profile_hourly": _clean_value(vm.get('Profile Hourly'), 0),
             },
             "memory_readiness": {
@@ -291,6 +292,7 @@ def generate_migration_manifest(final_vms, context):
                 "mode": _clean_value(context.get('pricing_mode')),
                 "source": _clean_value(context.get('pricing_source')),
                 "confidence": _clean_value(context.get('pricing_confidence')),
+                "status": _clean_value(context.get('pricing_status')),
                 "last_updated": _clean_value(
                     context.get('pricing_last_updated')
                 ),
@@ -334,7 +336,7 @@ def generate_vm_mapping_csv(final_vms):
         "Consumed Memory MiB", "Ballooned Memory MiB",
         "Swapped Memory MiB", "Memory Reservation MiB", "Memory Limit MiB",
         "Memory Hot Add", "Sizing Memory MiB", "Memory Sizing Basis",
-        "Pricing Source", "Pricing Confidence", "Pricing Last Updated",
+        "Pricing Source", "Pricing Confidence", "Pricing Last Updated", "Pricing Status",
         "Profile Hourly",
         "Target Subnet", "Security Group", "Recommended Profile",
         "Override Profile", "Effective Profile", "Storage Tier",
@@ -421,6 +423,7 @@ def generate_vm_mapping_csv(final_vms):
             "Pricing Last Updated": _clean_value(
                 vm.get('Pricing Last Updated')
             ),
+            "Pricing Status": _clean_value(vm.get('Pricing Status')),
             "Profile Hourly": _clean_value(vm.get('Profile Hourly'), 0),
             "Target Subnet": _clean_value(vm.get('Subnet')),
             "Security Group": _clean_value(vm.get('Security Group')),

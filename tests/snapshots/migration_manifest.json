@@ -21,7 +21,8 @@
       "confidence": "fallback-static",
       "last_updated": "",
       "mode": "static",
-      "source": "static"
+      "source": "static",
+      "status": "static_fallback"
     },
     "security_groups_enabled": true,
     "target_region": "us-south",
@@ -57,7 +58,8 @@
           "confidence": "fallback-static",
           "last_updated": "2026-05-12T00:00:00+00:00",
           "profile_hourly": 0.114,
-          "source": "static"
+          "source": "static",
+          "status": "static_fallback"
         },
         "ready_pct": 0,
         "right_sized": "",

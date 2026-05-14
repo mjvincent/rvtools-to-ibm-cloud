@@ -18,7 +18,7 @@ Generate the supported cache file with:
 python scripts/generate_pricing_cache.py --region us-south
 ```
 
-The generator uses live IBM VPC profile discovery and the app's existing static mapped prices. It writes `source=trusted-cache-generator` and `confidence=profile-live-price-static` so downstream estimates remain transparent.
+The generator uses IBM Global Catalog pricing endpoints for the public Power Virtual Server plan, normalizes deployment metrics for the selected region/country/currency, and maps only uniquely matched linear billing dimensions into the cache. For common IBM regions, it selects the corresponding Power VS deployment location, such as `us-south` to `dal10`/`dal12`. It writes `source=ibm-global-catalog` and `confidence=exact_catalog` only when exact dimensions are available; ambiguous dimensions remain visible as `unmapped_catalog_metrics` and fall back to bundled estimates.
 
 Use `--dry-run` to validate credentials and profile discovery without writing a file:
 
@@ -26,7 +26,7 @@ Use `--dry-run` to validate credentials and profile discovery without writing a 
 python scripts/generate_pricing_cache.py --region us-south --dry-run
 ```
 
-Use `--output` to write a cache somewhere other than `data/ibm_vpc_pricing_cache.json`, and `--env-file` to load `IBMCLOUD_API_KEY` from a non-default env file.
+Use `--output` to write a cache somewhere other than `data/ibm_vpc_pricing_cache.json`, `--country`/`--currency` for a supported catalog amount, and `--env-file` to preserve compatibility with existing credential workflows. Global Catalog cache generation is standalone and does not require Streamlit at runtime.
 
 ### Live IBM Profile Discovery
 Uses the IBM Cloud VPC API to discover available instance profiles for the selected region when `IBMCLOUD_API_KEY` is available.
@@ -43,7 +43,10 @@ The VM table includes:
 * `Pricing Source`
 * `Pricing Confidence`
 * `Pricing Last Updated`
+* `Pricing Status`
 * `Profile Hourly`
+
+`Pricing Status` is one of `exact_catalog`, `cached_catalog`, `static_fallback`, or `unmapped`. Exact catalog pricing is used only for dimensions that map to one positive, currently effective, linear Global Catalog metric.
 
 ## Handoff Fields
 Pricing metadata is included in:
@@ -56,9 +59,13 @@ The optional cache file uses JSON:
 
 ```json
 {
-  "source": "trusted-cache-generator",
-  "confidence": "cached-exact",
+  "source": "ibm-global-catalog",
+  "schema_version": 2,
+  "confidence": "exact_catalog",
+  "pricing_status": "exact_catalog",
   "region": "us-south",
+  "country": "USA",
+  "currency": "USD",
   "last_updated": "2026-05-12T00:00:00+00:00",
   "profiles": [
     {
@@ -66,15 +73,22 @@ The optional cache file uses JSON:
       "cpu": 2,
       "ram": 8,
       "hourly": 0.114,
-      "pricing_source": "trusted-cache-generator",
-      "pricing_confidence": "cached-exact"
+      "pricing_source": "ibm-global-catalog",
+      "pricing_confidence": "exact_catalog",
+      "pricing_status": "exact_catalog"
     }
   ],
   "storage_tier_rates": {
     "3iops-tier": 0.10,
     "5iops-tier": 0.13,
     "10iops-tier": 0.17
-  }
+  },
+  "billing_dimension_rates": {
+    "compute_core_hourly": 0.04,
+    "memory_gb_hourly": 0.01
+  },
+  "catalog_metrics": [],
+  "unmapped_catalog_metrics": []
 }
 ```
 
@@ -88,8 +102,8 @@ IBMCLOUD_API_KEY=...
 After creating or changing `.env`, restart Streamlit so the running process reloads the value. The standalone cache generator also reads `IBMCLOUD_API_KEY` from the process environment or the env file passed with `--env-file`.
 
 ## Limitations
-The app does not yet perform exact Global Catalog billing dimension resolution. IBM Cloud VPC profile names are discovered from the VPC API, while pricing confidence is tracked separately.
+Exact catalog pricing means exact against the public IBM Global Catalog metrics that the mapper can uniquely resolve for the selected region, country, and currency. Invoices can still differ because of account-specific discounts, subscriptions, taxes, billing-cycle proration, reserved terms, or private offers.
 
-Treat estimates as planning guidance unless `Pricing Confidence` comes from a trusted exact pricing cache or a future verified IBM pricing mapper.
+Unsupported, duplicate, expired, zero-priced, missing, or non-linear metrics are not folded into exact totals. They are preserved in `unmapped_catalog_metrics`, and the app continues to use the static fallback for those dimensions.
 
 The old scripts under `experiments/pricing/` are retained as research artifacts. Use `scripts/generate_pricing_cache.py` as the supported cache-generation path.

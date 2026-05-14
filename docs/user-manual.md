@@ -277,9 +277,13 @@ Where the price/profile data came from.
 ### Pricing Confidence
 How trustworthy the price/profile mapping is. Examples include:
 - `fallback-static`
-- `cached-exact`
+- `exact_catalog`
+- `cached_catalog`
 - `profile-live-price-static`
 - `profile-live-price-missing`
+
+### Pricing Status
+Whether the current estimate is backed by exact catalog dimensions, a partial cached catalog, static fallback data, or unmapped catalog metrics.
 
 ### Pricing Last Updated
 Timestamp from the cache or live discovery process when available.
@@ -860,8 +864,8 @@ Disable `Generate Security Groups` in the sidebar before building the ZIP.
 ### The ZIP was built before overrides were updated
 Change the overrides and click `Build Terraform Project` again. Download the newly generated ZIP.
 
-### Live pricing still says static price
-Live profile discovery and exact pricing are separate. If exact IBM catalog pricing cannot be safely mapped, the app uses known fallback pricing and labels the confidence as `profile-live-price-static`.
+### Cached pricing says cached catalog instead of exact catalog
+Global Catalog dimensions are used only when they map to one positive, currently effective, linear metric. If some dimensions are missing or ambiguous, the app preserves the mapped catalog metrics, falls back for the rest, and labels the status as `cached_catalog`.
 
 ## Glossary
 ### Address Prefix

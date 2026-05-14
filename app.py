@@ -310,6 +310,7 @@ if uploaded_file is not None:
                         'pricing_mode': pricing_metadata.get('mode'),
                         'pricing_source': pricing_metadata.get('source'),
                         'pricing_confidence': pricing_metadata.get('confidence'),
+                        'pricing_status': pricing_metadata.get('pricing_status'),
                         'pricing_last_updated': pricing_metadata.get(
                             'last_updated'
                         ),

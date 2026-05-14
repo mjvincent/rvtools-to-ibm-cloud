@@ -24,7 +24,7 @@ DISABLED_COLS = [
     "Ballooned Memory MiB", "Swapped Memory MiB",
     "Memory Reservation MiB", "Memory Limit MiB", "Memory Hot Add",
     "Sizing Memory MiB", "Memory Sizing Basis",
-    "Pricing Source", "Pricing Confidence", "Pricing Last Updated",
+    "Pricing Source", "Pricing Confidence", "Pricing Last Updated", "Pricing Status",
     "Profile Hourly",
     "Baseline Cost (Mo)", "Savings (Mo)"
 ]
@@ -80,6 +80,7 @@ def build_table_config(unique_nets=None, catalog_profiles=None):
         "Pricing Source": st.column_config.TextColumn("Pricing Source"),
         "Pricing Confidence": st.column_config.TextColumn("Pricing Confidence"),
         "Pricing Last Updated": st.column_config.TextColumn("Pricing Last Updated"),
+        "Pricing Status": st.column_config.TextColumn("Pricing Status"),
         "Profile Hourly": st.column_config.NumberColumn("Profile Hourly", format="$%.4f"),
     }
 

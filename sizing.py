@@ -45,6 +45,14 @@ def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
     optimized = find_cheapest_fit(needed_cpu, needed_ram, catalog=catalog)
     tier_rates = storage_tier_rates or DEFAULT_STORAGE_TIER_RATES
     pricing_metadata = pricing_metadata or {}
+    pricing_status = optimized.get(
+        'pricing_status', pricing_metadata.get('pricing_status', 'static_fallback')
+    )
+    if (
+        pricing_status != 'exact_catalog'
+        and pricing_metadata.get('pricing_status') == 'cached_catalog'
+    ):
+        pricing_status = 'cached_catalog'
 
     compute_monthly = round(optimized['hourly'] * 730, 2)
     storage_monthly = round(storage_gb * tier_rates.get(tier, 0.10), 2)
@@ -64,6 +72,7 @@ def map_vmware_to_ibm_vpc(cpus, memory, usage, region,
             pricing_metadata.get('confidence', 'fallback-static')
         ),
         "pricing_last_updated": pricing_metadata.get('last_updated', ''),
+        "pricing_status": pricing_status,
         "profile_hourly": optimized.get('hourly', 0),
     }
 

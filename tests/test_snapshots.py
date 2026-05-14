@@ -42,6 +42,7 @@ def test_migration_manifest_snapshot(sample_vm_model, assert_matches_snapshot):
             "pricing_mode": "static",
             "pricing_source": "static",
             "pricing_confidence": "fallback-static",
+            "pricing_status": "static_fallback",
         },
     )
     actual = json.dumps(json.loads(manifest), indent=2, sort_keys=True) + "\n"
