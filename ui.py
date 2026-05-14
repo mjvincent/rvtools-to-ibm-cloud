@@ -413,6 +413,20 @@ def render_storage_planning(df_f, source_vms=None):
 def merge_decision_edits(df_table, edited_decisions):
     merged = df_table.copy()
     if "VM Key" in df_table.columns and "VM Key" in edited_decisions.columns:
+        if df_table["VM Key"].is_unique and edited_decisions["VM Key"].is_unique:
+            edits = edited_decisions.set_index("VM Key")
+            for column in edits.columns:
+                if column in merged.columns:
+                    values = merged["VM Key"].map(edits[column])
+                    merged[column] = values.where(values.notna(), merged[column])
+            return merged
+
+        if len(merged) == len(edited_decisions):
+            for column in edited_decisions.columns:
+                if column in merged.columns:
+                    merged[column] = edited_decisions[column].to_numpy()
+            return merged
+
         merged = merged.set_index("VM Key")
         edits = edited_decisions.set_index("VM Key")
         for column in edits.columns:

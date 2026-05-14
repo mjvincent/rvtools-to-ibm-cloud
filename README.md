@@ -96,6 +96,8 @@ python -m pytest tests/test_disk_mapping.py
 
 The pytest configuration collects tests only from `tests/`; old API research under `experiments/` is not part of the supported suite. Snapshot expectations live under `tests/snapshots/` and should be reviewed when generated Terraform, CSV, or manifest outputs intentionally change. See `docs/testing.md` for the fixture and snapshot workflow.
 
+For release-style validation, also run the Streamlit browser checklist in `docs/testing.md`: upload a representative RVTools workbook, review each workbench tab, build the Terraform bundle, inspect the ZIP contents, and run `terraform fmt -check -recursive` against an extracted bundle.
+
 ## Data Requirements
 Successful execution requires a standard RVTools XLSX export containing the following worksheets:
 * **vInfo**: Primary inventory, power states, and network assignments.

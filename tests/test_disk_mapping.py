@@ -20,7 +20,8 @@ def test_data_disk_volume_and_attachment_generation(disk_vm_record):
     assert "app_01_hard_disk_1_vol" not in storage_main
     assert "app_01_hard_disk_2_vol" in storage_main
     assert "app_01_hard_disk_2_attach" in vsi_main
-    assert "data_volume_ids = module.storage.data_volume_ids" in root_main
+    assert "data_volume_ids" in root_main
+    assert "module.storage.data_volume_ids" in root_main
 
 
 def test_custom_image_ids_are_wired_into_vsi_generation(disk_vm_record):

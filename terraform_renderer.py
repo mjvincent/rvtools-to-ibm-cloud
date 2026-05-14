@@ -88,9 +88,9 @@ def render_networking_templates(networks_data, vpc_name="migration-vpc", enable_
 
     hcl = f"""
 resource "ibm_is_vpc" "{vpc_safe}" {{
-  name = "{vpc_name}"
+  name               = "{vpc_name}"
   address_preference = "{address_preference}"
-  tags = ["project:{project_name}", "managed-by:rvtools-converter"]
+  tags               = ["project:{project_name}", "managed-by:rvtools-converter"]
 }}
 """
 
@@ -394,12 +394,12 @@ module "storage" {
 }
 
 module "vsi" {
-  source          = "./modules/vsi"
-  zone            = var.zone
-  project         = var.project
+  source           = "./modules/vsi"
+  zone             = var.zone
+  project          = var.project
   custom_image_ids = var.custom_image_ids
-  data_volume_ids = module.storage.data_volume_ids
-  depends_on      = [module.storage, module.networking]
+  data_volume_ids  = module.storage.data_volume_ids
+  depends_on       = [module.storage, module.networking]
 }
 """
     return hcl
