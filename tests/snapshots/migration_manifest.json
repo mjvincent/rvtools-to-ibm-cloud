@@ -8,6 +8,10 @@
     "memory_readiness_csv": "memory-readiness.csv",
     "nic_mapping_csv": "nic-mapping.csv",
     "partition_mapping_csv": "partition-mapping.csv",
+    "preflight_report_csv": "preflight-report.csv",
+    "preflight_report_json": "preflight-report.json",
+    "pricing_diagnostics_csv": "pricing-diagnostics.csv",
+    "pricing_diagnostics_json": "pricing-diagnostics.json",
     "readiness_findings_csv": "readiness-findings.csv",
     "runbook": "migration-runbook.md",
     "vm_mapping_csv": "vm-mapping.csv"

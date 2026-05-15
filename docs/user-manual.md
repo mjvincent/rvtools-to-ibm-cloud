@@ -115,9 +115,10 @@ streamlit run app.py
 10. Use `Networks` and `Storage` to confirm placement and disk planning details.
 11. Use `Export` to confirm VPC name, address prefix strategy, deployment target, and subnet CIDRs.
 12. Download the business case CSV if needed.
-13. Click `Build Terraform Project`.
-14. Download the Terraform ZIP bundle.
-15. Review the generated Terraform and migration handoff files before applying or sharing with migration tooling.
+13. Click `Build Terraform Project` and review any package preflight findings.
+14. Resolve preflight blockers if the build is stopped, then rebuild.
+15. Download the Terraform ZIP bundle.
+16. Review the generated Terraform, preflight report, pricing diagnostics, and migration handoff files before applying or sharing with migration tooling.
 
 
 ## Assessment Workbench Tabs
@@ -177,8 +178,8 @@ Controls the source of IBM Cloud profile and pricing data.
 | Value | Meaning |
 | --- | --- |
 | `Static fallback` | Uses bundled profile and price estimates. Works offline and without IBM credentials. |
-| `Cached IBM catalog` | Uses `data/ibm_vpc_pricing_cache.json` if present, otherwise falls back to static pricing. |
-| `Live IBM profile discovery` | Uses IBM Cloud VPC profile discovery when `IBMCLOUD_API_KEY` is available. Exact pricing is still marked by confidence metadata. |
+| `Cached IBM catalog` | Uses `data/ibm_vpc_pricing_cache.json` if present, including IBM Global Catalog billing-dimension metadata from the supported generator. Otherwise falls back to static pricing. |
+| `Live IBM profile discovery` | Uses IBM Cloud VPC profile discovery when `IBMCLOUD_API_KEY` is available. Profile discovery remains separate from exact billing-dimension pricing. |
 
 Pricing mode affects estimated cost and profile options, but does not change generated Terraform resource structure.
 
@@ -188,7 +189,7 @@ Populate the cached catalog with the supported standalone generator:
 python scripts/generate_pricing_cache.py --region us-south
 ```
 
-Use `--dry-run` to validate credentials and profile discovery without writing the cache file.
+Use `--dry-run` to validate credentials and IBM Global Catalog mapping without writing the cache file.
 
 For live mode, set `IBMCLOUD_API_KEY` in the shell that starts Streamlit or in a local `.env` file at the repository root. Restart Streamlit after creating or changing `.env`.
 
@@ -607,12 +608,15 @@ Network readiness is advisory. It does not change generated Terraform subnet, se
 ## Build Terraform Project
 On the `Export` tab, click `Build Terraform Project` after reviewing readiness, VM decisions, network placement, storage planning, and Terraform settings.
 
+Before the ZIP is created, the app runs package preflight validation. Blockers stop package generation; warnings are shown in the UI and exported in the package. Preflight checks cover blocked readiness, empty scope, unresolved custom image placeholders, CIDR syntax and overlap, duplicate Terraform names, missing subnet/security group mappings, unsupported storage tiers, and profile/region support warnings.
+
 The app packages:
 - Terraform root files.
 - Networking module files.
 - Storage module files.
 - VSI module files.
 - Migration handoff files.
+- Preflight and pricing diagnostics reports.
 - Image import variable template.
 - Generated runbook.
 
@@ -647,6 +651,10 @@ The ZIP bundle contains two categories of output:
 | `readiness-findings.csv` | Row-level migration readiness findings and remediation actions. |
 | `assessment-quality.json` | Structured RVTools worksheet coverage and confidence report. |
 | `assessment-quality.csv` | Spreadsheet-friendly worksheet coverage and confidence report. |
+| `preflight-report.json` | Structured package preflight blockers and warnings. |
+| `preflight-report.csv` | Spreadsheet-friendly package preflight blockers and warnings. |
+| `pricing-diagnostics.json` | Structured pricing source, mapped dimensions, fallback, deployment, and unmapped metric details. |
+| `pricing-diagnostics.csv` | VM-level pricing diagnostics for review and audit. |
 | `image-import-variables.tfvars.example` | Terraform varfile template for IBM Cloud custom image IDs after image import. |
 | `migration-runbook.md` | Operational runbook for migration planning and execution. |
 
@@ -764,6 +772,26 @@ Use them to review:
 - Missing optional network-detail tabs.
 - Whether network or storage planning used fallback metadata from `vInfo`.
 - Overall confidence before sharing migration wave plans.
+
+### `preflight-report.json` and `preflight-report.csv`
+Package validation reports showing build blockers and warnings.
+
+Use them to review:
+- Blocked readiness signals that stopped package generation.
+- Invalid, duplicate, or overlapping custom CIDRs.
+- Duplicate Terraform resource names after sanitization.
+- Missing subnet or security group mappings.
+- Unsupported storage tiers or profile/region warnings.
+- Unresolved custom image placeholders that must be populated after import.
+
+### `pricing-diagnostics.json` and `pricing-diagnostics.csv`
+Pricing diagnostics showing catalog metadata, mapped billing dimensions, selected Power VS deployment information when available, unmapped catalog metrics, and per-VM pricing source/status.
+
+Use them to review:
+- Which components are exact catalog, cached catalog, static fallback, or unmapped.
+- Which billing dimensions were mapped into rates.
+- Which catalog metrics were preserved as unmapped and why.
+- Which effective profile and storage tier drove each VM estimate.
 
 ### `image-import-variables.tfvars.example`
 A Terraform varfile template for custom image IDs after conversion and import.

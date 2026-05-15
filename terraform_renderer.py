@@ -100,9 +100,9 @@ resource "ibm_is_vpc" "{vpc_safe}" {{
         cidr_key = net.get('cidr_key', net.get('name'))
         cidr = custom_cidrs.get(cidr_key, net.get('cidr', f"10.0.{i+1}.0/24")) if custom_cidrs else net.get('cidr', f"10.0.{i+1}.0/24")
 
-        safe_res = raw_name.lower().replace(" ", "_").replace("-", "_")
+        safe_res = _safe_resource_name(raw_name)
         if vlan_id and str(vlan_id).strip():
-            safe_res += f"_vlan_{vlan_id}"
+            safe_res += f"_vlan_{_safe_resource_name(vlan_id)}"
 
         hcl += f"""
 resource "ibm_is_vpc_address_prefix" "prefix_{safe_res}" {{
@@ -175,9 +175,9 @@ def render_networking_outputs(networks_data, enable_security_groups=True):
     for i, net in enumerate(networks_data):
         raw_name = net.get('name', 'unknown-net')
         vlan_id = net.get('vlan')
-        safe_res = raw_name.lower().replace(" ", "_").replace("-", "_")
+        safe_res = _safe_resource_name(raw_name)
         if vlan_id and str(vlan_id).strip():
-            safe_res += f"_vlan_{vlan_id}"
+            safe_res += f"_vlan_{_safe_resource_name(vlan_id)}"
 
         outputs += f"""
 output \"{safe_res}_id\" {{

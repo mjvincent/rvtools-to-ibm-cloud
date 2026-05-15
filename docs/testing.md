@@ -54,7 +54,8 @@ python -m pip install -r requirements.txt
 
 ```bash
 python -m pytest
-python -m py_compile app.py rvtools_parser.py models.py assessments.py assessment_quality.py sizing.py catalog_pricing.py terraform_renderer.py handoff.py ui.py logic_engine.py scripts/generate_pricing_cache.py
+python -m py_compile app.py rvtools_parser.py models.py assessments.py assessment_quality.py sizing.py catalog_pricing.py terraform_renderer.py handoff.py preflight.py ui.py logic_engine.py scripts/generate_pricing_cache.py scripts/validate_terraform_package.py
+python scripts/validate_terraform_package.py
 git diff --check
 ```
 
@@ -77,12 +78,20 @@ streamlit run app.py --server.port 8502
    - `Overview` shows estate metrics, recommended next actions, and assessment quality.
    - `Readiness`, `VM Review`, `Networks`, `Storage`, and `Export` tabs open without tracebacks.
    - `Download Business Case (CSV)` is available from `Export`.
-   - `Build Terraform Project` completes and shows `Project Ready`.
+   - `Build Terraform Project` runs package preflight. If blockers are present, the build stops with findings; after resolving or excluding affected VMs, it completes and shows `Project Ready`.
    - `Download Terraform Bundle` is available.
 
-6. Download and inspect the Terraform bundle. It should include the root Terraform files, networking/storage/VSI module files, mapping CSVs, readiness exports, assessment quality exports, `image-import-variables.tfvars.example`, `migration-manifest.json`, and `migration-runbook.md`.
+6. Download and inspect the Terraform bundle. It should include the root Terraform files, networking/storage/VSI module files, mapping CSVs, readiness exports, assessment quality exports, `preflight-report.json`, `preflight-report.csv`, `pricing-diagnostics.json`, `pricing-diagnostics.csv`, `image-import-variables.tfvars.example`, `migration-manifest.json`, and `migration-runbook.md`.
 
-7. Extract the bundle to a temporary directory and run Terraform formatting:
+7. Extract the bundle to a temporary directory and run the validation harness:
+
+```bash
+python scripts/validate_terraform_package.py --dir .
+```
+
+The harness runs `terraform fmt -check -recursive` when Terraform is installed and skips clearly when the executable is unavailable. It can also build and check a representative sample package when called without `--zip` or `--dir`.
+
+You can still run Terraform formatting directly:
 
 ```bash
 terraform fmt -check -recursive .

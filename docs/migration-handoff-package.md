@@ -51,6 +51,14 @@ A structured workbook-level quality report showing RVTools worksheet coverage, r
 ### `assessment-quality.csv`
 A spreadsheet-friendly version of the worksheet coverage report for customer review and planning workshops.
 
+### `preflight-report.json` and `preflight-report.csv`
+Package safety reports generated before ZIP creation. Blocker findings stop package generation; warning findings are exported for review.
+
+These reports cover blocked readiness, empty in-scope packages, unresolved custom image placeholders, invalid or overlapping CIDRs, duplicate Terraform resource names, missing subnet/security group mappings, unsupported storage tiers, and profile/region support warnings.
+
+### `pricing-diagnostics.json` and `pricing-diagnostics.csv`
+Pricing audit files showing catalog mode, pricing status, mapped billing dimensions, selected Power VS deployment metadata when available, unmapped catalog metrics and reasons, and per-VM pricing source/status.
+
 ### `image-import-variables.tfvars.example`
 A Terraform varfile template for custom image IDs. Populate these values after VMware images have been converted, uploaded, and imported as IBM Cloud VPC custom images.
 
@@ -62,22 +70,24 @@ A generated operational runbook that explains the recommended sequence: review m
 ## Recommended Workflow
 1. Upload the RVTools export and review the generated business case.
 2. Adjust profile, storage, subnet, and security group overrides as needed.
-3. Build and download the Terraform ZIP bundle.
-4. Review `vm-mapping.csv` with application and migration stakeholders.
-5. Use `migration-manifest.json` as the structured handoff for automation or migration tooling.
-6. Resolve image readiness `Blocked` items and review firmware, boot disk, OS, and guest customization concerns.
-7. Review `memory-readiness.csv` to validate profile sizing, memory pressure, reservations, limits, and hot-add dependencies.
-8. Review `readiness-findings.csv` to remediate snapshots, mounted media, USB dependencies, VMware Tools concerns, and RVTools health findings.
-9. Review `assessment-quality.csv` to confirm workbook coverage and confidence before finalizing migration waves.
-10. Review `nic-mapping.csv` to confirm primary and secondary network interface placement and source switch/port context.
-11. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
-12. Review `partition-mapping.csv` for partition free-space context and unmatched partition rows.
-13. Import or replicate VMware images using the approved migration approach.
-14. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example` and pass the populated file to Terraform with `-var-file`.
-15. Apply Terraform using Plain CLI or IBM Schematics.
-16. Validate boot, network, storage, monitoring, backup, and application health before cutover.
+3. Build the Terraform ZIP bundle and resolve any preflight blockers.
+4. Download the Terraform ZIP bundle.
+5. Review `preflight-report.csv` and `pricing-diagnostics.csv` for package safety and pricing confidence.
+6. Review `vm-mapping.csv` with application and migration stakeholders.
+7. Use `migration-manifest.json` as the structured handoff for automation or migration tooling.
+8. Resolve image readiness `Blocked` items and review firmware, boot disk, OS, and guest customization concerns.
+9. Review `memory-readiness.csv` to validate profile sizing, memory pressure, reservations, limits, and hot-add dependencies.
+10. Review `readiness-findings.csv` to remediate snapshots, mounted media, USB dependencies, VMware Tools concerns, and RVTools health findings.
+11. Review `assessment-quality.csv` to confirm workbook coverage and confidence before finalizing migration waves.
+12. Review `nic-mapping.csv` to confirm primary and secondary network interface placement and source switch/port context.
+13. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
+14. Review `partition-mapping.csv` for partition free-space context and unmatched partition rows.
+15. Import or replicate VMware images using the approved migration approach.
+16. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example` and pass the populated file to Terraform with `-var-file`.
+17. Apply Terraform using Plain CLI or IBM Schematics.
+18. Validate boot, network, storage, monitoring, backup, and application health before cutover.
 
 ## Current Scope
-This release creates the handoff package, custom image ID varfile template, per-disk volume mapping, advisory partition mapping, multi-NIC mapping, network readiness, memory readiness sizing, advisory migration readiness findings, and advisory assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, or cutover orchestration.
+This release creates the handoff package, package preflight reports, pricing diagnostics, custom image ID varfile template, per-disk volume mapping, advisory partition mapping, multi-NIC mapping, network readiness, memory readiness sizing, migration readiness findings, and assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, Terraform execution, or cutover orchestration.
 
 Those are intentionally left as later adapters so the handoff format can remain stable and tool-neutral.
