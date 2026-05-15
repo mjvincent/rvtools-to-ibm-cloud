@@ -28,18 +28,19 @@ from preflight import (
     generate_preflight_report_json,
     has_blockers,
     run_package_preflight,
-    summarize_preflight,
 )
 from rvtools_parser import normalize_network_name, parse_rvtools_workbook
 from terraform_renderer import generate_tfvars, render_terraform_templates
 from ui import (
     DECISION_COLUMNS,
     DISABLED_COLS,
+    apply_preflight_quick_fixes,
     build_table_config,
     merge_decision_edits,
     render_assessment_quality,
     render_estate_summary,
     render_network_planning,
+    render_preflight_guidance,
     render_readiness_legend,
     render_readiness_triage,
     render_storage_planning,
@@ -161,6 +162,34 @@ if uploaded_file is not None:
 
     edited_df = df_table.copy()
 
+    def build_final_vms(source_df):
+        final_vm_records = [
+            v for v in source_df.to_dict('records')
+            if not v.get('Exclude?')
+        ]
+        final_vms = []
+        for vm in final_vm_records:
+            vm["Disk Details"] = disk_details.get(vm.get("VM Key"), [])
+            vm["Partition Details"] = next(
+                (
+                    source.get("Partition Details", [])
+                    for source in processed_vms
+                    if source.get("VM Key") == vm.get("VM Key")
+                ),
+                []
+            )
+            vm["Network Details"] = nic_details.get(vm.get("VM Key"), [])
+            vm["Readiness Findings"] = next(
+                (
+                    source.get("Readiness Findings", [])
+                    for source in processed_vms
+                    if source.get("VM Key") == vm.get("VM Key")
+                ),
+                []
+            )
+            final_vms.append(MigrationVm.from_record(vm))
+        return final_vms
+
     with overview:
         st.subheader("Estate Health")
         active_df = df_f[~df_f['Exclude?']]
@@ -182,14 +211,20 @@ if uploaded_file is not None:
     with vm_review:
         st.subheader("VM Decisions")
         st.caption("This view keeps the active decisions in front. Raw generated fields remain available below for audit and troubleshooting.")
+        decision_table = apply_preflight_quick_fixes(
+            df_table,
+            st.session_state.get("preflight_quick_fixes", {}),
+        )
         decision_input_columns = ["VM Key"] + [
-            column for column in DECISION_COLUMNS if column in df_table.columns
+            column for column in DECISION_COLUMNS
+            if column in decision_table.columns
         ]
         edited_decisions = st.data_editor(
-            df_table[decision_input_columns],
+            decision_table[decision_input_columns],
             column_config=table_config,
             column_order=[
-                column for column in DECISION_COLUMNS if column in df_table.columns
+                column for column in DECISION_COLUMNS
+                if column in decision_table.columns
             ],
             disabled=[
                 column for column in DISABLED_COLS
@@ -199,7 +234,7 @@ if uploaded_file is not None:
             use_container_width=True,
             key="vm_decision_editor"
         )
-        edited_df = merge_decision_edits(df_table, edited_decisions)
+        edited_df = merge_decision_edits(decision_table, edited_decisions)
         with st.expander("Advanced generated fields"):
             st.dataframe(edited_df, hide_index=True, use_container_width=True)
 
@@ -259,36 +294,24 @@ if uploaded_file is not None:
             use_container_width=True
         )
 
+        preview_vms = build_final_vms(edited_df)
+        preview_findings = run_package_preflight(
+            preview_vms,
+            unique_nets,
+            target_region,
+            custom_cidrs=custom_cidrs,
+            enable_security_groups=generate_security_groups,
+            catalog_profiles=catalog_profiles,
+        )
+        render_preflight_guidance(preview_findings, edited_df)
+        if st.button("Re-run package preflight", use_container_width=True):
+            st.session_state["preflight_needs_rerun"] = False
+            st.rerun()
+
         if st.button("Build Terraform Project", use_container_width=True):
             with st.status("Packaging Project...") as status:
                 try:
-                    final_vm_records = [
-                        v for v in edited_df.to_dict('records')
-                        if not v['Exclude?']
-                    ]
-                    final_vms = []
-                    for vm in final_vm_records:
-                        vm["Disk Details"] = disk_details.get(vm.get("VM Key"), [])
-                        vm["Partition Details"] = next(
-                            (
-                                source.get("Partition Details", [])
-                                for source in processed_vms
-                                if source.get("VM Key") == vm.get("VM Key")
-                            ),
-                            []
-                        )
-                        vm["Network Details"] = nic_details.get(
-                            vm.get("VM Key"), []
-                        )
-                        vm["Readiness Findings"] = next(
-                            (
-                                source.get("Readiness Findings", [])
-                                for source in processed_vms
-                                if source.get("VM Key") == vm.get("VM Key")
-                            ),
-                            []
-                        )
-                        final_vms.append(MigrationVm.from_record(vm))
+                    final_vms = build_final_vms(edited_df)
 
                     preflight_findings = run_package_preflight(
                         final_vms,
@@ -298,21 +321,8 @@ if uploaded_file is not None:
                         enable_security_groups=generate_security_groups,
                         catalog_profiles=catalog_profiles,
                     )
-                    preflight_summary = summarize_preflight(preflight_findings)
                     if preflight_findings:
-                        st.write("### Package Preflight")
-                        c1, c2, c3 = st.columns(3)
-                        c1.metric("Blockers", preflight_summary["blockers"])
-                        c2.metric("Warnings", preflight_summary["warnings"])
-                        c3.metric("Info", preflight_summary["info"])
-                        st.dataframe(
-                            pd.DataFrame([
-                                finding.to_record()
-                                for finding in preflight_findings
-                            ]),
-                            hide_index=True,
-                            use_container_width=True,
-                        )
+                        render_preflight_guidance(preflight_findings, edited_df)
                     if has_blockers(preflight_findings):
                         status.update(
                             label="Preflight blocked package build",

@@ -441,5 +441,168 @@ def merge_decision_edits(df_table, edited_decisions):
     return merged
 
 
+def apply_preflight_quick_fixes(df_table, quick_fixes):
+    """Apply session-backed preflight quick fixes to the editable decision table."""
+    if not quick_fixes:
+        return df_table
+    merged = df_table.copy()
+    if "VM Name" not in merged.columns:
+        return merged
+
+    for vm_name, fixes in quick_fixes.items():
+        mask = merged["VM Name"] == vm_name
+        if not mask.any():
+            continue
+        for column, value in fixes.items():
+            if column in merged.columns:
+                merged.loc[mask, column] = value
+    return merged
+
+
+def _finding_record(finding):
+    return finding.to_record() if hasattr(finding, "to_record") else finding
+
+
+def _finding_attr(finding, key, default=""):
+    if hasattr(finding, key):
+        return getattr(finding, key) or default
+    return finding.get(key, default) if isinstance(finding, dict) else default
+
+
+def _finding_options(finding):
+    options = _finding_attr(finding, "valid_options", ())
+    if isinstance(options, str):
+        return [value.strip() for value in options.split(",") if value.strip()]
+    return list(options or [])
+
+
+def _queue_quick_fix(vm_name, column, value):
+    fixes = st.session_state.setdefault("preflight_quick_fixes", {})
+    vm_fixes = fixes.setdefault(vm_name, {})
+    vm_fixes[column] = value
+    st.session_state["preflight_needs_rerun"] = True
+
+
+def _render_quick_fix(finding, df_table, key_prefix):
+    quick_fix_type = _finding_attr(finding, "quick_fix_type")
+    subject = _finding_attr(finding, "subject")
+    field = _finding_attr(finding, "field")
+    options = _finding_options(finding)
+    recommended = _finding_attr(finding, "recommended_option")
+
+    if quick_fix_type in {"storage_tier", "profile"} and options:
+        default = recommended if recommended in options else options[0]
+        selected = st.selectbox(
+            "Quick fix value",
+            options,
+            index=options.index(default),
+            key=f"{key_prefix}_value",
+        )
+        if st.button("Apply quick fix", key=f"{key_prefix}_apply"):
+            _queue_quick_fix(subject, field, selected)
+            st.success("Quick fix queued. Re-run preflight to confirm the blocker is cleared.")
+        return
+
+    if quick_fix_type == "exclude_vm" and subject:
+        if st.button("Exclude VM from this package", key=f"{key_prefix}_exclude"):
+            _queue_quick_fix(subject, "Exclude?", True)
+            st.success("VM exclusion queued. Re-run preflight to confirm the blocker is cleared.")
+        return
+
+    if quick_fix_type == "include_vm":
+        excluded = []
+        if "Exclude?" in df_table.columns and "VM Name" in df_table.columns:
+            excluded = sorted(
+                df_table.loc[df_table["Exclude?"] == True, "VM Name"].dropna().astype(str)
+            )
+        if excluded:
+            selected = st.selectbox(
+                "VM to include",
+                excluded,
+                key=f"{key_prefix}_include_value",
+            )
+            if st.button("Include selected VM", key=f"{key_prefix}_include"):
+                _queue_quick_fix(selected, "Exclude?", False)
+                st.success("VM inclusion queued. Re-run preflight to confirm the blocker is cleared.")
+
+
+def render_preflight_guidance(findings, df_table=None):
+    summary = {
+        "blocker": 0,
+        "warning": 0,
+        "info": 0,
+    }
+    for finding in findings or []:
+        summary[_finding_attr(finding, "severity", "info")] = (
+            summary.get(_finding_attr(finding, "severity", "info"), 0) + 1
+        )
+
+    st.write("### Package Preflight")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Blockers", summary.get("blocker", 0))
+    c2.metric("Warnings", summary.get("warning", 0))
+    c3.metric("Info", summary.get("info", 0))
+
+    if not findings:
+        st.success("No preflight blockers or warnings were detected.")
+        return
+
+    if summary.get("blocker", 0):
+        st.error(
+            "Terraform ZIP not generated. Fix the blockers below, then "
+            "re-run preflight before building the package."
+        )
+    else:
+        st.info(
+            "Warnings are exported for review, but they do not stop Terraform "
+            "package generation."
+        )
+
+    if st.session_state.get("preflight_needs_rerun"):
+        st.warning("Quick fixes have been queued. Re-run preflight to refresh the blocker list.")
+
+    blocker_findings = [
+        finding for finding in findings
+        if _finding_attr(finding, "severity") == "blocker"
+    ]
+    warning_findings = [
+        finding for finding in findings
+        if _finding_attr(finding, "severity") == "warning"
+    ]
+
+    for index, finding in enumerate(blocker_findings):
+        category = _finding_attr(finding, "category", "preflight")
+        subject = _finding_attr(finding, "subject", "package")
+        title = f"{category.replace('_', ' ').title()}: {subject}"
+        with st.expander(title, expanded=True):
+            st.write(f"**What is wrong?** {_finding_attr(finding, 'message')}")
+            if _finding_attr(finding, "constraint"):
+                st.write(f"**Allowed values / constraint:** {_finding_attr(finding, 'constraint')}")
+            options = _finding_options(finding)
+            if options:
+                st.write(f"**Valid choices:** {', '.join(options)}")
+            if _finding_attr(finding, "recommended_option"):
+                st.write(f"**Recommended:** {_finding_attr(finding, 'recommended_option')}")
+            st.write(f"**Where to fix:** {_finding_attr(finding, 'fix_location', 'Review the relevant workbench tab')}")
+            action = _finding_attr(finding, "suggested_action") or _finding_attr(finding, "remediation")
+            st.write(f"**Suggested action:** {action}")
+            _render_quick_fix(finding, df_table if df_table is not None else pd.DataFrame(), f"preflight_{index}")
+
+    if warning_findings:
+        with st.expander("Warnings that will be included in the package report"):
+            st.dataframe(
+                pd.DataFrame([_finding_record(finding) for finding in warning_findings]),
+                hide_index=True,
+                use_container_width=True,
+            )
+
+    with st.expander("Full preflight report"):
+        st.dataframe(
+            pd.DataFrame([_finding_record(finding) for finding in findings]),
+            hide_index=True,
+            use_container_width=True,
+        )
+
+
 def render_readiness_legend():
     st.caption("Ready means no detected issue in available data. Review means owner validation is needed. Blocked means remediation should happen before migration execution.")

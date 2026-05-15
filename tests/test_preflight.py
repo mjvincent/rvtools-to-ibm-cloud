@@ -24,6 +24,8 @@ def test_preflight_blocks_empty_scope():
 
 def test_preflight_flags_blocked_readiness(sample_vm_record):
     sample_vm_record["Image Readiness"] = "Blocked"
+    sample_vm_record["Boot Disk GB"] = 300
+    sample_vm_record["Readiness Reasons"] = "Boot disk exceeds IBM Cloud custom image 250 GB limit"
 
     findings = run_package_preflight(
         [sample_vm_record],
@@ -34,6 +36,11 @@ def test_preflight_flags_blocked_readiness(sample_vm_record):
 
     assert has_blockers(findings)
     assert "readiness" in _categories(findings)
+    image_blocker = next(finding for finding in findings if finding.category == "readiness")
+    assert image_blocker.quick_fix_type == "exclude_vm"
+    assert image_blocker.fix_location == "Readiness tab > Image Readiness"
+    assert "250 GB" in image_blocker.constraint
+    assert "Boot Disk GB: 300" in image_blocker.current_value
 
 
 def test_preflight_detects_invalid_duplicate_and_overlapping_cidrs(sample_vm_record):
@@ -103,6 +110,28 @@ def test_preflight_blocks_unsupported_storage_tier(sample_vm_record):
 
     assert has_blockers(findings)
     assert "storage" in _categories(findings)
+    storage_blocker = next(finding for finding in findings if finding.category == "storage")
+    assert storage_blocker.quick_fix_type == "storage_tier"
+    assert storage_blocker.valid_options == ("3iops-tier", "5iops-tier", "10iops-tier")
+    assert storage_blocker.recommended_option == "5iops-tier"
+    assert storage_blocker.field == "Override Storage Tier"
+
+
+def test_preflight_blank_profile_includes_catalog_quick_fix(sample_vm_record):
+    sample_vm_record["IBM Profile"] = ""
+    sample_vm_record["Override Profile"] = ""
+
+    findings = run_package_preflight(
+        [sample_vm_record],
+        [{"name": "app-net", "vlan": "", "cidr": "10.0.1.0/24"}],
+        "us-south",
+        catalog_profiles=[{"name": "bx2-2x8"}, {"name": "cx2-4x8"}],
+    )
+
+    profile_blocker = next(finding for finding in findings if finding.category == "profile")
+    assert profile_blocker.quick_fix_type == "profile"
+    assert profile_blocker.valid_options == ("bx2-2x8", "cx2-4x8")
+    assert profile_blocker.recommended_option == "bx2-2x8"
 
 
 def test_preflight_reports_are_exportable(sample_vm_record):
@@ -119,4 +148,9 @@ def test_preflight_reports_are_exportable(sample_vm_record):
 
     assert summary["warnings"] >= 1
     assert rows[0]["Severity"]
+    assert "Fix Location" in rows[0]
+    assert "Suggested Action" in rows[0]
+    assert "Valid Options" in rows[0]
     assert payload["summary"]["total"] == len(findings)
+    assert "fix_location" not in payload["findings"][0]
+    assert "Fix Location" in payload["findings"][0]
