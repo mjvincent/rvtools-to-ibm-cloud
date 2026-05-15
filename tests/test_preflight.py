@@ -43,6 +43,62 @@ def test_preflight_flags_blocked_readiness(sample_vm_record):
     assert "Boot Disk GB: 300" in image_blocker.current_value
 
 
+def test_preflight_explains_migration_readiness_source_side_fixes(sample_vm_record):
+    sample_vm_record["Migration Readiness"] = "Blocked"
+    sample_vm_record["Migration Readiness Reasons"] = (
+        "Mounted CD/DVD media: CD/DVD drive 1: ISO datastore/image.iso; "
+        "VMware Tools status: toolsOld"
+    )
+    sample_vm_record["Readiness Findings"] = [
+        {
+            "finding_type": "Mounted CD/DVD media",
+            "severity": "Blocked",
+            "source_tab": "vCD",
+            "evidence": "CD/DVD drive 1: ISO datastore/image.iso",
+            "recommended_action": "Disconnect ISO media",
+        },
+        {
+            "finding_type": "VMware Tools status",
+            "severity": "Review",
+            "source_tab": "vTools",
+            "evidence": (
+                "toolsOld, upgradeable=Yes, heartbeat=appStatusGray, "
+                "operation_ready=True"
+            ),
+            "recommended_action": "Update VMware Tools",
+        },
+        {
+            "finding_type": "RVTools health warning",
+            "severity": "Review",
+            "source_tab": "vHealth",
+            "evidence": "Warning: VM Tools are out of date",
+            "recommended_action": "Review RVTools health finding",
+        },
+    ]
+
+    findings = run_package_preflight(
+        [sample_vm_record],
+        [{"name": "app-net", "vlan": "", "cidr": "10.0.1.0/24"}],
+        "us-south",
+        catalog_profiles=[{"name": "bx2-2x8"}],
+    )
+
+    migration_blocker = next(
+        finding for finding in findings
+        if finding.category == "readiness"
+        and "Migration readiness" in finding.message
+    )
+    assert migration_blocker.quick_fix_type == "exclude_vm"
+    assert "Mounted CD/DVD media" in migration_blocker.message
+    assert "Source tabs: vCD, vHealth, vTools" in migration_blocker.message
+    assert "Fix outside app" in migration_blocker.current_value
+    assert "disconnect or remove the CD/DVD ISO" in migration_blocker.current_value
+    assert "update/start VMware Tools" in migration_blocker.current_value
+    assert "vHealth warning" in migration_blocker.current_value
+    assert "This app cannot disconnect media" in migration_blocker.constraint
+    assert "Fix in app: exclude this VM" in migration_blocker.suggested_action
+
+
 def test_preflight_detects_invalid_duplicate_and_overlapping_cidrs(sample_vm_record):
     networks = [
         {"name": "app-net", "cidr": "10.0.1.0/24", "cidr_key": "app"},
@@ -135,6 +191,16 @@ def test_preflight_blank_profile_includes_catalog_quick_fix(sample_vm_record):
 
 
 def test_preflight_reports_are_exportable(sample_vm_record):
+    sample_vm_record["Migration Readiness"] = "Blocked"
+    sample_vm_record["Readiness Findings"] = [
+        {
+            "finding_type": "Mounted CD/DVD media",
+            "severity": "Blocked",
+            "source_tab": "vCD",
+            "evidence": "CD/DVD drive 1: ISO datastore/image.iso",
+            "recommended_action": "Disconnect ISO media",
+        }
+    ]
     findings = run_package_preflight(
         [sample_vm_record],
         [{"name": "app-net", "vlan": "", "cidr": "10.0.1.0/24"}],
@@ -154,3 +220,4 @@ def test_preflight_reports_are_exportable(sample_vm_record):
     assert payload["summary"]["total"] == len(findings)
     assert "fix_location" not in payload["findings"][0]
     assert "Fix Location" in payload["findings"][0]
+    assert "Fix outside app" in generate_preflight_report_json(findings)

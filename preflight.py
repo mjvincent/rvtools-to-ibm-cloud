@@ -190,6 +190,144 @@ def _image_placeholder_findings(vms):
     return findings
 
 
+def _finding_record(value):
+    return value.to_record() if hasattr(value, "to_record") else value
+
+
+def _migration_finding_guidance(finding):
+    finding = _finding_record(finding) or {}
+    finding_type = clean_value(finding.get("finding_type"), "Migration finding")
+    source_tab = clean_value(finding.get("source_tab"))
+    severity = clean_value(finding.get("severity"), "Review")
+    evidence = clean_value(finding.get("evidence"))
+    recommended = clean_value(finding.get("recommended_action"))
+    lower_type = finding_type.lower()
+    lower_evidence = evidence.lower()
+
+    explanation = "A migration readiness finding needs owner review."
+    outside_fix = recommended or (
+        "Review the source VM finding, remediate it in VMware or the source "
+        "inventory, then upload a refreshed RVTools export."
+    )
+
+    if "cd/dvd" in lower_type or "cdrom" in lower_evidence:
+        explanation = (
+            "A CD/DVD or ISO is connected to the VM. Terraform cannot clear "
+            "source-mounted installation media."
+        )
+        outside_fix = (
+            "In VMware, edit the VM settings and disconnect or remove the "
+            "CD/DVD ISO, then export RVTools again and upload the refreshed workbook."
+        )
+    elif "health" in lower_type:
+        explanation = (
+            "RVTools reported a source-side health warning for this VM."
+        )
+        outside_fix = (
+            "Review the vHealth warning in VMware, remediate the underlying "
+            "source issue, then export RVTools again."
+        )
+    elif "vmware tools" in lower_type or "vm tools" in lower_evidence:
+        explanation = (
+            "VMware Tools is old, missing, not running, or not reporting healthy "
+            "guest status."
+        )
+        outside_fix = (
+            "In VMware or the guest OS, update/start VMware Tools and verify "
+            "heartbeat/application status, then export RVTools again."
+        )
+    elif "snapshot" in lower_type:
+        explanation = (
+            "The VM has active snapshots that should not be carried into "
+            "migration planning."
+        )
+        outside_fix = (
+            "Consolidate or remove snapshots in VMware, then export RVTools again."
+        )
+    elif "usb" in lower_type:
+        explanation = (
+            "The VM depends on an attached USB device, which is not a cloud-safe "
+            "Terraform setting."
+        )
+        outside_fix = (
+            "Remove the USB dependency or replace it with a cloud-accessible "
+            "service before re-exporting RVTools."
+        )
+    elif "powered-off" in lower_type:
+        explanation = "The VM is powered off in the source inventory."
+        outside_fix = (
+            "Confirm with the workload owner whether this VM should migrate, "
+            "power it on for validation if needed, then export RVTools again."
+        )
+
+    source = f" from {source_tab}" if source_tab else ""
+    evidence_text = f" Evidence: {evidence}" if evidence else ""
+    return (
+        f"- {finding_type} ({severity}{source}): {explanation} "
+        f"Fix outside app: {outside_fix}{evidence_text}"
+    )
+
+
+def _migration_readiness_guidance(vm):
+    findings = [
+        _finding_record(finding)
+        for finding in vm.get("Readiness Findings", []) or []
+    ]
+    findings = [
+        finding for finding in findings
+        if clean_value(finding.get("finding_type"))
+    ]
+    if not findings:
+        reasons = clean_value(vm.get("Migration Readiness Reasons"))
+        return {
+            "message": "Migration Readiness is Blocked.",
+            "current_value": reasons,
+            "constraint": (
+                "Resolve the migration readiness reason in VMware/source "
+                "operations, then upload a refreshed RVTools export."
+            ),
+            "suggested_action": (
+                "Fix outside app: remediate the VMware/source issue and upload "
+                "a refreshed RVTools workbook. Fix in app: exclude this VM from "
+                "the Terraform package."
+            ),
+        }
+
+    blocker_types = [
+        clean_value(finding.get("finding_type"))
+        for finding in findings
+        if clean_value(finding.get("severity")).lower() == "blocked"
+    ]
+    source_tabs = sorted({
+        clean_value(finding.get("source_tab"))
+        for finding in findings
+        if clean_value(finding.get("source_tab"))
+    })
+    summary_types = blocker_types or [
+        clean_value(finding.get("finding_type")) for finding in findings
+    ]
+    details = "\n".join(_migration_finding_guidance(finding) for finding in findings)
+    source_text = f" Source tabs: {', '.join(source_tabs)}." if source_tabs else ""
+    return {
+        "message": (
+            "Migration readiness is blocked by source-side findings: "
+            f"{', '.join(summary_types)}.{source_text}"
+        ),
+        "current_value": details,
+        "constraint": (
+            "This app cannot disconnect media, update VMware Tools, remove "
+            "snapshots, or clear vHealth warnings in VMware. Source-side fixes "
+            "require a refreshed RVTools upload. The app-side fix is to exclude "
+            "the VM from this Terraform package."
+        ),
+        "suggested_action": (
+            "Fix outside app: remediate the VMware/source findings listed below "
+            "and upload a refreshed RVTools workbook. Fix in app: exclude this VM "
+            "from the Terraform package."
+        ),
+    }
+
+
 def _readiness_findings(vms):
     findings = []
     readiness_columns = [
@@ -219,6 +357,11 @@ def _readiness_findings(vms):
                         "different migration method, or exclude this VM until "
                         "image remediation is complete."
                     )
+                elif column == "Migration Readiness":
+                    guidance = _migration_readiness_guidance(vm)
+                    current_value = guidance["current_value"]
+                    constraint = guidance["constraint"]
+                    suggested_action = guidance["suggested_action"]
                 elif column == "Memory Readiness":
                     current_value = (
                         "Swapped MiB: "
@@ -236,7 +379,11 @@ def _readiness_findings(vms):
                     "blocker",
                     "readiness",
                     _vm_name(vm),
-                    f"{column} is Blocked.",
+                    (
+                        guidance["message"]
+                        if column == "Migration Readiness"
+                        else f"{column} is Blocked."
+                    ),
                     "Resolve blocker findings or exclude this VM from the package.",
                     f"Readiness tab > {column}",
                     suggested_action,

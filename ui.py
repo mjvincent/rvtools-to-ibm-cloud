@@ -483,6 +483,16 @@ def _queue_quick_fix(vm_name, column, value):
     st.session_state["preflight_needs_rerun"] = True
 
 
+def _render_labeled_detail(label, value):
+    if not value:
+        return
+    value = str(value)
+    if "\n" in value:
+        st.markdown(f"**{label}:**\n{value}")
+    else:
+        st.write(f"**{label}:** {value}")
+
+
 def _render_quick_fix(finding, df_table, key_prefix):
     quick_fix_type = _finding_attr(finding, "quick_fix_type")
     subject = _finding_attr(finding, "subject")
@@ -575,17 +585,35 @@ def render_preflight_guidance(findings, df_table=None):
         subject = _finding_attr(finding, "subject", "package")
         title = f"{category.replace('_', ' ').title()}: {subject}"
         with st.expander(title, expanded=True):
-            st.write(f"**What is wrong?** {_finding_attr(finding, 'message')}")
-            if _finding_attr(finding, "constraint"):
-                st.write(f"**Allowed values / constraint:** {_finding_attr(finding, 'constraint')}")
+            _render_labeled_detail(
+                "What is wrong",
+                _finding_attr(finding, "message"),
+            )
+            _render_labeled_detail(
+                "Current evidence",
+                _finding_attr(finding, "current_value"),
+            )
+            _render_labeled_detail(
+                "Allowed values / constraint",
+                _finding_attr(finding, "constraint"),
+            )
             options = _finding_options(finding)
             if options:
                 st.write(f"**Valid choices:** {', '.join(options)}")
-            if _finding_attr(finding, "recommended_option"):
-                st.write(f"**Recommended:** {_finding_attr(finding, 'recommended_option')}")
-            st.write(f"**Where to fix:** {_finding_attr(finding, 'fix_location', 'Review the relevant workbench tab')}")
+            _render_labeled_detail(
+                "Recommended",
+                _finding_attr(finding, "recommended_option"),
+            )
+            _render_labeled_detail(
+                "Where to fix",
+                _finding_attr(
+                    finding,
+                    "fix_location",
+                    "Review the relevant workbench tab",
+                ),
+            )
             action = _finding_attr(finding, "suggested_action") or _finding_attr(finding, "remediation")
-            st.write(f"**Suggested action:** {action}")
+            _render_labeled_detail("Suggested action", action)
             _render_quick_fix(finding, df_table if df_table is not None else pd.DataFrame(), f"preflight_{index}")
 
     if warning_findings:
