@@ -43,6 +43,7 @@ When overrides are used:
 * `manual` mode is ideal for migrations that need IP parity with on-premises networks.
 * `auto` mode is useful for exploratory or greenfield deployments where explicit CIDR mapping is not required.
 * If a custom CIDR is missing, the app falls back to a generated deterministic CIDR based on the discovered network index.
+* Package preflight blocks invalid, duplicate, or overlapping custom CIDRs before the Terraform ZIP is created.
 
 ## Recommended Usage
 1. Upload the RVTools XLSX file in the Streamlit app.
@@ -50,7 +51,7 @@ When overrides are used:
 3. Enter a meaningful VPC name and project name.
 4. Confirm or override the CIDRs for each subnet.
 5. Select the appropriate deployment target.
-6. Build the Terraform project and download the ZIP bundle.
+6. Build the Terraform project, resolve any preflight blockers, and download the ZIP bundle.
 
 
 ## Relationship to Migration Handoff Files
@@ -58,11 +59,11 @@ The Terraform override values are also reflected in the generated migration hand
 
 The `image-import-variables.tfvars.example` file is a Terraform varfile template for custom image IDs after VMware image conversion or replication. Copy it, replace every placeholder with the imported IBM Cloud VPC custom image ID for that VM, and pass the populated file to Terraform with `-var-file`.
 
-Image readiness fields are advisory. `Ready`, `Review`, or `Blocked` values do not change Terraform generation, profile overrides, storage tier overrides, subnet CIDRs, backend selection, or module output. They are included to guide image migration planning before custom image import or replication workflows. Terraform provisioning still requires a valid `custom_image_ids` entry for each generated VSI.
+Image readiness fields guide image migration planning before custom image import or replication workflows. `Blocked` readiness is treated as a package preflight blocker for in-scope VMs; `Review` remains a planning warning. Terraform provisioning still requires a valid `custom_image_ids` entry for each generated VSI.
 
-Migration readiness fields are also advisory. Snapshot, VMware Tools, mounted media, USB, and health findings do not alter Terraform output. They are included in the dashboard and handoff files so teams can remediate source-side risks before export, replication, image import, or cutover.
+Migration readiness fields do not alter Terraform resource content, but `Blocked` readiness is a package preflight blocker for in-scope VMs. Snapshot, VMware Tools, mounted media, USB, and health findings are included in the dashboard and handoff files so teams can remediate source-side risks before export, replication, image import, or cutover.
 
-Memory readiness fields are advisory, but memory sizing can influence the recommended IBM Cloud VSI profile because profile selection depends on CPU and RAM. Severe swapping, ballooning, memory reservations, or memory limits preserve configured memory. Users can still choose `Override Profile` to force a different target profile before building Terraform.
+Memory readiness fields can influence the recommended IBM Cloud VSI profile because profile selection depends on CPU and RAM. Severe swapping, ballooning, memory reservations, or memory limits preserve configured memory; `Blocked` memory readiness is also a package preflight blocker for in-scope VMs. Users can still choose `Override Profile` after validating target support.
 
 Storage tier overrides apply to every generated data disk volume for that VM. The boot disk is not generated as an IBM Cloud block volume because it is expected to be covered by the imported custom image workflow.
 

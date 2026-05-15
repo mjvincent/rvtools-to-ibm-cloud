@@ -20,7 +20,7 @@ python scripts/generate_pricing_cache.py --region us-south
 
 The generator uses IBM Global Catalog pricing endpoints for the public Power Virtual Server plan, normalizes deployment metrics for the selected region/country/currency, and maps only uniquely matched linear billing dimensions into the cache. For common IBM regions, it selects the corresponding Power VS deployment location, such as `us-south` to `dal10`/`dal12`. It writes `source=ibm-global-catalog` and `confidence=exact_catalog` only when exact dimensions are available; ambiguous dimensions remain visible as `unmapped_catalog_metrics` and fall back to bundled estimates.
 
-Use `--dry-run` to validate credentials and profile discovery without writing a file:
+Use `--dry-run` to validate credentials, deployment selection, and billing-dimension mapping without writing a file:
 
 ```bash
 python scripts/generate_pricing_cache.py --region us-south --dry-run
@@ -52,7 +52,11 @@ The VM table includes:
 Pricing metadata is included in:
 * `migration-manifest.json`
 * `vm-mapping.csv`
+* `pricing-diagnostics.json`
+* `pricing-diagnostics.csv`
 * Business case CSV exports from the table
+
+The diagnostics exports include mapped billing dimensions, selected Power VS deployment metadata when available, exact versus fallback VM pricing components, and unmapped catalog metrics with reasons.
 
 ## Cache Format
 The optional cache file uses JSON:
