@@ -307,6 +307,10 @@ def generate_migration_manifest(final_vms, context):
             "readiness_findings_csv": "readiness-findings.csv",
             "assessment_quality_json": "assessment-quality.json",
             "assessment_quality_csv": "assessment-quality.csv",
+            "preflight_report_json": "preflight-report.json",
+            "preflight_report_csv": "preflight-report.csv",
+            "pricing_diagnostics_json": "pricing-diagnostics.json",
+            "pricing_diagnostics_csv": "pricing-diagnostics.csv",
             "runbook": "migration-runbook.md",
             "image_import_tfvars_example": "image-import-variables.tfvars.example",
         },
@@ -489,6 +493,117 @@ def generate_readiness_findings_csv(final_vms):
                     finding.get('recommended_action')
                 ),
             })
+    return output.getvalue()
+
+
+def _catalog_deployment(catalog):
+    metadata = catalog.get("metadata", {}) if catalog else {}
+    metrics = catalog.get("catalog_metrics", []) if catalog else []
+    first_metric = metrics[0] if metrics else {}
+    return {
+        "deployment_id": _clean_value(
+            metadata.get("deployment_id") or first_metric.get("deployment_id")
+        ),
+        "deployment_location": _clean_value(
+            metadata.get("deployment_location")
+            or first_metric.get("deployment_location")
+        ),
+        "deployment_region": _clean_value(
+            metadata.get("deployment_region") or first_metric.get("deployment_region")
+            or metadata.get("region")
+        ),
+    }
+
+
+def generate_pricing_diagnostics_json(catalog, final_vms):
+    """Create an auditable pricing diagnostics export for the package."""
+    final_vms = _normalize_vms(final_vms)
+    catalog = catalog or {}
+    metadata = catalog.get("metadata", {})
+    diagnostics = {
+        "schema_version": "1.0",
+        "metadata": {
+            "mode": _clean_value(metadata.get("mode")),
+            "source": _clean_value(metadata.get("source")),
+            "confidence": _clean_value(metadata.get("confidence")),
+            "pricing_status": _clean_value(metadata.get("pricing_status")),
+            "region": _clean_value(metadata.get("region")),
+            "country": _clean_value(metadata.get("country")),
+            "currency": _clean_value(metadata.get("currency")),
+            "last_updated": _clean_value(metadata.get("last_updated")),
+            **_catalog_deployment(catalog),
+        },
+        "billing_dimension_rates": catalog.get("billing_dimension_rates", {}),
+        "unmapped_catalog_metrics": catalog.get("unmapped_catalog_metrics", []),
+        "vm_pricing": [
+            {
+                "vm_name": _safe_vm_key(vm.get("VM Name")),
+                "effective_profile": _effective_profile(vm),
+                "effective_storage_tier": _effective_storage_tier(vm),
+                "pricing_source": _clean_value(vm.get("Pricing Source")),
+                "pricing_confidence": _clean_value(vm.get("Pricing Confidence")),
+                "pricing_status": _clean_value(vm.get("Pricing Status")),
+                "profile_hourly": _clean_value(vm.get("Profile Hourly"), 0),
+                "compute_monthly": _clean_value(vm.get("Compute (Mo)"), 0),
+                "storage_monthly": _clean_value(vm.get("Storage (Mo)"), 0),
+                "estimated_monthly_cost": _clean_value(vm.get("Monthly Cost"), 0),
+            }
+            for vm in final_vms
+        ],
+    }
+    return json.dumps(diagnostics, indent=2, sort_keys=True)
+
+
+def generate_pricing_diagnostics_csv(catalog, final_vms):
+    """Create a VM-level CSV view of pricing source and fallback behavior."""
+    final_vms = _normalize_vms(final_vms)
+    catalog = catalog or {}
+    metadata = catalog.get("metadata", {})
+    deployment = _catalog_deployment(catalog)
+    output = io.StringIO()
+    fieldnames = [
+        "VM Name", "Effective Profile", "Effective Storage Tier",
+        "Pricing Source", "Pricing Confidence", "Pricing Status",
+        "Profile Hourly", "Compute Monthly", "Storage Monthly",
+        "Estimated Monthly Cost", "Catalog Mode", "Catalog Region",
+        "Catalog Country", "Catalog Currency", "Catalog Last Updated",
+        "Power VS Deployment ID", "Power VS Deployment Location",
+        "Power VS Deployment Region", "Mapped Billing Dimensions",
+        "Unmapped Catalog Metrics"
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    mapped_dimensions = "; ".join(
+        f"{key}={value}"
+        for key, value in sorted(catalog.get("billing_dimension_rates", {}).items())
+    )
+    unmapped = "; ".join(
+        f"{item.get('dimension')}: {item.get('reason')}"
+        for item in catalog.get("unmapped_catalog_metrics", [])
+    )
+    for vm in final_vms:
+        writer.writerow({
+            "VM Name": _safe_vm_key(vm.get("VM Name")),
+            "Effective Profile": _effective_profile(vm),
+            "Effective Storage Tier": _effective_storage_tier(vm),
+            "Pricing Source": _clean_value(vm.get("Pricing Source")),
+            "Pricing Confidence": _clean_value(vm.get("Pricing Confidence")),
+            "Pricing Status": _clean_value(vm.get("Pricing Status")),
+            "Profile Hourly": _clean_value(vm.get("Profile Hourly"), 0),
+            "Compute Monthly": _clean_value(vm.get("Compute (Mo)"), 0),
+            "Storage Monthly": _clean_value(vm.get("Storage (Mo)"), 0),
+            "Estimated Monthly Cost": _clean_value(vm.get("Monthly Cost"), 0),
+            "Catalog Mode": _clean_value(metadata.get("mode")),
+            "Catalog Region": _clean_value(metadata.get("region")),
+            "Catalog Country": _clean_value(metadata.get("country")),
+            "Catalog Currency": _clean_value(metadata.get("currency")),
+            "Catalog Last Updated": _clean_value(metadata.get("last_updated")),
+            "Power VS Deployment ID": deployment["deployment_id"],
+            "Power VS Deployment Location": deployment["deployment_location"],
+            "Power VS Deployment Region": deployment["deployment_region"],
+            "Mapped Billing Dimensions": mapped_dimensions,
+            "Unmapped Catalog Metrics": unmapped,
+        })
     return output.getvalue()
 
 

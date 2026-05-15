@@ -17,10 +17,19 @@ from handoff import (
     generate_migration_runbook,
     generate_nic_mapping_csv,
     generate_partition_mapping_csv,
+    generate_pricing_diagnostics_csv,
+    generate_pricing_diagnostics_json,
     generate_readiness_findings_csv,
     generate_vm_mapping_csv,
 )
 from models import MigrationVm
+from preflight import (
+    generate_preflight_report_csv,
+    generate_preflight_report_json,
+    has_blockers,
+    run_package_preflight,
+    summarize_preflight,
+)
 from rvtools_parser import normalize_network_name, parse_rvtools_workbook
 from terraform_renderer import generate_tfvars, render_terraform_templates
 from ui import (
@@ -281,6 +290,41 @@ if uploaded_file is not None:
                         )
                         final_vms.append(MigrationVm.from_record(vm))
 
+                    preflight_findings = run_package_preflight(
+                        final_vms,
+                        unique_nets,
+                        target_region,
+                        custom_cidrs=custom_cidrs,
+                        enable_security_groups=generate_security_groups,
+                        catalog_profiles=catalog_profiles,
+                    )
+                    preflight_summary = summarize_preflight(preflight_findings)
+                    if preflight_findings:
+                        st.write("### Package Preflight")
+                        c1, c2, c3 = st.columns(3)
+                        c1.metric("Blockers", preflight_summary["blockers"])
+                        c2.metric("Warnings", preflight_summary["warnings"])
+                        c3.metric("Info", preflight_summary["info"])
+                        st.dataframe(
+                            pd.DataFrame([
+                                finding.to_record()
+                                for finding in preflight_findings
+                            ]),
+                            hide_index=True,
+                            use_container_width=True,
+                        )
+                    if has_blockers(preflight_findings):
+                        status.update(
+                            label="Preflight blocked package build",
+                            state="error",
+                        )
+                        st.session_state['build_done'] = False
+                        st.error(
+                            "Resolve package preflight blockers or exclude the "
+                            "affected VMs before building the Terraform bundle."
+                        )
+                        st.stop()
+
                     terraform_files = render_terraform_templates(
                         final_vms,
                         unique_nets,
@@ -348,6 +392,26 @@ if uploaded_file is not None:
                         zf.writestr(
                             "assessment-quality.csv",
                             generate_assessment_quality_csv(assessment_quality)
+                        )
+                        zf.writestr(
+                            "preflight-report.json",
+                            generate_preflight_report_json(preflight_findings)
+                        )
+                        zf.writestr(
+                            "preflight-report.csv",
+                            generate_preflight_report_csv(preflight_findings)
+                        )
+                        zf.writestr(
+                            "pricing-diagnostics.json",
+                            generate_pricing_diagnostics_json(
+                                pricing_catalog, final_vms
+                            )
+                        )
+                        zf.writestr(
+                            "pricing-diagnostics.csv",
+                            generate_pricing_diagnostics_csv(
+                                pricing_catalog, final_vms
+                            )
                         )
                         zf.writestr(
                             "vm-mapping.csv",
