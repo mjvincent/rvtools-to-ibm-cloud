@@ -12,6 +12,7 @@ from assessment_quality import (
 from handoff import (
     generate_disk_mapping_csv,
     generate_image_import_tfvars,
+    image_import_export,
     generate_memory_readiness_csv,
     generate_migration_manifest,
     generate_migration_runbook,
@@ -156,8 +157,8 @@ if uploaded_file is not None:
 
     render_estate_summary(df_f)
 
-    overview, readiness, vm_review, networks, storage, export = st.tabs([
-        "Overview", "Readiness", "VM Review", "Networks", "Storage", "Export"
+    overview, readiness, remediation_backlog, vm_review, wave_planning, networks, storage, export = st.tabs([
+        "Overview", "Readiness", "Remediation Backlog", "VM Review", "Wave Planning", "Networks", "Storage", "Export"
     ])
 
     edited_df = df_table.copy()
@@ -208,6 +209,119 @@ if uploaded_file is not None:
         render_readiness_legend()
         render_readiness_triage(df_f)
 
+    with remediation_backlog:
+        st.subheader("Remediation Backlog")
+        st.caption("Track readiness blockers and remediation status.")
+
+        # Initialize remediation tracker storage
+        if "remediation_tracker" not in st.session_state:
+            st.session_state["remediation_tracker"] = {}
+
+        # Collect blockers from VM readiness findings
+        backlog_items = []
+        _counter = 0
+        for vm in processed_vms:
+            # Aggregate findings from various readiness sources
+            findings = []
+            findings.extend(getattr(vm, "readiness_findings", []) or [])
+            findings.extend(getattr(vm, "network_readiness_findings", []) or [])
+            findings.extend(getattr(vm, "migration", {}).findings if getattr(vm, "migration", None) else [])
+            for f in findings:
+                blocker_id = f"{vm.vm_key}::{_counter}"
+                _counter += 1
+                desc = f.recommended_action or f.evidence or f.severity or ""
+                state_entry = st.session_state["remediation_tracker"].get(blocker_id, {})
+                backlog_items.append({
+                    "blocker_id": blocker_id,
+                    "VM Key": vm.vm_key,
+                    "VM Name": vm.vm_name,
+                    "Owner": vm.owner or "",
+                    "Blocker Type": f.finding_type,
+                    "Blocker Description": desc,
+                    "Status": state_entry.get("status", "Open"),
+                    "Due Date": state_entry.get("due_date", ""),
+                    "Notes": state_entry.get("notes", ""),
+                })
+
+        if not backlog_items:
+            st.info("No readiness blockers found.")
+        else:
+            backlog_df = pd.DataFrame(backlog_items)
+            col_cfg = {
+                "blocker_id": st.column_config.TextColumn("ID", disabled=True),
+                "VM Key": st.column_config.TextColumn("VM Key", disabled=True),
+                "VM Name": st.column_config.TextColumn("VM Name", disabled=True),
+                "Owner": st.column_config.TextColumn("Owner"),
+                "Blocker Type": st.column_config.TextColumn("Blocker Type", disabled=True),
+                "Blocker Description": st.column_config.TextColumn("Blocker Description", disabled=True),
+                "Status": st.column_config.SelectboxColumn("Status", options=["Open", "In Progress", "Resolved", "Deferred"]),
+                "Due Date": st.column_config.TextColumn("Due Date"),
+                "Notes": st.column_config.TextColumn("Notes"),
+            }
+
+            edited_backlog = st.data_editor(
+                backlog_df,
+                column_config=col_cfg,
+                hide_index=True,
+                use_container_width=True,
+                key="remediation_editor"
+            )
+
+            # Persist edits into session_state mapping
+            if isinstance(edited_backlog, pd.DataFrame):
+                for row in edited_backlog.to_dict("records"):
+                    bid = row.get("blocker_id")
+                    if not bid:
+                        continue
+                    st.session_state["remediation_tracker"][bid] = {
+                        "status": row.get("Status", "Open"),
+                        "due_date": row.get("Due Date", ""),
+                        "notes": row.get("Notes", ""),
+                        "owner": row.get("Owner", ""),
+                    }
+
+            # Summary section
+            st.write("---")
+            st.subheader("Backlog Summary")
+            df_for_summary = edited_backlog if isinstance(edited_backlog, pd.DataFrame) else backlog_df
+            status_counts = df_for_summary["Status"].value_counts().to_dict() if not df_for_summary.empty else {}
+            owner_counts = df_for_summary["Owner"].fillna("").value_counts().to_dict() if not df_for_summary.empty else {}
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Open", int(status_counts.get("Open", 0)))
+            c2.metric("In Progress", int(status_counts.get("In Progress", 0)))
+            c3.metric("Resolved", int(status_counts.get("Resolved", 0)))
+
+            st.write("### By Owner")
+            if owner_counts:
+                owner_df = pd.DataFrame([{"Owner": k, "Count": v} for k, v in owner_counts.items()])
+                st.dataframe(owner_df, use_container_width=True)
+            else:
+                st.write("No owners assigned yet.")
+
+            # Overdue items
+            try:
+                due_parsed = pd.to_datetime(df_for_summary.get("Due Date", pd.Series([], dtype=object)), errors="coerce")
+                overdue_mask = due_parsed < pd.Timestamp.now()
+                overdue = df_for_summary.loc[overdue_mask]
+                st.write(f"Overdue items: {len(overdue)}")
+                if not overdue.empty:
+                    st.dataframe(overdue[["VM Key", "VM Name", "Owner", "Blocker Type", "Blocker Description", "Status", "Due Date", "Notes"]], use_container_width=True)
+            except Exception:
+                # If parsing fails, skip overdue calculation
+                pass
+
+            # Export
+            csv_bytes = df_for_summary.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="Export Remediation Backlog",
+                data=csv_bytes,
+                file_name="p4-remediation-backlog.csv",
+                mime="text/csv",
+                use_container_width=True,
+                key="p4-tracker-export"
+            )
+
     with vm_review:
         st.subheader("VM Decisions")
         st.caption("This view keeps the active decisions in front. Raw generated fields remain available below for audit and troubleshooting.")
@@ -238,11 +352,268 @@ if uploaded_file is not None:
         with st.expander("Advanced generated fields"):
             st.dataframe(edited_df, hide_index=True, use_container_width=True)
 
+    with wave_planning:
+        st.subheader("Wave Planning")
+        st.caption("Bulk assign waves, cutover groups, owners, and applications to active VMs.")
+
+        # Prepare active VMs table
+        active_df = edited_df[~edited_df['Exclude?']].copy()
+        # Ensure wave planning columns exist
+        for col in ["Wave", "Cutover Group", "Owner", "Application", "Priority", "Dependency Group"]:
+            if col not in active_df.columns:
+                active_df[col] = "" if col != "Priority" else "Medium"
+
+        # Selection controls
+        st.write("### Select VMs to assign")
+        vm_options = active_df["VM Key"].tolist()
+        selected = st.multiselect(
+            "Select VMs (by VM Key)", vm_options,
+            default=st.session_state.get("wave_selected_vms", [])
+        )
+        st.session_state["wave_selected_vms"] = selected
+
+        c1, c2, c3 = st.columns([2, 2, 6])
+        with c1:
+            assign_wave_value = st.text_input("Quick Wave Value", "")
+            if st.button("Assign All to Wave", use_container_width=True):
+                if assign_wave_value:
+                    edited_df.loc[~edited_df['Exclude?'], 'Wave'] = assign_wave_value
+                    st.success(f"Assigned wave '{assign_wave_value}' to all active VMs")
+                else:
+                    st.warning("Enter a Wave value to assign to all active VMs.")
+        with c2:
+            if st.button("Assign Wave", use_container_width=True):
+                st.session_state["show_assign_wave_form"] = True
+        with c3:
+            st.write("")
+
+        # Bulk assign form
+        if st.session_state.get("show_assign_wave_form"):
+            with st.form("assign_wave_form"):
+                st.write("Assign fields to selected VMs")
+                f_wave = st.text_input("Wave")
+                f_cut = st.text_input("Cutover Group")
+                f_owner = st.text_input("Owner")
+                f_app = st.text_input("Application")
+                submitted = st.form_submit_button("Apply to Selected VMs")
+                if submitted:
+                    if not selected:
+                        st.warning("No VMs selected for assignment.")
+                    else:
+                        for vmk in selected:
+                            mask = edited_df['VM Key'] == vmk
+                            if f_wave:
+                                edited_df.loc[mask, 'Wave'] = f_wave
+                            if f_cut:
+                                edited_df.loc[mask, 'Cutover Group'] = f_cut
+                            if f_owner:
+                                edited_df.loc[mask, 'Owner'] = f_owner
+                            if f_app:
+                                edited_df.loc[mask, 'Application'] = f_app
+                        st.success(f"Assigned fields to {len(selected)} VMs")
+                        st.session_state["show_assign_wave_form"] = False
+
+        # Configure columns for data editor using existing table_config where possible
+        wave_table_cfg = dict(table_config)
+        wave_table_cfg.update({
+            "VM Key": st.column_config.TextColumn("VM Key", disabled=True),
+            "VM Name": st.column_config.TextColumn("VM Name", disabled=True),
+            "Wave": st.column_config.TextColumn("Wave"),
+            "Cutover Group": st.column_config.TextColumn("Cutover Group"),
+            "Owner": st.column_config.TextColumn("Owner"),
+            "Application": st.column_config.TextColumn("Application"),
+            "Priority": st.column_config.SelectboxColumn("Priority", options=["", "High", "Medium", "Low"]),
+            "Dependency Group": st.column_config.TextColumn("Dependency Group"),
+        })
+
+        # Display editable grid
+        display_cols = [
+            "VM Key", "VM Name", "Wave", "Cutover Group", "Owner",
+            "Application", "Priority", "Dependency Group"
+        ]
+        wave_editor = st.data_editor(
+            active_df[display_cols],
+            column_config=wave_table_cfg,
+            hide_index=True,
+            use_container_width=True,
+            key="wave_planning_editor"
+        )
+
+        # Persist edits back to edited_df by VM Key
+        if isinstance(wave_editor, pd.DataFrame):
+            for row in wave_editor.to_dict('records'):
+                vmk = row.get('VM Key')
+                mask = edited_df['VM Key'] == vmk
+                for col in ["Wave", "Cutover Group", "Owner", "Application", "Priority", "Dependency Group"]:
+                    if col in row:
+                        edited_df.loc[mask, col] = row.get(col)
+
+        # Conflict detection
+        st.write("### Conflict Detection")
+        # Application vs Cutover Group
+        app_conflicts = []
+        apps = active_df.groupby('Application') if 'Application' in active_df.columns else []
+        for app, group in apps:
+            vals = set(group['Cutover Group'].dropna().astype(str).unique())
+            vals = {v for v in vals if v}
+            if len(vals) > 1:
+                app_conflicts.append((app, vals))
+        if app_conflicts:
+            for app, vals in app_conflicts:
+                st.warning(f"Application '{app}' has multiple Cutover Groups: {', '.join(vals)}")
+
+        # Dependency Group vs Wave
+        dep_conflicts = []
+        deps = active_df.groupby('Dependency Group') if 'Dependency Group' in active_df.columns else []
+        for dep, group in deps:
+            vals = set(group['Wave'].dropna().astype(str).unique())
+            vals = {v for v in vals if v}
+            if len(vals) > 1:
+                dep_conflicts.append((dep, vals))
+        if dep_conflicts:
+            for dep, vals in dep_conflicts:
+                st.warning(f"Dependency Group '{dep}' spans multiple Waves: {', '.join(vals)}")
+
+        # Completion status
+        total = len(active_df)
+        if total:
+            required = ["Wave", "Cutover Group", "Owner", "Application"]
+            complete = 0
+            for _, r in edited_df[~edited_df['Exclude?']].iterrows():
+                if all(r.get(c) not in (None, "") for c in required):
+                    complete += 1
+            if complete == total:
+                st.success(f"Complete: {complete}/{total} VMs")
+            else:
+                st.info(f"Incomplete: {complete}/{total} VMs")
+
+        # Expose advanced fields for audit
+        with st.expander("Advanced wave planning data"):
+            st.dataframe(edited_df[["VM Key", "VM Name", "Wave", "Cutover Group", "Owner", "Application", "Priority", "Dependency Group"]], hide_index=True, use_container_width=True)
+
     with networks:
         render_network_planning(edited_df, unique_nets)
 
     with storage:
         render_storage_planning(edited_df, processed_vms)
+
+    with image_import:
+        st.subheader("Image Import Planning")
+        st.caption("Group active VMs by inferred source image and track import status.")
+
+        # Initialize image import status storage
+        if "image_import_status" not in st.session_state:
+            st.session_state["image_import_status"] = {}
+
+        # Build groups from active VMs
+        active_images = edited_df[~edited_df['Exclude?']].copy()
+        groups = {}
+        for _, r in active_images.iterrows():
+            source = r.get("Original Specs") or r.get("VM Name")
+            source = str(source)
+            entry = groups.setdefault(source, {"vms": [], "owners": set()})
+            entry["vms"].append(r)
+            owner = r.get("Owner") or r.get("owner") or ""
+            if owner:
+                entry["owners"].add(owner)
+
+        rows = []
+        for source in sorted(groups.keys()):
+            entry = groups[source]
+            count = len(entry["vms"])
+            owners = "; ".join(sorted(entry["owners"])) if entry["owners"] else ""
+            state = st.session_state["image_import_status"].get(source, {})
+            rows.append({
+                "Source Image": source,
+                "Count of VMs": count,
+                "Owners": owners,
+                "Target Catalog ID": state.get("target_catalog_id", ""),
+                "Import Status": state.get("import_status", ""),
+                "Estimated Import Time": state.get("estimated_import_time", ""),
+                "Notes": state.get("notes", ""),
+            })
+
+        if not rows:
+            st.info("No active VMs to plan image imports for.")
+        else:
+            df_images = pd.DataFrame(rows)
+
+            col_cfg = {
+                "Source Image": st.column_config.TextColumn("Source Image", disabled=True),
+                "Count of VMs": st.column_config.NumberColumn("Count of VMs", disabled=True),
+                "Owners": st.column_config.TextColumn("Owners", disabled=True),
+                "Target Catalog ID": st.column_config.TextColumn("Target Catalog ID"),
+                "Import Status": st.column_config.SelectboxColumn(
+                    "Import Status",
+                    options=["", "Pending", "Scheduled", "Imported", "Failed", "Review"],
+                ),
+                "Estimated Import Time": st.column_config.TextColumn("Estimated Import Time"),
+                "Notes": st.column_config.TextColumn("Notes"),
+            }
+
+            edited_images = st.data_editor(
+                df_images,
+                column_config=col_cfg,
+                hide_index=True,
+                use_container_width=True,
+                key="image_import_editor",
+            )
+
+            # Persist edits into session_state mapping keyed by Source Image
+            if isinstance(edited_images, pd.DataFrame):
+                for row in edited_images.to_dict("records"):
+                    src = row.get("Source Image")
+                    if not src:
+                        continue
+                    st.session_state["image_import_status"][src] = {
+                        "target_catalog_id": row.get("Target Catalog ID", ""),
+                        "import_status": row.get("Import Status", ""),
+                        "estimated_import_time": row.get("Estimated Import Time", ""),
+                        "notes": row.get("Notes", ""),
+                    }
+
+            st.write("---")
+            st.subheader("Bulk Actions")
+            image_options = df_images["Source Image"].tolist()
+            selected_images = st.multiselect(
+                "Select images to update",
+                image_options,
+                default=st.session_state.get("image_import_selected", []),
+                key="image_import_multiselect",
+            )
+            st.session_state["image_import_selected"] = selected_images
+
+            c1, c2 = st.columns([2, 6])
+            with c1:
+                bulk_status = st.selectbox(
+                    "Set Import Status",
+                    ["", "Pending", "Scheduled", "Imported", "Failed", "Review"],
+                    key="bulk_image_status",
+                )
+                if st.button("Apply Status to Selected", use_container_width=True):
+                    if not selected_images:
+                        st.warning("No images selected.")
+                    else:
+                        for src in selected_images:
+                            cur = st.session_state["image_import_status"].get(src, {})
+                            cur["import_status"] = bulk_status
+                            st.session_state["image_import_status"][src] = cur
+                        st.success(f"Updated import status for {len(selected_images)} images.")
+
+            with c2:
+                if st.button("Generate Image Import Export", use_container_width=True):
+                    csv_text = image_import_export(build_final_vms(edited_df), st.session_state.get("image_import_status"))
+                    st.session_state["last_image_import_csv"] = csv_text
+
+                if st.session_state.get("last_image_import_csv"):
+                    st.download_button(
+                        label="Download Image Import CSV",
+                        data=st.session_state.get("last_image_import_csv").encode("utf-8"),
+                        file_name="image-import-plan.csv",
+                        mime="text/csv",
+                        use_container_width=True,
+                        key="image_import_export_download",
+                    )
 
     with export:
         st.subheader("Terraform Package")
