@@ -10,6 +10,7 @@ from assessment_quality import (
     generate_assessment_quality_json,
 )
 from handoff import (
+    decision_audit_export,
     generate_disk_mapping_csv,
     generate_image_import_tfvars,
     image_import_export,
@@ -22,6 +23,7 @@ from handoff import (
     generate_pricing_diagnostics_json,
     generate_readiness_findings_csv,
     generate_vm_mapping_csv,
+    remediation_tracker_export,
 )
 from models import MigrationVm
 from preflight import (
@@ -157,8 +159,8 @@ if uploaded_file is not None:
 
     render_estate_summary(df_f)
 
-    overview, readiness, remediation_backlog, vm_review, wave_planning, networks, storage, export = st.tabs([
-        "Overview", "Readiness", "Remediation Backlog", "VM Review", "Wave Planning", "Networks", "Storage", "Export"
+    overview, readiness, remediation_backlog, vm_review, wave_planning, image_import, networks, storage, export = st.tabs([
+        "Overview", "Readiness", "Remediation Backlog", "VM Review", "Wave Planning", "Image Import Planning", "Networks", "Storage", "Export"
     ])
 
     edited_df = df_table.copy()
@@ -213,7 +215,51 @@ if uploaded_file is not None:
         st.subheader("Remediation Backlog")
         st.caption("Track readiness blockers and remediation status.")
 
+        # Session state persistence note
+        st.info(
+            "**Note:** Remediation tracker data is stored for this session only. "
+            "To persist your tracking data across sessions, export the CSV below and re-import it by adding it back to the backlog."
+        )
+
         # Initialize remediation tracker storage
+        #
+        # DESIGN: Remediation Tracker State Management
+        # ============================================
+        # Current Implementation: Session-only storage via st.session_state
+        # - Storage Location: st.session_state["remediation_tracker"]
+        # - Structure: {blocker_id: {status, due_date, notes, owner}, ...}
+        # - Scope: Current session only; lost on page refresh or browser close
+        # - Use Case: In-session tracking during migration planning workflow
+        #
+        # Future Persistence Design (JSON File Storage):
+        # - File Location: {project_dir}/.remediation_tracker.json
+        # - Format:
+        #   {
+        #     "metadata": {
+        #       "version": "1.0",
+        #       "project_name": "<project>",
+        #       "export_timestamp": "2024-01-15T10:30:00Z"
+        #     },
+        #     "blockers": {
+        #       "<blocker_id>": {
+        #         "vm_key": "<vm_key>",
+        #         "vm_name": "<vm_name>",
+        #         "blocker_type": "<type>",
+        #         "status": "Open|In Progress|Resolved|Deferred",
+        #         "due_date": "YYYY-MM-DD",
+        #         "notes": "<notes>",
+        #         "owner": "<owner>",
+        #         "created_at": "2024-01-15T10:00:00Z",
+        #         "updated_at": "2024-01-15T10:30:00Z"
+        #       }
+        #     }
+        #   }
+        # - Implementation Strategy:
+        #   1. Add load_remediation_state(project_dir) to handoff.py
+        #   2. Add save_remediation_state(state, project_dir) to handoff.py
+        #   3. Load on app init if exists
+        #   4. Provide import/export buttons in Remediation Backlog tab
+        #   5. Auto-save after editor changes (with confirmation)
         if "remediation_tracker" not in st.session_state:
             st.session_state["remediation_tracker"] = {}
 
@@ -792,6 +838,24 @@ if uploaded_file is not None:
                             "pricing-diagnostics.csv",
                             generate_pricing_diagnostics_csv(
                                 pricing_catalog, final_vms
+                            )
+                        )
+                        zf.writestr(
+                            "decision-audit.csv",
+                            decision_audit_export(final_vms, pricing_catalog)
+                        )
+                        zf.writestr(
+                            "remediation-backlog.csv",
+                            remediation_tracker_export(
+                                final_vms,
+                                st.session_state.get("remediation_tracker", {})
+                            )
+                        )
+                        zf.writestr(
+                            "image-import-plan.csv",
+                            image_import_export(
+                                final_vms,
+                                st.session_state.get("image_import_status", {})
                             )
                         )
                         zf.writestr(

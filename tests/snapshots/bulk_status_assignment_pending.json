@@ -1,0 +1,29 @@
+[
+  {
+    "Source Image":"RHEL-8",
+    "Count of VMs":3,
+    "Owners":"Alice Smith; Bob Johnson; Charlie Davis",
+    "Target Catalog ID":"",
+    "Import Status":"Pending",
+    "Estimated Import Time":"",
+    "Notes":""
+  },
+  {
+    "Source Image":"RHEL-9",
+    "Count of VMs":2,
+    "Owners":"Eve Wilson",
+    "Target Catalog ID":"",
+    "Import Status":"Pending",
+    "Estimated Import Time":"",
+    "Notes":""
+  },
+  {
+    "Source Image":"Ubuntu-22.04",
+    "Count of VMs":1,
+    "Owners":"Frank Miller",
+    "Target Catalog ID":"",
+    "Import Status":"",
+    "Estimated Import Time":"",
+    "Notes":""
+  }
+]

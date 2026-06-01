@@ -1,0 +1,5 @@
+VM Key,VM Name,Owner,Application,Wave,Original Profile,Chosen Profile,Profile Override Reason,Original Storage Tier,Chosen Storage Tier,Storage Tier Override Reason,Network Mode,Include/Exclude,Exclusion Reason,vCPU Cost Delta,Storage Cost Delta,Total Pricing Impact
+vm-101,web-01,John Doe,Web Server,Wave 1,bx2-2x8,bx2-2x8,,3iops-tier,3iops-tier,,unknown-net,Include,,0.0,0.0,0.0
+vm-102,api-01,Jane Smith,API Server,Wave 1,bx2-2x8,bx2-4x16,High throughput API,3iops-tier,5iops-tier,API caching layer,unknown-net,Include,,81.36,7.5,88.86
+vm-103,db-01,Bob Johnson,Database,Wave 2,bx2-2x8,bx2-2x8,,3iops-tier,3iops-tier,,unknown-net,Exclude,Being migrated separately,0.0,0.0,0.0
+,TOTAL,,,,,,,,,,,,,,,88.86

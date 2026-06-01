@@ -1,0 +1,4 @@
+blocker_id,VM Key,VM Name,Owner,Blocker Type,Blocker Description,Status,Due Date,Notes
+vm-001::0,vm-001,app-01,team-a,VMware Tools status,Update VMware Tools,Open,2024-12-31,Requires downtime window
+vm-001::1,vm-001,app-01,team-b,Storage Configuration,Multiple disks detected,In Progress,2024-11-30,Mapping disks to storage tiers
+vm-001::2,vm-001,app-01,team-a,Network Configuration,Multi-NIC setup,Resolved,2024-11-15,Configured in migration spec

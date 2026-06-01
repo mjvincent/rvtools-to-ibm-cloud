@@ -1,0 +1,4 @@
+Source Image,Count of VMs,Owners,Target Catalog ID,Import Status,Estimated Import Time,Notes
+app-01,1,,ibm-app-v1,Imported,2 hours,Successfully imported
+app-02,1,,,,,
+TOTAL,2,,,,,

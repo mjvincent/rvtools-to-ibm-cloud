@@ -1,0 +1,12 @@
+Original Blocker:
+blocker_id,VM Key,VM Name,Owner,Blocker Type,Blocker Description,Status,Due Date,Notes
+vm-001::0,vm-001,app-01,john.doe@company.com,VMware Tools status,Update VMware Tools,Open,,
+
+---
+
+Persisted State:
+Blocker ID: vm-001::0
+  Status: In Progress
+  Due Date: 2024-12-25
+  Notes: Scheduled for weekend maintenance
+  Owner: john.doe@company.com

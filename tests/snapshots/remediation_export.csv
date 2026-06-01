@@ -1,0 +1,13 @@
+VM Key,VM Name,Owner,Blocker Type,Blocker Description,Status,Due Date,Notes
+vm-001,unknown-vm,team-a,Firmware Update,Update server firmware,Open,2024-12-31,Waiting for vendor response
+vm-001,unknown-vm,team-a,VMware Tools,Update VMware Tools,In Progress,2024-11-30,In queue for maintenance
+vm-002,unknown-vm,team-b,Database Configuration,Adjust DB parameters,Resolved,2024-11-15,Completed
+,,,,,,,
+,SUMMARY,,,,,,
+,Status: In Progress,,,,1,,
+,Status: Open,,,,1,,
+,Status: Resolved,,,,1,,
+,Owner: team-a,,,,2,,
+,Owner: team-b,,,,1,,
+,Overdue Items,,,,2,,
+,TOTAL BLOCKERS,,,,3,,

@@ -1,0 +1,11 @@
+VM Key,VM Name,Owner,Blocker Type,Blocker Description,Status,Due Date,Notes
+vm-found,unknown-vm,team-a,Type A,Blocker for found VM,Open,2024-12-31,For known VM
+vm-not-found,unknown-vm,unknown-team,Type B,Blocker for missing VM,In Progress,2024-12-15,For unknown VM
+,,,,,,,
+,SUMMARY,,,,,,
+,Status: In Progress,,,,1,,
+,Status: Open,,,,1,,
+,Owner: team-a,,,,1,,
+,Owner: unknown-team,,,,1,,
+,Overdue Items,,,,2,,
+,TOTAL BLOCKERS,,,,2,,

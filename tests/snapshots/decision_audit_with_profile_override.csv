@@ -1,0 +1,3 @@
+VM Key,VM Name,Owner,Application,Wave,Original Profile,Chosen Profile,Profile Override Reason,Original Storage Tier,Chosen Storage Tier,Storage Tier Override Reason,Network Mode,Include/Exclude,Exclusion Reason,vCPU Cost Delta,Storage Cost Delta,Total Pricing Impact
+vm-002,app-02,Jane Smith,API Server,Wave 1,bx2-2x8,bx2-4x16,Increased performance needed,3iops-tier,3iops-tier,,unknown-net,Include,,81.36,0.0,81.36
+,TOTAL,,,,,,,,,,,,,,,81.36

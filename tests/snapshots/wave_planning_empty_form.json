@@ -1,0 +1,22 @@
+[
+  {
+    "VM Key":"vm-001",
+    "VM Name":"app-01",
+    "Wave":"",
+    "Cutover Group":"",
+    "Owner":"",
+    "Application":"",
+    "Priority":"Medium",
+    "Dependency Group":""
+  },
+  {
+    "VM Key":"vm-002",
+    "VM Name":"app-02",
+    "Wave":"",
+    "Cutover Group":"",
+    "Owner":"",
+    "Application":"",
+    "Priority":"Medium",
+    "Dependency Group":""
+  }
+]

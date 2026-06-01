@@ -395,8 +395,12 @@ class MigrationVm:
     original_specs: str = ""
     ibm_profile: str = ""
     override_profile: str = ""
+    # Optional human-friendly reasons for decisions
+    override_profile_reason: str = ""
     storage_tier: str = "3iops-tier"
     override_storage_tier: str = ""
+    override_storage_tier_reason: str = ""
+    exclusion_reason: str = ""
     subnet: str = ""
     security_group: str = ""
     compute_cost_monthly: float = 0
@@ -447,6 +451,12 @@ class MigrationVm:
     pricing_last_updated: str = ""
     pricing_status: str = ""
     profile_hourly: float = 0
+    wave: str = ""
+    cutover_group: str = ""
+    owner: str = ""
+    application: str = ""
+    priority: str = ""
+    dependency_group: str = ""
     disks: list = field(default_factory=list)
     partitions: list = field(default_factory=list)
     nics: list = field(default_factory=list)
@@ -534,6 +544,9 @@ class MigrationVm:
             override_storage_tier=clean_value(
                 get_record_value(record, "Override Storage Tier")
             ),
+            override_profile_reason=clean_value(get_record_value(record, "Override Profile Reason")),
+            override_storage_tier_reason=clean_value(get_record_value(record, "Override Storage Tier Reason")),
+            exclusion_reason=clean_value(get_record_value(record, "Exclusion Reason")),
             subnet=clean_value(get_record_value(record, "Subnet")),
             security_group=clean_value(get_record_value(record, "Security Group")),
             compute_cost_monthly=clean_value(
@@ -640,6 +653,12 @@ class MigrationVm:
             ),
             pricing_status=clean_value(get_record_value(record, "Pricing Status")),
             profile_hourly=clean_value(get_record_value(record, "Profile Hourly"), 0),
+            wave=clean_value(get_record_value(record, "wave")),
+            cutover_group=clean_value(get_record_value(record, "cutover_group")),
+            owner=clean_value(get_record_value(record, "owner")),
+            application=clean_value(get_record_value(record, "application")),
+            priority=clean_value(get_record_value(record, "priority")),
+            dependency_group=clean_value(get_record_value(record, "dependency_group")),
             disks=[
                 DiskMapping.from_record(d)
                 for d in get_record_value(record, "Disk Details", []) or []
@@ -970,6 +989,9 @@ class MigrationVm:
             "Subnet": self.subnet,
             "Security Group": self.security_group,
             "Override Storage Tier": self.override_storage_tier,
+            "Override Profile Reason": self.override_profile_reason,
+            "Override Storage Tier Reason": self.override_storage_tier_reason,
+            "Exclusion Reason": self.exclusion_reason,
             "Right-Sized": self.right_sized,
             "Storage Tier": self.storage_tier,
             "Total Storage GB": self.total_storage_gb,
@@ -978,6 +1000,12 @@ class MigrationVm:
             "Ready_Pct": self.ready_pct,
             "Overall_MHz": self.overall_mhz,
             "Network": self.network,
+            "wave": self.wave,
+            "cutover_group": self.cutover_group,
+            "owner": self.owner,
+            "application": self.application,
+            "priority": self.priority,
+            "dependency_group": self.dependency_group,
         }
 
     def get(self, key, default=None):

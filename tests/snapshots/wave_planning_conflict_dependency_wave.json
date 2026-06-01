@@ -1,0 +1,11 @@
+{
+  "dependency_wave_conflicts": [
+    {
+      "dependency_group": "DG-01",
+      "waves": [
+        "Wave 1",
+        "Wave 2"
+      ]
+    }
+  ]
+}

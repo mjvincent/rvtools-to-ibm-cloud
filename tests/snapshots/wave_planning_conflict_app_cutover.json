@@ -1,0 +1,11 @@
+{
+  "app_cutover_conflicts": [
+    {
+      "application": "Web Server",
+      "cutover_groups": [
+        "CG-A",
+        "CG-B"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+VM Key,VM Name,Owner,Blocker Type,Blocker Description,Status,Due Date,Notes
+dev-app-01,unknown-vm,app-team,Dependency,Resolve application dependencies,In Progress,2024-11-20,Resolving package version conflicts
+prod-db-01,unknown-vm,data-team,Backup Strategy,Implement backup strategy,Resolved,2024-11-01,Backup procedure implemented
+prod-db-01,unknown-vm,data-team,Replication,Setup database replication,Open,2024-12-01,Waiting for replication infrastructure
+prod-web-01,unknown-vm,platform-team,DNS Configuration,DNS records need update,In Progress,2024-11-30,Working with network team
+prod-web-01,unknown-vm,platform-team,SSL Certificate,SSL certificate expires soon,Open,2024-12-15,Need to purchase new certificate
+,,,,,,,
+,SUMMARY,,,,,,
+,Status: In Progress,,,,2,,
+,Status: Open,,,,2,,
+,Status: Resolved,,,,1,,
+,Owner: app-team,,,,1,,
+,Owner: data-team,,,,2,,
+,Owner: platform-team,,,,2,,
+,Overdue Items,,,,4,,
+,TOTAL BLOCKERS,,,,5,,

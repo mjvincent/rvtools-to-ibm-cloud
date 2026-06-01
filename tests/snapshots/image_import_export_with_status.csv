@@ -1,0 +1,4 @@
+Source Image,Count of VMs,Owners,Target Catalog ID,Import Status,Estimated Import Time,Notes
+app-01,1,,ibm-app-v1,Scheduled,2 hours,Scheduled for Monday
+app-02,1,,ibm-app-v1,Pending,,
+TOTAL,2,,,,,

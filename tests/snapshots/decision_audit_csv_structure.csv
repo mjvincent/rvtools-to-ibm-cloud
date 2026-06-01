@@ -1,0 +1,4 @@
+VM Key,VM Name,Owner,Application,Wave,Original Profile,Chosen Profile,Profile Override Reason,Original Storage Tier,Chosen Storage Tier,Storage Tier Override Reason,Network Mode,Include/Exclude,Exclusion Reason,vCPU Cost Delta,Storage Cost Delta,Total Pricing Impact
+vm-201,test-vm-1,Owner 1,App 1,Wave 1,bx2-2x8,bx2-2x8,,3iops-tier,3iops-tier,,unknown-net,Include,,0.0,0.0,0.0
+vm-202,test-vm-2,Owner 2,App 2,Wave 2,bx2-4x16,bx2-4x16,,5iops-tier,5iops-tier,,unknown-net,Include,,0.0,0.0,0.0
+,TOTAL,,,,,,,,,,,,,,,0.0

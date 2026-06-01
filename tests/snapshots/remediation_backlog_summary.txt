@@ -1,0 +1,14 @@
+BACKLOG SUMMARY
+==================================================
+
+Status Counts:
+  In Progress: 2
+  Open: 2
+  Resolved: 2
+
+Owner Counts:
+  alice: 3
+  bob: 2
+  charlie: 1
+
+Total Blockers: 6

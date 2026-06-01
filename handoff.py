@@ -132,11 +132,20 @@ def _effective_storage_tier(vm):
     )
 
 
-def _migration_vm_record(vm):
+def _migration_vm_record(vm, image_import_status=None):
     vm_name = _safe_vm_key(vm.get('VM Name'))
     effective_profile = _effective_profile(vm)
     effective_storage_tier = _effective_storage_tier(vm)
     data_status = _clean_value(vm.get('Data Status'), 'Unknown')
+    
+    # Derive source image from original specs or VM name
+    source_image = _clean_value(vm.get('Original Specs')) or vm_name
+    
+    # Resolve image import status from mapping
+    image_import_status = image_import_status or {}
+    image_status_entry = image_import_status.get(source_image, {})
+    target_catalog_id = image_status_entry.get('target_catalog_id', '')
+    import_status = image_status_entry.get('import_status', '')
 
     return {
         "vm_name": vm_name,
@@ -155,6 +164,7 @@ def _migration_vm_record(vm):
             "original_specs": _clean_value(vm.get('Original Specs')),
             "disks": _vm_disks(vm),
             "partitions": _vm_partitions(vm),
+            "image": source_image,
         },
         "target": {
             "recommended_profile": _clean_value(vm.get('IBM Profile')),
@@ -169,6 +179,9 @@ def _migration_vm_record(vm):
             "effective_storage_tier": effective_storage_tier,
             "custom_image_id": "replace-with-imported-image-id",
             "custom_image_name": f"{vm_name}-custom-image",
+            "source_image": source_image,
+            "target_catalog_id": target_catalog_id,
+            "image_import_status": import_status,
             "data_volumes": [
                 {
                     "source_disk": _clean_value(disk.get('disk')),
@@ -180,9 +193,12 @@ def _migration_vm_record(vm):
             ],
         },
         "migration": {
-            "wave": "wave-01",
-            "cutover_group": "unassigned",
-            "priority": "medium",
+            "wave": _clean_value(vm.get('wave'), 'wave-01'),
+            "cutover_group": _clean_value(vm.get('cutover_group'), 'unassigned'),
+            "owner": _clean_value(vm.get('owner')),
+            "application": _clean_value(vm.get('application')),
+            "priority": _clean_value(vm.get('priority'), 'medium'),
+            "dependency_group": _clean_value(vm.get('dependency_group')),
             "status": "planned",
             "method": "image-import-or-replication-tool",
             "requires_ip_preservation": bool(_clean_value(vm.get('Source IP'))),
@@ -265,12 +281,179 @@ def _migration_vm_record(vm):
             "reasons": _clean_value(vm.get('Network Readiness Reasons')),
             "findings": _vm_network_findings(vm),
         },
+        "wave_metadata": {
+            "wave": _clean_value(vm.get('wave'), 'wave-01'),
+            "cutover_group": _clean_value(vm.get('cutover_group'), 'unassigned'),
+            "owner": _clean_value(vm.get('owner')),
+            "application": _clean_value(vm.get('application')),
+            "priority": _clean_value(vm.get('priority'), 'medium'),
+            "dependency_group": _clean_value(vm.get('dependency_group')),
+        },
     }
 
 
-def generate_migration_manifest(final_vms, context):
-    """Create the tool-neutral migration handoff manifest."""
+def _calculate_decision_audit_summary(final_vms, pricing_catalog=None):
+    """Calculate decision audit summary with pricing impact from overrides.
+    
+    Summarizes profile, storage, and exclusion decisions with their pricing impact.
+    """
+    total_pricing_impact = 0.0
+    profile_override_count = 0
+    storage_override_count = 0
+    
+    for vm in final_vms:
+        # Count profile overrides
+        if _clean_value(vm.get('Override Profile')):
+            profile_override_count += 1
+        
+        # Count storage tier overrides
+        if _clean_value(vm.get('Override Storage Tier')):
+            storage_override_count += 1
+        
+        # Calculate pricing impact (difference between baseline and estimated)
+        baseline = _clean_number(vm.get('Baseline Cost (Mo)'), 0)
+        estimated = _clean_number(vm.get('Monthly Cost'), 0)
+        if baseline > 0:
+            total_pricing_impact += (estimated - baseline)
+    
+    return {
+        "total_pricing_impact": round(total_pricing_impact, 2),
+        "profile_override_count": profile_override_count,
+        "storage_override_count": storage_override_count,
+    }
+
+
+def _calculate_remediation_tracker_summary(remediation_tracker=None):
+    """Calculate remediation tracker summary with blocker counts by status.
+    
+    Summarizes blocker status distribution and overdue items.
+    """
+    if not remediation_tracker:
+        return {
+            "blocker_counts_by_status": {},
+            "total_blockers": 0,
+            "overdue_count": 0,
+        }
+    
+    blocker_counts_by_status = {}
+    total_blockers = 0
+    overdue_count = 0
+    
+    from datetime import datetime
+    today = datetime.now().date()
+    
+    for blocker_id, blocker_info in remediation_tracker.items():
+        status = _clean_value(blocker_info.get('status'), 'open')
+        blocker_counts_by_status[status] = blocker_counts_by_status.get(status, 0) + 1
+        total_blockers += 1
+        
+        # Check if overdue
+        due_date_str = _clean_value(blocker_info.get('due_date'))
+        if due_date_str:
+            try:
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+                if due_date < today and status != 'closed':
+                    overdue_count += 1
+            except (ValueError, TypeError):
+                pass
+    
+    return {
+        "blocker_counts_by_status": blocker_counts_by_status,
+        "total_blockers": total_blockers,
+        "overdue_count": overdue_count,
+    }
+
+
+def _calculate_image_import_summary(final_vms, image_import_status=None):
+    """Calculate image import summary with import status breakdown.
+    
+    Summarizes image readiness and import status distribution.
+    """
+    image_import_status = image_import_status or {}
+    total_images = 0
+    total_vms_pending_import = 0
+    import_status_breakdown = {}
+    
+    seen_images = set()
+    
+    for vm in final_vms:
+        # Get source image
+        source_image = _clean_value(vm.get('Original Specs')) or _safe_vm_key(vm.get('VM Name'))
+        
+        # Count unique images
+        if source_image not in seen_images:
+            seen_images.add(source_image)
+            total_images += 1
+        
+        # Get import status
+        image_status_entry = image_import_status.get(source_image, {})
+        status = image_status_entry.get('import_status', 'pending')
+        
+        if status == 'pending':
+            total_vms_pending_import += 1
+        
+        # Count by status
+        import_status_breakdown[status] = import_status_breakdown.get(status, 0) + 1
+    
+    return {
+        "total_images": total_images,
+        "total_vms_pending_import": total_vms_pending_import,
+        "import_status_breakdown": import_status_breakdown,
+    }
+
+
+def generate_migration_manifest(final_vms, context, image_import_status=None, pricing_catalog=None, remediation_tracker=None):
+    """Create the tool-neutral migration handoff manifest with wave metadata and audit information.
+    
+    This manifest serves as the primary handoff document containing VM mappings, assessment
+    results, and decision audit information for the migration team.
+    
+    Args:
+        final_vms: List of VM records or MigrationVm objects to be migrated
+        context: Dict with project, pricing, and configuration metadata
+                 Keys: project_name, target_region, target_zone, vpc_name, 
+                       address_prefix_strategy, deployment_target, generate_security_groups,
+                       pricing_mode, pricing_source, pricing_confidence, pricing_status,
+                       pricing_last_updated, assessment_quality
+        image_import_status: Optional dict mapping source image names to import status
+                            with keys: target_catalog_id, import_status, etc.
+        pricing_catalog: Optional pricing catalog dict for calculating pricing impact
+                        Used to compute total pricing delta for decision audit summary
+        remediation_tracker: Optional dict mapping blocker_id to blocker_info dicts
+                            with keys: status, due_date, notes, owner, blocker_type, etc.
+                            Used to populate remediation tracker summary with status counts
+    
+    Returns:
+        JSON string containing the migration manifest
+        
+    Manifest schema v1.0 includes:
+        - project: deployment metadata, pricing configuration
+        - virtual_machines[]: VM mappings with per-VM metadata including:
+            * wave: migration wave identifier (e.g., "wave-01")
+            * cutover_group: grouped cutover coordination identifier
+            * owner: migration workload owner
+            * application: application or service name
+            * priority: migration priority (high/medium/low)
+            * dependency_group: dependency coordination identifier
+            * source_image: source VM image name for image import
+            * target_catalog_id: target IBM Cloud image catalog ID
+            * import_status: image import status (pending/importing/completed/failed)
+        - decision_audit_summary:
+            * total_pricing_impact: total monthly cost delta from baseline
+            * profile_override_count: count of VMs with profile overrides
+            * storage_override_count: count of VMs with storage tier overrides
+        - remediation_tracker_summary:
+            * blocker_counts_by_status: count of blockers by status
+            * total_blockers: total blocker count
+            * overdue_count: count of overdue blockers
+        - image_import_summary:
+            * total_images: count of unique source images
+            * total_vms_pending_import: count of VMs pending image import
+            * import_status_breakdown: count of images by import status
+        - handoff_files: references to supporting CSV/JSON/markdown files
+    """
     final_vms = _normalize_vms(final_vms)
+    image_import_status = image_import_status or {}
     manifest = {
         "schema_version": "1.0",
         "package_type": "rvtools-to-ibm-cloud-migration-handoff",
@@ -316,9 +499,25 @@ def generate_migration_manifest(final_vms, context):
         },
         "assessment_quality": context.get("assessment_quality", {}),
         "virtual_machines": [
-            _migration_vm_record(vm) for vm in final_vms
+            _migration_vm_record(vm, image_import_status) for vm in final_vms
         ],
     }
+    
+    # Calculate decision audit summary
+    manifest["decision_audit_summary"] = _calculate_decision_audit_summary(
+        final_vms, pricing_catalog
+    )
+    
+    # Calculate remediation tracker summary
+    manifest["remediation_tracker_summary"] = _calculate_remediation_tracker_summary(
+        remediation_tracker
+    )
+    
+    # Calculate image import summary
+    manifest["image_import_summary"] = _calculate_image_import_summary(
+        final_vms, image_import_status
+    )
+    
     return json.dumps(manifest, indent=2, sort_keys=True)
 
 
@@ -552,6 +751,153 @@ def generate_pricing_diagnostics_json(catalog, final_vms):
         ],
     }
     return json.dumps(diagnostics, indent=2, sort_keys=True)
+
+
+def decision_audit_export(vms: list[MigrationVm], pricing_catalog) -> str:
+    """Generate a CSV capturing profile/storage/network/exclusion decisions and pricing impact.
+
+    Columns:
+    VM Key, VM Name, Owner, Application, Wave,
+    Original Profile, Chosen Profile, Profile Override Reason,
+    Original Storage Tier, Chosen Storage Tier, Storage Tier Override Reason,
+    Network Mode, Include/Exclude, Exclusion Reason,
+    vCPU Cost Delta, Storage Cost Delta, Total Pricing Impact
+    """
+    final_vms = _normalize_vms(vms)
+    catalog = pricing_catalog or {}
+    output = io.StringIO()
+    fieldnames = [
+        "VM Key", "VM Name", "Owner", "Application", "Wave",
+        "Original Profile", "Chosen Profile", "Profile Override Reason",
+        "Original Storage Tier", "Chosen Storage Tier", "Storage Tier Override Reason",
+        "Network Mode", "Include/Exclude", "Exclusion Reason",
+        "vCPU Cost Delta", "Storage Cost Delta", "Total Pricing Impact",
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    def profile_monthly_for(profile):
+        if not profile:
+            return 0.0
+        # try structured catalog: catalog['profiles'][profile]['hourly'] or ['monthly']
+        profiles = catalog.get('profiles', {}) if isinstance(catalog, dict) else {}
+        prof = profiles.get(profile, {}) if isinstance(profiles, dict) else {}
+        hourly = None
+        if isinstance(prof, dict):
+            hourly = prof.get('hourly') or prof.get('profile_hourly')
+        if hourly is None:
+            try:
+                hourly = catalog.get('profile_hourly', {}).get(profile)
+            except Exception:
+                hourly = None
+        if hourly:
+            try:
+                return float(hourly) * 24 * 30
+            except Exception:
+                pass
+        monthly = None
+        if isinstance(prof, dict):
+            monthly = prof.get('monthly') or prof.get('monthly_cost')
+        if monthly:
+            try:
+                return float(monthly)
+            except Exception:
+                pass
+        return 0.0
+
+    def storage_monthly_for(tier, gb):
+        if not tier or not gb:
+            return 0.0
+        tiers = catalog.get('storage_tiers', {}) if isinstance(catalog, dict) else {}
+        t = tiers.get(tier, {}) if isinstance(tiers, dict) else {}
+        per_gb = None
+        if isinstance(t, dict):
+            per_gb = t.get('monthly_per_gb') or t.get('per_gb_monthly') or t.get('rate_per_gb')
+        if per_gb is None:
+            try:
+                per_gb = catalog.get('storage_rate_per_gb', {}).get(tier)
+            except Exception:
+                per_gb = None
+        if per_gb:
+            try:
+                return float(per_gb) * float(gb)
+            except Exception:
+                pass
+        return 0.0
+
+    total_impact = 0.0
+    for vm in final_vms:
+        vm_key = _clean_value(vm.get('VM Key')) or _clean_value(vm.get('vm_key'))
+        vm_name = _safe_vm_key(vm.get('VM Name'))
+        owner = _clean_value(vm.get('owner'))
+        application = _clean_value(vm.get('application'))
+        wave = _clean_value(vm.get('wave'))
+        original_profile = _clean_value(vm.get('IBM Profile'))
+        chosen_profile = _effective_profile(vm)
+        profile_reason = _clean_value(vm.get('Override Profile Reason')) or _clean_value(vm.get('override_profile_reason'))
+        original_storage = _clean_value(vm.get('Storage Tier'))
+        chosen_storage = _effective_storage_tier(vm)
+        storage_reason = _clean_value(vm.get('Override Storage Tier Reason')) or _clean_value(vm.get('override_storage_tier_reason'))
+        network_mode = _clean_value(vm.get('Network')) or _clean_value(vm.get('network'))
+        include_exclude = "Exclude" if as_bool(vm.get('Exclude?')) or as_bool(vm.get('exclude')) else "Include"
+        exclusion_reason = _clean_value(vm.get('Exclusion Reason')) or _clean_value(vm.get('exclusion_reason'))
+
+        total_gb = _clean_number(vm.get('Total Storage GB'), 0)
+
+        orig_profile_monthly = profile_monthly_for(original_profile)
+        chosen_profile_monthly = profile_monthly_for(chosen_profile)
+        vcpu_delta = round(chosen_profile_monthly - orig_profile_monthly, 2)
+
+        orig_storage_monthly = storage_monthly_for(original_storage, total_gb)
+        chosen_storage_monthly = storage_monthly_for(chosen_storage, total_gb)
+        storage_delta = round(chosen_storage_monthly - orig_storage_monthly, 2)
+
+        total = round(vcpu_delta + storage_delta, 2)
+        total_impact += total
+
+        writer.writerow({
+            "VM Key": vm_key,
+            "VM Name": vm_name,
+            "Owner": owner,
+            "Application": application,
+            "Wave": wave,
+            "Original Profile": original_profile,
+            "Chosen Profile": chosen_profile,
+            "Profile Override Reason": profile_reason,
+            "Original Storage Tier": original_storage,
+            "Chosen Storage Tier": chosen_storage,
+            "Storage Tier Override Reason": storage_reason,
+            "Network Mode": network_mode,
+            "Include/Exclude": include_exclude,
+            "Exclusion Reason": exclusion_reason,
+            "vCPU Cost Delta": vcpu_delta,
+            "Storage Cost Delta": storage_delta,
+            "Total Pricing Impact": total,
+        })
+
+    # summary row
+    writer.writerow({
+        "VM Key": "",
+        "VM Name": "TOTAL",
+        "Owner": "",
+        "Application": "",
+        "Wave": "",
+        "Original Profile": "",
+        "Chosen Profile": "",
+        "Profile Override Reason": "",
+        "Original Storage Tier": "",
+        "Chosen Storage Tier": "",
+        "Storage Tier Override Reason": "",
+        "Network Mode": "",
+        "Include/Exclude": "",
+        "Exclusion Reason": "",
+        "vCPU Cost Delta": "",
+        "Storage Cost Delta": "",
+        "Total Pricing Impact": round(total_impact, 2),
+    })
+
+    return output.getvalue()
+
 
 
 def generate_pricing_diagnostics_csv(catalog, final_vms):
@@ -866,6 +1212,91 @@ def generate_image_import_tfvars(final_vms):
     return "\n".join(lines) + "\n"
 
 
+def image_import_export(vms: list[MigrationVm], image_import_status: dict = None) -> str:
+    """Generate a CSV to plan image imports grouped by source image.
+
+    Columns:
+    Source Image, Count of VMs, Owners, Target Catalog ID,
+    Import Status, Estimated Import Time, Notes
+
+    image_import_status may be a mapping keyed by source image or VM key.
+    """
+    final_vms = _normalize_vms(vms)
+    image_import_status = image_import_status or {}
+
+    # Group VMs by inferred source image (fallback to VM name when missing)
+    groups = {}
+    total_vms = 0
+    for vm in final_vms:
+        vm_name = _safe_vm_key(vm.get('VM Name'))
+        source_image = _clean_value(vm.get('Original Specs')) or vm_name
+        entry = groups.setdefault(source_image, {"vms": [], "owners": set()})
+        entry["vms"].append(vm)
+        owner = _clean_value(vm.get('owner')) or _clean_value(vm.get('Owner'))
+        if owner:
+            entry["owners"].add(owner)
+
+    output = io.StringIO()
+    fieldnames = [
+        "Source Image", "Count of VMs", "Owners",
+        "Target Catalog ID", "Import Status", "Estimated Import Time", "Notes",
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for source in sorted(groups.keys()):
+        entry = groups[source]
+        count = len(entry["vms"])
+        total_vms += count
+        owners = "; ".join(sorted(entry["owners"])) if entry["owners"] else ""
+
+        # Resolve status info from image_import_status mapping.
+        target_catalog_id = ""
+        import_status = ""
+        estimated_time = ""
+        notes = ""
+
+        if isinstance(image_import_status, dict):
+            val = image_import_status.get(source)
+            if val is None:
+                # try per-VM keys
+                for vm in entry["vms"]:
+                    vm_key = _safe_vm_key(vm.get('VM Name'))
+                    if vm_key in image_import_status:
+                        val = image_import_status.get(vm_key)
+                        break
+            if isinstance(val, dict):
+                target_catalog_id = _clean_value(val.get('target_catalog_id'))
+                import_status = _clean_value(val.get('import_status')) or _clean_value(val.get('status'))
+                estimated_time = _clean_value(val.get('estimated_import_time')) or _clean_value(val.get('estimated_time'))
+                notes = _clean_value(val.get('notes'))
+            elif val is not None:
+                import_status = _clean_value(val)
+
+        writer.writerow({
+            "Source Image": source,
+            "Count of VMs": count,
+            "Owners": owners,
+            "Target Catalog ID": target_catalog_id,
+            "Import Status": import_status,
+            "Estimated Import Time": estimated_time,
+            "Notes": notes,
+        })
+
+    # summary row
+    writer.writerow({
+        "Source Image": "TOTAL",
+        "Count of VMs": total_vms,
+        "Owners": "",
+        "Target Catalog ID": "",
+        "Import Status": "",
+        "Estimated Import Time": "",
+        "Notes": "",
+    })
+
+    return output.getvalue()
+
+
 def generate_migration_runbook(context):
     """Create a customer-facing runbook for the generated handoff package."""
     project = _clean_value(context.get('project_name'), 'my-ibm-migration')
@@ -918,3 +1349,147 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 ## Notes
 Terraform builds the target VPC foundation and VSI definitions. It does not move VMDK files or perform application cutover by itself. Use the manifest and CSV as the handoff layer for RackWare, custom scripts, IBM Cloud image import, or a migration factory workflow.
 """
+
+
+def remediation_tracker_export(vms: list[MigrationVm], remediation_tracker: dict) -> str:
+    """Generate a CSV capturing remediation blockers and their resolution tracking.
+    
+    Columns:
+    VM Key, VM Name, Owner, Blocker Type, Blocker Description, Status, Due Date, Notes
+    
+    Summary section includes:
+    - Counts by status
+    - Counts by owner
+    - Overdue items count
+    
+    remediation_tracker format: {blocker_id: {status, due_date, notes, owner}, ...}
+    Each blocker_id should follow pattern: {vm_key}:{blocker_type}:{description_hash}
+    """
+    from datetime import datetime
+    
+    final_vms = _normalize_vms(vms)
+    remediation_tracker = remediation_tracker or {}
+    
+    output = io.StringIO()
+    fieldnames = [
+        "VM Key", "VM Name", "Owner", "Blocker Type", "Blocker Description",
+        "Status", "Due Date", "Notes",
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    
+    # Build a mapping of vm_key to vm for quick lookup
+    vm_map = {}
+    for vm in final_vms:
+        vm_key = _clean_value(vm.get('vm_key')) or _clean_value(vm.get('VM Key'))
+        if vm_key:
+            vm_map[vm_key] = vm
+    
+    # Track summary stats
+    status_counts = {}
+    owner_counts = {}
+    overdue_count = 0
+    today = datetime.now().date()
+    
+    # Process each blocker
+    rows_data = []
+    for blocker_id, blocker_info in sorted(remediation_tracker.items()):
+        if not isinstance(blocker_info, dict):
+            continue
+        
+        # Parse blocker_id format: {vm_key}:{blocker_type}:{description_hash}
+        # or just store as-is if it doesn't follow pattern
+        parts = str(blocker_id).split(':', 1)
+        vm_key = parts[0] if parts else ""
+        
+        # Get VM details
+        vm = vm_map.get(vm_key, {})
+        if not vm:
+            # Still include blockers even if VM not found
+            vm = {"vm_key": vm_key, "vm_name": ""}
+        
+        vm_key_out = _clean_value(vm.get('vm_key')) or _clean_value(vm.get('VM Key')) or vm_key
+        vm_name = _safe_vm_key(vm.get('vm_name')) or _safe_vm_key(vm.get('VM Name'))
+        
+        # Get blocker-specific fields
+        owner = _clean_value(blocker_info.get('owner'))
+        blocker_type = _clean_value(blocker_info.get('blocker_type')) or _clean_value(blocker_info.get('type'))
+        blocker_desc = _clean_value(blocker_info.get('blocker_description')) or _clean_value(blocker_info.get('description'))
+        status = _clean_value(blocker_info.get('status'), 'Open')
+        due_date = _clean_value(blocker_info.get('due_date'))
+        notes = _clean_value(blocker_info.get('notes'))
+        
+        # Update summary stats
+        status_counts[status] = status_counts.get(status, 0) + 1
+        if owner:
+            owner_counts[owner] = owner_counts.get(owner, 0) + 1
+        
+        # Check if overdue
+        if due_date:
+            try:
+                due = datetime.strptime(str(due_date), '%Y-%m-%d').date()
+                if due < today and status.lower() not in ['closed', 'resolved', 'complete']:
+                    overdue_count += 1
+            except (ValueError, TypeError):
+                pass
+        
+        rows_data.append({
+            "VM Key": vm_key_out,
+            "VM Name": vm_name,
+            "Owner": owner,
+            "Blocker Type": blocker_type,
+            "Blocker Description": blocker_desc,
+            "Status": status,
+            "Due Date": due_date,
+            "Notes": notes,
+        })
+    
+    # Write all blocker rows
+    for row in rows_data:
+        writer.writerow(row)
+    
+    # Write summary section
+    # Blank row
+    writer.writerow({
+        "VM Key": "", "VM Name": "", "Owner": "", "Blocker Type": "",
+        "Blocker Description": "", "Status": "", "Due Date": "", "Notes": "",
+    })
+    
+    # Summary header
+    writer.writerow({
+        "VM Key": "", "VM Name": "SUMMARY", "Owner": "", "Blocker Type": "",
+        "Blocker Description": "", "Status": "", "Due Date": "", "Notes": "",
+    })
+    
+    # Status counts
+    for status in sorted(status_counts.keys()):
+        writer.writerow({
+            "VM Key": "", "VM Name": f"Status: {status}", "Owner": "",
+            "Blocker Type": "", "Blocker Description": "",
+            "Status": status_counts[status], "Due Date": "", "Notes": "",
+        })
+    
+    # Owner counts
+    for owner in sorted(owner_counts.keys()):
+        writer.writerow({
+            "VM Key": "", "VM Name": f"Owner: {owner}", "Owner": "",
+            "Blocker Type": "", "Blocker Description": "",
+            "Status": owner_counts[owner], "Due Date": "", "Notes": "",
+        })
+    
+    # Overdue count
+    writer.writerow({
+        "VM Key": "", "VM Name": "Overdue Items", "Owner": "",
+        "Blocker Type": "", "Blocker Description": "",
+        "Status": overdue_count, "Due Date": "", "Notes": "",
+    })
+    
+    # Total count
+    total_blockers = len(rows_data)
+    writer.writerow({
+        "VM Key": "", "VM Name": "TOTAL BLOCKERS", "Owner": "",
+        "Blocker Type": "", "Blocker Description": "",
+        "Status": total_blockers, "Due Date": "", "Notes": "",
+    })
+    
+    return output.getvalue()

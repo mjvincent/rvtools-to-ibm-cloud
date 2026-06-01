@@ -1,0 +1,35 @@
+[
+  {
+    "VM Key":"vm-001",
+    "VM Name":"app-01",
+    "Wave":"Wave 1",
+    "Cutover Group":"CG-A",
+    "Owner":"John Doe",
+    "Application":"Web Tier",
+    "Priority":"Medium",
+    "Dependency Group":"",
+    "Exclude?":false
+  },
+  {
+    "VM Key":"vm-002",
+    "VM Name":"app-02",
+    "Wave":"Wave 1",
+    "Cutover Group":"CG-A",
+    "Owner":"John Doe",
+    "Application":"Web Tier",
+    "Priority":"Medium",
+    "Dependency Group":"",
+    "Exclude?":false
+  },
+  {
+    "VM Key":"vm-003",
+    "VM Name":"db-01",
+    "Wave":"",
+    "Cutover Group":"",
+    "Owner":"",
+    "Application":"",
+    "Priority":"Medium",
+    "Dependency Group":"",
+    "Exclude?":false
+  }
+]

@@ -1,0 +1,52 @@
+[
+  {
+    "VM Key":"vm-001",
+    "VM Name":"app-01",
+    "Wave":"Wave 1",
+    "Cutover Group":"CG-A",
+    "Owner":"John Doe",
+    "Application":"Web Server",
+    "Priority":"High",
+    "Dependency Group":"DG-01"
+  },
+  {
+    "VM Key":"vm-002",
+    "VM Name":"app-02",
+    "Wave":"Wave 1",
+    "Cutover Group":"CG-A",
+    "Owner":"John Doe",
+    "Application":"Web Server",
+    "Priority":"High",
+    "Dependency Group":"DG-01"
+  },
+  {
+    "VM Key":"vm-003",
+    "VM Name":"db-01",
+    "Wave":"Wave 2",
+    "Cutover Group":"CG-B",
+    "Owner":"Bob Johnson",
+    "Application":"Database",
+    "Priority":"Medium",
+    "Dependency Group":"DG-02"
+  },
+  {
+    "VM Key":"vm-004",
+    "VM Name":"db-02",
+    "Wave":"Wave 2",
+    "Cutover Group":"CG-B",
+    "Owner":"Bob Johnson",
+    "Application":"Database",
+    "Priority":"Medium",
+    "Dependency Group":"DG-02"
+  },
+  {
+    "VM Key":"vm-005",
+    "VM Name":"cache-01",
+    "Wave":"Wave 3",
+    "Cutover Group":"CG-C",
+    "Owner":"Alice Lee",
+    "Application":"Cache",
+    "Priority":"Low",
+    "Dependency Group":"DG-03"
+  }
+]

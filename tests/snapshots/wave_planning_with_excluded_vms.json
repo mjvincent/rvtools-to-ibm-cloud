@@ -1,0 +1,22 @@
+[
+  {
+    "VM Key":"vm-001",
+    "VM Name":"app-01",
+    "Wave":"Wave 1",
+    "Cutover Group":"CG-A",
+    "Owner":"John Doe",
+    "Application":"Web Server",
+    "Priority":"High",
+    "Dependency Group":"DG-01"
+  },
+  {
+    "VM Key":"vm-003",
+    "VM Name":"db-01",
+    "Wave":"Wave 2",
+    "Cutover Group":"CG-B",
+    "Owner":"Bob Johnson",
+    "Application":"Database",
+    "Priority":"Medium",
+    "Dependency Group":"DG-02"
+  }
+]
