@@ -124,6 +124,23 @@ def test_preflight_detects_invalid_duplicate_and_overlapping_cidrs(sample_vm_rec
     assert "overlaps" in messages
 
 
+def test_preflight_blocks_invalid_ssh_source_cidr(sample_vm_record):
+    findings = run_package_preflight(
+        [sample_vm_record],
+        [{"name": "app-net", "vlan": "", "cidr": "10.0.1.0/24"}],
+        "us-south",
+        ssh_source_cidr="not-a-cidr",
+        catalog_profiles=[{"name": "bx2-2x8"}],
+    )
+
+    ssh_finding = next(
+        finding for finding in findings
+        if finding.category == "security_group"
+    )
+    assert ssh_finding.severity == "blocker"
+    assert ssh_finding.fix_location == "Export > SSH Source CIDR"
+
+
 def test_preflight_detects_duplicate_terraform_resource_names(sample_vm_record):
     duplicate_vm = {**sample_vm_record, "VM Name": "app_01"}
 

@@ -101,9 +101,30 @@ def _network_resource_names(networks):
         vlan = clean_value(net.get("vlan"))
         safe = _safe_resource_name(raw_name)
         if vlan:
-            safe = f"{safe}_vlan_{vlan}"
+            safe = f"{safe}_vlan_{_safe_resource_name(vlan)}"
         names.append((raw_name, safe))
     return names
+
+
+def _find_ssh_source_cidr_issue(ssh_source_cidr):
+    cidr = clean_value(ssh_source_cidr)
+    if not cidr:
+        return []
+    try:
+        ipaddress.ip_network(cidr, strict=False)
+    except ValueError:
+        return [PreflightFinding(
+            "blocker",
+            "security_group",
+            "SSH Source CIDR",
+            f"Invalid SSH source CIDR '{cidr}'.",
+            "Enter a valid management IPv4 CIDR or leave the field blank to omit SSH access.",
+            "Export > SSH Source CIDR",
+            "Replace the invalid CIDR with a valid management range.",
+            current_value=cidr,
+            constraint="Valid IPv4 CIDR, for example 10.10.0.0/24.",
+        )]
+    return []
 
 
 def _find_cidr_issues(networks, custom_cidrs):
@@ -627,6 +648,7 @@ def run_package_preflight(
     custom_cidrs=None,
     enable_security_groups=True,
     catalog_profiles=None,
+    ssh_source_cidr="",
 ):
     vms = _normalize_vms(final_vms)
     networks = list(networks or [])
@@ -652,6 +674,7 @@ def run_package_preflight(
     findings.extend(_readiness_findings(vms))
     findings.extend(_image_placeholder_findings(vms))
     findings.extend(_find_cidr_issues(networks, custom_cidrs))
+    findings.extend(_find_ssh_source_cidr_issue(ssh_source_cidr))
     findings.extend(_resource_name_findings(vms, networks))
     findings.extend(_mapping_findings(vms, network_names, enable_security_groups))
     findings.extend(_profile_storage_findings(vms, target_region, catalog_profiles))

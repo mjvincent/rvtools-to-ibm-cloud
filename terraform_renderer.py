@@ -51,6 +51,33 @@ def _safe_vm_key(value):
     return cleaned.replace('"', '').replace("'", "")
 
 
+def _hcl_string(value, default=""):
+    """Render a value as a quoted HCL string literal."""
+    return json.dumps(str(_clean_value(value, default)))
+
+
+def _network_safe_name(net):
+    raw_name = net.get('name', 'unknown-net')
+    safe_res = _safe_resource_name(raw_name)
+    vlan_id = net.get('vlan')
+    if vlan_id and str(vlan_id).strip():
+        safe_res += f"_vlan_{_safe_resource_name(vlan_id)}"
+    return safe_res
+
+
+def _ibm_name(value):
+    cleaned = _safe_resource_name(value).replace("_", "-")
+    cleaned = re.sub(r"-+", "-", cleaned).strip("-")
+    return cleaned or "unknown"
+
+
+def _ibm_volume_profile(value):
+    profile = _clean_value(value, "general-purpose")
+    if profile == "3iops-tier":
+        return "general-purpose"
+    return profile
+
+
 def _vm_disks(vm):
     vm = _as_vm(vm)
     disks = vm.source.disks or vm.disks
@@ -76,89 +103,81 @@ def _connected_nics(vm):
     ]
 
 
-def render_networking_templates(networks_data, vpc_name="migration-vpc", enable_security_groups=True, custom_cidrs=None, address_prefix_strategy="manual", project_name="my-ibm-migration"):
+def render_networking_templates(networks_data, vpc_name="migration-vpc", enable_security_groups=True, custom_cidrs=None, address_prefix_strategy="manual", project_name="my-ibm-migration", ssh_source_cidr=""):
     """
     Renders the networking module main.tf content.
     """
-    vpc_safe = vpc_name.replace("-", "_")
+    vpc_safe = _safe_resource_name(vpc_name)
     address_preference = (
         "manual" if address_prefix_strategy == "manual"
         else "automatic"
     )
 
-    hcl = f"""
+    hcl = f"""terraform {{
+  required_providers {{
+    ibm = {{
+      source  = "IBM-Cloud/ibm"
+      version = ">= 1.70.0"
+    }}
+  }}
+}}
+
 resource "ibm_is_vpc" "{vpc_safe}" {{
-  name               = "{vpc_name}"
-  address_preference = "{address_preference}"
-  tags               = ["project:{project_name}", "managed-by:rvtools-converter"]
+  name                      = {_hcl_string(vpc_name)}
+  address_prefix_management = {_hcl_string(address_preference)}
+  tags                      = [{_hcl_string(f"project:{project_name}")}, "managed-by:rvtools-converter"]
 }}
 """
 
     for i, net in enumerate(networks_data):
-        raw_name = net.get('name', 'unknown-net')
-        vlan_id = net.get('vlan')
         cidr_key = net.get('cidr_key', net.get('name'))
         cidr = custom_cidrs.get(cidr_key, net.get('cidr', f"10.0.{i+1}.0/24")) if custom_cidrs else net.get('cidr', f"10.0.{i+1}.0/24")
-
-        safe_res = _safe_resource_name(raw_name)
-        if vlan_id and str(vlan_id).strip():
-            safe_res += f"_vlan_{_safe_resource_name(vlan_id)}"
+        safe_res = _network_safe_name(net)
 
         hcl += f"""
 resource "ibm_is_vpc_address_prefix" "prefix_{safe_res}" {{
-  name = "prefix-{safe_res.replace('_', '-') }"
+  name = {_hcl_string(f"prefix-{_ibm_name(safe_res)}")}
   zone = var.zone
   vpc  = ibm_is_vpc.{vpc_safe}.id
-  cidr = "{cidr}"
+  cidr = {_hcl_string(cidr)}
 }}
 
 resource "ibm_is_subnet" "{safe_res}" {{
-  name            = "{safe_res.replace('_', '-')}-subnet"
+  name            = {_hcl_string(f"{_ibm_name(safe_res)}-subnet")}
   vpc             = ibm_is_vpc.{vpc_safe}.id
   zone            = var.zone
-  ipv4_cidr_block = "{cidr}"
+  ipv4_cidr_block = {_hcl_string(cidr)}
   depends_on      = [ibm_is_vpc_address_prefix.prefix_{safe_res}]
-  tags            = ["project:{project_name}", "network:{safe_res}", "managed-by:rvtools-converter"]
+  tags            = [{_hcl_string(f"project:{project_name}")}, {_hcl_string(f"network:{safe_res}")}, "managed-by:rvtools-converter"]
 }}
 """
 
         if enable_security_groups:
             hcl += f"""
 resource "ibm_is_security_group" "sg_{safe_res}" {{
-  name = "sg-{safe_res.replace('_', '-') }"
+  name = {_hcl_string(f"sg-{_ibm_name(safe_res)}")}
   vpc  = ibm_is_vpc.{vpc_safe}.id
-  tags = ["project:{project_name}", "network:{safe_res}", "managed-by:rvtools-converter"]
+  tags = [{_hcl_string(f"project:{project_name}")}, {_hcl_string(f"network:{safe_res}")}, "managed-by:rvtools-converter"]
 }}
-
+"""
+            if clean_value(ssh_source_cidr):
+                hcl += f"""
 resource "ibm_is_security_group_rule" "ssh_{safe_res}" {{
-  security_group = ibm_is_security_group.sg_{safe_res}.id
-  direction      = "inbound"
-  ip_version     = "ipv4"
-  protocol       = "tcp"
-  port_min       = 22
-  port_max       = 22
-  remote         = "0.0.0.0/0"
-}}
+  group     = ibm_is_security_group.sg_{safe_res}.id
+  direction = "inbound"
+  remote    = {_hcl_string(ssh_source_cidr)}
 
-resource "ibm_is_security_group_rule" "internal_{safe_res}" {{
-  security_group = ibm_is_security_group.sg_{safe_res}.id
-  direction      = "inbound"
-  ip_version     = "ipv4"
-  protocol       = "all"
-  remote         = "{cidr}"
+  tcp {{
+    port_min = 22
+    port_max = 22
+  }}
 }}
 """
-
-        hcl += f"""
-output "{safe_res}_id" {{
-  value = ibm_is_subnet.{safe_res}.id
-}}
-"""
-
-        if enable_security_groups:
             hcl += f"""
-output "{safe_res}_sg_id" {{
-  value = ibm_is_security_group.sg_{safe_res}.id
+resource "ibm_is_security_group_rule" "internal_{safe_res}" {{
+  group     = ibm_is_security_group.sg_{safe_res}.id
+  direction = "inbound"
+  remote    = {_hcl_string(cidr)}
 }}
 """
     return hcl
@@ -170,26 +189,38 @@ variable \"project\" { type = string }
 """
 
 
-def render_networking_outputs(networks_data, enable_security_groups=True):
-    outputs = ""
-    for i, net in enumerate(networks_data):
-        raw_name = net.get('name', 'unknown-net')
-        vlan_id = net.get('vlan')
-        safe_res = _safe_resource_name(raw_name)
-        if vlan_id and str(vlan_id).strip():
-            safe_res += f"_vlan_{_safe_resource_name(vlan_id)}"
-
+def render_networking_outputs(networks_data, enable_security_groups=True, vpc_name="migration-vpc"):
+    outputs = f"""output "vpc_id" {{
+  value = ibm_is_vpc.{_safe_resource_name(vpc_name)}.id
+}}
+"""
+    subnet_map = []
+    security_group_map = []
+    for net in networks_data:
+        safe_res = _network_safe_name(net)
         outputs += f"""
 output \"{safe_res}_id\" {{
   value = ibm_is_subnet.{safe_res}.id
 }}
 """
+        subnet_map.append(f'    "{safe_res}" = ibm_is_subnet.{safe_res}.id')
         if enable_security_groups:
             outputs += f"""
 output \"{safe_res}_sg_id\" {{
   value = ibm_is_security_group.sg_{safe_res}.id
 }}
 """
+            security_group_map.append(
+                f'    "{safe_res}" = ibm_is_security_group.sg_{safe_res}.id'
+            )
+
+    outputs += "\noutput \"subnet_ids\" {\n  value = {\n"
+    outputs += "\n".join(subnet_map)
+    outputs += "\n  }\n}\n"
+
+    outputs += "\noutput \"security_group_ids\" {\n  value = {\n"
+    outputs += "\n".join(security_group_map)
+    outputs += "\n  }\n}\n"
     return outputs
 
 
@@ -201,7 +232,7 @@ variable \"project\" { type = string }
 
 def render_storage_outputs():
     return """output \"volume_ids\" {
-  value = [for v in ibm_is_volume : v.id]
+  value = flatten(values(local.data_volume_ids))
 }
 
 output \"data_volume_ids\" {
@@ -212,7 +243,16 @@ output \"data_volume_ids\" {
 
 def render_storage_templates(final_vms, project_name="my-ibm-migration"):
     final_vms = _normalize_vms(final_vms)
-    content = """# Storage module for VSI volumes\n"""
+    content = """terraform {
+  required_providers {
+    ibm = {
+      source  = "IBM-Cloud/ibm"
+      version = ">= 1.70.0"
+    }
+  }
+}
+
+# Storage module for VSI volumes\n"""
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
         safe_n = _safe_resource_name(vm_n_raw)
@@ -222,14 +262,16 @@ def render_storage_templates(final_vms, project_name="my-ibm-migration"):
             safe_disk = _safe_resource_name(disk_name)
             capacity = math.ceil(_clean_number(disk.get('capacity_gb'), 10))
             capacity = max(10, capacity)
+            volume_name = f"{_ibm_name(safe_n)}-{_ibm_name(safe_disk)}-vol"
+            volume_profile = _ibm_volume_profile(tier)
 
             content += f"""
 resource "ibm_is_volume" "{safe_n}_{safe_disk}_vol" {{
-  name     = "{safe_n}-{safe_disk}-vol"
-  profile  = "{tier}"
+  name     = {_hcl_string(volume_name)}
+  profile  = {_hcl_string(volume_profile)}
   zone     = var.zone
   capacity = {capacity}
-  tags     = ["project:{project_name}", "vm:{safe_n}", "disk:{safe_disk}", "managed-by:rvtools-converter"]
+  tags     = [{_hcl_string(f"project:{project_name}")}, {_hcl_string(f"vm:{safe_n}")}, {_hcl_string(f"disk:{safe_disk}")}, "managed-by:rvtools-converter"]
 }}
 """
     volume_map = []
@@ -268,12 +310,31 @@ variable "data_volume_ids" {
   type    = map(list(string))
   default = {}
 }
+variable "subnet_ids" {
+  type = map(string)
+}
+variable "vpc_id" {
+  type = string
+}
+variable "security_group_ids" {
+  type    = map(string)
+  default = {}
+}
 """
 
 
 def render_vsi_templates(final_vms, enable_security_groups=True, project_name="my-ibm-migration"):
     final_vms = _normalize_vms(final_vms)
-    content = """# VSI module for instance definitions\n"""
+    content = """terraform {
+  required_providers {
+    ibm = {
+      source  = "IBM-Cloud/ibm"
+      version = ">= 1.70.0"
+    }
+  }
+}
+
+# VSI module for instance definitions\n"""
     for vm in final_vms:
         vm_n_raw = str(vm.get('VM Name', 'unknown'))
         safe_n = _safe_resource_name(vm_n_raw)
@@ -294,17 +355,18 @@ def render_vsi_templates(final_vms, enable_security_groups=True, project_name="m
 
         content += f"""
 resource "ibm_is_instance" "{safe_n}" {{
-  name    = "{safe_n}-vsi"
+  name    = {_hcl_string(f"{_ibm_name(safe_n)}-vsi")}
   image   = var.custom_image_ids[{json.dumps(image_key)}]
-  profile = "{prof}"
+  profile = {_hcl_string(prof)}
+  vpc     = var.vpc_id
   zone    = var.zone
   primary_network_interface {{
     name   = "eth0"
-    subnet = module.networking.{t_sub_res}_id
+    subnet = var.subnet_ids[{json.dumps(t_sub_res)}]
 """
         if enable_security_groups:
             content += f"""
-    security_groups = [module.networking.{t_sub_res}_sg_id]
+    security_groups = [var.security_group_ids[{json.dumps(t_sub_res)}]]
 """
         content += f"""
   }}
@@ -314,17 +376,17 @@ resource "ibm_is_instance" "{safe_n}" {{
             content += f"""
   network_interfaces {{
     name   = "eth{idx}"
-    subnet = module.networking.{nic_net}_id
+    subnet = var.subnet_ids[{json.dumps(nic_net)}]
 """
             if enable_security_groups:
                 content += f"""
-    security_groups = [module.networking.{nic_net}_sg_id]
+    security_groups = [var.security_group_ids[{json.dumps(nic_net)}]]
 """
             content += """
   }
 """
         content += f"""
-  tags = ["project:{project_name}", "vm:{safe_n}", "managed-by:rvtools-converter"]
+  tags = [{_hcl_string(f"project:{project_name}")}, {_hcl_string(f"vm:{safe_n}")}, "managed-by:rvtools-converter"]
 }}
 """
         for idx, disk in enumerate(_vm_data_disks(vm)):
@@ -334,7 +396,7 @@ resource "ibm_is_instance" "{safe_n}" {{
 resource "ibm_is_instance_volume_attachment" "{safe_n}_{safe_disk}_attach" {{
   instance = ibm_is_instance.{safe_n}.id
   volume   = var.data_volume_ids["{safe_n}"][{idx}]
-  name     = "{safe_n}-{safe_disk}-attachment"
+  name     = {_hcl_string(f"{_ibm_name(safe_n)}-{_ibm_name(safe_disk)}-attachment")}
 }}
 """
     return content
@@ -354,7 +416,7 @@ output "{safe_n}_id" {{
     return outputs
 
 
-def render_root_main(deployment_target="Plain CLI"):
+def render_root_main(deployment_target="Plain CLI", enable_security_groups=True):
     hcl = """terraform {
   required_providers {
     ibm = {
@@ -394,12 +456,15 @@ module "storage" {
 }
 
 module "vsi" {
-  source           = "./modules/vsi"
-  zone             = var.zone
-  project          = var.project
-  custom_image_ids = var.custom_image_ids
-  data_volume_ids  = module.storage.data_volume_ids
-  depends_on       = [module.storage, module.networking]
+  source             = "./modules/vsi"
+  zone               = var.zone
+  project            = var.project
+  custom_image_ids   = var.custom_image_ids
+  data_volume_ids    = module.storage.data_volume_ids
+  vpc_id             = module.networking.vpc_id
+  subnet_ids         = module.networking.subnet_ids
+  security_group_ids = module.networking.security_group_ids
+  depends_on         = [module.storage, module.networking]
 }
 """
     return hcl
@@ -437,16 +502,16 @@ output "zone" {
 """
 
 
-def render_terraform_templates(final_vms, unique_nets, region, zone, enable_security_groups=True, vpc_name="migration-vpc", custom_cidrs=None, address_prefix_strategy="manual", deployment_target="Plain CLI", project_name="my-ibm-migration"):
+def render_terraform_templates(final_vms, unique_nets, region, zone, enable_security_groups=True, vpc_name="migration-vpc", custom_cidrs=None, address_prefix_strategy="manual", deployment_target="Plain CLI", project_name="my-ibm-migration", ssh_source_cidr=""):
     """Renders the Root main.tf and module contents."""
     final_vms = _normalize_vms(final_vms)
 
-    root_main = render_root_main(deployment_target)
+    root_main = render_root_main(deployment_target, enable_security_groups)
     root_vars = render_root_variables()
     root_out = render_root_outputs()
-    net_hcl = render_networking_templates(unique_nets, vpc_name=vpc_name, enable_security_groups=enable_security_groups, custom_cidrs=custom_cidrs, address_prefix_strategy=address_prefix_strategy, project_name=project_name)
+    net_hcl = render_networking_templates(unique_nets, vpc_name=vpc_name, enable_security_groups=enable_security_groups, custom_cidrs=custom_cidrs, address_prefix_strategy=address_prefix_strategy, project_name=project_name, ssh_source_cidr=ssh_source_cidr)
     net_vars = render_networking_variables()
-    net_out = render_networking_outputs(unique_nets, enable_security_groups=enable_security_groups)
+    net_out = render_networking_outputs(unique_nets, enable_security_groups=enable_security_groups, vpc_name=vpc_name)
     storage_main = render_storage_templates(final_vms, project_name=project_name)
     storage_vars = render_storage_variables()
     storage_out = render_storage_outputs()

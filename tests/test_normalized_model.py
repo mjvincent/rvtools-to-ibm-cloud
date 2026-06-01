@@ -250,7 +250,7 @@ def test_terraform_renderer_accepts_normalized_vm_model():
     vsi_main, storage_main = files[0], files[2]
 
     assert "app_01_hard_disk_2_vol" in storage_main
-    assert "module.networking.db_net_id" in vsi_main
+    assert 'var.subnet_ids["db_net"]' in vsi_main
 
 
 def test_nic_csv_accepts_model_and_preserves_roles():

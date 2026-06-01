@@ -53,9 +53,9 @@ def test_secondary_connected_nic_generates_inline_interface():
 
     assert "primary_network_interface" in vsi_main
     assert "network_interfaces" in vsi_main
-    assert "module.networking.app_net_id" in vsi_main
-    assert "module.networking.db_net_id" in vsi_main
-    assert "module.networking.backup_net_id" not in vsi_main
+    assert 'var.subnet_ids["app_net"]' in vsi_main
+    assert 'var.subnet_ids["db_net"]' in vsi_main
+    assert 'var.subnet_ids["backup_net"]' not in vsi_main
 
 
 def test_nic_mapping_marks_disconnected_as_unplanned():

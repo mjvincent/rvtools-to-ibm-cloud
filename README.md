@@ -154,6 +154,7 @@ The `Terraform Overrides` expander exposes additional infrastructure configurati
 * **Address Prefix Strategy** — choose `manual` to preserve generated CIDR prefixes, or `auto` to use provider-managed allocation
 * **Custom CIDR per Subnet** — override the generated subnet CIDR for each discovered network
 * **Deployment Target** — choose `Plain CLI` for local Terraform execution, or `IBM Schematics` for Schematics-managed deployment
+* **SSH Source CIDR** — optionally add inbound SSH rules from a specific management CIDR; leave blank to omit SSH access from generated security groups
 
 When `Plain CLI` is selected, the generated root `main.tf` uses a local Terraform backend configuration. For `IBM Schematics`, the bundle omits the backend block so Schematics can manage state.
 

@@ -209,4 +209,4 @@ def test_blocked_port_status_is_advisory_and_does_not_change_terraform():
     )
 
     assert readiness["status"] == "Blocked"
-    assert "module.networking.app_net_id" in files[0]
+    assert 'var.subnet_ids["app_net"]' in files[0]

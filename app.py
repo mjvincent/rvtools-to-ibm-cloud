@@ -676,6 +676,14 @@ if uploaded_file is not None:
                 ["Plain CLI", "IBM Schematics"],
                 index=0
             )
+            ssh_source_cidr = st.text_input(
+                "SSH Source CIDR",
+                "",
+                help=(
+                    "Optional management CIDR for inbound SSH rules. "
+                    "Leave blank to omit SSH access from generated security groups."
+                ),
+            )
         with col2:
             st.markdown("**Custom CIDRs per Subnet**")
             custom_cidrs = {}
@@ -719,6 +727,7 @@ if uploaded_file is not None:
             custom_cidrs=custom_cidrs,
             enable_security_groups=generate_security_groups,
             catalog_profiles=catalog_profiles,
+            ssh_source_cidr=ssh_source_cidr,
         )
         render_preflight_guidance(preview_findings, edited_df)
         if st.button("Re-run package preflight", use_container_width=True):
@@ -737,6 +746,7 @@ if uploaded_file is not None:
                         custom_cidrs=custom_cidrs,
                         enable_security_groups=generate_security_groups,
                         catalog_profiles=catalog_profiles,
+                        ssh_source_cidr=ssh_source_cidr,
                     )
                     if preflight_findings:
                         render_preflight_guidance(preflight_findings, edited_df)
@@ -762,7 +772,8 @@ if uploaded_file is not None:
                         custom_cidrs,
                         address_prefix_strategy,
                         deployment_target,
-                        project_name
+                        project_name,
+                        ssh_source_cidr
                     )
                     (
                         vsi, root_main, stor, net, root_vars, root_out,
@@ -778,6 +789,7 @@ if uploaded_file is not None:
                         'address_prefix_strategy': address_prefix_strategy,
                         'deployment_target': deployment_target,
                         'generate_security_groups': generate_security_groups,
+                        'ssh_source_cidr': ssh_source_cidr,
                         'pricing_mode': pricing_metadata.get('mode'),
                         'pricing_source': pricing_metadata.get('source'),
                         'pricing_confidence': pricing_metadata.get('confidence'),

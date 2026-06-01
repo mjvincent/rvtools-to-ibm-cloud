@@ -36,7 +36,8 @@ def test_custom_image_ids_are_wired_into_vsi_generation(disk_vm_record):
     )
 
     assert 'variable "custom_image_ids"' in root_vars
-    assert "custom_image_ids = var.custom_image_ids" in root_main
+    assert "custom_image_ids   = var.custom_image_ids" in root_main
+    assert "subnet_ids         = module.networking.subnet_ids" in root_main
     assert 'variable "custom_image_ids"' in vsi_vars
     assert 'image   = var.custom_image_ids["app-01"]' in vsi_main
 
