@@ -1,39 +1,19 @@
-import io
-import zipfile
-
 import pandas as pd
 import streamlit as st
 
 from catalog_pricing import get_pricing_catalog, pricing_status_summary
-from assessment_quality import (
-    generate_assessment_quality_csv,
-    generate_assessment_quality_json,
-)
-from handoff import (
-    decision_audit_export,
-    generate_disk_mapping_csv,
-    generate_image_import_tfvars,
-    image_import_export,
-    generate_memory_readiness_csv,
-    generate_migration_manifest,
-    generate_migration_runbook,
-    generate_nic_mapping_csv,
-    generate_partition_mapping_csv,
-    generate_pricing_diagnostics_csv,
-    generate_pricing_diagnostics_json,
-    generate_readiness_findings_csv,
-    generate_vm_mapping_csv,
-    remediation_tracker_export,
-)
-from models import MigrationVm
+from handoff import image_import_export
 from preflight import (
-    generate_preflight_report_csv,
-    generate_preflight_report_json,
     has_blockers,
     run_package_preflight,
 )
 from rvtools_parser import normalize_network_name, parse_rvtools_workbook
-from terraform_renderer import generate_tfvars, render_terraform_templates
+from streamlit_app.final_vms import build_final_vms
+from streamlit_app.image_import import (
+    build_image_import_rows,
+    persist_image_import_edits,
+)
+from streamlit_app.package_builder import build_terraform_bundle
 from ui import (
     DECISION_COLUMNS,
     DISABLED_COLS,
@@ -164,34 +144,6 @@ if uploaded_file is not None:
     ])
 
     edited_df = df_table.copy()
-
-    def build_final_vms(source_df):
-        final_vm_records = [
-            v for v in source_df.to_dict('records')
-            if not v.get('Exclude?')
-        ]
-        final_vms = []
-        for vm in final_vm_records:
-            vm["Disk Details"] = disk_details.get(vm.get("VM Key"), [])
-            vm["Partition Details"] = next(
-                (
-                    source.get("Partition Details", [])
-                    for source in processed_vms
-                    if source.get("VM Key") == vm.get("VM Key")
-                ),
-                []
-            )
-            vm["Network Details"] = nic_details.get(vm.get("VM Key"), [])
-            vm["Readiness Findings"] = next(
-                (
-                    source.get("Readiness Findings", [])
-                    for source in processed_vms
-                    if source.get("VM Key") == vm.get("VM Key")
-                ),
-                []
-            )
-            final_vms.append(MigrationVm.from_record(vm))
-        return final_vms
 
     with overview:
         st.subheader("Estate Health")
@@ -551,39 +503,14 @@ if uploaded_file is not None:
         if "image_import_status" not in st.session_state:
             st.session_state["image_import_status"] = {}
 
-        # Build groups from active VMs
-        active_images = edited_df[~edited_df['Exclude?']].copy()
-        groups = {}
-        for _, r in active_images.iterrows():
-            source = r.get("Original Specs") or r.get("VM Name")
-            source = str(source)
-            entry = groups.setdefault(source, {"vms": [], "owners": set()})
-            entry["vms"].append(r)
-            owner = r.get("Owner") or r.get("owner") or ""
-            if owner:
-                entry["owners"].add(owner)
+        df_images = build_image_import_rows(
+            edited_df,
+            st.session_state["image_import_status"],
+        )
 
-        rows = []
-        for source in sorted(groups.keys()):
-            entry = groups[source]
-            count = len(entry["vms"])
-            owners = "; ".join(sorted(entry["owners"])) if entry["owners"] else ""
-            state = st.session_state["image_import_status"].get(source, {})
-            rows.append({
-                "Source Image": source,
-                "Count of VMs": count,
-                "Owners": owners,
-                "Target Catalog ID": state.get("target_catalog_id", ""),
-                "Import Status": state.get("import_status", ""),
-                "Estimated Import Time": state.get("estimated_import_time", ""),
-                "Notes": state.get("notes", ""),
-            })
-
-        if not rows:
+        if df_images.empty:
             st.info("No active VMs to plan image imports for.")
         else:
-            df_images = pd.DataFrame(rows)
-
             col_cfg = {
                 "Source Image": st.column_config.TextColumn("Source Image", disabled=True),
                 "Count of VMs": st.column_config.NumberColumn("Count of VMs", disabled=True),
@@ -605,18 +532,12 @@ if uploaded_file is not None:
                 key="image_import_editor",
             )
 
-            # Persist edits into session_state mapping keyed by Source Image
-            if isinstance(edited_images, pd.DataFrame):
-                for row in edited_images.to_dict("records"):
-                    src = row.get("Source Image")
-                    if not src:
-                        continue
-                    st.session_state["image_import_status"][src] = {
-                        "target_catalog_id": row.get("Target Catalog ID", ""),
-                        "import_status": row.get("Import Status", ""),
-                        "estimated_import_time": row.get("Estimated Import Time", ""),
-                        "notes": row.get("Notes", ""),
-                    }
+            st.session_state["image_import_status"] = (
+                persist_image_import_edits(
+                    edited_images,
+                    st.session_state["image_import_status"],
+                )
+            )
 
             st.write("---")
             st.subheader("Bulk Actions")
@@ -648,7 +569,12 @@ if uploaded_file is not None:
 
             with c2:
                 if st.button("Generate Image Import Export", use_container_width=True):
-                    csv_text = image_import_export(build_final_vms(edited_df), st.session_state.get("image_import_status"))
+                    csv_text = image_import_export(
+                        build_final_vms(
+                            edited_df, processed_vms, disk_details, nic_details
+                        ),
+                        st.session_state.get("image_import_status"),
+                    )
                     st.session_state["last_image_import_csv"] = csv_text
 
                 if st.session_state.get("last_image_import_csv"):
@@ -719,7 +645,9 @@ if uploaded_file is not None:
             use_container_width=True
         )
 
-        preview_vms = build_final_vms(edited_df)
+        preview_vms = build_final_vms(
+            edited_df, processed_vms, disk_details, nic_details
+        )
         preview_findings = run_package_preflight(
             preview_vms,
             unique_nets,
@@ -737,7 +665,9 @@ if uploaded_file is not None:
         if st.button("Build Terraform Project", use_container_width=True):
             with st.status("Packaging Project...") as status:
                 try:
-                    final_vms = build_final_vms(edited_df)
+                    final_vms = build_final_vms(
+                        edited_df, processed_vms, disk_details, nic_details
+                    )
 
                     preflight_findings = run_package_preflight(
                         final_vms,
@@ -762,7 +692,7 @@ if uploaded_file is not None:
                         )
                         st.stop()
 
-                    terraform_files = render_terraform_templates(
+                    st.session_state['zip_data'] = build_terraform_bundle(
                         final_vms,
                         unique_nets,
                         target_region,
@@ -773,139 +703,14 @@ if uploaded_file is not None:
                         address_prefix_strategy,
                         deployment_target,
                         project_name,
-                        ssh_source_cidr
+                        ssh_source_cidr,
+                        pricing_metadata,
+                        assessment_quality,
+                        pricing_catalog,
+                        preflight_findings,
+                        st.session_state.get("remediation_tracker", {}),
+                        st.session_state.get("image_import_status", {}),
                     )
-                    (
-                        vsi, root_main, stor, net, root_vars, root_out,
-                        net_vars, net_out, vsi_vars, vsi_out, stor_vars,
-                        stor_out
-                    ) = terraform_files
-
-                    migration_context = {
-                        'project_name': project_name,
-                        'target_region': target_region,
-                        'target_zone': target_zone,
-                        'vpc_name': vpc_name,
-                        'address_prefix_strategy': address_prefix_strategy,
-                        'deployment_target': deployment_target,
-                        'generate_security_groups': generate_security_groups,
-                        'ssh_source_cidr': ssh_source_cidr,
-                        'pricing_mode': pricing_metadata.get('mode'),
-                        'pricing_source': pricing_metadata.get('source'),
-                        'pricing_confidence': pricing_metadata.get('confidence'),
-                        'pricing_status': pricing_metadata.get('pricing_status'),
-                        'pricing_last_updated': pricing_metadata.get(
-                            'last_updated'
-                        ),
-                        'assessment_quality': assessment_quality,
-                    }
-
-                    zip_b = io.BytesIO()
-                    with zipfile.ZipFile(zip_b, "a") as zf:
-                        zf.writestr("main.tf", root_main)
-                        zf.writestr("variables.tf", root_vars)
-                        zf.writestr("outputs.tf", root_out)
-                        zf.writestr(
-                            "terraform.tfvars",
-                            generate_tfvars(
-                                target_region, target_zone, project_name
-                            )
-                        )
-                        zf.writestr("modules/networking/main.tf", net)
-                        zf.writestr("modules/networking/variables.tf", net_vars)
-                        zf.writestr("modules/networking/outputs.tf", net_out)
-                        zf.writestr("modules/vsi/main.tf", vsi)
-                        zf.writestr("modules/vsi/variables.tf", vsi_vars)
-                        zf.writestr("modules/vsi/outputs.tf", vsi_out)
-                        zf.writestr("modules/storage/main.tf", stor)
-                        zf.writestr("modules/storage/variables.tf", stor_vars)
-                        zf.writestr("modules/storage/outputs.tf", stor_out)
-                        zf.writestr(
-                            "migration-manifest.json",
-                            generate_migration_manifest(final_vms, migration_context)
-                        )
-                        zf.writestr(
-                            "assessment-quality.json",
-                            generate_assessment_quality_json(assessment_quality)
-                        )
-                        zf.writestr(
-                            "assessment-quality.csv",
-                            generate_assessment_quality_csv(assessment_quality)
-                        )
-                        zf.writestr(
-                            "preflight-report.json",
-                            generate_preflight_report_json(preflight_findings)
-                        )
-                        zf.writestr(
-                            "preflight-report.csv",
-                            generate_preflight_report_csv(preflight_findings)
-                        )
-                        zf.writestr(
-                            "pricing-diagnostics.json",
-                            generate_pricing_diagnostics_json(
-                                pricing_catalog, final_vms
-                            )
-                        )
-                        zf.writestr(
-                            "pricing-diagnostics.csv",
-                            generate_pricing_diagnostics_csv(
-                                pricing_catalog, final_vms
-                            )
-                        )
-                        zf.writestr(
-                            "decision-audit.csv",
-                            decision_audit_export(final_vms, pricing_catalog)
-                        )
-                        zf.writestr(
-                            "remediation-backlog.csv",
-                            remediation_tracker_export(
-                                final_vms,
-                                st.session_state.get("remediation_tracker", {})
-                            )
-                        )
-                        zf.writestr(
-                            "image-import-plan.csv",
-                            image_import_export(
-                                final_vms,
-                                st.session_state.get("image_import_status", {})
-                            )
-                        )
-                        zf.writestr(
-                            "vm-mapping.csv",
-                            generate_vm_mapping_csv(final_vms)
-                        )
-                        zf.writestr(
-                            "disk-mapping.csv",
-                            generate_disk_mapping_csv(final_vms)
-                        )
-                        zf.writestr(
-                            "partition-mapping.csv",
-                            generate_partition_mapping_csv(final_vms)
-                        )
-                        zf.writestr(
-                            "nic-mapping.csv",
-                            generate_nic_mapping_csv(
-                                final_vms, generate_security_groups
-                            )
-                        )
-                        zf.writestr(
-                            "memory-readiness.csv",
-                            generate_memory_readiness_csv(final_vms)
-                        )
-                        zf.writestr(
-                            "readiness-findings.csv",
-                            generate_readiness_findings_csv(final_vms)
-                        )
-                        zf.writestr(
-                            "image-import-variables.tfvars.example",
-                            generate_image_import_tfvars(final_vms)
-                        )
-                        zf.writestr(
-                            "migration-runbook.md",
-                            generate_migration_runbook(migration_context)
-                        )
-
-                    st.session_state['zip_data'] = zip_b.getvalue()
                     st.session_state['build_done'] = True
                     status.update(label="Complete!", state="complete")
                 except Exception as e:
