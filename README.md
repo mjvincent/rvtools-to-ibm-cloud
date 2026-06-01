@@ -112,7 +112,7 @@ Successful execution requires a standard RVTools XLSX export containing the foll
 * **vSnapshot / vTools / vCD / vUSB / vHealth**: Optional migration readiness signals for snapshots, guest tools, attached media, USB devices, and health warnings.
 
 ## Business Case and Mapping Output
-The dashboard is organized as an assessment workbench with Overview, Readiness, VM Review, Networks, Storage, and Export tabs. It exports an enriched business case CSV with per-VM data including:
+The dashboard is organized as an assessment workbench with Overview, Readiness, VM Review, Networks, Storage, Migration Planning, and Export tabs. It exports an enriched business case CSV with per-VM data including:
 * RVTools worksheet coverage and assessment confidence summary
 * Baseline cost estimate
 * Estimated monthly savings
@@ -128,6 +128,10 @@ The dashboard is organized as an assessment workbench with Overview, Readiness, 
 * Per-disk boot/data role, capacity, source controller metadata, and target volume attachment mapping
 * Per-partition source capacity, consumed, free-space, and disk correlation context
 * Per-NIC source network, IP, MAC, adapter, connected state, switch/port context, target subnet, and security group mapping
+* **Migration planning fields** (wave, cutover group, owner, application, priority, dependency group) for organizing large-scale migrations
+* **Decision audit trail** tracking profile/storage/network/exclusion overrides and their pricing impact
+* **Remediation tracker** with owner, status, due date, notes, and backlog CSV export for blocking issues
+* **Image import planning** with per-image status, estimated time, and bulk update capabilities
 
 ## Streamlit Override Controls
 The Streamlit dashboard exposes editable override fields for `Override Profile` and `Override Storage Tier`. When set, these user-specified values are honored by the Terraform generator, allowing human-directed tuning of VSI sizing without changing the underlying migration logic.
@@ -166,7 +170,7 @@ The exported ZIP bundle now produces a modular Terraform layout:
 
 ## Migration Handoff Package
 Each ZIP bundle also includes a migration handoff package that bridges generated Terraform with image migration and cutover activities:
-* `migration-manifest.json` — tool-neutral source-to-target mapping for each VM
+* `migration-manifest.json` — tool-neutral source-to-target mapping for each VM including wave planning metadata and decision audit summary
 * `vm-mapping.csv` — spreadsheet-friendly view for migration planning and customer review
 * `nic-mapping.csv` — per-NIC primary/secondary network interface mapping
 * `disk-mapping.csv` — per-disk boot/data mapping for volume creation and attachment review
@@ -176,10 +180,13 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `assessment-quality.json` / `assessment-quality.csv` — RVTools worksheet coverage and confidence report
 * `preflight-report.json` / `preflight-report.csv` — package safety blockers and warnings
 * `pricing-diagnostics.json` / `pricing-diagnostics.csv` — pricing source, mapped dimensions, fallback components, and unmapped catalog metrics
+* `decision-audit.csv` — profile/storage/network/exclusion overrides with pricing impact analysis
+* `remediation-backlog.csv` — tracking blockers with owner, status, due date, and notes for cross-team remediation workflows
+* `image-import-plan.csv` — image import planning with source image, target catalog ID, import status, and estimated time per VM
 * `image-import-variables.tfvars.example` — Terraform varfile template for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
-The handoff files include image readiness, migration readiness, memory readiness, network readiness, NIC mapping, and disk mapping fields so migration teams can resolve boot image, snapshot, mounted media, guest tools, memory pressure, reservations, limits, switch/port backing, network, data disk, firmware, OS, and guest customization concerns before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
+The handoff files include image readiness, migration readiness, memory readiness, network readiness, NIC mapping, disk mapping, and migration planning fields so migration teams can resolve boot image, snapshot, mounted media, guest tools, memory pressure, reservations, limits, switch/port backing, network, data disk, firmware, OS, guest customization concerns, and wave/cutover coordination before import. They are intentionally tool-neutral and can be reviewed by migration teams, adapted for RackWare or other migration tooling, or used as input for a migration factory workflow.
 
 Generated resources include standardized naming and tags for project and management metadata, and the networking module exports reusable `subnet_id` and `security_group_id` outputs for the VSI module. Imported image IDs are supplied through the `custom_image_ids` Terraform map, using the VM keys emitted in `image-import-variables.tfvars.example`.
 
@@ -191,16 +198,20 @@ Generated resources include standardized naming and tags for project and managem
 3. Upload the RVTools .xlsx file.
 4. Review the Overview and Readiness tabs, resolving Blocked items first.
 5. Use VM Review, Networks, and Storage to confirm overrides and placement.
-6. Use Export to download the business case CSV and build the Terraform Bundle ZIP for IBM Cloud CLI or IBM Cloud Schematics.
-7. Review the included migration handoff files before image import, replication, or cutover planning.
+6. Use Wave Planning to organize VMs into migration waves, specify owners and cutover groups, track dependencies, and prioritize workloads.
+7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows.
+8. Use Image Import Planning to sequence custom image import stages and track status.
+9. Use Export to download the business case CSV, decision audit, remediation backlog, and image import plan; build the Terraform Bundle ZIP for IBM Cloud CLI or IBM Cloud Schematics.
+10. Review the included migration handoff files (including wave metadata and remediation tracking) before image import, replication, or cutover planning.
 
 ## User Manual
 For a complete searchable guide to installation, RVTools inputs, web interface fields, dashboard metrics, readiness statuses, generated Terraform, ZIP contents, handoff files, troubleshooting, and glossary terms, see `docs/user-manual.md`.
 
 ## Further Reading
-Start with `docs/user-manual.md` for end-user operation. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`. For network readiness guidance, see `docs/network-readiness-assessment.md`. For catalog pricing behavior, see `docs/ibm-catalog-pricing.md`. For internal model architecture, see `docs/normalized-vm-data-model.md`.
+Start with `docs/user-manual.md` for end-user operation. For migration wave planning, decision audit tracking, remediation backlog, and image import planning, see `docs/PRIORITY2_MIGRATION_PLANNING.md`. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`. For network readiness guidance, see `docs/network-readiness-assessment.md`. For catalog pricing behavior, see `docs/ibm-catalog-pricing.md`. For internal model architecture, see `docs/normalized-vm-data-model.md`.
 
 ## Release Notes
+- **Priority 2: Migration Planning Workflow** — Added Wave Planning tab for organizing migrations into waves with owner, cutover group, priority, application, and dependency tracking. Added Decision Audit export for tracking profile/storage/network overrides and pricing impact. Added Remediation Backlog tab for managing blocking issues with owner, status, due date, and notes. Added Image Import Planning tab for sequencing custom image imports with status tracking. All Priority 2 features integrated into migration manifest and ZIP handoff exports.
 - Added a potential savings metric to the Streamlit dashboard.
 - Added per-VM baseline and savings values in the exported business case CSV.
 - Added subnet and security group mapping fields to the business case export to support Terraform wiring.
@@ -223,4 +234,4 @@ Start with `docs/user-manual.md` for end-user operation. For detailed Terraform 
 
 ---
 **Author**: Michael Vincent Jones
-**Version**: 1.8.0
+**Version**: 2.0.0
