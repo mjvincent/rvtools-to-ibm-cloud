@@ -27,6 +27,7 @@ This tool does not move VMware workloads by itself. It does not convert VMDK fil
 - [Generated ZIP Contents](#generated-zip-contents)
 - [Terraform Output Reference](#terraform-output-reference)
 - [Migration Handoff Files](#migration-handoff-files)
+- [Priority 2 Migration Planning Workflow](#priority-2-migration-planning-workflow)
 - [Recommended Migration Planning Workflow](#recommended-migration-planning-workflow)
 - [Limitations](#limitations)
 - [Troubleshooting](#troubleshooting)
@@ -43,9 +44,14 @@ This manual is intended for:
 
 ## Application Outcomes
 After uploading an RVTools XLSX export, the application can produce:
-- A Streamlit assessment workbench with focused Overview, Readiness, VM Review, Networks, Storage, and Export tabs.
-- A per-VM decision table with right-sizing recommendations, override controls, source metadata, disk mapping, network mapping, and readiness assessments available through focused views.
-- A downloadable business case CSV.
+- A Streamlit assessment workbench with focused Overview, Readiness, VM Review, Networks, Storage, Migration Planning, and Export tabs.
+- A per-VM decision table with right-sizing recommendations, override controls, source metadata, disk mapping, network mapping, readiness assessments, and migration planning fields available through focused views.
+- Migration wave planning with owner, cutover group, priority, application, and dependency tracking.
+- Decision audit tracking for profile/storage/network/exclusion overrides and pricing impact analysis.
+- Remediation backlog for managing blocking issues with owner, status, due date, and notes.
+- Image import planning with per-image status tracking and bulk update capabilities.
+- A downloadable business case CSV with wave planning metadata.
+- Decision audit, remediation backlog, and image import plan CSVs for export and further processing.
 - A downloadable Terraform ZIP bundle.
 - A migration handoff package inside the ZIP for migration planning and downstream tooling.
 
@@ -801,6 +807,92 @@ The generated VSI module consumes the `custom_image_ids` map. Copy this file, re
 ### `migration-runbook.md`
 A generated operational runbook customized with project, region, zone, VPC name, deployment target, and recommended workflow.
 
+### `decision-audit.csv` (Priority 2)
+A decision audit export tracking all profile/storage/network/exclusion override decisions and their pricing impact.
+
+Use it to review:
+- Which VMs had overrides applied.
+- Profile override decisions and reasoning.
+- Storage tier override decisions and reasoning.
+- Network decisions and impact on target infrastructure.
+- VM exclusion decisions.
+- Per-VM baseline cost, estimated cost, savings, and total pricing impact of overrides.
+- Ideal for reconciling decisions across large migrations and calculating aggregate cost impact.
+
+### `remediation-backlog.csv` (Priority 2)
+A remediation backlog for tracking blocking issues, owners, status, due dates, and notes.
+
+Use it to review:
+- Open, in-progress, and resolved blocking issues.
+- Ownership assignment for remediation tasks.
+- Due dates for tracking remediation progress.
+- Overdue items requiring escalation.
+- Notes with context for each blocker.
+- Export for integration into project management tools (Jira, Azure DevOps, etc.).
+
+### `image-import-plan.csv` (Priority 2)
+An image import planning file with per-image sequencing, status tracking, and bulk update fields.
+
+Use it to review:
+- Which source images need conversion and import.
+- VMs mapped to each source image.
+- Target Catalog ID assignments for each image.
+- Import status (pending, in-progress, complete, failed).
+- Estimated time for each image import.
+- Notes for integration with image import pipeline.
+- Bulk status updates for tracking import progress across the migration.
+
+## Priority 2 Migration Planning Workflow
+
+The application includes four Priority 2 features for large-scale, multi-wave migrations:
+
+### Wave Planning Tab
+Organize VMs into migration waves with owner, cutover group, priority, application, and dependency tracking.
+
+Use it to:
+- Group related VMs into waves for phased migration.
+- Assign owner and cutover group for each wave.
+- Set priority (High, Medium, Low) for wave sequencing.
+- Assign application names for cross-app dependency tracking.
+- Define dependency groups to manage interdependencies.
+- Bulk-update wave fields for groups of VMs.
+- Detect and warn about potential cutover group conflicts.
+- Export wave metadata to migration-manifest.json for downstream systems.
+
+### Decision Audit Tab
+Track all profile/storage/network/exclusion override decisions and their pricing impact.
+
+Use it to:
+- Review which overrides were applied and why.
+- Analyze per-VM pricing impact of overrides.
+- Export decision-audit.csv for stakeholder review.
+- Reconcile total cost impact across the migration.
+- Identify override patterns for cost optimization.
+
+### Remediation Backlog Tab
+Manage blocking issues with owner, status, due date, and notes for cross-team remediation workflows.
+
+Use it to:
+- List all blocking readiness issues.
+- Assign owners for remediation tasks.
+- Track status (Open, In Progress, Resolved) for each blocker.
+- Set due dates and monitor overdue items.
+- Add notes with context for remediation teams.
+- Export remediation-backlog.csv for project management tools.
+- Monitor overall remediation progress with summary metrics.
+
+### Image Import Planning Tab
+Sequence custom image imports with per-image status tracking and bulk update capabilities.
+
+Use it to:
+- View all source images and their VM mappings.
+- Assign Target Catalog IDs for each image (optional, can be filled after import).
+- Set import status (Pending, In Progress, Complete, Failed) for each image.
+- Add estimated time for import completion.
+- Bulk-update status for groups of images.
+- Export image-import-plan.csv for integration with image import pipeline.
+- Track overall import progress with summary metrics.
+
 ## Recommended Migration Planning Workflow
 1. Review `vm-mapping.csv` with infrastructure, application, security, and migration owners.
 2. Confirm which VMs are in scope.
@@ -814,16 +906,19 @@ A generated operational runbook customized with project, region, zone, VPC name,
 10. Review `nic-mapping.csv` for primary, secondary, and source switch/port interface placement.
 11. Review `disk-mapping.csv` for data disk placement and sizing.
 12. Review `partition-mapping.csv` for partition free-space context and unmatched partition rows.
-13. Confirm IBM Cloud region, zone, VPC, subnet, and security group design.
-14. Confirm profile and storage tier overrides.
-15. Convert, replicate, or migrate images using the selected migration method.
-16. Upload converted images to IBM Cloud Object Storage when using custom image import.
-17. Import images as IBM Cloud VPC custom images.
-18. Record custom image IDs.
+13. **Use Wave Planning tab to organize VMs into migration waves**, assign owners and cutover groups, track dependencies, and set priorities.
+14. **Use Decision Audit tab** to review profile/storage/network override decisions and their pricing impact.
+15. **Use Remediation Backlog tab** to track blocking issues, assign owners, set due dates, and monitor remediation progress.
+16. **Use Image Import Planning tab** to sequence custom image import stages, set target catalog IDs, and track import status.
+17. Confirm IBM Cloud region, zone, VPC, subnet, and security group design.
+18. Confirm profile and storage tier overrides.
 19. Review generated Terraform.
-20. Apply Terraform using local CLI or IBM Schematics.
-21. Validate boot, network, storage attachment, monitoring, backup, security, and application health.
-22. Execute DNS, load balancer, IP, or application cutover steps.
+20. Convert, replicate, or migrate images using the selected migration method and import status from Image Import Planning tab.
+21. Upload converted images to IBM Cloud Object Storage when using custom image import.
+22. Import images as IBM Cloud VPC custom images and record custom image IDs.
+23. Apply Terraform using local CLI or IBM Schematics.
+24. Validate boot, network, storage attachment, monitoring, backup, security, and application health.
+25. Execute DNS, load balancer, IP, or application cutover steps following wave plan and cutover group assignments.
 
 ## Limitations
 The application is a planning and generation tool. It does not:
