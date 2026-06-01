@@ -1,5 +1,10 @@
 {
   "assessment_quality": {},
+  "decision_audit_summary": {
+    "profile_override_count": 0,
+    "storage_override_count": 0,
+    "total_pricing_impact": -83.18
+  },
   "handoff_files": {
     "assessment_quality_csv": "assessment-quality.csv",
     "assessment_quality_json": "assessment-quality.json",
@@ -15,6 +20,13 @@
     "readiness_findings_csv": "readiness-findings.csv",
     "runbook": "migration-runbook.md",
     "vm_mapping_csv": "vm-mapping.csv"
+  },
+  "image_import_summary": {
+    "import_status_breakdown": {
+      "pending": 1
+    },
+    "total_images": 1,
+    "total_vms_pending_import": 1
   },
   "package_type": "rvtools-to-ibm-cloud-migration-handoff",
   "project": {
@@ -32,6 +44,11 @@
     "target_region": "us-south",
     "target_zone": "us-south-1",
     "vpc_name": "demo-vpc"
+  },
+  "remediation_tracker_summary": {
+    "blocker_counts_by_status": {},
+    "overdue_count": 0,
+    "total_blockers": 0
   },
   "schema_version": "1.0",
   "virtual_machines": [
@@ -81,12 +98,15 @@
         "status": "Review"
       },
       "migration": {
-        "cutover_group": "unassigned",
+        "application": "",
+        "cutover_group": "",
+        "dependency_group": "",
         "method": "image-import-or-replication-tool",
-        "priority": "medium",
+        "owner": "",
+        "priority": "",
         "requires_ip_preservation": true,
         "status": "planned",
-        "wave": "wave-01"
+        "wave": ""
       },
       "migration_readiness": {
         "findings": [
@@ -166,6 +186,7 @@
         ],
         "guest_os": "Red Hat Enterprise Linux 9 (64-bit)",
         "host": "",
+        "image": "app-01",
         "ip_address": "10.0.1.10",
         "network": "app-net",
         "networks": [
@@ -231,14 +252,25 @@
         ],
         "effective_profile": "bx2-2x8",
         "effective_storage_tier": "5iops-tier",
+        "image_import_status": "",
         "override_profile": "",
         "override_storage_tier": "",
         "recommended_profile": "bx2-2x8",
         "recommended_storage_tier": "5iops-tier",
         "security_group": "module.networking.app_net_sg_id",
-        "subnet": "module.networking.app_net_id"
+        "source_image": "app-01",
+        "subnet": "module.networking.app_net_id",
+        "target_catalog_id": ""
       },
-      "vm_name": "app-01"
+      "vm_name": "app-01",
+      "wave_metadata": {
+        "application": "",
+        "cutover_group": "",
+        "dependency_group": "",
+        "owner": "",
+        "priority": "",
+        "wave": ""
+      }
     }
   ]
 }
