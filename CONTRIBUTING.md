@@ -58,7 +58,6 @@ should pass the sample package validator.
 
 ## CI Workflow
 
-A GitHub Actions workflow template is available at
-`docs/github-actions-ci.yml.example`. Copy it to `.github/workflows/ci.yml`
-when the GitHub Enterprise token or automation account has permission to create
-or update workflow files.
+The active GitHub Actions workflow lives at `.github/workflows/ci.yml`. A copy
+is also kept at `docs/github-actions-ci.yml.example` for reference when
+recreating CI in another remote or fork.

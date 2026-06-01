@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "codex/**"
+      - "feature/**"
+      - "fix/**"
+      - "refactor/**"
+      - "ui/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python and Terraform validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run pytest
+        run: python -m pytest
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Validate generated Terraform package
+        run: python scripts/validate_terraform_package.py --init-validate
