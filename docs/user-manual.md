@@ -150,7 +150,7 @@ Shows discovered networks, default CIDRs, VM network placement, multi-NIC count,
 Shows total storage, data disk counts, boot/data planning signals, partition coverage, storage tier choices, and image readiness context. Use this to validate data disk volume planning before package generation.
 
 ### Export
-Contains Terraform deployment settings, custom CIDR fields, package readiness metrics, business case CSV download, and Terraform ZIP build/download controls.
+Contains Terraform deployment settings, custom CIDR fields, package readiness metrics, preflight guidance, business case CSV download, and Terraform ZIP build/download controls.
 
 ## Sidebar Settings
 ### Target IBM Region

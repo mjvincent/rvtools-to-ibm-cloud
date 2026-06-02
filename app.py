@@ -1,14 +1,9 @@
 import pandas as pd
 import streamlit as st
 
-from preflight import (
-    has_blockers,
-    run_package_preflight,
-)
-from rvtools_parser import normalize_network_name, parse_rvtools_workbook
-from streamlit_app.final_vms import build_final_vms
+from rvtools_parser import parse_rvtools_workbook
+from streamlit_app.export import render_export_tab
 from streamlit_app.image_import import render_image_import_tab
-from streamlit_app.package_builder import build_terraform_bundle
 from streamlit_app.page_header import render_page_header
 from streamlit_app.remediation import render_remediation_backlog_tab
 from streamlit_app.settings import render_sidebar_settings
@@ -22,7 +17,6 @@ from ui import (
     render_assessment_quality,
     render_estate_summary,
     render_network_planning,
-    render_preflight_guidance,
     render_readiness_legend,
     render_readiness_triage,
     render_storage_planning,
@@ -147,141 +141,18 @@ if uploaded_file is not None:
         )
 
     with export:
-        st.subheader("Terraform Package")
-        col1, col2 = st.columns(2)
-        with col1:
-            vpc_name = st.text_input("VPC Name", "migration-vpc")
-            address_prefix_strategy = st.selectbox(
-                "Address Prefix Strategy",
-                ["manual", "auto"],
-                index=0
-            )
-            deployment_target = st.selectbox(
-                "Deployment Target",
-                ["Plain CLI", "IBM Schematics"],
-                index=0
-            )
-            ssh_source_cidr = st.text_input(
-                "SSH Source CIDR",
-                "",
-                help=(
-                    "Optional management CIDR for inbound SSH rules. "
-                    "Leave blank to omit SSH access from generated security groups."
-                ),
-            )
-        with col2:
-            st.markdown("**Custom CIDRs per Subnet**")
-            custom_cidrs = {}
-            for idx, net in enumerate(unique_nets):
-                net_name = net.get('name', 'unknown-net')
-                default_cidr = net.get('cidr', '10.0.0.0/24')
-                sanitized_name = normalize_network_name(net_name)
-                net_key = f"{sanitized_name}_{idx}"
-                net['cidr_key'] = net_key
-                custom_cidrs[net_key] = st.text_input(
-                    f"{net_name} CIDR",
-                    default_cidr,
-                    key=f"cidr_{net_key}"
-                )
-
-        in_scope = len(edited_df[~edited_df['Exclude?']])
-        blockers = sum(
-            len(edited_df[(~edited_df['Exclude?']) & (edited_df[column] == "Blocked")])
-            for column in [
-                "Image Readiness", "Migration Readiness", "Memory Readiness"
-            ]
-        )
-        c1, c2, c3 = st.columns(3)
-        c1.metric("VMs In Package", in_scope)
-        c2.metric("Blocker Signals", blockers)
-        c3.metric("Networks", len(unique_nets))
-
-        st.download_button(
-            label="Download Business Case (CSV)",
-            data=edited_df.to_csv(index=False).encode('utf-8'),
-            file_name=f"{project_name}_proposal.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-
-        preview_vms = build_final_vms(
-            edited_df, processed_vms, disk_details, nic_details
-        )
-        preview_findings = run_package_preflight(
-            preview_vms,
+        render_export_tab(
+            edited_df,
+            processed_vms,
+            disk_details,
+            nic_details,
             unique_nets,
             target_region,
-            custom_cidrs=custom_cidrs,
-            enable_security_groups=generate_security_groups,
-            catalog_profiles=catalog_profiles,
-            ssh_source_cidr=ssh_source_cidr,
+            target_zone,
+            generate_security_groups,
+            project_name,
+            pricing_metadata,
+            assessment_quality,
+            pricing_catalog,
+            catalog_profiles,
         )
-        render_preflight_guidance(preview_findings, edited_df)
-        if st.button("Re-run package preflight", use_container_width=True):
-            st.session_state["preflight_needs_rerun"] = False
-            st.rerun()
-
-        if st.button("Build Terraform Project", use_container_width=True):
-            with st.status("Packaging Project...") as status:
-                try:
-                    final_vms = build_final_vms(
-                        edited_df, processed_vms, disk_details, nic_details
-                    )
-
-                    preflight_findings = run_package_preflight(
-                        final_vms,
-                        unique_nets,
-                        target_region,
-                        custom_cidrs=custom_cidrs,
-                        enable_security_groups=generate_security_groups,
-                        catalog_profiles=catalog_profiles,
-                        ssh_source_cidr=ssh_source_cidr,
-                    )
-                    if preflight_findings:
-                        render_preflight_guidance(preflight_findings, edited_df)
-                    if has_blockers(preflight_findings):
-                        status.update(
-                            label="Preflight blocked package build",
-                            state="error",
-                        )
-                        st.session_state['build_done'] = False
-                        st.error(
-                            "Resolve package preflight blockers or exclude the "
-                            "affected VMs before building the Terraform bundle."
-                        )
-                        st.stop()
-
-                    st.session_state['zip_data'] = build_terraform_bundle(
-                        final_vms,
-                        unique_nets,
-                        target_region,
-                        target_zone,
-                        generate_security_groups,
-                        vpc_name,
-                        custom_cidrs,
-                        address_prefix_strategy,
-                        deployment_target,
-                        project_name,
-                        ssh_source_cidr,
-                        pricing_metadata,
-                        assessment_quality,
-                        pricing_catalog,
-                        preflight_findings,
-                        st.session_state.get("remediation_tracker", {}),
-                        st.session_state.get("image_import_status", {}),
-                    )
-                    st.session_state['build_done'] = True
-                    status.update(label="Complete!", state="complete")
-                except Exception as e:
-                    st.error(f"Error: {e}")
-
-        if st.session_state.get('build_done'):
-            st.write("---")
-            st.write("### Project Ready")
-            st.download_button(
-                label="Download Terraform Bundle",
-                data=st.session_state['zip_data'],
-                file_name=f"{project_name}.zip",
-                mime="application/zip",
-                use_container_width=True
-            )

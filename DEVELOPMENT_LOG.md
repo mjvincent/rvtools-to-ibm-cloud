@@ -126,6 +126,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Preserved existing image import session-state keys, CSV export behavior, and handoff package inputs.
 - Added focused coverage for bulk image import status updates.
 
+### June 2, 2026: Export Tab Helper Split
+- Extracted Export tab package controls, preflight rendering, business case download, and Terraform bundle build/download behavior into `streamlit_app/export.py`.
+- Kept `app.py` focused on upload, parsing, tab composition, and renderer delegation.
+- Added focused coverage for Export tab package summary metrics.
+
 ### June 2, 2026: Assessment Quality Report Follow-Up
 - Added Overview tab quality metrics and worksheet coverage detail.
 - Added `assessment-quality.json` and `assessment-quality.csv` to the Terraform ZIP and migration manifest.
