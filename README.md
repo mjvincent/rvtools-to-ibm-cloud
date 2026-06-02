@@ -72,12 +72,13 @@ Use `scripts/generate_pricing_cache.py` to generate the cached catalog from IBM 
 
 ## Technical Structure
 The application is split into focused modules with `MigrationVm` as the internal contract:
-1. **Streamlit Orchestration (`app.py`)**: Coordinates sidebar settings, upload flow, table editing, package build, and downloads.
-2. **RVTools Parsing (`rvtools_parser.py`)**: Loads worksheets, correlates RVTools tabs, and builds normalized VM records.
-3. **Assessments and Sizing (`assessments.py`, `sizing.py`)**: Evaluates readiness, profile matching, storage tiering, baseline cost, and savings.
-4. **Terraform Rendering (`terraform_renderer.py`)**: Outputs HCL in a modular format including networking, storage, and VSI modules.
-5. **Preflight Validation (`preflight.py`)**: Blocks unsafe package builds and reports warnings for unresolved planning decisions.
-6. **Migration Handoff (`handoff.py`)**: Exports source-to-target mapping files, preflight reports, and pricing diagnostics that connect generated Terraform to image import, replication, and cutover workflows.
+1. **Streamlit Entrypoint (`app.py`)**: Keeps the workbench route, upload flow, tab composition, package build, and downloads in one runnable Streamlit entrypoint.
+2. **Streamlit Helpers (`streamlit_app/`)**: Owns focused UI helpers such as page header rendering, sidebar settings, final VM assembly, image import planning, remediation backlog rendering, and Terraform bundle assembly.
+3. **RVTools Parsing (`rvtools_parser.py`, `rvtools/`)**: Loads worksheets, correlates RVTools tabs, and builds normalized VM records.
+4. **Assessments and Sizing (`assessments.py`, `sizing.py`)**: Evaluates readiness, profile matching, storage tiering, baseline cost, and savings.
+5. **Terraform Rendering (`terraform_renderer.py`)**: Outputs HCL in a modular format including networking, storage, and VSI modules.
+6. **Preflight Validation (`preflight.py`)**: Blocks unsafe package builds and reports warnings for unresolved planning decisions.
+7. **Migration Handoff (`handoff/`)**: Exports source-to-target mapping files, preflight reports, and pricing diagnostics that connect generated Terraform to image import, replication, and cutover workflows.
 
 `logic_engine.py` remains as a compatibility facade for existing tests and callers while the implementation lives in the focused modules above.
 
@@ -230,8 +231,8 @@ Start with `docs/user-manual.md` for end-user operation. For migration wave plan
 - Added IBM catalog pricing modes with static, cached, and live profile discovery paths plus pricing confidence metadata.
 - Added package preflight validation, Terraform package validation harness, pricing diagnostics exports, and profile/region support warnings.
 - Added a normalized VM dataclass model and moved old pricing/template experiments under `experiments/`.
-- Split the monolithic Streamlit and logic engine code into parser, assessment, sizing, renderer, handoff, and UI helper modules while preserving output contracts.
-- Reframed the Streamlit interface as a tabbed assessment workbench with focused Overview, Readiness, VM Review, Networks, Storage, and Export views.
+- Split the monolithic Streamlit and logic engine code into parser, assessment, sizing, renderer, handoff, and focused Streamlit helper modules while preserving output contracts.
+- Reframed the Streamlit interface as a tabbed assessment workbench with focused Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Networks, Storage, and Export views.
 
 ---
 **Author**: Michael Vincent Jones

@@ -54,7 +54,7 @@ python -m pip install -r requirements.txt
 
 ```bash
 python -m pytest
-python -m py_compile app.py rvtools_parser.py models.py assessments.py assessment_quality.py sizing.py catalog_pricing.py terraform_renderer.py handoff.py preflight.py ui.py logic_engine.py scripts/generate_pricing_cache.py scripts/validate_terraform_package.py
+python -m py_compile app.py rvtools_parser.py assessments.py assessment_quality.py sizing.py catalog_pricing.py terraform_renderer.py preflight.py ui.py logic_engine.py streamlit_app/*.py rvtools/*.py handoff/*.py models/*.py scripts/generate_pricing_cache.py scripts/validate_terraform_package.py
 python scripts/validate_terraform_package.py
 git diff --check
 ```
@@ -76,7 +76,7 @@ streamlit run app.py --server.port 8502
 5. Confirm the workbench renders without Streamlit errors:
    - Sidebar settings, pricing status, and upload control are visible.
    - `Overview` shows estate metrics, recommended next actions, and assessment quality.
-   - `Readiness`, `VM Review`, `Networks`, `Storage`, and `Export` tabs open without tracebacks.
+   - `Readiness`, `Remediation Backlog`, `VM Review`, `Wave Planning`, `Image Import Planning`, `Networks`, `Storage`, and `Export` tabs open without tracebacks.
    - `Download Business Case (CSV)` is available from `Export`.
    - `Build Terraform Project` runs package preflight. If blockers are present, the build stops with findings; after resolving or excluding affected VMs, it completes and shows `Project Ready`.
    - `Download Terraform Bundle` is available.

@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
@@ -14,26 +15,44 @@ on:
 permissions:
   contents: read
 
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONFAULTHANDLER: "1"
+
 jobs:
   test:
     name: Python and Terraform validation
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.13"
           cache: pip
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
 
       - name: Install Python dependencies
         run: python -m pip install -r requirements.txt
 
       - name: Run pytest
-        run: python -m pytest
+        run: |
+          set -o pipefail
+          python -m pytest -ra --tb=short 2>&1 | tee pytest.log
+
+      - name: Upload pytest log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pytest-log
+          path: pytest.log
+          if-no-files-found: ignore
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
