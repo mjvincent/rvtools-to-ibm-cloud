@@ -7,7 +7,11 @@ from models import MigrationVm
 from .utils import _clean_value, _normalize_vms, _safe_vm_key
 
 
-def remediation_tracker_export(vms: list[MigrationVm], remediation_tracker: dict) -> str:
+def remediation_tracker_export(
+    vms: list[MigrationVm],
+    remediation_tracker: dict,
+    today=None,
+) -> str:
     """Generate a CSV capturing remediation blockers and their resolution tracking.
     
     Columns:
@@ -43,7 +47,7 @@ def remediation_tracker_export(vms: list[MigrationVm], remediation_tracker: dict
     status_counts = {}
     owner_counts = {}
     overdue_count = 0
-    today = datetime.now().date()
+    today = today or datetime.now().date()
     
     # Process each blocker
     rows_data = []
@@ -147,5 +151,4 @@ def remediation_tracker_export(vms: list[MigrationVm], remediation_tracker: dict
     })
     
     return output.getvalue()
-
 

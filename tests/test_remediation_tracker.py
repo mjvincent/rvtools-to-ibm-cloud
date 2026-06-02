@@ -258,7 +258,7 @@ def test_overdue_detection_logic(assert_matches_snapshot):
     ]
     
     # Create trackers with mix of overdue/current/resolved dates
-    today = datetime.now().date()
+    today = datetime(2026, 6, 1).date()
     past_date = (today - timedelta(days=5)).strftime('%Y-%m-%d')
     future_date = (today + timedelta(days=5)).strftime('%Y-%m-%d')
     
@@ -298,7 +298,11 @@ def test_overdue_detection_logic(assert_matches_snapshot):
     }
     
     # Generate CSV export
-    csv_output = remediation_tracker_export(vms, remediation_tracker)
+    csv_output = remediation_tracker_export(
+        vms,
+        remediation_tracker,
+        today=today,
+    )
     
     assert_matches_snapshot("remediation_overdue_detection.csv", csv_output)
 
