@@ -120,6 +120,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Extracted Wave Planning rendering and helper logic into `streamlit_app/wave_planning.py`.
 - Added focused tests for active VM filtering, bulk wave assignment, editor persistence, conflict detection, and completion counts.
 - Updated README and planning/user documentation to reflect the current Wave Planning tab and focused Streamlit helper layout.
+
+### June 2, 2026: Image Import Helper Split
+- Extracted Image Import Planning rendering and bulk status handling into `streamlit_app/image_import.py`.
+- Preserved existing image import session-state keys, CSV export behavior, and handoff package inputs.
+- Added focused coverage for bulk image import status updates.
+
+### June 2, 2026: Assessment Quality Report Follow-Up
 - Added Overview tab quality metrics and worksheet coverage detail.
 - Added `assessment-quality.json` and `assessment-quality.csv` to the Terraform ZIP and migration manifest.
 - Documented the advisory quality model in the README, user manual, migration handoff guide, and ADR-013.

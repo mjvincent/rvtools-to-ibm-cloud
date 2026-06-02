@@ -10,6 +10,7 @@ import json
 import pandas as pd
 from handoff import image_import_export
 from models import MigrationVm
+from streamlit_app.image_import import apply_bulk_import_status
 
 
 def test_image_grouping_single_image_single_vm(assert_matches_snapshot):
@@ -50,6 +51,29 @@ def test_image_grouping_single_image_single_vm(assert_matches_snapshot):
 
     result = json.dumps(rows, indent=2) + "\n"
     assert_matches_snapshot("image_grouping_single_image_single_vm.json", result)
+
+
+def test_apply_bulk_import_status_preserves_existing_fields():
+    state = {
+        "RHEL-8": {
+            "target_catalog_id": "catalog-1",
+            "import_status": "Pending",
+            "estimated_import_time": "2h",
+            "notes": "keep",
+        },
+        "Windows-2022": {"import_status": "Pending"},
+    }
+
+    updated = apply_bulk_import_status(state, ["RHEL-8"], "Imported")
+
+    assert updated["RHEL-8"] == {
+        "target_catalog_id": "catalog-1",
+        "import_status": "Imported",
+        "estimated_import_time": "2h",
+        "notes": "keep",
+    }
+    assert updated["Windows-2022"] == {"import_status": "Pending"}
+    assert state["RHEL-8"]["import_status"] == "Pending"
 
 
 def test_image_grouping_single_image_multiple_vms(assert_matches_snapshot):

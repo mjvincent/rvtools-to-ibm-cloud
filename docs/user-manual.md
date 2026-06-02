@@ -141,7 +141,7 @@ Shows the main decision fields instead of every generated column. Use this tab t
 Assigns active VMs to waves, cutover groups, owners, applications, priorities, and dependency groups. Use this tab to coordinate migration execution order and identify application or dependency grouping conflicts before export.
 
 ### Image Import Planning
-Groups active VMs by inferred source image and tracks image import status, catalog IDs, estimated import timing, and notes.
+Groups active VMs by inferred source image and tracks image import status, catalog IDs, estimated import timing, and notes. Bulk status actions update selected image groups while preserving existing catalog IDs, timing estimates, and notes.
 
 ### Networks
 Shows discovered networks, default CIDRs, VM network placement, multi-NIC count, unknown network signals, and source switch/port context when optional network detail tabs are present. Use this before export to confirm subnet, security group, and NIC placement intent.

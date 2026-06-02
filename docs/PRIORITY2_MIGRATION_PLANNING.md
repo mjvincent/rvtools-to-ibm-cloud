@@ -283,6 +283,8 @@ Like remediation tracker, image import status is **session-only**. To persist:
 2. Share with image import team/pipeline
 3. After import completes, upload RVTools again and update status in app
 
+The tab preserves the existing Image Import Planning session-state keys during reruns and uses the same status data when generating the image-import CSV and Terraform handoff package inputs.
+
 ---
 
 ## Workflow Integration

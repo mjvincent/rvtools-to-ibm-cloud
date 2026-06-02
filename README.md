@@ -73,7 +73,7 @@ Use `scripts/generate_pricing_cache.py` to generate the cached catalog from IBM 
 ## Technical Structure
 The application is split into focused modules with `MigrationVm` as the internal contract:
 1. **Streamlit Entrypoint (`app.py`)**: Keeps the workbench route, upload flow, tab composition, package build, and downloads in one runnable Streamlit entrypoint.
-2. **Streamlit Helpers (`streamlit_app/`)**: Owns focused UI helpers such as page header rendering, sidebar settings, final VM assembly, wave planning, image import planning, remediation backlog rendering, and Terraform bundle assembly.
+2. **Streamlit Helpers (`streamlit_app/`)**: Owns focused UI helpers such as page header rendering, sidebar settings, final VM assembly, wave planning, image import planning rendering/status handling, remediation backlog rendering, and Terraform bundle assembly.
 3. **RVTools Parsing (`rvtools_parser.py`, `rvtools/`)**: Loads worksheets, correlates RVTools tabs, and builds normalized VM records.
 4. **Assessments and Sizing (`assessments.py`, `sizing.py`)**: Evaluates readiness, profile matching, storage tiering, baseline cost, and savings.
 5. **Terraform Rendering (`terraform_renderer.py`)**: Outputs HCL in a modular format including networking, storage, and VSI modules.

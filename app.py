@@ -1,17 +1,13 @@
 import pandas as pd
 import streamlit as st
 
-from handoff import image_import_export
 from preflight import (
     has_blockers,
     run_package_preflight,
 )
 from rvtools_parser import normalize_network_name, parse_rvtools_workbook
 from streamlit_app.final_vms import build_final_vms
-from streamlit_app.image_import import (
-    build_image_import_rows,
-    persist_image_import_edits,
-)
+from streamlit_app.image_import import render_image_import_tab
 from streamlit_app.package_builder import build_terraform_bundle
 from streamlit_app.page_header import render_page_header
 from streamlit_app.remediation import render_remediation_backlog_tab
@@ -146,96 +142,9 @@ if uploaded_file is not None:
         render_storage_planning(edited_df, processed_vms)
 
     with image_import:
-        st.subheader("Image Import Planning")
-        st.caption("Group active VMs by inferred source image and track import status.")
-
-        # Initialize image import status storage
-        if "image_import_status" not in st.session_state:
-            st.session_state["image_import_status"] = {}
-
-        df_images = build_image_import_rows(
-            edited_df,
-            st.session_state["image_import_status"],
+        render_image_import_tab(
+            edited_df, processed_vms, disk_details, nic_details
         )
-
-        if df_images.empty:
-            st.info("No active VMs to plan image imports for.")
-        else:
-            col_cfg = {
-                "Source Image": st.column_config.TextColumn("Source Image", disabled=True),
-                "Count of VMs": st.column_config.NumberColumn("Count of VMs", disabled=True),
-                "Owners": st.column_config.TextColumn("Owners", disabled=True),
-                "Target Catalog ID": st.column_config.TextColumn("Target Catalog ID"),
-                "Import Status": st.column_config.SelectboxColumn(
-                    "Import Status",
-                    options=["", "Pending", "Scheduled", "Imported", "Failed", "Review"],
-                ),
-                "Estimated Import Time": st.column_config.TextColumn("Estimated Import Time"),
-                "Notes": st.column_config.TextColumn("Notes"),
-            }
-
-            edited_images = st.data_editor(
-                df_images,
-                column_config=col_cfg,
-                hide_index=True,
-                use_container_width=True,
-                key="image_import_editor",
-            )
-
-            st.session_state["image_import_status"] = (
-                persist_image_import_edits(
-                    edited_images,
-                    st.session_state["image_import_status"],
-                )
-            )
-
-            st.write("---")
-            st.subheader("Bulk Actions")
-            image_options = df_images["Source Image"].tolist()
-            selected_images = st.multiselect(
-                "Select images to update",
-                image_options,
-                default=st.session_state.get("image_import_selected", []),
-                key="image_import_multiselect",
-            )
-            st.session_state["image_import_selected"] = selected_images
-
-            c1, c2 = st.columns([2, 6])
-            with c1:
-                bulk_status = st.selectbox(
-                    "Set Import Status",
-                    ["", "Pending", "Scheduled", "Imported", "Failed", "Review"],
-                    key="bulk_image_status",
-                )
-                if st.button("Apply Status to Selected", use_container_width=True):
-                    if not selected_images:
-                        st.warning("No images selected.")
-                    else:
-                        for src in selected_images:
-                            cur = st.session_state["image_import_status"].get(src, {})
-                            cur["import_status"] = bulk_status
-                            st.session_state["image_import_status"][src] = cur
-                        st.success(f"Updated import status for {len(selected_images)} images.")
-
-            with c2:
-                if st.button("Generate Image Import Export", use_container_width=True):
-                    csv_text = image_import_export(
-                        build_final_vms(
-                            edited_df, processed_vms, disk_details, nic_details
-                        ),
-                        st.session_state.get("image_import_status"),
-                    )
-                    st.session_state["last_image_import_csv"] = csv_text
-
-                if st.session_state.get("last_image_import_csv"):
-                    st.download_button(
-                        label="Download Image Import CSV",
-                        data=st.session_state.get("last_image_import_csv").encode("utf-8"),
-                        file_name="image-import-plan.csv",
-                        mime="text/csv",
-                        use_container_width=True,
-                        key="image_import_export_download",
-                    )
 
     with export:
         st.subheader("Terraform Package")
