@@ -4,6 +4,10 @@ import streamlit as st
 from rvtools_parser import parse_rvtools_workbook
 from streamlit_app.export import render_export_tab
 from streamlit_app.image_import import render_image_import_tab
+from streamlit_app.network_storage import (
+    render_network_planning,
+    render_storage_planning,
+)
 from streamlit_app.page_header import render_page_header
 from streamlit_app.remediation import render_remediation_backlog_tab
 from streamlit_app.settings import render_sidebar_settings
@@ -16,10 +20,8 @@ from ui import (
     merge_decision_edits,
     render_assessment_quality,
     render_estate_summary,
-    render_network_planning,
     render_readiness_legend,
     render_readiness_triage,
-    render_storage_planning,
 )
 
 

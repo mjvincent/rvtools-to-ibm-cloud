@@ -131,6 +131,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Kept `app.py` focused on upload, parsing, tab composition, and renderer delegation.
 - Added focused coverage for Export tab package summary metrics.
 
+### June 2, 2026: Network and Storage Helper Split
+- Extracted Network and Storage tab rendering plus source NIC/partition planning row builders into `streamlit_app/network_storage.py`.
+- Kept `ui.py` compatibility exports for existing callers while moving tab ownership into the focused Streamlit helper package.
+- Added focused coverage for switch/port context rows and partition planning summaries.
+
 ### June 2, 2026: Assessment Quality Report Follow-Up
 - Added Overview tab quality metrics and worksheet coverage detail.
 - Added `assessment-quality.json` and `assessment-quality.csv` to the Terraform ZIP and migration manifest.
