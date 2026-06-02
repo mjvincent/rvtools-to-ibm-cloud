@@ -14,6 +14,6 @@ my-ibm-migration/
 # Local test data
 *.xlsx
 
-# Old files we don't need anymore
-parser.py
+# Old root-level files we don't need anymore
+/parser.py
 .env
