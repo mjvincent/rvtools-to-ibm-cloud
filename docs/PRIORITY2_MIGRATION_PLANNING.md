@@ -26,7 +26,7 @@ Wave planning organizes your VM migration into coordinated groups, each with spe
 
 #### 1. Navigate to Wave Planning Tab
 
-After uploading RVTools and reviewing blockers, click the **"Wave Planning"** tab in the app sidebar to assign wave metadata.
+After uploading RVTools and reviewing blockers, click the **"Wave Planning"** tab in the main workbench to assign wave metadata.
 
 #### 2. Assign Wave Metadata Individually
 
@@ -39,7 +39,7 @@ Use the data editor table to edit individual VMs:
 
 For large migrations, use bulk assignment to speed up data entry:
 
-1. **Select Multiple VMs**: Click the checkboxes to select VMs with the same wave assignment
+1. **Select Multiple VMs**: Use the VM key multiselect to choose VMs with the same wave assignment
 2. **Click "Assign Wave"**: Opens a form to apply wave, cutover group, owner, and application to all selected VMs
 3. **Click "Assign All to Wave"**: Quick shortcut to set the same wave for all active VMs
 

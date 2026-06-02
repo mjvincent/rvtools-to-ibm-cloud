@@ -73,7 +73,7 @@ Use `scripts/generate_pricing_cache.py` to generate the cached catalog from IBM 
 ## Technical Structure
 The application is split into focused modules with `MigrationVm` as the internal contract:
 1. **Streamlit Entrypoint (`app.py`)**: Keeps the workbench route, upload flow, tab composition, package build, and downloads in one runnable Streamlit entrypoint.
-2. **Streamlit Helpers (`streamlit_app/`)**: Owns focused UI helpers such as page header rendering, sidebar settings, final VM assembly, image import planning, remediation backlog rendering, and Terraform bundle assembly.
+2. **Streamlit Helpers (`streamlit_app/`)**: Owns focused UI helpers such as page header rendering, sidebar settings, final VM assembly, wave planning, image import planning, remediation backlog rendering, and Terraform bundle assembly.
 3. **RVTools Parsing (`rvtools_parser.py`, `rvtools/`)**: Loads worksheets, correlates RVTools tabs, and builds normalized VM records.
 4. **Assessments and Sizing (`assessments.py`, `sizing.py`)**: Evaluates readiness, profile matching, storage tiering, baseline cost, and savings.
 5. **Terraform Rendering (`terraform_renderer.py`)**: Outputs HCL in a modular format including networking, storage, and VSI modules.
@@ -113,7 +113,7 @@ Successful execution requires a standard RVTools XLSX export containing the foll
 * **vSnapshot / vTools / vCD / vUSB / vHealth**: Optional migration readiness signals for snapshots, guest tools, attached media, USB devices, and health warnings.
 
 ## Business Case and Mapping Output
-The dashboard is organized as an assessment workbench with Overview, Readiness, VM Review, Networks, Storage, Migration Planning, and Export tabs. It exports an enriched business case CSV with per-VM data including:
+The dashboard is organized as an assessment workbench with Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Networks, Storage, and Export tabs. It exports an enriched business case CSV with per-VM data including:
 * RVTools worksheet coverage and assessment confidence summary
 * Baseline cost estimate
 * Estimated monthly savings

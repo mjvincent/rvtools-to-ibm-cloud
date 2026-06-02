@@ -115,6 +115,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Extracted page header rendering, sidebar settings, and remediation backlog rendering into focused `streamlit_app/` modules while keeping `app.py` as the Streamlit entrypoint.
 - Added focused tests for remediation backlog row generation and edit persistence.
 - Updated CI actions to Node 24-compatible action versions and retained pytest log artifacts only for failed runs.
+
+### June 2, 2026: Wave Planning Helper Split
+- Extracted Wave Planning rendering and helper logic into `streamlit_app/wave_planning.py`.
+- Added focused tests for active VM filtering, bulk wave assignment, editor persistence, conflict detection, and completion counts.
+- Updated README and planning/user documentation to reflect the current Wave Planning tab and focused Streamlit helper layout.
 - Added Overview tab quality metrics and worksheet coverage detail.
 - Added `assessment-quality.json` and `assessment-quality.csv` to the Terraform ZIP and migration manifest.
 - Documented the advisory quality model in the README, user manual, migration handoff guide, and ADR-013.

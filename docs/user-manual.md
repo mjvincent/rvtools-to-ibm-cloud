@@ -44,7 +44,7 @@ This manual is intended for:
 
 ## Application Outcomes
 After uploading an RVTools XLSX export, the application can produce:
-- A Streamlit assessment workbench with focused Overview, Readiness, VM Review, Networks, Storage, Migration Planning, and Export tabs.
+- A Streamlit assessment workbench with focused Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Networks, Storage, and Export tabs.
 - A per-VM decision table with right-sizing recommendations, override controls, source metadata, disk mapping, network mapping, readiness assessments, and migration planning fields available through focused views.
 - Migration wave planning with owner, cutover group, priority, application, and dependency tracking.
 - Decision audit tracking for profile/storage/network/exclusion overrides and pricing impact analysis.
@@ -136,6 +136,12 @@ Groups image, migration, memory, and network readiness by `Blocked`, `Review`, a
 
 ### VM Review
 Shows the main decision fields instead of every generated column. Use this tab to exclude VMs and adjust profile, storage tier, network, subnet, or security group intent. Advanced generated fields remain available in the expander for audit and troubleshooting.
+
+### Wave Planning
+Assigns active VMs to waves, cutover groups, owners, applications, priorities, and dependency groups. Use this tab to coordinate migration execution order and identify application or dependency grouping conflicts before export.
+
+### Image Import Planning
+Groups active VMs by inferred source image and tracks image import status, catalog IDs, estimated import timing, and notes.
 
 ### Networks
 Shows discovered networks, default CIDRs, VM network placement, multi-NIC count, unknown network signals, and source switch/port context when optional network detail tabs are present. Use this before export to confirm subnet, security group, and NIC placement intent.

@@ -16,6 +16,7 @@ from streamlit_app.package_builder import build_terraform_bundle
 from streamlit_app.page_header import render_page_header
 from streamlit_app.remediation import render_remediation_backlog_tab
 from streamlit_app.settings import render_sidebar_settings
+from streamlit_app.wave_planning import render_wave_planning_tab
 from ui import (
     DECISION_COLUMNS,
     DISABLED_COLS,
@@ -136,143 +137,7 @@ if uploaded_file is not None:
             st.dataframe(edited_df, hide_index=True, use_container_width=True)
 
     with wave_planning:
-        st.subheader("Wave Planning")
-        st.caption("Bulk assign waves, cutover groups, owners, and applications to active VMs.")
-
-        # Prepare active VMs table
-        active_df = edited_df[~edited_df['Exclude?']].copy()
-        # Ensure wave planning columns exist
-        for col in ["Wave", "Cutover Group", "Owner", "Application", "Priority", "Dependency Group"]:
-            if col not in active_df.columns:
-                active_df[col] = "" if col != "Priority" else "Medium"
-
-        # Selection controls
-        st.write("### Select VMs to assign")
-        vm_options = active_df["VM Key"].tolist()
-        selected = st.multiselect(
-            "Select VMs (by VM Key)", vm_options,
-            default=st.session_state.get("wave_selected_vms", [])
-        )
-        st.session_state["wave_selected_vms"] = selected
-
-        c1, c2, c3 = st.columns([2, 2, 6])
-        with c1:
-            assign_wave_value = st.text_input("Quick Wave Value", "")
-            if st.button("Assign All to Wave", use_container_width=True):
-                if assign_wave_value:
-                    edited_df.loc[~edited_df['Exclude?'], 'Wave'] = assign_wave_value
-                    st.success(f"Assigned wave '{assign_wave_value}' to all active VMs")
-                else:
-                    st.warning("Enter a Wave value to assign to all active VMs.")
-        with c2:
-            if st.button("Assign Wave", use_container_width=True):
-                st.session_state["show_assign_wave_form"] = True
-        with c3:
-            st.write("")
-
-        # Bulk assign form
-        if st.session_state.get("show_assign_wave_form"):
-            with st.form("assign_wave_form"):
-                st.write("Assign fields to selected VMs")
-                f_wave = st.text_input("Wave")
-                f_cut = st.text_input("Cutover Group")
-                f_owner = st.text_input("Owner")
-                f_app = st.text_input("Application")
-                submitted = st.form_submit_button("Apply to Selected VMs")
-                if submitted:
-                    if not selected:
-                        st.warning("No VMs selected for assignment.")
-                    else:
-                        for vmk in selected:
-                            mask = edited_df['VM Key'] == vmk
-                            if f_wave:
-                                edited_df.loc[mask, 'Wave'] = f_wave
-                            if f_cut:
-                                edited_df.loc[mask, 'Cutover Group'] = f_cut
-                            if f_owner:
-                                edited_df.loc[mask, 'Owner'] = f_owner
-                            if f_app:
-                                edited_df.loc[mask, 'Application'] = f_app
-                        st.success(f"Assigned fields to {len(selected)} VMs")
-                        st.session_state["show_assign_wave_form"] = False
-
-        # Configure columns for data editor using existing table_config where possible
-        wave_table_cfg = dict(table_config)
-        wave_table_cfg.update({
-            "VM Key": st.column_config.TextColumn("VM Key", disabled=True),
-            "VM Name": st.column_config.TextColumn("VM Name", disabled=True),
-            "Wave": st.column_config.TextColumn("Wave"),
-            "Cutover Group": st.column_config.TextColumn("Cutover Group"),
-            "Owner": st.column_config.TextColumn("Owner"),
-            "Application": st.column_config.TextColumn("Application"),
-            "Priority": st.column_config.SelectboxColumn("Priority", options=["", "High", "Medium", "Low"]),
-            "Dependency Group": st.column_config.TextColumn("Dependency Group"),
-        })
-
-        # Display editable grid
-        display_cols = [
-            "VM Key", "VM Name", "Wave", "Cutover Group", "Owner",
-            "Application", "Priority", "Dependency Group"
-        ]
-        wave_editor = st.data_editor(
-            active_df[display_cols],
-            column_config=wave_table_cfg,
-            hide_index=True,
-            use_container_width=True,
-            key="wave_planning_editor"
-        )
-
-        # Persist edits back to edited_df by VM Key
-        if isinstance(wave_editor, pd.DataFrame):
-            for row in wave_editor.to_dict('records'):
-                vmk = row.get('VM Key')
-                mask = edited_df['VM Key'] == vmk
-                for col in ["Wave", "Cutover Group", "Owner", "Application", "Priority", "Dependency Group"]:
-                    if col in row:
-                        edited_df.loc[mask, col] = row.get(col)
-
-        # Conflict detection
-        st.write("### Conflict Detection")
-        # Application vs Cutover Group
-        app_conflicts = []
-        apps = active_df.groupby('Application') if 'Application' in active_df.columns else []
-        for app, group in apps:
-            vals = set(group['Cutover Group'].dropna().astype(str).unique())
-            vals = {v for v in vals if v}
-            if len(vals) > 1:
-                app_conflicts.append((app, vals))
-        if app_conflicts:
-            for app, vals in app_conflicts:
-                st.warning(f"Application '{app}' has multiple Cutover Groups: {', '.join(vals)}")
-
-        # Dependency Group vs Wave
-        dep_conflicts = []
-        deps = active_df.groupby('Dependency Group') if 'Dependency Group' in active_df.columns else []
-        for dep, group in deps:
-            vals = set(group['Wave'].dropna().astype(str).unique())
-            vals = {v for v in vals if v}
-            if len(vals) > 1:
-                dep_conflicts.append((dep, vals))
-        if dep_conflicts:
-            for dep, vals in dep_conflicts:
-                st.warning(f"Dependency Group '{dep}' spans multiple Waves: {', '.join(vals)}")
-
-        # Completion status
-        total = len(active_df)
-        if total:
-            required = ["Wave", "Cutover Group", "Owner", "Application"]
-            complete = 0
-            for _, r in edited_df[~edited_df['Exclude?']].iterrows():
-                if all(r.get(c) not in (None, "") for c in required):
-                    complete += 1
-            if complete == total:
-                st.success(f"Complete: {complete}/{total} VMs")
-            else:
-                st.info(f"Incomplete: {complete}/{total} VMs")
-
-        # Expose advanced fields for audit
-        with st.expander("Advanced wave planning data"):
-            st.dataframe(edited_df[["VM Key", "VM Name", "Wave", "Cutover Group", "Owner", "Application", "Priority", "Dependency Group"]], hide_index=True, use_container_width=True)
+        edited_df = render_wave_planning_tab(edited_df, table_config)
 
     with networks:
         render_network_planning(edited_df, unique_nets)
