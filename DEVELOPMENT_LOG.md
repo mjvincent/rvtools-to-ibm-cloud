@@ -136,6 +136,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Kept `ui.py` compatibility exports for existing callers while moving tab ownership into the focused Streamlit helper package.
 - Added focused coverage for switch/port context rows and partition planning summaries.
 
+### June 2, 2026: Overview and Readiness Helper Split
+- Extracted estate summary, Overview tab, assessment quality, readiness triage, and readiness legend rendering into `streamlit_app/overview_readiness.py`.
+- Kept `ui.py` compatibility exports for existing callers while reducing inline tab ownership in `app.py`.
+- Added focused coverage for estate summary and Overview blocker metrics.
+
 ### June 2, 2026: Assessment Quality Report Follow-Up
 - Added Overview tab quality metrics and worksheet coverage detail.
 - Added `assessment-quality.json` and `assessment-quality.csv` to the Terraform ZIP and migration manifest.

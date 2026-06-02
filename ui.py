@@ -10,6 +10,16 @@ from streamlit_app.network_storage import (
     render_network_planning,
     render_storage_planning,
 )
+from streamlit_app.overview_readiness import (
+    READINESS_COLUMNS,
+    active_df as _active_df,
+    calculate_estate_summary,
+    count_status as _count_status,
+    render_assessment_quality,
+    render_estate_summary,
+    render_readiness_legend,
+    render_readiness_triage,
+)
 
 STORAGE_TIERS = ["3iops-tier", "5iops-tier", "10iops-tier"]
 
@@ -163,130 +173,6 @@ DECISION_COLUMNS = [
     "Override Storage Tier", "Network", "Subnet", "Security Group",
     "Monthly Cost", "Savings (Mo)"
 ]
-
-READINESS_COLUMNS = [
-    "VM Name", "Power State", "Image Readiness", "Readiness Reasons",
-    "Migration Readiness", "Migration Readiness Reasons",
-    "Memory Readiness", "Memory Readiness Reasons",
-    "Network Readiness", "Network Readiness Reasons", "Data Status"
-]
-
-def _active_df(df_f):
-    return df_f[~df_f['Exclude?']]
-
-
-def _count_status(df, column, status):
-    return len(df[df[column] == status])
-
-
-def render_estate_summary(df_f):
-    active_df = _active_df(df_f)
-    excluded = len(df_f) - len(active_df)
-    monthly = active_df['Monthly Cost'].sum()
-    savings = active_df['Savings (Mo)'].sum()
-    blocked = sum(
-        _count_status(active_df, column, "Blocked")
-        for column in [
-            "Image Readiness", "Migration Readiness", "Memory Readiness",
-            "Network Readiness"
-        ]
-    )
-    review = sum(
-        _count_status(active_df, column, "Review")
-        for column in [
-            "Image Readiness", "Migration Readiness", "Memory Readiness",
-            "Network Readiness"
-        ]
-    )
-
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("In Scope", len(active_df))
-    c2.metric("Excluded", excluded)
-    c3.metric("Monthly Estimate", f"${monthly:,.2f}")
-    c4.metric("Potential Savings", f"${savings:,.2f}")
-    c5.metric("Readiness Blockers", blocked)
-
-    if blocked:
-        st.warning(
-            f"{blocked} blocker signal(s) need remediation before export, "
-            "replication, image import, or cutover planning."
-        )
-    elif review:
-        st.info(
-            f"{review} review signal(s) should be validated with workload "
-            "owners before migration waves are finalized."
-        )
-    else:
-        st.success("No readiness blockers or review signals were detected for in-scope VMs.")
-
-
-def render_assessment_quality(report):
-    summary = (report or {}).get("summary", {})
-    tabs = (report or {}).get("tabs", [])
-    required_present = summary.get("required_tabs_present", 0)
-    required_total = summary.get("required_tabs_total", 0)
-    optional_present = summary.get("optional_readiness_tabs_present", 0)
-    optional_total = summary.get("optional_readiness_tabs_total", 0)
-    optional_network_present = summary.get(
-        "optional_network_detail_tabs_present", 0
-    )
-    optional_network_total = summary.get("optional_network_detail_tabs_total", 0)
-
-    st.subheader("Assessment Quality")
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Overall Confidence", summary.get("overall_confidence", "Low"))
-    c2.metric("Required Tabs", f"{required_present}/{required_total}")
-    c3.metric("Optional Readiness Tabs", f"{optional_present}/{optional_total}")
-    c4.metric(
-        "Network Detail Tabs",
-        f"{optional_network_present}/{optional_network_total}"
-    )
-    c5.metric("Missing or Empty Tabs", summary.get("missing_or_empty_tabs", 0))
-
-    confidence = summary.get("overall_confidence", "Low")
-    if confidence == "High":
-        st.success("RVTools coverage supports high-confidence planning signals.")
-    elif confidence == "Medium":
-        st.info("RVTools coverage is usable, with some fallback or partial confidence signals.")
-    else:
-        st.warning("RVTools coverage is limited. Review missing or empty tabs before relying on planning outputs.")
-
-    with st.expander("Worksheet coverage details"):
-        if tabs:
-            st.dataframe(
-                pd.DataFrame(tabs),
-                hide_index=True,
-                use_container_width=True,
-            )
-        else:
-            st.write("No worksheet quality data is available.")
-
-
-def render_readiness_triage(df_f):
-    active_df = _active_df(df_f)
-    st.caption("Blocked and Review items are shown first so planning effort starts where it matters most.")
-    for label, column, reason_column in [
-        ("Image", "Image Readiness", "Readiness Reasons"),
-        ("Migration", "Migration Readiness", "Migration Readiness Reasons"),
-        ("Memory", "Memory Readiness", "Memory Readiness Reasons"),
-        ("Network", "Network Readiness", "Network Readiness Reasons"),
-    ]:
-        st.subheader(f"{label} Readiness")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Blocked", _count_status(active_df, column, "Blocked"))
-        c2.metric("Review", _count_status(active_df, column, "Review"))
-        c3.metric("Ready", _count_status(active_df, column, "Ready"))
-        ordered = active_df.copy()
-        ordered["_status_order"] = ordered[column].map({
-            "Blocked": 0,
-            "Review": 1,
-            "Ready": 2,
-        }).fillna(3)
-        view = ordered.sort_values(["_status_order", "VM Name"])[
-            ["VM Name", column, reason_column, "Power State", "Data Status"]
-        ]
-        st.dataframe(view, hide_index=True, use_container_width=True)
-
 
 def merge_decision_edits(df_table, edited_decisions):
     merged = df_table.copy()
@@ -507,7 +393,3 @@ def render_preflight_guidance(findings, df_table=None):
             hide_index=True,
             use_container_width=True,
         )
-
-
-def render_readiness_legend():
-    st.caption("Ready means no detected issue in available data. Review means owner validation is needed. Blocked means remediation should happen before migration execution.")

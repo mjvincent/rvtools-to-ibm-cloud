@@ -8,6 +8,12 @@ from streamlit_app.network_storage import (
     render_network_planning,
     render_storage_planning,
 )
+from streamlit_app.overview_readiness import (
+    render_estate_summary,
+    render_overview_tab,
+    render_readiness_legend,
+    render_readiness_triage,
+)
 from streamlit_app.page_header import render_page_header
 from streamlit_app.remediation import render_remediation_backlog_tab
 from streamlit_app.settings import render_sidebar_settings
@@ -18,10 +24,6 @@ from ui import (
     apply_preflight_quick_fixes,
     build_table_config,
     merge_decision_edits,
-    render_assessment_quality,
-    render_estate_summary,
-    render_readiness_legend,
-    render_readiness_triage,
 )
 
 
@@ -78,18 +80,7 @@ if uploaded_file is not None:
     edited_df = df_table.copy()
 
     with overview:
-        st.subheader("Estate Health")
-        active_df = df_f[~df_f['Exclude?']]
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Image Blocked", len(active_df[active_df["Image Readiness"] == "Blocked"]))
-        c2.metric("Migration Blocked", len(active_df[active_df["Migration Readiness"] == "Blocked"]))
-        c3.metric("Memory Blocked", len(active_df[active_df["Memory Readiness"] == "Blocked"]))
-        st.subheader("Recommended Next Actions")
-        st.write("1. Resolve Blocked readiness items before migration execution.")
-        st.write("2. Validate Review items with workload owners and VMware administrators.")
-        st.write("3. Confirm profile, storage tier, network, subnet, and security group overrides in VM Review.")
-        st.write("4. Confirm Terraform deployment settings in Export and build the package.")
-        render_assessment_quality(assessment_quality)
+        render_overview_tab(df_f, assessment_quality)
 
     with readiness:
         render_readiness_legend()
