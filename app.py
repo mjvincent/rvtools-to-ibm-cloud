@@ -17,14 +17,9 @@ from streamlit_app.overview_readiness import (
 from streamlit_app.page_header import render_page_header
 from streamlit_app.remediation import render_remediation_backlog_tab
 from streamlit_app.settings import render_sidebar_settings
+from streamlit_app.vm_review import render_vm_review_tab
 from streamlit_app.wave_planning import render_wave_planning_tab
-from ui import (
-    DECISION_COLUMNS,
-    DISABLED_COLS,
-    apply_preflight_quick_fixes,
-    build_table_config,
-    merge_decision_edits,
-)
+from ui import build_table_config
 
 
 st.set_page_config(
@@ -90,34 +85,7 @@ if uploaded_file is not None:
         render_remediation_backlog_tab(processed_vms)
 
     with vm_review:
-        st.subheader("VM Decisions")
-        st.caption("This view keeps the active decisions in front. Raw generated fields remain available below for audit and troubleshooting.")
-        decision_table = apply_preflight_quick_fixes(
-            df_table,
-            st.session_state.get("preflight_quick_fixes", {}),
-        )
-        decision_input_columns = ["VM Key"] + [
-            column for column in DECISION_COLUMNS
-            if column in decision_table.columns
-        ]
-        edited_decisions = st.data_editor(
-            decision_table[decision_input_columns],
-            column_config=table_config,
-            column_order=[
-                column for column in DECISION_COLUMNS
-                if column in decision_table.columns
-            ],
-            disabled=[
-                column for column in DISABLED_COLS
-                if column in decision_input_columns
-            ],
-            hide_index=True,
-            use_container_width=True,
-            key="vm_decision_editor"
-        )
-        edited_df = merge_decision_edits(decision_table, edited_decisions)
-        with st.expander("Advanced generated fields"):
-            st.dataframe(edited_df, hide_index=True, use_container_width=True)
+        edited_df = render_vm_review_tab(df_table, table_config)
 
     with wave_planning:
         edited_df = render_wave_planning_tab(edited_df, table_config)

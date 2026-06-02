@@ -141,6 +141,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Kept `ui.py` compatibility exports for existing callers while reducing inline tab ownership in `app.py`.
 - Added focused coverage for estate summary and Overview blocker metrics.
 
+### June 2, 2026: VM Review Helper Split
+- Extracted VM Review tab decision editing and advanced generated field rendering into `streamlit_app/vm_review.py`.
+- Preserved the `vm_decision_editor` session key, decision column order, disabled column behavior, and preflight quick-fix application.
+- Added focused coverage for VM Review decision column selection helpers.
+
 ### June 2, 2026: Assessment Quality Report Follow-Up
 - Added Overview tab quality metrics and worksheet coverage detail.
 - Added `assessment-quality.json` and `assessment-quality.csv` to the Terraform ZIP and migration manifest.
