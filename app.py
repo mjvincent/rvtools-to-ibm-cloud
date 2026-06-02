@@ -1,7 +1,6 @@
 import pandas as pd
 import streamlit as st
 
-from catalog_pricing import get_pricing_catalog, pricing_status_summary
 from handoff import image_import_export
 from preflight import (
     has_blockers,
@@ -14,6 +13,9 @@ from streamlit_app.image_import import (
     persist_image_import_edits,
 )
 from streamlit_app.package_builder import build_terraform_bundle
+from streamlit_app.page_header import render_page_header
+from streamlit_app.remediation import render_remediation_backlog_tab
+from streamlit_app.settings import render_sidebar_settings
 from ui import (
     DECISION_COLUMNS,
     DISABLED_COLS,
@@ -35,80 +37,17 @@ st.set_page_config(
     layout="wide"
 )
 
-col1, col2 = st.columns([1, 8])
-with col1:
-    logo = (
-        "https://upload.wikimedia.org/wikipedia/commons/5/51/"
-        "IBM_logo.svg"
-    )
-    st.image(logo, width=80)
-with col2:
-    st.title("RVTools to IBM Cloud VPC")
-
-st.sidebar.header("Migration Settings")
-target_region = st.sidebar.selectbox(
-    "Target IBM Region", ["us-south", "us-east", "eu-gb", "jp-tok"]
-)
-
-st.sidebar.header("Right-Sizing Settings")
-modes = [
-    "Conservative (30%)", "IBM Standard (40%)",
-    "Moderate (50%)", "Aggressive (70%)", "Custom"
-]
-threshold_mode = st.sidebar.selectbox("Standard Thresholds", modes, index=1)
-if threshold_mode == "Custom":
-    utilization_threshold = st.sidebar.slider(
-        "Custom CPU Threshold (%)", 1, 100, 40
-    )
-else:
-    utilization_threshold = int(''.join(filter(
-        str.isdigit, threshold_mode
-    )))
-
-project_name = st.sidebar.text_input("Project Name", "my-ibm-migration")
-region_zones = {
-    "us-south": ["us-south-1", "us-south-2", "us-south-3"],
-    "us-east": ["us-east-1", "us-east-2", "us-east-3"],
-    "eu-gb": ["eu-gb-1"],
-    "jp-tok": ["jp-tok-1"]
-}
-target_zone = st.sidebar.selectbox(
-    "Target IBM Zone",
-    region_zones.get(target_region, [f"{target_region}-1"])
-)
-
-st.sidebar.header("Pricing Settings")
-pricing_mode_label = st.sidebar.selectbox(
-    "Pricing Mode",
-    ["Static fallback", "Cached IBM catalog", "Live IBM profile discovery"],
-    index=0
-)
-pricing_mode_map = {
-    "Static fallback": "static",
-    "Cached IBM catalog": "cached",
-    "Live IBM profile discovery": "live",
-}
-pricing_catalog = get_pricing_catalog(
-    pricing_mode_map[pricing_mode_label],
-    region=target_region
-)
-pricing_metadata = pricing_catalog.get("metadata", {})
-catalog_profiles = pricing_catalog.get("profiles", [])
-storage_tier_rates = pricing_catalog.get("storage_tier_rates")
-st.sidebar.caption(pricing_status_summary(pricing_catalog))
-if pricing_metadata.get("status"):
-    st.sidebar.info(pricing_metadata["status"])
-
-generate_security_groups = st.sidebar.checkbox(
-    "Generate Security Groups", value=True
-)
-
-st.sidebar.markdown("---")
-st.sidebar.caption(
-    "Upload RVTools, review blockers first, adjust only the decisions that "
-    "need human intent, then build the Terraform handoff package."
-)
-uploaded_file = st.sidebar.file_uploader("Upload RVTools", type=["xlsx"])
+render_page_header()
+settings, uploaded_file = render_sidebar_settings()
+target_region = settings.target_region
+utilization_threshold = settings.utilization_threshold
+project_name = settings.project_name
+target_zone = settings.target_zone
+pricing_catalog = settings.pricing_catalog
+pricing_metadata = settings.pricing_metadata
+catalog_profiles = settings.catalog_profiles
+storage_tier_rates = settings.storage_tier_rates
+generate_security_groups = settings.generate_security_groups
 
 if uploaded_file is not None:
     parsed = parse_rvtools_workbook(
@@ -164,161 +103,7 @@ if uploaded_file is not None:
         render_readiness_triage(df_f)
 
     with remediation_backlog:
-        st.subheader("Remediation Backlog")
-        st.caption("Track readiness blockers and remediation status.")
-
-        # Session state persistence note
-        st.info(
-            "**Note:** Remediation tracker data is stored for this session only. "
-            "To persist your tracking data across sessions, export the CSV below and re-import it by adding it back to the backlog."
-        )
-
-        # Initialize remediation tracker storage
-        #
-        # DESIGN: Remediation Tracker State Management
-        # ============================================
-        # Current Implementation: Session-only storage via st.session_state
-        # - Storage Location: st.session_state["remediation_tracker"]
-        # - Structure: {blocker_id: {status, due_date, notes, owner}, ...}
-        # - Scope: Current session only; lost on page refresh or browser close
-        # - Use Case: In-session tracking during migration planning workflow
-        #
-        # Future Persistence Design (JSON File Storage):
-        # - File Location: {project_dir}/.remediation_tracker.json
-        # - Format:
-        #   {
-        #     "metadata": {
-        #       "version": "1.0",
-        #       "project_name": "<project>",
-        #       "export_timestamp": "2024-01-15T10:30:00Z"
-        #     },
-        #     "blockers": {
-        #       "<blocker_id>": {
-        #         "vm_key": "<vm_key>",
-        #         "vm_name": "<vm_name>",
-        #         "blocker_type": "<type>",
-        #         "status": "Open|In Progress|Resolved|Deferred",
-        #         "due_date": "YYYY-MM-DD",
-        #         "notes": "<notes>",
-        #         "owner": "<owner>",
-        #         "created_at": "2024-01-15T10:00:00Z",
-        #         "updated_at": "2024-01-15T10:30:00Z"
-        #       }
-        #     }
-        #   }
-        # - Implementation Strategy:
-        #   1. Add load_remediation_state(project_dir) to handoff.py
-        #   2. Add save_remediation_state(state, project_dir) to handoff.py
-        #   3. Load on app init if exists
-        #   4. Provide import/export buttons in Remediation Backlog tab
-        #   5. Auto-save after editor changes (with confirmation)
-        if "remediation_tracker" not in st.session_state:
-            st.session_state["remediation_tracker"] = {}
-
-        # Collect blockers from VM readiness findings
-        backlog_items = []
-        _counter = 0
-        for vm in processed_vms:
-            # Aggregate findings from various readiness sources
-            findings = []
-            findings.extend(getattr(vm, "readiness_findings", []) or [])
-            findings.extend(getattr(vm, "network_readiness_findings", []) or [])
-            findings.extend(getattr(vm, "migration", {}).findings if getattr(vm, "migration", None) else [])
-            for f in findings:
-                blocker_id = f"{vm.vm_key}::{_counter}"
-                _counter += 1
-                desc = f.recommended_action or f.evidence or f.severity or ""
-                state_entry = st.session_state["remediation_tracker"].get(blocker_id, {})
-                backlog_items.append({
-                    "blocker_id": blocker_id,
-                    "VM Key": vm.vm_key,
-                    "VM Name": vm.vm_name,
-                    "Owner": vm.owner or "",
-                    "Blocker Type": f.finding_type,
-                    "Blocker Description": desc,
-                    "Status": state_entry.get("status", "Open"),
-                    "Due Date": state_entry.get("due_date", ""),
-                    "Notes": state_entry.get("notes", ""),
-                })
-
-        if not backlog_items:
-            st.info("No readiness blockers found.")
-        else:
-            backlog_df = pd.DataFrame(backlog_items)
-            col_cfg = {
-                "blocker_id": st.column_config.TextColumn("ID", disabled=True),
-                "VM Key": st.column_config.TextColumn("VM Key", disabled=True),
-                "VM Name": st.column_config.TextColumn("VM Name", disabled=True),
-                "Owner": st.column_config.TextColumn("Owner"),
-                "Blocker Type": st.column_config.TextColumn("Blocker Type", disabled=True),
-                "Blocker Description": st.column_config.TextColumn("Blocker Description", disabled=True),
-                "Status": st.column_config.SelectboxColumn("Status", options=["Open", "In Progress", "Resolved", "Deferred"]),
-                "Due Date": st.column_config.TextColumn("Due Date"),
-                "Notes": st.column_config.TextColumn("Notes"),
-            }
-
-            edited_backlog = st.data_editor(
-                backlog_df,
-                column_config=col_cfg,
-                hide_index=True,
-                use_container_width=True,
-                key="remediation_editor"
-            )
-
-            # Persist edits into session_state mapping
-            if isinstance(edited_backlog, pd.DataFrame):
-                for row in edited_backlog.to_dict("records"):
-                    bid = row.get("blocker_id")
-                    if not bid:
-                        continue
-                    st.session_state["remediation_tracker"][bid] = {
-                        "status": row.get("Status", "Open"),
-                        "due_date": row.get("Due Date", ""),
-                        "notes": row.get("Notes", ""),
-                        "owner": row.get("Owner", ""),
-                    }
-
-            # Summary section
-            st.write("---")
-            st.subheader("Backlog Summary")
-            df_for_summary = edited_backlog if isinstance(edited_backlog, pd.DataFrame) else backlog_df
-            status_counts = df_for_summary["Status"].value_counts().to_dict() if not df_for_summary.empty else {}
-            owner_counts = df_for_summary["Owner"].fillna("").value_counts().to_dict() if not df_for_summary.empty else {}
-
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Open", int(status_counts.get("Open", 0)))
-            c2.metric("In Progress", int(status_counts.get("In Progress", 0)))
-            c3.metric("Resolved", int(status_counts.get("Resolved", 0)))
-
-            st.write("### By Owner")
-            if owner_counts:
-                owner_df = pd.DataFrame([{"Owner": k, "Count": v} for k, v in owner_counts.items()])
-                st.dataframe(owner_df, use_container_width=True)
-            else:
-                st.write("No owners assigned yet.")
-
-            # Overdue items
-            try:
-                due_parsed = pd.to_datetime(df_for_summary.get("Due Date", pd.Series([], dtype=object)), errors="coerce")
-                overdue_mask = due_parsed < pd.Timestamp.now()
-                overdue = df_for_summary.loc[overdue_mask]
-                st.write(f"Overdue items: {len(overdue)}")
-                if not overdue.empty:
-                    st.dataframe(overdue[["VM Key", "VM Name", "Owner", "Blocker Type", "Blocker Description", "Status", "Due Date", "Notes"]], use_container_width=True)
-            except Exception:
-                # If parsing fails, skip overdue calculation
-                pass
-
-            # Export
-            csv_bytes = df_for_summary.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="Export Remediation Backlog",
-                data=csv_bytes,
-                file_name="p4-remediation-backlog.csv",
-                mime="text/csv",
-                use_container_width=True,
-                key="p4-tracker-export"
-            )
+        render_remediation_backlog_tab(processed_vms)
 
     with vm_review:
         st.subheader("VM Decisions")
