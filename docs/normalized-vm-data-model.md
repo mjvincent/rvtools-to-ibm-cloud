@@ -58,9 +58,10 @@ Terraform or handoff outputs.
 
 ## Development Guidance
 New parser or assessment code should construct or update `MigrationVm` and its
-nested records directly. `rvtools_parser.py` owns workbook correlation,
-`assessments.py` owns readiness policy, `sizing.py` owns profile/cost
-recommendation, `terraform_renderer.py` owns HCL output, and `handoff.py` owns
+nested records directly. `rvtools_parser.py` remains the compatibility facade,
+the `rvtools/` package owns workbook loading and correlation, `assessments.py`
+owns readiness policy, `sizing.py` owns profile/cost recommendation,
+`terraform_renderer.py` owns HCL output, and `handoff.py` owns
 manifest/CSV/runbook exports. Call `to_record()` only when handing data to
 Streamlit or legacy export code.
 

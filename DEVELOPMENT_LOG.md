@@ -146,6 +146,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Preserved the `vm_decision_editor` session key, decision column order, disabled column behavior, and preflight quick-fix application.
 - Added focused coverage for VM Review decision column selection helpers.
 
+### June 3, 2026: RVTools Workbook Loader Split
+- Extracted RVTools workbook sheet loading and column cleanup into `rvtools/workbook.py`.
+- Kept `rvtools_parser.py` as the public compatibility facade and exported the workbook loader from `rvtools/`.
+- Added focused coverage for missing sheet handling, column normalization, and package import compatibility.
+
 ### June 2, 2026: Assessment Quality Report Follow-Up
 - Added Overview tab quality metrics and worksheet coverage detail.
 - Added `assessment-quality.json` and `assessment-quality.csv` to the Terraform ZIP and migration manifest.

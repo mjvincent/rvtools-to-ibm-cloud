@@ -17,9 +17,12 @@ from .network_context import (
     enrich_nic_with_network_context,
 )
 from .parser import ParsedRvtoolsWorkbook, parse_rvtools_workbook
+from .workbook import LoadedRvtoolsWorkbook, RVTOOLS_SHEET_NAMES, load_rvtools_sheets
 
 __all__ = [
+    "LoadedRvtoolsWorkbook",
     "ParsedRvtoolsWorkbook",
+    "RVTOOLS_SHEET_NAMES",
     "as_bool",
     "as_float",
     "build_port_contexts",
@@ -34,5 +37,6 @@ __all__ = [
     "normalize_match_key",
     "normalize_network_name",
     "parse_rvtools_workbook",
+    "load_rvtools_sheets",
     "row_matches_any",
 ]

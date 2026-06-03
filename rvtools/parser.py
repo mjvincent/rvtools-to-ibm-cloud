@@ -32,6 +32,7 @@ from .network_context import (
     build_switch_contexts,
     enrich_nic_with_network_context,
 )
+from .workbook import load_rvtools_sheets
 
 
 @dataclass
@@ -60,61 +61,28 @@ def parse_rvtools_workbook(
     pricing_metadata = pricing_metadata or {}
 
     # 1. LOAD TABS
-    xls = pd.ExcelFile(uploaded_file)
-
-    def read_sheet(sheet_name):
-        if sheet_name in xls.sheet_names:
-            return pd.read_excel(xls, sheet_name=sheet_name)
-        return pd.DataFrame()
-
-    df_vinfo = read_sheet('vInfo')
-    df_vdisk = read_sheet('vDisk')
-    df_vcpu = read_sheet('vCPU')
-    df_vmemory = read_sheet('vMemory')
-    df_vhost = read_sheet('vHost')
-    df_vcluster = read_sheet('vCluster')
-    df_vnetwork = read_sheet('vNetwork')
-    df_vsnapshot = read_sheet('vSnapshot')
-    df_vtools = read_sheet('vTools')
-    df_vcd = read_sheet('vCD')
-    df_vusb = read_sheet('vUSB')
-    df_vhealth = read_sheet('vHealth')
-    df_vpartition = read_sheet('vPartition')
-    df_vport = read_sheet('vPort')
-    df_dvport = read_sheet('dvPort')
-    df_vswitch = read_sheet('vSwitch')
-    df_dvswitch = read_sheet('dvSwitch')
-
-    # 2. CLEAN COLUMN NAMES
-    for df in [df_vinfo, df_vdisk, df_vcpu, df_vhost,
-               df_vmemory, df_vcluster, df_vnetwork, df_vsnapshot, df_vtools,
-               df_vcd, df_vusb, df_vhealth, df_vpartition, df_vport,
-               df_dvport, df_vswitch, df_dvswitch]:
-        if not df.empty:
-            df.columns = df.columns.str.strip()
-
-    workbook_sheets = {
-        "vInfo": df_vinfo,
-        "vDisk": df_vdisk,
-        "vCPU": df_vcpu,
-        "vMemory": df_vmemory,
-        "vHost": df_vhost,
-        "vCluster": df_vcluster,
-        "vNetwork": df_vnetwork,
-        "vSnapshot": df_vsnapshot,
-        "vTools": df_vtools,
-        "vCD": df_vcd,
-        "vUSB": df_vusb,
-        "vHealth": df_vhealth,
-        "vPartition": df_vpartition,
-        "vPort": df_vport,
-        "dvPort": df_dvport,
-        "vSwitch": df_vswitch,
-        "dvSwitch": df_dvswitch,
-    }
+    loaded_workbook = load_rvtools_sheets(uploaded_file)
+    workbook_sheets = loaded_workbook.sheets
+    df_vinfo = workbook_sheets["vInfo"]
+    df_vdisk = workbook_sheets["vDisk"]
+    df_vcpu = workbook_sheets["vCPU"]
+    df_vmemory = workbook_sheets["vMemory"]
+    df_vhost = workbook_sheets["vHost"]
+    df_vcluster = workbook_sheets["vCluster"]
+    df_vnetwork = workbook_sheets["vNetwork"]
+    df_vsnapshot = workbook_sheets["vSnapshot"]
+    df_vtools = workbook_sheets["vTools"]
+    df_vcd = workbook_sheets["vCD"]
+    df_vusb = workbook_sheets["vUSB"]
+    df_vhealth = workbook_sheets["vHealth"]
+    df_vpartition = workbook_sheets["vPartition"]
+    df_vport = workbook_sheets["vPort"]
+    df_dvport = workbook_sheets["dvPort"]
+    df_vswitch = workbook_sheets["vSwitch"]
+    df_dvswitch = workbook_sheets["dvSwitch"]
     assessment_quality = build_assessment_quality_report(
         workbook_sheets,
-        xls.sheet_names
+        loaded_workbook.sheet_names
     )
 
     # 3. NETWORKING EXTRACTION
@@ -772,4 +740,3 @@ def parse_rvtools_workbook(
         df_vhost=df_vhost,
         df_vcpu=df_vcpu,
     )
-

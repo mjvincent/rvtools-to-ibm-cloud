@@ -23,9 +23,12 @@ def test_models_root_imports_still_work():
 
 def test_rvtools_parser_root_imports_still_work():
     from rvtools.parser import parse_rvtools_workbook as package_parse
+    from rvtools.workbook import load_rvtools_sheets as package_load
+    from rvtools import load_rvtools_sheets
     from rvtools_parser import normalize_network_name, parse_rvtools_workbook
 
     assert parse_rvtools_workbook is package_parse
+    assert load_rvtools_sheets is package_load
     assert normalize_network_name("App Net") == "app_net"
 
 
