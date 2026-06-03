@@ -113,7 +113,7 @@ Successful execution requires a standard RVTools XLSX export containing the foll
 * **vSnapshot / vTools / vCD / vUSB / vHealth**: Optional migration readiness signals for snapshots, guest tools, attached media, USB devices, and health warnings.
 
 ## Business Case and Mapping Output
-The dashboard is organized as an assessment workbench with Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Networks, Storage, and Export tabs. It exports an enriched business case CSV with per-VM data including:
+The dashboard is organized as an assessment workbench with Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Migration Ops, Networks, Storage, and Export tabs. It exports an enriched business case CSV with per-VM data including:
 * RVTools worksheet coverage and assessment confidence summary
 * Baseline cost estimate
 * Estimated monthly savings
@@ -133,6 +133,7 @@ The dashboard is organized as an assessment workbench with Overview, Readiness, 
 * **Decision audit trail** tracking profile/storage/network/exclusion overrides and their pricing impact
 * **Remediation tracker** with owner, status, due date, notes, and backlog CSV export for blocking issues
 * **Image import planning** with per-image status, estimated time, and bulk update capabilities
+* **Migration Ops readiness** combining wave planning, blockers, remediation status, and image import status for cutover review
 
 ## Streamlit Override Controls
 The Streamlit dashboard exposes editable override fields for `Override Profile` and `Override Storage Tier`. When set, these user-specified values are honored by the Terraform generator, allowing human-directed tuning of VSI sizing without changing the underlying migration logic.
@@ -185,6 +186,7 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `decision-audit.csv` — profile/storage/network/exclusion overrides with pricing impact analysis
 * `remediation-backlog.csv` — tracking blockers with owner, status, due date, and notes for cross-team remediation workflows
 * `image-import-plan.csv` — image import planning with source image, target catalog ID, import status, and estimated time per VM
+* `cutover-readiness.csv` — wave and cutover-group readiness view across planning, remediation, and image import status
 * `image-import-variables.tfvars.example` — Terraform varfile template for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
@@ -203,8 +205,9 @@ Generated resources include standardized naming and tags for project and managem
 6. Use Wave Planning to organize VMs into migration waves, specify owners and cutover groups, track dependencies, and prioritize workloads.
 7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows.
 8. Use Image Import Planning to sequence custom image import stages and track status.
-9. Use Export to download the business case CSV, decision audit, remediation backlog, and image import plan; build the Terraform Bundle ZIP for IBM Cloud CLI or IBM Cloud Schematics.
-10. Review the included migration handoff files (including wave metadata and remediation tracking) before image import, replication, or cutover planning.
+9. Use Migration Ops to confirm cutover readiness by wave and cutover group.
+10. Use Export to download the business case CSV, decision audit, remediation backlog, image import plan, and cutover readiness export; build the Terraform Bundle ZIP for IBM Cloud CLI or IBM Cloud Schematics.
+11. Review the included migration handoff files (including wave metadata and remediation tracking) before image import, replication, or cutover planning.
 
 ## User Manual
 For a complete searchable guide to installation, RVTools inputs, web interface fields, dashboard metrics, readiness statuses, generated Terraform, ZIP contents, handoff files, troubleshooting, and glossary terms, see `docs/user-manual.md`.
@@ -213,6 +216,7 @@ For a complete searchable guide to installation, RVTools inputs, web interface f
 Start with `docs/user-manual.md` for end-user operation. For migration wave planning, decision audit tracking, remediation backlog, and image import planning, see `docs/PRIORITY2_MIGRATION_PLANNING.md`. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`. For network readiness guidance, see `docs/network-readiness-assessment.md`. For catalog pricing behavior, see `docs/ibm-catalog-pricing.md`. For internal model architecture, see `docs/normalized-vm-data-model.md`.
 
 ## Release Notes
+- **Migration Ops Readiness** — Added a Migration Ops tab and `cutover-readiness.csv` handoff export that combines wave planning, readiness blockers, remediation status, and image import status for cutover review.
 - **Priority 2: Migration Planning Workflow** — Added Wave Planning tab for organizing migrations into waves with owner, cutover group, priority, application, and dependency tracking. Added Decision Audit export for tracking profile/storage/network overrides and pricing impact. Added Remediation Backlog tab for managing blocking issues with owner, status, due date, and notes. Added Image Import Planning tab for sequencing custom image imports with status tracking. All Priority 2 features integrated into migration manifest and ZIP handoff exports.
 - Added a potential savings metric to the Streamlit dashboard.
 - Added per-VM baseline and savings values in the exported business case CSV.
@@ -232,7 +236,7 @@ Start with `docs/user-manual.md` for end-user operation. For migration wave plan
 - Added package preflight validation, Terraform package validation harness, pricing diagnostics exports, and profile/region support warnings.
 - Added a normalized VM dataclass model and moved old pricing/template experiments under `experiments/`.
 - Split the monolithic Streamlit and logic engine code into parser, assessment, sizing, renderer, handoff, and focused Streamlit helper modules while preserving output contracts.
-- Reframed the Streamlit interface as a tabbed assessment workbench with focused Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Networks, Storage, and Export views.
+- Reframed the Streamlit interface as a tabbed assessment workbench with focused Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Migration Ops, Networks, Storage, and Export views.
 
 ---
 **Author**: Michael Vincent Jones

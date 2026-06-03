@@ -76,12 +76,12 @@ streamlit run app.py --server.port 8502
 5. Confirm the workbench renders without Streamlit errors:
    - Sidebar settings, pricing status, and upload control are visible.
    - `Overview` shows estate metrics, recommended next actions, and assessment quality.
-   - `Readiness`, `Remediation Backlog`, `VM Review`, `Wave Planning`, `Image Import Planning`, `Networks`, `Storage`, and `Export` tabs open without tracebacks.
+   - `Readiness`, `Remediation Backlog`, `VM Review`, `Wave Planning`, `Image Import Planning`, `Migration Ops`, `Networks`, `Storage`, and `Export` tabs open without tracebacks.
    - `Download Business Case (CSV)` is available from `Export`.
    - `Build Terraform Project` runs package preflight. If blockers are present, the build stops with findings; after resolving or excluding affected VMs, it completes and shows `Project Ready`.
    - `Download Terraform Bundle` is available.
 
-6. Download and inspect the Terraform bundle. It should include the root Terraform files, networking/storage/VSI module files, mapping CSVs, readiness exports, assessment quality exports, `preflight-report.json`, `preflight-report.csv`, `pricing-diagnostics.json`, `pricing-diagnostics.csv`, `image-import-variables.tfvars.example`, `migration-manifest.json`, and `migration-runbook.md`.
+6. Download and inspect the Terraform bundle. It should include the root Terraform files, networking/storage/VSI module files, mapping CSVs, readiness exports, assessment quality exports, `preflight-report.json`, `preflight-report.csv`, `pricing-diagnostics.json`, `pricing-diagnostics.csv`, `cutover-readiness.csv`, `image-import-variables.tfvars.example`, `migration-manifest.json`, and `migration-runbook.md`.
 
 7. Extract the bundle to a temporary directory and run the validation harness:
 

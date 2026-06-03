@@ -4,6 +4,7 @@ import streamlit as st
 from rvtools_parser import parse_rvtools_workbook
 from streamlit_app.export import render_export_tab
 from streamlit_app.image_import import render_image_import_tab
+from streamlit_app.migration_ops import render_migration_ops_tab
 from streamlit_app.network_storage import (
     render_network_planning,
     render_storage_planning,
@@ -68,8 +69,13 @@ if uploaded_file is not None:
 
     render_estate_summary(df_f)
 
-    overview, readiness, remediation_backlog, vm_review, wave_planning, image_import, networks, storage, export = st.tabs([
-        "Overview", "Readiness", "Remediation Backlog", "VM Review", "Wave Planning", "Image Import Planning", "Networks", "Storage", "Export"
+    (
+        overview, readiness, remediation_backlog, vm_review, wave_planning,
+        image_import, migration_ops, networks, storage, export,
+    ) = st.tabs([
+        "Overview", "Readiness", "Remediation Backlog", "VM Review",
+        "Wave Planning", "Image Import Planning", "Migration Ops",
+        "Networks", "Storage", "Export",
     ])
 
     edited_df = df_table.copy()
@@ -98,6 +104,11 @@ if uploaded_file is not None:
 
     with image_import:
         render_image_import_tab(
+            edited_df, processed_vms, disk_details, nic_details
+        )
+
+    with migration_ops:
+        render_migration_ops_tab(
             edited_df, processed_vms, disk_details, nic_details
         )
 

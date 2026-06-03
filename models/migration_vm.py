@@ -288,12 +288,30 @@ class MigrationVm:
             ),
             pricing_status=clean_value(get_record_value(record, "Pricing Status")),
             profile_hourly=clean_value(get_record_value(record, "Profile Hourly"), 0),
-            wave=clean_value(get_record_value(record, "wave")),
-            cutover_group=clean_value(get_record_value(record, "cutover_group")),
-            owner=clean_value(get_record_value(record, "owner")),
-            application=clean_value(get_record_value(record, "application")),
-            priority=clean_value(get_record_value(record, "priority")),
-            dependency_group=clean_value(get_record_value(record, "dependency_group")),
+            wave=_prefer(
+                get_record_value(record, "wave"),
+                get_record_value(record, "Wave"),
+            ),
+            cutover_group=_prefer(
+                get_record_value(record, "cutover_group"),
+                get_record_value(record, "Cutover Group"),
+            ),
+            owner=_prefer(
+                get_record_value(record, "owner"),
+                get_record_value(record, "Owner"),
+            ),
+            application=_prefer(
+                get_record_value(record, "application"),
+                get_record_value(record, "Application"),
+            ),
+            priority=_prefer(
+                get_record_value(record, "priority"),
+                get_record_value(record, "Priority"),
+            ),
+            dependency_group=_prefer(
+                get_record_value(record, "dependency_group"),
+                get_record_value(record, "Dependency Group"),
+            ),
             disks=[
                 DiskMapping.from_record(d)
                 for d in get_record_value(record, "Disk Details", []) or []

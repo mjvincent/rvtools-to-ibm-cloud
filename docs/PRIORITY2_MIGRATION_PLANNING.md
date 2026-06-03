@@ -1,11 +1,12 @@
 # Priority 2: Migration Planning Workflow
 
-This document covers the four Priority 2 migration planning features added to the rvtools-to-ibm-cloud application:
+This document covers the Priority 2 migration planning features added to the rvtools-to-ibm-cloud application and the Migration Ops readiness view that ties them together:
 
 1. **Wave Planning** — Organize VMs into migration waves with ownership and dependency tracking
 2. **Decision Audit Export** — Capture all profile/storage override decisions with pricing impact
 3. **Remediation Tracker** — Track readiness blockers with owner assignment and status
 4. **Image Import Planning** — Group VMs by source image and coordinate import pipeline
+5. **Migration Ops** — Combine wave, remediation, and image import state into cutover readiness
 
 ---
 
@@ -287,11 +288,28 @@ The tab preserves the existing Image Import Planning session-state keys during r
 
 ---
 
+## 5. Migration Ops
+
+### Overview
+
+Migration Ops combines wave assignments, readiness blockers, remediation status, and image import status into one cutover readiness view.
+
+Use it to answer:
+- Which VMs are ready for cutover scheduling?
+- Which wave or cutover group still has blockers?
+- Which planning fields are missing?
+- Which remediation items remain unresolved?
+- Which source images are not yet `Imported`?
+
+The detail table and `cutover-readiness.csv` export include VM, wave, cutover group, owner, application, blocker category, blocker reason, and recommended next action.
+
+---
+
 ## Workflow Integration
 
 ### Complete Priority 2 Workflow
 
-Here's how to use all four features together:
+Here's how to use the planning features together:
 
 1. **Upload RVTools** → App performs readiness assessment
 2. **Review Blockers** → Identify any blocking issues (preflight, readiness)
@@ -299,8 +317,9 @@ Here's how to use all four features together:
 4. **Track Remediation** → Assign blockers to owners, set due dates, track status
 5. **Review Decision Audit** → Ensure profile/storage overrides make sense
 6. **Track Image Imports** → Set import status and target catalog IDs
-7. **Generate Terraform** → Build infrastructure with all metadata
-8. **Generate Handoff Package** → ZIP includes manifest + decision audit + remediation backlog + image import plan
+7. **Review Migration Ops** → Confirm cutover readiness by wave and cutover group
+8. **Generate Terraform** → Build infrastructure with all metadata
+9. **Generate Handoff Package** → ZIP includes manifest + decision audit + remediation backlog + image import plan + cutover readiness
 
 ### Data Flow
 
@@ -314,6 +333,8 @@ Remediation Tracker (assign owner to blockers)
 Decision Audit (review override decisions)
     ↓
 Image Import Planning (set import status)
+    ↓
+Migration Ops (review cutover readiness)
     ↓
 Terraform Generation + Exports
     ↓
@@ -337,6 +358,7 @@ migration-package.zip
 ├── decision-audit.csv              (profile/storage override decisions + pricing impact)
 ├── remediation-backlog.csv         (blockers + owner + status + due date)
 ├── image-import-plan.csv           (images + owners + import status + target catalog ID)
+├── cutover-readiness.csv           (wave + blocker + image import readiness)
 ├── vm-mapping.csv
 ├── disk-mapping.csv
 ├── nic-mapping.csv

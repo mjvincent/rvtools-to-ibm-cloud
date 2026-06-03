@@ -143,6 +143,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 
 ### June 2, 2026: VM Review Helper Split
 - Extracted VM Review tab decision editing and advanced generated field rendering into `streamlit_app/vm_review.py`.
+
+### June 3, 2026: Migration Ops Readiness
+- Added the Migration Ops tab for cutover readiness by wave and cutover group.
+- Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.
+- Updated the generated runbook and documentation to include cutover readiness review.
 - Preserved the `vm_decision_editor` session key, decision column order, disabled column behavior, and preflight quick-fix application.
 - Added focused coverage for VM Review decision column selection helpers.
 

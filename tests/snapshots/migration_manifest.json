@@ -8,6 +8,7 @@
   "handoff_files": {
     "assessment_quality_csv": "assessment-quality.csv",
     "assessment_quality_json": "assessment-quality.json",
+    "cutover_readiness_csv": "cutover-readiness.csv",
     "disk_mapping_csv": "disk-mapping.csv",
     "image_import_tfvars_example": "image-import-variables.tfvars.example",
     "memory_readiness_csv": "memory-readiness.csv",

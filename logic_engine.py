@@ -22,6 +22,8 @@ from assessment_quality import (
     generate_assessment_quality_json,
 )
 from handoff import (
+    build_cutover_readiness_rows,
+    generate_cutover_readiness_csv,
     generate_disk_mapping_csv,
     generate_image_import_tfvars,
     generate_memory_readiness_csv,
@@ -33,6 +35,7 @@ from handoff import (
     generate_pricing_diagnostics_json,
     generate_readiness_findings_csv,
     generate_vm_mapping_csv,
+    summarize_cutover_readiness,
 )
 from preflight import (
     PreflightFinding,
@@ -85,6 +88,8 @@ __all__ = [
     "get_catalog_profiles",
     "map_vmware_to_ibm_vpc",
     "recommend_storage_tier",
+    "build_cutover_readiness_rows",
+    "generate_cutover_readiness_csv",
     "generate_disk_mapping_csv",
     "generate_image_import_tfvars",
     "generate_memory_readiness_csv",
@@ -96,6 +101,7 @@ __all__ = [
     "generate_pricing_diagnostics_json",
     "generate_readiness_findings_csv",
     "generate_vm_mapping_csv",
+    "summarize_cutover_readiness",
     "PreflightFinding",
     "generate_preflight_report_csv",
     "generate_preflight_report_json",

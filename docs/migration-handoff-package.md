@@ -45,6 +45,11 @@ A VM-level memory readiness file showing memory pressure, reservations, limits, 
 ### `readiness-findings.csv`
 A row-level migration readiness file showing each detected finding, severity, source RVTools tab, evidence, and recommended action. This is the most direct remediation worklist for migration planning workshops.
 
+### `cutover-readiness.csv`
+A Migration Ops readiness file showing VM, wave, cutover group, owner, application, cutover status, blocker category, blocker reason, and recommended next action.
+
+Use this file in migration command center reviews to confirm that each VM has complete wave planning fields, resolved remediation, and imported source images before scheduling cutover.
+
 ### `assessment-quality.json`
 A structured workbook-level quality report showing RVTools worksheet coverage, row counts, confidence, and planning impact. Use it to understand whether sizing, readiness, storage, and network planning signals are based on complete workbook data or fallback metadata.
 
@@ -82,12 +87,13 @@ A generated operational runbook that explains the recommended sequence: review m
 12. Review `nic-mapping.csv` to confirm primary and secondary network interface placement and source switch/port context.
 13. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
 14. Review `partition-mapping.csv` for partition free-space context and unmatched partition rows.
-15. Import or replicate VMware images using the approved migration approach.
-16. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example` and pass the populated file to Terraform with `-var-file`.
-17. Apply Terraform using Plain CLI or IBM Schematics.
-18. Validate boot, network, storage, monitoring, backup, and application health before cutover.
+15. Review `cutover-readiness.csv` by wave and cutover group before scheduling execution.
+16. Import or replicate VMware images using the approved migration approach.
+17. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example` and pass the populated file to Terraform with `-var-file`.
+18. Apply Terraform using Plain CLI or IBM Schematics.
+19. Validate boot, network, storage, monitoring, backup, and application health before cutover.
 
 ## Current Scope
-This release creates the handoff package, package preflight reports, pricing diagnostics, custom image ID varfile template, per-disk volume mapping, advisory partition mapping, multi-NIC mapping, network readiness, memory readiness sizing, migration readiness findings, and assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, Terraform execution, or cutover orchestration.
+This release creates the handoff package, package preflight reports, pricing diagnostics, custom image ID varfile template, cutover readiness export, per-disk volume mapping, advisory partition mapping, multi-NIC mapping, network readiness, memory readiness sizing, migration readiness findings, and assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, Terraform execution, or cutover orchestration.
 
 Those are intentionally left as later adapters so the handoff format can remain stable and tool-neutral.

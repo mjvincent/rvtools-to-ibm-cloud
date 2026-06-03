@@ -1,5 +1,6 @@
 def test_handoff_root_imports_still_work():
     from handoff import (
+        generate_cutover_readiness_csv,
         generate_migration_manifest,
         generate_vm_mapping_csv,
         image_import_export,
@@ -7,6 +8,7 @@ def test_handoff_root_imports_still_work():
     from handoff.manifest import generate_migration_manifest as package_manifest
 
     assert generate_migration_manifest is package_manifest
+    assert callable(generate_cutover_readiness_csv)
     assert callable(generate_vm_mapping_csv)
     assert callable(image_import_export)
 
@@ -37,9 +39,11 @@ def test_rvtools_parser_root_imports_still_work():
 
 def test_logic_engine_facade_still_exports_public_functions():
     from logic_engine import (
+        generate_cutover_readiness_csv,
         generate_migration_manifest,
         render_terraform_templates,
     )
 
+    assert callable(generate_cutover_readiness_csv)
     assert callable(generate_migration_manifest)
     assert callable(render_terraform_templates)

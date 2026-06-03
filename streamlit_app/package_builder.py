@@ -7,6 +7,7 @@ from assessment_quality import (
 )
 from handoff import (
     decision_audit_export,
+    generate_cutover_readiness_csv,
     generate_disk_mapping_csv,
     generate_image_import_tfvars,
     generate_memory_readiness_csv,
@@ -99,7 +100,13 @@ def build_terraform_bundle(
         zf.writestr("modules/storage/outputs.tf", stor_out)
         zf.writestr(
             "migration-manifest.json",
-            generate_migration_manifest(final_vms, migration_context),
+            generate_migration_manifest(
+                final_vms,
+                migration_context,
+                image_import_status=image_import_status,
+                pricing_catalog=pricing_catalog,
+                remediation_tracker=remediation_tracker,
+            ),
         )
         zf.writestr(
             "assessment-quality.json",
@@ -136,6 +143,14 @@ def build_terraform_bundle(
         zf.writestr(
             "image-import-plan.csv",
             image_import_export(final_vms, image_import_status),
+        )
+        zf.writestr(
+            "cutover-readiness.csv",
+            generate_cutover_readiness_csv(
+                final_vms,
+                remediation_tracker=remediation_tracker,
+                image_import_status=image_import_status,
+            ),
         )
         zf.writestr("vm-mapping.csv", generate_vm_mapping_csv(final_vms))
         zf.writestr("disk-mapping.csv", generate_disk_mapping_csv(final_vms))

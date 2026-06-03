@@ -381,6 +381,7 @@ def generate_migration_manifest(final_vms, context, image_import_status=None, pr
             "preflight_report_csv": "preflight-report.csv",
             "pricing_diagnostics_json": "pricing-diagnostics.json",
             "pricing_diagnostics_csv": "pricing-diagnostics.csv",
+            "cutover_readiness_csv": "cutover-readiness.csv",
             "runbook": "migration-runbook.md",
             "image_import_tfvars_example": "image-import-variables.tfvars.example",
         },
@@ -406,5 +407,4 @@ def generate_migration_manifest(final_vms, context, image_import_status=None, pr
     )
     
     return json.dumps(manifest, indent=2, sort_keys=True)
-
 
