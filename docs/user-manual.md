@@ -120,12 +120,13 @@ streamlit run app.py
 8. Review the `Readiness` tab and resolve `Blocked` items before migration execution.
 9. Use `VM Review` to adjust exclusion, profile, storage tier, network, subnet, and security group decisions.
 10. Use `Networks` and `Storage` to confirm placement and disk planning details.
-11. Use `Export` to confirm VPC name, address prefix strategy, deployment target, and subnet CIDRs.
-12. Download the business case CSV if needed.
-13. Click `Build Terraform Project` and review any package preflight findings.
-14. Resolve preflight blockers if the build is stopped, then rebuild.
-15. Download the Terraform ZIP bundle.
-16. Review the generated Terraform, preflight report, pricing diagnostics, and migration handoff files before applying or sharing with migration tooling.
+11. Use `Export` to confirm package settings and subnet CIDRs.
+12. Review the package summary, download the business case CSV, or save planning state if needed.
+13. Review package preflight findings before building.
+14. Click `Build Terraform Project`.
+15. Resolve preflight blockers if the build is stopped, then rebuild.
+16. Download the Terraform ZIP bundle.
+17. Review the generated Terraform, preflight report, pricing diagnostics, and migration handoff files before applying or sharing with migration tooling.
 
 
 ## Assessment Workbench Tabs
@@ -154,7 +155,7 @@ Shows discovered networks, default CIDRs, VM network placement, multi-NIC count,
 Shows total storage, data disk counts, boot/data planning signals, partition coverage, storage tier choices, and image readiness context. Use this to validate data disk volume planning before package generation.
 
 ### Export
-Contains Terraform deployment settings, custom CIDR fields, package readiness metrics, preflight guidance, business case CSV download, and Terraform ZIP build/download controls.
+Groups final package work into workflow sections for package settings, subnet CIDRs, package summary metrics, planning downloads, preflight review, and Terraform ZIP build/download controls.
 
 ## Sidebar Settings
 ### Target IBM Region

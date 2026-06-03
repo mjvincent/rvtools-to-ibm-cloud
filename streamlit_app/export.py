@@ -30,23 +30,9 @@ def calculate_package_summary(edited_df, unique_nets):
     return in_scope, blockers, len(unique_nets)
 
 
-def render_export_tab(
-    edited_df,
-    processed_vms,
-    disk_details,
-    nic_details,
-    unique_nets,
-    target_region,
-    target_zone,
-    generate_security_groups,
-    project_name,
-    pricing_metadata,
-    assessment_quality,
-    pricing_catalog,
-    catalog_profiles,
-):
-    """Render Terraform package controls and download actions."""
-    st.subheader("Terraform Package")
+def render_package_settings():
+    """Render package-level Terraform settings."""
+    st.markdown("### Package Settings")
     col1, col2 = st.columns(2)
     with col1:
         vpc_name = st.text_input("VPC Name", "migration-vpc")
@@ -55,6 +41,7 @@ def render_export_tab(
             ["manual", "auto"],
             index=0,
         )
+    with col2:
         deployment_target = st.selectbox(
             "Deployment Target",
             ["Plain CLI", "IBM Schematics"],
@@ -68,21 +55,35 @@ def render_export_tab(
                 "Leave blank to omit SSH access from generated security groups."
             ),
         )
-    with col2:
-        st.markdown("**Custom CIDRs per Subnet**")
-        custom_cidrs = {}
-        for idx, net in enumerate(unique_nets):
-            net_name = net.get("name", "unknown-net")
-            default_cidr = net.get("cidr", "10.0.0.0/24")
-            sanitized_name = normalize_network_name(net_name)
-            net_key = f"{sanitized_name}_{idx}"
-            net["cidr_key"] = net_key
-            custom_cidrs[net_key] = st.text_input(
-                f"{net_name} CIDR",
-                default_cidr,
-                key=f"cidr_{net_key}",
-            )
+    return (
+        vpc_name,
+        address_prefix_strategy,
+        deployment_target,
+        ssh_source_cidr,
+    )
 
+
+def render_subnet_cidr_inputs(unique_nets):
+    """Render custom CIDR inputs for discovered networks."""
+    st.markdown("### Subnet CIDRs")
+    custom_cidrs = {}
+    for idx, net in enumerate(unique_nets):
+        net_name = net.get("name", "unknown-net")
+        default_cidr = net.get("cidr", "10.0.0.0/24")
+        sanitized_name = normalize_network_name(net_name)
+        net_key = f"{sanitized_name}_{idx}"
+        net["cidr_key"] = net_key
+        custom_cidrs[net_key] = st.text_input(
+            f"{net_name} CIDR",
+            default_cidr,
+            key=f"cidr_{net_key}",
+        )
+    return custom_cidrs
+
+
+def render_package_summary(edited_df, unique_nets):
+    """Render package summary metrics."""
+    st.markdown("### Package Summary")
     in_scope, blockers, network_count = calculate_package_summary(
         edited_df, unique_nets
     )
@@ -91,6 +92,18 @@ def render_export_tab(
     c2.metric("Blocker Signals", blockers)
     c3.metric("Networks", network_count)
 
+
+def render_planning_downloads(
+    edited_df,
+    processed_vms,
+    disk_details,
+    nic_details,
+    project_name,
+    target_region,
+    target_zone,
+):
+    """Render business case and planning-state download controls."""
+    st.markdown("### Planning Downloads")
     st.download_button(
         label="Download Business Case (CSV)",
         data=edited_df.to_csv(index=False).encode("utf-8"),
@@ -109,6 +122,21 @@ def render_export_tab(
         target_zone,
     )
 
+
+def render_preflight_review(
+    edited_df,
+    processed_vms,
+    disk_details,
+    nic_details,
+    unique_nets,
+    target_region,
+    custom_cidrs,
+    generate_security_groups,
+    catalog_profiles,
+    ssh_source_cidr,
+):
+    """Render package preflight guidance and rerun control."""
+    st.markdown("### Preflight Review")
     preview_vms = build_final_vms(
         edited_df, processed_vms, disk_details, nic_details
     )
@@ -126,6 +154,29 @@ def render_export_tab(
         st.session_state["preflight_needs_rerun"] = False
         st.rerun()
 
+
+def render_build_and_download(
+    edited_df,
+    processed_vms,
+    disk_details,
+    nic_details,
+    unique_nets,
+    target_region,
+    target_zone,
+    generate_security_groups,
+    vpc_name,
+    custom_cidrs,
+    address_prefix_strategy,
+    deployment_target,
+    project_name,
+    ssh_source_cidr,
+    pricing_metadata,
+    assessment_quality,
+    pricing_catalog,
+    catalog_profiles,
+):
+    """Render Terraform build and ZIP download controls."""
+    st.markdown("### Build And Download")
     if st.button("Build Terraform Project", use_container_width=True):
         with st.status("Packaging Project...") as status:
             try:
@@ -190,3 +241,71 @@ def render_export_tab(
             mime="application/zip",
             use_container_width=True,
         )
+
+
+def render_export_tab(
+    edited_df,
+    processed_vms,
+    disk_details,
+    nic_details,
+    unique_nets,
+    target_region,
+    target_zone,
+    generate_security_groups,
+    project_name,
+    pricing_metadata,
+    assessment_quality,
+    pricing_catalog,
+    catalog_profiles,
+):
+    """Render Terraform package controls and download actions."""
+    st.subheader("Terraform Package")
+    (
+        vpc_name,
+        address_prefix_strategy,
+        deployment_target,
+        ssh_source_cidr,
+    ) = render_package_settings()
+    custom_cidrs = render_subnet_cidr_inputs(unique_nets)
+    render_package_summary(edited_df, unique_nets)
+    render_planning_downloads(
+        edited_df,
+        processed_vms,
+        disk_details,
+        nic_details,
+        project_name,
+        target_region,
+        target_zone,
+    )
+    render_preflight_review(
+        edited_df,
+        processed_vms,
+        disk_details,
+        nic_details,
+        unique_nets,
+        target_region,
+        custom_cidrs=custom_cidrs,
+        generate_security_groups=generate_security_groups,
+        catalog_profiles=catalog_profiles,
+        ssh_source_cidr=ssh_source_cidr,
+    )
+    render_build_and_download(
+        edited_df,
+        processed_vms,
+        disk_details,
+        nic_details,
+        unique_nets,
+        target_region,
+        target_zone,
+        generate_security_groups,
+        vpc_name,
+        custom_cidrs,
+        address_prefix_strategy,
+        deployment_target,
+        project_name,
+        ssh_source_cidr,
+        pricing_metadata,
+        assessment_quality,
+        pricing_catalog,
+        catalog_profiles,
+    )

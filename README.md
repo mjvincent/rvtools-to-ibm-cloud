@@ -207,7 +207,7 @@ Generated resources include standardized naming and tags for project and managem
 7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows; reload saved remediation CSVs when resuming a session.
 8. Use Image Import Planning to sequence custom image import stages, track status, and reload saved image import plan CSVs.
 9. Use Migration Ops to confirm cutover readiness by wave and cutover group.
-10. Use Export to download the business case CSV, planning-state JSON, decision audit, remediation backlog, image import plan, and cutover readiness export; build the Terraform Bundle ZIP for IBM Cloud CLI or IBM Cloud Schematics.
+10. Use Export to review package settings, subnet CIDRs, package summary metrics, planning downloads, preflight findings, and Terraform Bundle ZIP build/download controls for IBM Cloud CLI or IBM Cloud Schematics.
 11. Review the included migration handoff files (including wave metadata and remediation tracking) before image import, replication, or cutover planning.
 
 ## User Manual

@@ -144,6 +144,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 ### June 2, 2026: VM Review Helper Split
 - Extracted VM Review tab decision editing and advanced generated field rendering into `streamlit_app/vm_review.py`.
 
+### June 3, 2026: Export Tab Workflow Polish
+- Grouped Export tab controls into package settings, subnet CIDRs, package summary, planning downloads, preflight review, and build/download sections.
+- Preserved existing business case download, planning-state controls, preflight behavior, Terraform ZIP build path, and generated package outputs.
+- Updated README, user manual, and testing checklist to describe the organized Export workflow.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

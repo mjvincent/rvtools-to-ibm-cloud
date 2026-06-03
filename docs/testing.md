@@ -77,7 +77,8 @@ streamlit run app.py --server.port 8502
    - Sidebar settings, pricing status, and upload control are visible.
    - `Overview` shows estate metrics, recommended next actions, and assessment quality.
    - `Readiness`, `Remediation Backlog`, `VM Review`, `Wave Planning`, `Image Import Planning`, `Migration Ops`, `Networks`, `Storage`, and `Export` tabs open without tracebacks.
-   - `Download Business Case (CSV)` is available from `Export`.
+   - `Export` shows sections for package settings, subnet CIDRs, package summary, planning downloads, preflight review, and build/download controls.
+   - `Download Business Case (CSV)` is available from the `Export` planning downloads section.
    - `Build Terraform Project` runs package preflight. If blockers are present, the build stops with findings; after resolving or excluding affected VMs, it completes and shows `Project Ready`.
    - `Download Terraform Bundle` is available.
 
