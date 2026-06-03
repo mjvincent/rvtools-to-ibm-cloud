@@ -59,6 +59,13 @@ A status badge at the top shows:
 - ✅ **Complete: X/Y VMs** — All wave fields filled for X of Y active VMs
 - ⚠️ **Incomplete: X/Y VMs** — X VMs still need wave assignments
 
+#### 6. Export or Import Wave Planning CSV
+
+Use **Import or export wave planning CSV** to:
+- Download `wave-planning.csv` for Excel, project tracker, or stakeholder review.
+- Upload a saved wave-planning CSV to restore wave, cutover group, owner, application, priority, and dependency group values.
+- Match rows by `VM Key`; unmatched rows are skipped and reported.
+
 ### Wave Planning Data Persistence
 
 Wave metadata is included in:
@@ -66,6 +73,7 @@ Wave metadata is included in:
 - Decision audit CSV (for signoff)
 - Image import plan (for owner coordination)
 - All Terraform-generated resources (tags/metadata)
+- `wave-planning.csv` export/import for standalone planning workflows
 
 ---
 
@@ -388,7 +396,7 @@ A: Export the image import plan CSV and share with your image import service/tea
 A: **Cutover Group** is for VMs you want to migrate together in the same cutover window (time-based). **Dependency Group** is for VMs with application dependencies (order-based). They serve different purposes.
 
 **Q: Can I re-import data from exported CSVs?**
-A: Decision audit and image import plan are read-only exports. Remediation backlog can be manually merged back if you export, edit externally, then re-import RVTools.
+A: Yes for wave planning, remediation backlog, and image import plan CSVs. Decision audit remains a read-only export.
 
 ---
 

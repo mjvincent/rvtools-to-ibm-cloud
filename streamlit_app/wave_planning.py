@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from pandas.errors import EmptyDataError
 
 
 WAVE_PLANNING_COLUMNS = [
@@ -58,6 +59,48 @@ def persist_wave_editor_edits(df, wave_editor):
             if column in row:
                 updated.loc[mask, column] = row.get(column)
     return updated
+
+
+def build_wave_planning_export(df):
+    """Return active VM wave planning rows for CSV export."""
+    active_df = active_wave_dataframe(df)
+    return active_df[WAVE_DISPLAY_COLUMNS].copy()
+
+
+def read_wave_planning_csv(uploaded_file):
+    """Read a saved wave planning CSV into a dataframe."""
+    try:
+        return pd.read_csv(uploaded_file).fillna("")
+    except (EmptyDataError, UnicodeDecodeError, ValueError):
+        return pd.DataFrame()
+
+
+def import_wave_planning_csv(df, imported_df):
+    """Apply saved wave planning rows to the current decision dataframe."""
+    if not isinstance(imported_df, pd.DataFrame) or imported_df.empty:
+        return df, {"applied": 0, "skipped": 0}
+
+    updated = df.copy()
+    for column in WAVE_PLANNING_COLUMNS:
+        if column not in updated.columns:
+            updated[column] = ""
+
+    applied = 0
+    skipped = 0
+    for row in imported_df.to_dict("records"):
+        vm_key = row.get("VM Key")
+        if not vm_key or "VM Key" not in updated.columns:
+            skipped += 1
+            continue
+        mask = updated["VM Key"] == vm_key
+        if not mask.any():
+            skipped += 1
+            continue
+        for column in WAVE_PLANNING_COLUMNS:
+            if column in row:
+                updated.loc[mask, column] = row.get(column, "")
+        applied += 1
+    return updated, {"applied": applied, "skipped": skipped}
 
 
 def detect_app_cutover_conflicts(active_df):
@@ -184,6 +227,40 @@ def render_wave_planning_tab(edited_df, table_config):
                     )
                     st.success(f"Assigned fields to {len(selected)} VMs")
                     st.session_state["show_assign_wave_form"] = False
+
+    with st.expander("Import or export wave planning CSV"):
+        wave_export_df = build_wave_planning_export(edited_df)
+        st.download_button(
+            label="Download Wave Planning CSV",
+            data=wave_export_df.to_csv(index=False).encode("utf-8"),
+            file_name="wave-planning.csv",
+            mime="text/csv",
+            use_container_width=True,
+            key="wave_planning_csv_download",
+        )
+        uploaded_wave = st.file_uploader(
+            "Upload wave planning CSV",
+            type=["csv"],
+            key="wave_planning_csv_import",
+        )
+        if st.button("Load Wave Planning CSV", use_container_width=True):
+            if uploaded_wave is None:
+                st.warning("Choose a wave planning CSV to load.")
+            else:
+                imported_df = read_wave_planning_csv(uploaded_wave)
+                edited_df, result = import_wave_planning_csv(
+                    edited_df,
+                    imported_df,
+                )
+                st.success(
+                    "Loaded wave planning for "
+                    f"{result['applied']} VMs"
+                    + (
+                        f"; skipped {result['skipped']} unmatched rows."
+                        if result["skipped"] else "."
+                    )
+                )
+                active_df = active_wave_dataframe(edited_df)
 
     wave_editor = st.data_editor(
         active_df[WAVE_DISPLAY_COLUMNS],

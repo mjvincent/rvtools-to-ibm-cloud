@@ -203,7 +203,7 @@ Generated resources include standardized naming and tags for project and managem
 3. Upload the RVTools .xlsx file.
 4. Review the Overview and Readiness tabs, resolving Blocked items first.
 5. Use VM Review, Networks, and Storage to confirm overrides and placement.
-6. Use Wave Planning to organize VMs into migration waves, specify owners and cutover groups, track dependencies, and prioritize workloads.
+6. Use Wave Planning to organize VMs into migration waves, specify owners and cutover groups, track dependencies, prioritize workloads, and exchange wave-planning CSVs with project teams.
 7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows; reload saved remediation CSVs when resuming a session.
 8. Use Image Import Planning to sequence custom image import stages, track status, and reload saved image import plan CSVs.
 9. Use Migration Ops to confirm cutover readiness by wave and cutover group.

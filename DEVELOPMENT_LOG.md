@@ -161,6 +161,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Included `planning-state.json` in the Terraform handoff ZIP and manifest file references.
 - Added focused tests for planning-state JSON generation, loading, dataframe restore, and package inclusion.
 
+### June 3, 2026: Wave Planning CSV Import/Export
+- Added standalone `wave-planning.csv` download and reload controls to the Wave Planning tab.
+- Added focused helper coverage for stable export columns, matching by VM key, and skipped unmatched rows.
+- Updated README, user manual, and Priority 2 planning docs for standalone wave planning exchange workflows.
+
 ### June 3, 2026: RVTools Parser Helper Split
 - Extracted RVTools workbook sheet loading and column cleanup into `rvtools/workbook.py`.
 - Extracted disk and partition inventory building into `rvtools/storage.py`.

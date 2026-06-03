@@ -4,8 +4,10 @@ from streamlit_app.wave_planning import (
     WAVE_DISPLAY_COLUMNS,
     active_wave_dataframe,
     apply_wave_fields,
+    build_wave_planning_export,
     detect_app_cutover_conflicts,
     detect_dependency_wave_conflicts,
+    import_wave_planning_csv,
     persist_wave_editor_edits,
     wave_completion_status,
 )
@@ -88,6 +90,75 @@ def test_persist_wave_editor_edits_updates_matching_vm_rows():
     assert updated.loc[0, "Wave"] == "Wave 2"
     assert updated.loc[0, "Cutover Group"] == "CG-B"
     assert updated.loc[0, "Priority"] == "High"
+
+
+def test_build_wave_planning_export_has_stable_columns():
+    df = pd.DataFrame([
+        {
+            "VM Key": "vm-1",
+            "VM Name": "app-01",
+            "Exclude?": False,
+            "Wave": "Wave 1",
+            "Cutover Group": "CG-A",
+            "Owner": "platform",
+            "Application": "payments",
+            "Priority": "High",
+            "Dependency Group": "DG-1",
+        },
+        {
+            "VM Key": "vm-2",
+            "VM Name": "skip-01",
+            "Exclude?": True,
+            "Wave": "Wave X",
+        },
+    ])
+
+    export_df = build_wave_planning_export(df)
+
+    assert export_df.columns.tolist() == WAVE_DISPLAY_COLUMNS
+    assert export_df.to_dict("records") == [{
+        "VM Key": "vm-1",
+        "VM Name": "app-01",
+        "Wave": "Wave 1",
+        "Cutover Group": "CG-A",
+        "Owner": "platform",
+        "Application": "payments",
+        "Priority": "High",
+        "Dependency Group": "DG-1",
+    }]
+
+
+def test_import_wave_planning_csv_updates_matching_rows():
+    df = pd.DataFrame([
+        {"VM Key": "vm-1", "VM Name": "app-01", "Exclude?": False},
+        {"VM Key": "vm-2", "VM Name": "db-01", "Exclude?": False},
+    ])
+    imported = pd.DataFrame([
+        {
+            "VM Key": "vm-1",
+            "Wave": "Wave 1",
+            "Cutover Group": "CG-A",
+            "Owner": "platform",
+            "Application": "payments",
+            "Priority": "High",
+            "Dependency Group": "DG-1",
+        },
+        {
+            "VM Key": "vm-missing",
+            "Wave": "Wave X",
+        },
+    ])
+
+    updated, result = import_wave_planning_csv(df, imported)
+
+    assert result == {"applied": 1, "skipped": 1}
+    assert updated.loc[0, "Wave"] == "Wave 1"
+    assert updated.loc[0, "Cutover Group"] == "CG-A"
+    assert updated.loc[0, "Owner"] == "platform"
+    assert updated.loc[0, "Application"] == "payments"
+    assert updated.loc[0, "Priority"] == "High"
+    assert updated.loc[0, "Dependency Group"] == "DG-1"
+    assert updated.loc[1, "Wave"] == ""
 
 
 def test_wave_conflict_helpers_return_sorted_conflicts():

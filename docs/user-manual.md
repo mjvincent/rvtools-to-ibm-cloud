@@ -139,7 +139,7 @@ Groups image, migration, memory, and network readiness by `Blocked`, `Review`, a
 Shows the main decision fields instead of every generated column. Use this tab to exclude VMs and adjust profile, storage tier, network, subnet, or security group intent. Advanced generated fields remain available in the expander for audit and troubleshooting.
 
 ### Wave Planning
-Assigns active VMs to waves, cutover groups, owners, applications, priorities, and dependency groups. Use this tab to coordinate migration execution order and identify application or dependency grouping conflicts before export.
+Assigns active VMs to waves, cutover groups, owners, applications, priorities, and dependency groups. Use this tab to coordinate migration execution order, identify application or dependency grouping conflicts before export, and exchange wave-planning CSVs with project teams.
 
 ### Image Import Planning
 Groups active VMs by inferred source image and tracks image import status, catalog IDs, estimated import timing, and notes. Bulk status actions update selected image groups while preserving existing catalog IDs, timing estimates, and notes.
@@ -883,6 +883,7 @@ Use it to:
 - Assign application names for cross-app dependency tracking.
 - Define dependency groups to manage interdependencies.
 - Bulk-update wave fields for groups of VMs.
+- Export and import wave-planning CSVs for Excel or project-tracker workflows.
 - Detect and warn about potential cutover group conflicts.
 - Export wave metadata to migration-manifest.json for downstream systems.
 
