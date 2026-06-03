@@ -17,15 +17,18 @@ from .network_context import (
     enrich_nic_with_network_context,
 )
 from .parser import ParsedRvtoolsWorkbook, parse_rvtools_workbook
+from .storage import StorageInventory, build_storage_inventory
 from .workbook import LoadedRvtoolsWorkbook, RVTOOLS_SHEET_NAMES, load_rvtools_sheets
 
 __all__ = [
     "LoadedRvtoolsWorkbook",
     "ParsedRvtoolsWorkbook",
     "RVTOOLS_SHEET_NAMES",
+    "StorageInventory",
     "as_bool",
     "as_float",
     "build_port_contexts",
+    "build_storage_inventory",
     "build_switch_contexts",
     "clean_cell",
     "clean_disk_key",
