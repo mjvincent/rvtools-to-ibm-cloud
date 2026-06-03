@@ -15,6 +15,7 @@ from handoff import (
     generate_migration_runbook,
     generate_nic_mapping_csv,
     generate_partition_mapping_csv,
+    generate_planning_state_json,
     generate_pricing_diagnostics_csv,
     generate_pricing_diagnostics_json,
     generate_readiness_findings_csv,
@@ -78,6 +79,11 @@ def build_terraform_bundle(
         "pricing_status": pricing_metadata.get("pricing_status"),
         "pricing_last_updated": pricing_metadata.get("last_updated"),
         "assessment_quality": assessment_quality,
+    }
+    planning_state_metadata = {
+        "project_name": project_name,
+        "target_region": target_region,
+        "target_zone": target_zone,
     }
 
     zip_buffer = io.BytesIO()
@@ -150,6 +156,15 @@ def build_terraform_bundle(
                 final_vms,
                 remediation_tracker=remediation_tracker,
                 image_import_status=image_import_status,
+            ),
+        )
+        zf.writestr(
+            "planning-state.json",
+            generate_planning_state_json(
+                final_vms,
+                remediation_tracker=remediation_tracker,
+                image_import_status=image_import_status,
+                metadata=planning_state_metadata,
             ),
         )
         zf.writestr("vm-mapping.csv", generate_vm_mapping_csv(final_vms))

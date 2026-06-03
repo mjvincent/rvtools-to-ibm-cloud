@@ -16,6 +16,7 @@ from streamlit_app.overview_readiness import (
     render_readiness_triage,
 )
 from streamlit_app.page_header import render_page_header
+from streamlit_app.planning_state import apply_planning_state_to_dataframe
 from streamlit_app.remediation import render_remediation_backlog_tab
 from streamlit_app.settings import render_sidebar_settings
 from streamlit_app.vm_review import render_vm_review_tab
@@ -93,7 +94,27 @@ if uploaded_file is not None:
     with vm_review:
         edited_df = render_vm_review_tab(df_table, table_config)
 
+    if st.session_state.get("pending_planning_state"):
+        edited_df, state_result = apply_planning_state_to_dataframe(
+            edited_df,
+            st.session_state["pending_planning_state"],
+        )
+        st.session_state["planning_state_wave_result"] = state_result
+        del st.session_state["pending_planning_state"]
+
     with wave_planning:
+        if st.session_state.get("planning_state_import_message"):
+            st.success(st.session_state.pop("planning_state_import_message"))
+        if st.session_state.get("planning_state_wave_result"):
+            result = st.session_state.pop("planning_state_wave_result")
+            st.info(
+                "Restored wave planning for "
+                f"{result['applied']} VMs"
+                + (
+                    f"; skipped {result['skipped']} unmatched rows."
+                    if result["skipped"] else "."
+                )
+            )
         edited_df = render_wave_planning_tab(edited_df, table_config)
 
     with networks:

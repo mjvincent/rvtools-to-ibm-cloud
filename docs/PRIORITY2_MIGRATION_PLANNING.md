@@ -361,6 +361,7 @@ migration-package.zip
 ├── remediation-backlog.csv         (blockers + owner + status + due date)
 ├── image-import-plan.csv           (images + owners + import status + target catalog ID)
 ├── cutover-readiness.csv           (wave + blocker + image import readiness)
+├── planning-state.json             (reloadable wave + remediation + image state)
 ├── vm-mapping.csv
 ├── disk-mapping.csv
 ├── nic-mapping.csv

@@ -50,6 +50,11 @@ A Migration Ops readiness file showing VM, wave, cutover group, owner, applicati
 
 Use this file in migration command center reviews to confirm that each VM has complete wave planning fields, resolved remediation, and imported source images before scheduling cutover.
 
+### `planning-state.json`
+A reloadable planning-state bundle containing wave planning fields, remediation tracker data, image import status, and project metadata.
+
+Use this file to resume planning in a later app session after uploading the same RVTools workbook.
+
 ### `assessment-quality.json`
 A structured workbook-level quality report showing RVTools worksheet coverage, row counts, confidence, and planning impact. Use it to understand whether sizing, readiness, storage, and network planning signals are based on complete workbook data or fallback metadata.
 
@@ -88,12 +93,13 @@ A generated operational runbook that explains the recommended sequence: review m
 13. Review `disk-mapping.csv` to confirm data disk volume creation and attachment plans.
 14. Review `partition-mapping.csv` for partition free-space context and unmatched partition rows.
 15. Review `cutover-readiness.csv` by wave and cutover group before scheduling execution.
-16. Import or replicate VMware images using the approved migration approach.
-17. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example` and pass the populated file to Terraform with `-var-file`.
-18. Apply Terraform using Plain CLI or IBM Schematics.
-19. Validate boot, network, storage, monitoring, backup, and application health before cutover.
+16. Save `planning-state.json` if planning will resume across sessions or teams.
+17. Import or replicate VMware images using the approved migration approach.
+18. Record resulting IBM Cloud custom image IDs in a copy of `image-import-variables.tfvars.example` and pass the populated file to Terraform with `-var-file`.
+19. Apply Terraform using Plain CLI or IBM Schematics.
+20. Validate boot, network, storage, monitoring, backup, and application health before cutover.
 
 ## Current Scope
-This release creates the handoff package, package preflight reports, pricing diagnostics, custom image ID varfile template, cutover readiness export, per-disk volume mapping, advisory partition mapping, multi-NIC mapping, network readiness, memory readiness sizing, migration readiness findings, and assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, Terraform execution, or cutover orchestration.
+This release creates the handoff package, package preflight reports, pricing diagnostics, custom image ID varfile template, reloadable planning state, cutover readiness export, per-disk volume mapping, advisory partition mapping, multi-NIC mapping, network readiness, memory readiness sizing, migration readiness findings, and assessment quality reporting. It does not yet automate VMDK conversion, Cloud Object Storage upload, image import, RackWare API integration, Terraform execution, or cutover orchestration.
 
 Those are intentionally left as later adapters so the handoff format can remain stable and tool-neutral.

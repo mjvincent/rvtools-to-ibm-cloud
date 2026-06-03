@@ -4,6 +4,7 @@ from preflight import has_blockers, run_package_preflight
 from rvtools_parser import normalize_network_name
 from streamlit_app.final_vms import build_final_vms
 from streamlit_app.package_builder import build_terraform_bundle
+from streamlit_app.planning_state import render_planning_state_controls
 from ui import render_preflight_guidance
 
 
@@ -96,6 +97,16 @@ def render_export_tab(
         file_name=f"{project_name}_proposal.csv",
         mime="text/csv",
         use_container_width=True,
+    )
+
+    render_planning_state_controls(
+        edited_df,
+        processed_vms,
+        disk_details,
+        nic_details,
+        project_name,
+        target_region,
+        target_zone,
     )
 
     preview_vms = build_final_vms(

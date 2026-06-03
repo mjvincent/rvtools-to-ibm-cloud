@@ -187,6 +187,7 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `remediation-backlog.csv` — tracking blockers with owner, status, due date, and notes for cross-team remediation workflows
 * `image-import-plan.csv` — image import planning with source image, target catalog ID, import status, and estimated time per VM
 * `cutover-readiness.csv` — wave and cutover-group readiness view across planning, remediation, and image import status
+* `planning-state.json` — reloadable planning state for wave metadata, remediation tracking, and image import status
 * `image-import-variables.tfvars.example` — Terraform varfile template for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
@@ -206,7 +207,7 @@ Generated resources include standardized naming and tags for project and managem
 7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows; reload saved remediation CSVs when resuming a session.
 8. Use Image Import Planning to sequence custom image import stages, track status, and reload saved image import plan CSVs.
 9. Use Migration Ops to confirm cutover readiness by wave and cutover group.
-10. Use Export to download the business case CSV, decision audit, remediation backlog, image import plan, and cutover readiness export; build the Terraform Bundle ZIP for IBM Cloud CLI or IBM Cloud Schematics.
+10. Use Export to download the business case CSV, planning-state JSON, decision audit, remediation backlog, image import plan, and cutover readiness export; build the Terraform Bundle ZIP for IBM Cloud CLI or IBM Cloud Schematics.
 11. Review the included migration handoff files (including wave metadata and remediation tracking) before image import, replication, or cutover planning.
 
 ## User Manual

@@ -14,6 +14,7 @@
     "memory_readiness_csv": "memory-readiness.csv",
     "nic_mapping_csv": "nic-mapping.csv",
     "partition_mapping_csv": "partition-mapping.csv",
+    "planning_state_json": "planning-state.json",
     "preflight_report_csv": "preflight-report.csv",
     "preflight_report_json": "preflight-report.json",
     "pricing_diagnostics_csv": "pricing-diagnostics.csv",

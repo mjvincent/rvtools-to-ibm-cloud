@@ -30,6 +30,7 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 - `memory-readiness.csv`: Memory pressure, reservation, limit, and sizing review.
 - `readiness-findings.csv`: Row-level migration readiness findings and remediation actions.
 - `cutover-readiness.csv`: Wave and cutover-group readiness view across planning, remediation, and image import status.
+- `planning-state.json`: Reloadable planning state for wave metadata, remediation tracking, and image import status.
 - `image-import-variables.tfvars.example`: Terraform varfile template for imported custom image IDs.
 - `migration-runbook.md`: This operational guide.
 
@@ -44,15 +45,15 @@ This runbook accompanies the Terraform bundle for `{project}`. It bridges the ga
 8. Review `disk-mapping.csv` to confirm boot disks are covered by imported images and data disks are created as attached block volumes.
 9. Validate source guest OS, firmware, disk layout, and IP requirements before export or replication.
 10. Review `cutover-readiness.csv` to confirm every VM in the wave has complete planning fields, resolved remediation, and imported source images.
-11. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
-12. Upload converted images to IBM Cloud Object Storage when using custom image import.
-13. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
-14. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and pass the populated file to Terraform with `-var-file`.
-15. Apply the generated Terraform using the selected deployment target.
-16. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
-17. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
+11. Save `planning-state.json` if planning will continue across multiple sessions or handoffs.
+12. Export, convert, replicate, or otherwise stage the VMware images using the approved migration method.
+13. Upload converted images to IBM Cloud Object Storage when using custom image import.
+14. Import each image as an IBM Cloud VPC custom image and capture the resulting image IDs.
+15. Copy `image-import-variables.tfvars.example`, replace placeholders with real image IDs, and pass the populated file to Terraform with `-var-file`.
+16. Apply the generated Terraform using the selected deployment target.
+17. Validate VSI boot, network placement, security group membership, disk attachment, monitoring, backup, and application health.
+18. Execute DNS, IP, load balancer, or application cutover steps according to the migration wave plan.
 
 ## Notes
 Terraform builds the target VPC foundation and VSI definitions. It does not move VMDK files or perform application cutover by itself. Use the manifest and CSV as the handoff layer for RackWare, custom scripts, IBM Cloud image import, or a migration factory workflow.
 """
-

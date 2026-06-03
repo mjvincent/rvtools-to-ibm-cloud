@@ -672,6 +672,7 @@ The ZIP bundle contains two categories of output:
 | `pricing-diagnostics.json` | Structured pricing source, mapped dimensions, fallback, deployment, and unmapped metric details. |
 | `pricing-diagnostics.csv` | VM-level pricing diagnostics for review and audit. |
 | `cutover-readiness.csv` | Cutover readiness by VM, wave, cutover group, owner, application, blocker category, blocker reason, and recommended next action. |
+| `planning-state.json` | Reloadable planning state for wave metadata, remediation tracking, and image import status. |
 | `image-import-variables.tfvars.example` | Terraform varfile template for IBM Cloud custom image IDs after image import. |
 | `migration-runbook.md` | Operational runbook for migration planning and execution. |
 
@@ -862,6 +863,11 @@ Use it to review:
 - Which remediation items are still unresolved.
 - Which source images have not reached `Imported` status.
 - Recommended next actions before cutover scheduling.
+
+### `planning-state.json`
+A reloadable planning-state bundle containing wave planning fields, remediation tracker data, image import status, and project metadata.
+
+Use it from the Export tab to save a planning session and restore it later after uploading the same RVTools workbook.
 
 ## Priority 2 Migration Planning Workflow
 

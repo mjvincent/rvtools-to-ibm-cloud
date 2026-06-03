@@ -156,6 +156,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added Image Import Planning CSV reload support for restoring catalog IDs, import status, timing, and notes.
 - Updated README, user manual, and Priority 2 planning docs to describe export-and-reload workflows.
 
+### June 3, 2026: Planning State Bundle
+- Added reloadable `planning-state.json` export/import support for wave planning, remediation tracker, and image import status.
+- Included `planning-state.json` in the Terraform handoff ZIP and manifest file references.
+- Added focused tests for planning-state JSON generation, loading, dataframe restore, and package inclusion.
+
 ### June 3, 2026: RVTools Parser Helper Split
 - Extracted RVTools workbook sheet loading and column cleanup into `rvtools/workbook.py`.
 - Extracted disk and partition inventory building into `rvtools/storage.py`.
