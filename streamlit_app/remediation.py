@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from pandas.errors import EmptyDataError
 
 
 TRACKER_KEY = "remediation_tracker"
@@ -61,6 +62,54 @@ def persist_remediation_edits(edited_backlog, tracker):
     return updated
 
 
+def read_remediation_tracker_csv(uploaded_file):
+    """Read a remediation tracker CSV into a dataframe."""
+    try:
+        return pd.read_csv(uploaded_file).fillna("")
+    except (EmptyDataError, UnicodeDecodeError, ValueError):
+        return pd.DataFrame()
+
+
+def import_remediation_tracker(imported_df, current_backlog_rows, tracker):
+    """Merge imported remediation CSV rows into tracker session state."""
+    if not isinstance(imported_df, pd.DataFrame) or imported_df.empty:
+        return tracker, {"applied": 0, "skipped": 0}
+
+    backlog_lookup = {}
+    for row in current_backlog_rows:
+        key = (
+            str(row.get("VM Key", "")),
+            str(row.get("Blocker Type", "")),
+            str(row.get("Blocker Description", "")),
+        )
+        backlog_lookup[key] = row.get("blocker_id")
+
+    updated = dict(tracker)
+    applied = 0
+    skipped = 0
+    for row in imported_df.to_dict("records"):
+        blocker_id = row.get("blocker_id") or row.get("Blocker ID")
+        if not blocker_id:
+            key = (
+                str(row.get("VM Key", "")),
+                str(row.get("Blocker Type", "")),
+                str(row.get("Blocker Description", "")),
+            )
+            blocker_id = backlog_lookup.get(key)
+        if not blocker_id:
+            skipped += 1
+            continue
+
+        updated[blocker_id] = {
+            "status": row.get("Status", "Open") or "Open",
+            "due_date": row.get("Due Date", ""),
+            "notes": row.get("Notes", ""),
+            "owner": row.get("Owner", ""),
+        }
+        applied += 1
+    return updated, {"applied": applied, "skipped": skipped}
+
+
 def render_remediation_backlog_tab(processed_vms):
     """Render the remediation backlog tab."""
     st.subheader("Remediation Backlog")
@@ -84,6 +133,39 @@ def render_remediation_backlog_tab(processed_vms):
         return
 
     backlog_df = pd.DataFrame(backlog_items)
+
+    with st.expander("Import saved remediation tracker"):
+        uploaded_tracker = st.file_uploader(
+            "Upload remediation backlog CSV",
+            type=["csv"],
+            key="remediation_tracker_import",
+        )
+        if st.button("Load Remediation CSV", use_container_width=True):
+            if uploaded_tracker is None:
+                st.warning("Choose a remediation CSV to load.")
+            else:
+                imported_df = read_remediation_tracker_csv(uploaded_tracker)
+                st.session_state[TRACKER_KEY], result = (
+                    import_remediation_tracker(
+                        imported_df,
+                        backlog_items,
+                        st.session_state[TRACKER_KEY],
+                    )
+                )
+                st.success(
+                    "Loaded "
+                    f"{result['applied']} remediation rows"
+                    + (
+                        f"; skipped {result['skipped']} unmatched rows."
+                        if result["skipped"] else "."
+                    )
+                )
+                backlog_items = build_remediation_backlog_items(
+                    processed_vms,
+                    st.session_state[TRACKER_KEY],
+                )
+                backlog_df = pd.DataFrame(backlog_items)
+
     col_cfg = {
         "blocker_id": st.column_config.TextColumn("ID", disabled=True),
         "VM Key": st.column_config.TextColumn("VM Key", disabled=True),

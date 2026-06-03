@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from pandas.errors import EmptyDataError
 
 from handoff import image_import_export
 from streamlit_app.final_vms import build_final_vms
@@ -61,6 +62,37 @@ def persist_image_import_edits(edited_images, image_import_status):
     return image_import_status
 
 
+def read_image_import_status_csv(uploaded_file):
+    """Read an image import planning CSV into a dataframe."""
+    try:
+        return pd.read_csv(uploaded_file).fillna("")
+    except (EmptyDataError, UnicodeDecodeError, ValueError):
+        return pd.DataFrame()
+
+
+def import_image_import_status(imported_df, image_import_status):
+    """Merge imported image import CSV rows into session state."""
+    if not isinstance(imported_df, pd.DataFrame) or imported_df.empty:
+        return image_import_status, {"applied": 0, "skipped": 0}
+
+    updated = dict(image_import_status)
+    applied = 0
+    skipped = 0
+    for row in imported_df.to_dict("records"):
+        source = row.get("Source Image")
+        if not source or source == "TOTAL":
+            skipped += 1
+            continue
+        updated[source] = {
+            "target_catalog_id": row.get("Target Catalog ID", ""),
+            "import_status": row.get("Import Status", ""),
+            "estimated_import_time": row.get("Estimated Import Time", ""),
+            "notes": row.get("Notes", ""),
+        }
+        applied += 1
+    return updated, {"applied": applied, "skipped": skipped}
+
+
 def apply_bulk_import_status(image_import_status, selected_images, bulk_status):
     """Apply an import status to selected source image groups."""
     updated = dict(image_import_status)
@@ -87,6 +119,36 @@ def render_image_import_tab(edited_df, processed_vms, disk_details, nic_details)
     if df_images.empty:
         st.info("No active VMs to plan image imports for.")
         return
+
+    with st.expander("Import saved image import plan"):
+        uploaded_images = st.file_uploader(
+            "Upload image import plan CSV",
+            type=["csv"],
+            key="image_import_status_import",
+        )
+        if st.button("Load Image Import CSV", use_container_width=True):
+            if uploaded_images is None:
+                st.warning("Choose an image import CSV to load.")
+            else:
+                imported_df = read_image_import_status_csv(uploaded_images)
+                st.session_state["image_import_status"], result = (
+                    import_image_import_status(
+                        imported_df,
+                        st.session_state["image_import_status"],
+                    )
+                )
+                st.success(
+                    "Loaded "
+                    f"{result['applied']} image import rows"
+                    + (
+                        f"; skipped {result['skipped']} rows."
+                        if result["skipped"] else "."
+                    )
+                )
+                df_images = build_image_import_rows(
+                    edited_df,
+                    st.session_state["image_import_status"],
+                )
 
     col_cfg = {
         "Source Image": st.column_config.TextColumn(

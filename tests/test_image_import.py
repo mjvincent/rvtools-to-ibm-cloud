@@ -10,7 +10,10 @@ import json
 import pandas as pd
 from handoff import image_import_export
 from models import MigrationVm
-from streamlit_app.image_import import apply_bulk_import_status
+from streamlit_app.image_import import (
+    apply_bulk_import_status,
+    import_image_import_status,
+)
 
 
 def test_image_grouping_single_image_single_vm(assert_matches_snapshot):
@@ -74,6 +77,39 @@ def test_apply_bulk_import_status_preserves_existing_fields():
     }
     assert updated["Windows-2022"] == {"import_status": "Pending"}
     assert state["RHEL-8"]["import_status"] == "Pending"
+
+
+def test_import_image_import_status_updates_source_images():
+    imported_df = pd.DataFrame([
+        {
+            "Source Image": "RHEL-8",
+            "Target Catalog ID": "catalog-1",
+            "Import Status": "Imported",
+            "Estimated Import Time": "2h",
+            "Notes": "ready",
+        },
+        {
+            "Source Image": "TOTAL",
+            "Target Catalog ID": "",
+            "Import Status": "",
+            "Estimated Import Time": "",
+            "Notes": "",
+        },
+    ])
+
+    updated, result = import_image_import_status(
+        imported_df,
+        {"Windows-2022": {"import_status": "Pending"}},
+    )
+
+    assert result == {"applied": 1, "skipped": 1}
+    assert updated["RHEL-8"] == {
+        "target_catalog_id": "catalog-1",
+        "import_status": "Imported",
+        "estimated_import_time": "2h",
+        "notes": "ready",
+    }
+    assert updated["Windows-2022"] == {"import_status": "Pending"}
 
 
 def test_image_grouping_single_image_multiple_vms(assert_matches_snapshot):

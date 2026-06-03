@@ -900,6 +900,7 @@ Use it to:
 - Set due dates and monitor overdue items.
 - Add notes with context for remediation teams.
 - Export remediation-backlog.csv for project management tools.
+- Import a saved remediation CSV to reload status, due date, note, and owner fields in a later session.
 - Monitor overall remediation progress with summary metrics.
 
 ### Image Import Planning Tab
@@ -912,6 +913,7 @@ Use it to:
 - Add estimated time for import completion.
 - Bulk-update status for groups of images.
 - Export image-import-plan.csv for integration with image import pipeline.
+- Import a saved image-import-plan.csv to reload catalog IDs, import status, timing, and notes.
 - Track overall import progress with summary metrics.
 
 ### Migration Ops Tab

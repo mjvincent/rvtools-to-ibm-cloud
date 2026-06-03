@@ -195,19 +195,19 @@ Click **"Export Remediation Backlog"** button to download a CSV with:
 
 ### Remediation Tracker Data Persistence
 
-⚠️ **Important**: Remediation tracker data is **session-only**. If you:
+Remediation tracker edits live in browser session state while the app is open. If you:
 - Close the browser
 - Refresh the page
 - Exit the app
 
-Your status updates, due dates, and notes will be **lost**.
+Export the remediation backlog CSV before leaving the session.
 
-**To persist tracking data across sessions:**
+**To resume tracking data across sessions:**
 1. Export remediation backlog CSV (contains all data)
 2. Share CSV with team or store in project management system
-3. Re-import by re-uploading app (data can be merged manually)
-
-**Future Enhancement**: Future versions may support JSON file persistence for cross-session tracking.
+3. Upload the same RVTools workbook in a later app session
+4. Open **Import saved remediation tracker** and load the CSV
+5. The app reloads status, due date, notes, and owner values by blocker ID or matching blocker details
 
 ---
 
@@ -279,10 +279,12 @@ Click **"Export Image Import Plan"** button to download CSV with:
 
 ### Image Import Planning Data Persistence
 
-Like remediation tracker, image import status is **session-only**. To persist:
+Like remediation tracker, image import status lives in browser session state while the app is open. To resume:
 1. Export image import plan CSV
 2. Share with image import team/pipeline
-3. After import completes, upload RVTools again and update status in app
+3. After import completes, upload RVTools again
+4. Open **Import saved image import plan** and load the CSV
+5. The app reloads target catalog IDs, import statuses, estimated timing, and notes
 
 The tab preserves the existing Image Import Planning session-state keys during reruns and uses the same status data when generating the image-import CSV and Terraform handoff package inputs.
 

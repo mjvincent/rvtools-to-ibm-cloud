@@ -151,6 +151,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Preserved the `vm_decision_editor` session key, decision column order, disabled column behavior, and preflight quick-fix application.
 - Added focused coverage for VM Review decision column selection helpers.
 
+### June 3, 2026: Planning State CSV Reload
+- Added remediation backlog CSV reload support for restoring owner, status, due date, and notes in later sessions.
+- Added Image Import Planning CSV reload support for restoring catalog IDs, import status, timing, and notes.
+- Updated README, user manual, and Priority 2 planning docs to describe export-and-reload workflows.
+
 ### June 3, 2026: RVTools Parser Helper Split
 - Extracted RVTools workbook sheet loading and column cleanup into `rvtools/workbook.py`.
 - Extracted disk and partition inventory building into `rvtools/storage.py`.

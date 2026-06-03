@@ -131,8 +131,8 @@ The dashboard is organized as an assessment workbench with Overview, Readiness, 
 * Per-NIC source network, IP, MAC, adapter, connected state, switch/port context, target subnet, and security group mapping
 * **Migration planning fields** (wave, cutover group, owner, application, priority, dependency group) for organizing large-scale migrations
 * **Decision audit trail** tracking profile/storage/network/exclusion overrides and their pricing impact
-* **Remediation tracker** with owner, status, due date, notes, and backlog CSV export for blocking issues
-* **Image import planning** with per-image status, estimated time, and bulk update capabilities
+* **Remediation tracker** with owner, status, due date, notes, and CSV export/import for blocking issues
+* **Image import planning** with per-image status, estimated time, bulk update capabilities, and CSV reload support
 * **Migration Ops readiness** combining wave planning, blockers, remediation status, and image import status for cutover review
 
 ## Streamlit Override Controls
@@ -203,8 +203,8 @@ Generated resources include standardized naming and tags for project and managem
 4. Review the Overview and Readiness tabs, resolving Blocked items first.
 5. Use VM Review, Networks, and Storage to confirm overrides and placement.
 6. Use Wave Planning to organize VMs into migration waves, specify owners and cutover groups, track dependencies, and prioritize workloads.
-7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows.
-8. Use Image Import Planning to sequence custom image import stages and track status.
+7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows; reload saved remediation CSVs when resuming a session.
+8. Use Image Import Planning to sequence custom image import stages, track status, and reload saved image import plan CSVs.
 9. Use Migration Ops to confirm cutover readiness by wave and cutover group.
 10. Use Export to download the business case CSV, decision audit, remediation backlog, image import plan, and cutover readiness export; build the Terraform Bundle ZIP for IBM Cloud CLI or IBM Cloud Schematics.
 11. Review the included migration handoff files (including wave metadata and remediation tracking) before image import, replication, or cutover planning.
