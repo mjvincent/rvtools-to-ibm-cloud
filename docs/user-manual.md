@@ -109,7 +109,7 @@ streamlit run app.py
 
 4. Upload an RVTools XLSX export in the sidebar.
 
-For browser access through a container or hosted service, see [Deployment Guide](deployment.md). Hosted deployments should require authenticated access because RVTools exports and generated migration packages can contain sensitive infrastructure data.
+For browser access through a container or hosted service, see [Deployment Guide](deployment.md). Hosted deployments should require authenticated access because RVTools exports and generated migration packages can contain sensitive infrastructure data. A static HTML page can link to the app, but it cannot replace the Streamlit/Python backend.
 
 ## End-to-End Workflow
 1. Export the VMware inventory from RVTools as an XLSX workbook.

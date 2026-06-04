@@ -159,6 +159,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added failure logging and always-on container cleanup for the CI smoke run.
 - Updated the testing guide to note automated container validation.
 
+### June 4, 2026: Deployment Documentation Hardening
+- Clarified local Streamlit, local container, hosted private container, static HTML landing page, and full web app rewrite deployment options.
+- Tightened IBM Cloud Code Engine notes for port selection, private visibility, and access-control expectations.
+- Expanded RVTools data-security guidance for uploads, generated packages, secrets, downloads, retention, and source uploads.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

@@ -213,10 +213,14 @@ Generated resources include standardized naming and tags for project and managem
 ## User Manual
 For a complete searchable guide to installation, RVTools inputs, web interface fields, dashboard metrics, readiness statuses, generated Terraform, ZIP contents, handoff files, troubleshooting, and glossary terms, see `docs/user-manual.md`.
 
+## Deployment
+The application can be used through a browser when Streamlit is running locally or as a hosted container. It is not a static HTML app because workbook parsing, readiness logic, Terraform rendering, and ZIP generation run in Python. For local Docker, IBM Cloud Code Engine, private hosting, and RVTools data-handling guidance, see `docs/deployment.md`.
+
 ## Further Reading
 Start with `docs/user-manual.md` for end-user operation. For container and hosted deployment guidance, see `docs/deployment.md`. For migration wave planning, decision audit tracking, remediation backlog, and image import planning, see `docs/PRIORITY2_MIGRATION_PLANNING.md`. For detailed Terraform override behavior and deployment target guidance, see `docs/terraform-overrides.md`. For migration handoff package details, see `docs/migration-handoff-package.md`. For image readiness guidance, see `docs/image-readiness-assessment.md`. For broader migration readiness guidance, see `docs/migration-readiness-assessment.md`. For memory readiness and sizing guidance, see `docs/memory-readiness-sizing.md`. For network readiness guidance, see `docs/network-readiness-assessment.md`. For catalog pricing behavior, see `docs/ibm-catalog-pricing.md`. For internal model architecture, see `docs/normalized-vm-data-model.md`.
 
 ## Release Notes
+- **Deployment Docs Hardening** — Clarified local, hosted, private Code Engine, static HTML, and RVTools data-security deployment guidance.
 - **Deployment Readiness** — Added Docker and Streamlit configuration plus deployment guidance for local containers, IBM Cloud Code Engine, and sensitive RVTools data handling.
 - **Migration Ops Readiness** — Added a Migration Ops tab and `cutover-readiness.csv` handoff export that combines wave planning, readiness blockers, remediation status, and image import status for cutover review.
 - **Priority 2: Migration Planning Workflow** — Added Wave Planning tab for organizing migrations into waves with owner, cutover group, priority, application, and dependency tracking. Added Decision Audit export for tracking profile/storage/network overrides and pricing impact. Added Remediation Backlog tab for managing blocking issues with owner, status, due date, and notes. Added Image Import Planning tab for sequencing custom image imports with status tracking. All Priority 2 features integrated into migration manifest and ZIP handoff exports.
