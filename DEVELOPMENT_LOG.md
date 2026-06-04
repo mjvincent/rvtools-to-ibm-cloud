@@ -149,6 +149,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Preserved existing business case download, planning-state controls, preflight behavior, Terraform ZIP build path, and generated package outputs.
 - Updated README, user manual, and testing checklist to describe the organized Export workflow.
 
+### June 4, 2026: Deployment Readiness
+- Added Docker and Streamlit configuration for local container runs and hosted container platforms.
+- Added deployment guidance for IBM Cloud Code Engine, local Docker validation, and sensitive RVTools data handling.
+- Updated README, user manual, and testing checklist with deployment references and container validation steps.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

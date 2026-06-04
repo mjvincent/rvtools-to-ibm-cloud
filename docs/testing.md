@@ -99,3 +99,30 @@ terraform fmt -check -recursive .
 ```
 
 Run `terraform validate` only after `terraform init` has been intentionally performed for that temporary extraction. Do not initialize providers during lightweight browser validation unless provider download/network access is expected for the environment.
+
+## Container Validation
+Run this checklist after changing deployment assets, dependencies, or Streamlit launch configuration.
+
+1. Build the image:
+
+```bash
+docker build -t rvtools-to-ibm-cloud .
+```
+
+2. Run the container:
+
+```bash
+docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
+```
+
+3. Confirm the app opens at:
+
+```text
+http://localhost:8501
+```
+
+4. Confirm the health endpoint returns successfully:
+
+```bash
+curl --fail http://localhost:8501/_stcore/health
+```
