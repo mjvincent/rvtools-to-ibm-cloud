@@ -105,18 +105,20 @@ python -m pip install -r requirements.txt
 2. Start the Streamlit application:
 
 ```bash
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
-If `streamlit` is not on your shell path, run:
+If `streamlit` is on your shell path, this shorter command is equivalent:
 
 ```bash
-python -m streamlit run app.py
+streamlit run app.py
 ```
 
 3. Open the Streamlit URL shown in the terminal, usually `http://localhost:8501`.
 
 4. Upload an RVTools XLSX export in the sidebar.
+
+Press `Ctrl+C` in the terminal to stop the app.
 
 ### Docker Path
 Use this if Docker Desktop or a compatible Docker runtime is already running.

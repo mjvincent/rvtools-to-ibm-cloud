@@ -11,7 +11,7 @@ Use this if Python is already installed.
 
 ```bash
 python -m pip install -r requirements.txt
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
 Open the Streamlit URL shown in the terminal, usually:
@@ -19,6 +19,8 @@ Open the Streamlit URL shown in the terminal, usually:
 ```text
 http://localhost:8501
 ```
+
+Press `Ctrl+C` in the terminal to stop the app.
 
 ### Option 2: Docker
 Use this if Docker Desktop or a compatible Docker runtime is already running.

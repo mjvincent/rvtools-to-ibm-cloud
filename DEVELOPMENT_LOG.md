@@ -174,6 +174,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added Export tab guidance before planning downloads to remind users that CSVs, planning state, and Terraform packages can contain sensitive migration data.
 - Updated the user manual to mention the in-app data-handling reminders.
 
+### June 4, 2026: First-Run Readiness Check
+- Standardized first-run Streamlit launch commands on `python -m streamlit run app.py` so users do not need Streamlit on their shell path.
+- Added stop-app guidance for first-time local runs.
+- Rechecked the advertised Makefile and Docker quick-start commands.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

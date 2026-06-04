@@ -68,13 +68,13 @@ git diff --check
 3. Start Streamlit from the repository root:
 
 ```bash
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
 If the default port is busy, choose another local port:
 
 ```bash
-streamlit run app.py --server.port 8502
+python -m streamlit run app.py --server.port 8502
 ```
 
 4. In the browser, upload `RVTools_VA-site-1.xlsx` or another representative RVTools workbook.
