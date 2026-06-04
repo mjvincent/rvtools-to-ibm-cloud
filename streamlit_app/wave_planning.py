@@ -179,12 +179,17 @@ def render_wave_planning_tab(edited_df, table_config):
         "Select VMs (by VM Key)",
         vm_options,
         default=st.session_state.get("wave_selected_vms", []),
+        help="Choose active VMs that should receive the same wave planning values.",
     )
     st.session_state["wave_selected_vms"] = selected
 
     c1, c2, c3 = st.columns([2, 2, 6])
     with c1:
-        assign_wave_value = st.text_input("Quick Wave Value", "")
+        assign_wave_value = st.text_input(
+            "Quick Wave Value",
+            "",
+            help="Wave label to apply to every active VM, such as Wave 1 or Pilot.",
+        )
         if st.button("Assign All to Wave", use_container_width=True):
             if assign_wave_value:
                 edited_df = apply_wave_fields(
@@ -206,10 +211,22 @@ def render_wave_planning_tab(edited_df, table_config):
     if st.session_state.get("show_assign_wave_form"):
         with st.form("assign_wave_form"):
             st.write("Assign fields to selected VMs")
-            field_wave = st.text_input("Wave")
-            field_cutover = st.text_input("Cutover Group")
-            field_owner = st.text_input("Owner")
-            field_application = st.text_input("Application")
+            field_wave = st.text_input(
+                "Wave",
+                help="Migration wave or sprint label used to group VMs for planning.",
+            )
+            field_cutover = st.text_input(
+                "Cutover Group",
+                help="Operational cutover batch, often smaller than a wave and aligned to an application or dependency group.",
+            )
+            field_owner = st.text_input(
+                "Owner",
+                help="Person, team, or application owner accountable for validating this VM before migration.",
+            )
+            field_application = st.text_input(
+                "Application",
+                help="Application or service name used to group related workloads for migration review.",
+            )
             submitted = st.form_submit_button("Apply to Selected VMs")
             if submitted:
                 if not selected:

@@ -47,6 +47,7 @@ Other useful commands:
 
 ```bash
 make test
+make sample-workbook
 make docker-build
 make docker-run
 ```
@@ -58,7 +59,9 @@ make docker-run
 - Optional IBM Cloud API key only when using live catalog discovery.
 
 ### First Successful Run
-After opening the app, upload the RVTools workbook in the sidebar. The workbench should show Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Migration Ops, Networks, Storage, and Export tabs.
+After opening the app, upload `samples/rvtools-small-complete.xlsx` in the sidebar for a first test run. The workbench should show Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Migration Ops, Networks, Storage, and Export tabs.
+
+For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`. That workbook intentionally includes source-data issues, so readiness and preflight findings are expected.
 
 The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container.
 

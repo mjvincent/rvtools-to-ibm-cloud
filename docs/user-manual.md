@@ -116,7 +116,9 @@ streamlit run app.py
 
 3. Open the Streamlit URL shown in the terminal, usually `http://localhost:8501`.
 
-4. Upload an RVTools XLSX export in the sidebar.
+4. Upload an RVTools XLSX export in the sidebar. For a first test run, use `samples/rvtools-small-complete.xlsx`. For a larger practice workbook with expected readiness findings, use `samples/SizingWorkshop-RVTools.xlsx`.
+
+The sidebar and major planning controls include hover help for key selections such as target region, sizing threshold, pricing mode, wave fields, image import status, and Export package settings.
 
 Press `Ctrl+C` in the terminal to stop the app.
 

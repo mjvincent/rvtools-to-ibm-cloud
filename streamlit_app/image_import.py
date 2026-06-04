@@ -190,6 +190,7 @@ def render_image_import_tab(edited_df, processed_vms, disk_details, nic_details)
         image_options,
         default=st.session_state.get("image_import_selected", []),
         key="image_import_multiselect",
+        help="Choose one or more source image groups that should receive the same import status.",
     )
     st.session_state["image_import_selected"] = selected_images
 
@@ -199,6 +200,7 @@ def render_image_import_tab(edited_df, processed_vms, disk_details, nic_details)
             "Set Import Status",
             IMPORT_STATUS_OPTIONS,
             key="bulk_image_status",
+            help="Track whether the source image group is still pending, being imported, imported, or blocked.",
         )
         if st.button("Apply Status to Selected", use_container_width=True):
             if not selected_images:

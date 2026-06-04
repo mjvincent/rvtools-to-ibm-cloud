@@ -77,7 +77,7 @@ If the default port is busy, choose another local port:
 python -m streamlit run app.py --server.port 8502
 ```
 
-4. In the browser, upload `RVTools_VA-site-1.xlsx` or another representative RVTools workbook.
+4. In the browser, upload `samples/rvtools-small-complete.xlsx` for the first pass. For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`; readiness and preflight findings are expected in that workbook.
 
 5. Confirm the workbench renders without Streamlit errors:
    - Sidebar settings, pricing status, and upload control are visible.

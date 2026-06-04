@@ -179,6 +179,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added stop-app guidance for first-time local runs.
 - Rechecked the advertised Makefile and Docker quick-start commands.
 
+### June 4, 2026: Sample Workbooks and Usability Help
+- Added tracked RVTools sample workbooks under `samples/`, including a generated small complete workbook and a larger workshop workbook for realistic findings.
+- Added a sample workbook generator and Makefile target for regenerating the small workbook.
+- Added hover help to key sidebar, wave planning, image import, VM Review, and Export controls.
+- Clarified disconnected-NIC preflight guidance so users know to correct source RVTools/vSphere data or exclude the VM.
+- Updated README, user manual, testing guide, and sample folder documentation for first-run testing.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

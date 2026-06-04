@@ -50,25 +50,39 @@ def render_sidebar_settings():
     """Render sidebar controls and return selected migration settings."""
     st.sidebar.header("Migration Settings")
     target_region = st.sidebar.selectbox(
-        "Target IBM Region", ["us-south", "us-east", "eu-gb", "jp-tok"]
+        "Target IBM Region",
+        ["us-south", "us-east", "eu-gb", "jp-tok"],
+        help="IBM Cloud region where the generated VPC, subnets, storage, and VSI resources will be planned.",
     )
 
     st.sidebar.header("Right-Sizing Settings")
     threshold_mode = st.sidebar.selectbox(
-        "Standard Thresholds", THRESHOLD_MODES, index=1
+        "Standard Thresholds",
+        THRESHOLD_MODES,
+        index=1,
+        help="Right-sizing aggressiveness. Lower thresholds keep more headroom; higher thresholds reduce target CPU more aggressively.",
     )
     threshold = _threshold_from_mode(threshold_mode)
     if threshold is None:
         utilization_threshold = st.sidebar.slider(
-            "Custom CPU Threshold (%)", 1, 100, 40
+            "Custom CPU Threshold (%)",
+            1,
+            100,
+            40,
+            help="CPU utilization target used when the standard threshold mode is set to Custom.",
         )
     else:
         utilization_threshold = threshold
 
-    project_name = st.sidebar.text_input("Project Name", "my-ibm-migration")
+    project_name = st.sidebar.text_input(
+        "Project Name",
+        "my-ibm-migration",
+        help="Used for generated file names and Terraform package naming. Keep it short and shell-friendly.",
+    )
     target_zone = st.sidebar.selectbox(
         "Target IBM Zone",
         REGION_ZONES.get(target_region, [f"{target_region}-1"]),
+        help="IBM Cloud availability zone for generated VSI and block storage resources.",
     )
 
     st.sidebar.header("Pricing Settings")
@@ -76,6 +90,7 @@ def render_sidebar_settings():
         "Pricing Mode",
         list(PRICING_MODE_MAP),
         index=0,
+        help="Controls whether estimates use static fallback rates, a cached IBM catalog, or live IBM profile discovery.",
     )
     pricing_catalog = get_pricing_catalog(
         PRICING_MODE_MAP[pricing_mode_label],
@@ -89,7 +104,9 @@ def render_sidebar_settings():
         st.sidebar.info(pricing_metadata["status"])
 
     generate_security_groups = st.sidebar.checkbox(
-        "Generate Security Groups", value=True
+        "Generate Security Groups",
+        value=True,
+        help="When enabled, the Terraform package includes per-network security groups and attaches VM NICs to them.",
     )
 
     st.sidebar.markdown("---")
@@ -101,7 +118,11 @@ def render_sidebar_settings():
         "RVTools exports can contain sensitive infrastructure inventory. "
         "Use an approved device or hosted environment before uploading."
     )
-    uploaded_file = st.sidebar.file_uploader("Upload RVTools", type=["xlsx"])
+    uploaded_file = st.sidebar.file_uploader(
+        "Upload RVTools",
+        type=["xlsx"],
+        help="Upload a standard RVTools Excel workbook. Use samples/rvtools-small-complete.xlsx for a first test run.",
+    )
 
     settings = MigrationSettings(
         target_region=target_region,

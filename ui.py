@@ -54,19 +54,48 @@ def build_table_config(unique_nets=None, catalog_profiles=None):
         net.get('name', 'unknown-net') for net in (unique_nets or [])
     ]
     return {
-        "Exclude?": st.column_config.CheckboxColumn("Exclude?"),
+        "Exclude?": st.column_config.CheckboxColumn(
+            "Exclude?",
+            help="Remove this VM from the generated Terraform package while keeping it visible for planning review.",
+        ),
         "Compute (Mo)": st.column_config.NumberColumn("Compute (Mo)", format="$%.2f"),
         "Storage (Mo)": st.column_config.NumberColumn("Storage (Mo)", format="$%.2f"),
         "Baseline Cost (Mo)": st.column_config.NumberColumn("Baseline Cost (Mo)", format="$%.2f"),
         "Savings (Mo)": st.column_config.NumberColumn("Savings (Mo)", format="$%.2f"),
         "Total Monthly": st.column_config.NumberColumn("Total Monthly", format="$%.2f"),
-        "Storage Tier": st.column_config.SelectboxColumn("Tier", options=STORAGE_TIERS),
-        "Override Storage Tier": st.column_config.SelectboxColumn("Override Storage Tier", options=[""] + STORAGE_TIERS),
-        "IBM Profile": st.column_config.SelectboxColumn("Profile", options=profile_options),
-        "Override Profile": st.column_config.SelectboxColumn("Override Profile", options=profile_options),
-        "Subnet": st.column_config.TextColumn("Subnet"),
-        "Security Group": st.column_config.TextColumn("Security Group"),
-        "Network": st.column_config.SelectboxColumn("Network", options=network_options),
+        "Storage Tier": st.column_config.SelectboxColumn(
+            "Tier",
+            options=STORAGE_TIERS,
+            help="Recommended IBM Cloud block storage tier based on source workload signals.",
+        ),
+        "Override Storage Tier": st.column_config.SelectboxColumn(
+            "Override Storage Tier",
+            options=[""] + STORAGE_TIERS,
+            help="Optional human override for the storage tier used in generated Terraform.",
+        ),
+        "IBM Profile": st.column_config.SelectboxColumn(
+            "Profile",
+            options=profile_options,
+            help="Recommended IBM Cloud VSI profile selected by the sizing logic.",
+        ),
+        "Override Profile": st.column_config.SelectboxColumn(
+            "Override Profile",
+            options=profile_options,
+            help="Optional human override for the VSI profile used in generated Terraform.",
+        ),
+        "Subnet": st.column_config.TextColumn(
+            "Subnet",
+            help="Terraform subnet reference for this VM. Usually derived from the selected source network.",
+        ),
+        "Security Group": st.column_config.TextColumn(
+            "Security Group",
+            help="Terraform security group reference attached to this VM when security group generation is enabled.",
+        ),
+        "Network": st.column_config.SelectboxColumn(
+            "Network",
+            options=network_options,
+            help="Target network/subnet mapping for the VM primary NIC.",
+        ),
         "Image Readiness": st.column_config.TextColumn("Image Readiness"),
         "Readiness Reasons": st.column_config.TextColumn("Readiness Reasons"),
         "Firmware": st.column_config.TextColumn("Firmware"),

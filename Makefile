@@ -1,4 +1,4 @@
-.PHONY: run test compile docker-build docker-run docker-health validate-terraform
+.PHONY: run test compile docker-build docker-run docker-health sample-workbook validate-terraform
 
 PORT ?= 8501
 IMAGE ?= rvtools-to-ibm-cloud
@@ -28,6 +28,9 @@ docker-health:
 		sleep 2; \
 	done; \
 	exit 1
+
+sample-workbook:
+	$(PYTHON) scripts/generate_sample_workbook.py
 
 validate-terraform:
 	$(PYTHON) scripts/validate_terraform_package.py --init-validate

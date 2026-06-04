@@ -35,17 +35,23 @@ def render_package_settings():
     st.markdown("### Package Settings")
     col1, col2 = st.columns(2)
     with col1:
-        vpc_name = st.text_input("VPC Name", "migration-vpc")
+        vpc_name = st.text_input(
+            "VPC Name",
+            "migration-vpc",
+            help="Name assigned to the generated IBM Cloud VPC resource.",
+        )
         address_prefix_strategy = st.selectbox(
             "Address Prefix Strategy",
             ["manual", "auto"],
             index=0,
+            help="Manual preserves planned CIDRs from the app; auto lets IBM Cloud allocate address prefixes.",
         )
     with col2:
         deployment_target = st.selectbox(
             "Deployment Target",
             ["Plain CLI", "IBM Schematics"],
             index=0,
+            help="Plain CLI emits a local Terraform project. IBM Schematics adds handoff context for Schematics-based deployment.",
         )
         ssh_source_cidr = st.text_input(
             "SSH Source CIDR",
@@ -77,6 +83,7 @@ def render_subnet_cidr_inputs(unique_nets):
             f"{net_name} CIDR",
             default_cidr,
             key=f"cidr_{net_key}",
+            help="Target subnet CIDR for this discovered source network. Adjust only after confirming the target VPC IP plan.",
         )
     return custom_cidrs
 
