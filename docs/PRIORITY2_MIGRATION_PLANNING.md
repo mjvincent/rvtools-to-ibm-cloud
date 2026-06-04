@@ -322,19 +322,22 @@ The detail table and `cutover-readiness.csv` export include VM, wave, cutover gr
 Here's how to use the planning features together:
 
 1. **Upload RVTools** → App performs readiness assessment
-2. **Review Blockers** → Identify any blocking issues (preflight, readiness)
-3. **Assign Wave Planning** → Set wave, cutover group, owner, application for all VMs
-4. **Track Remediation** → Assign blockers to owners, set due dates, track status
-5. **Review Decision Audit** → Ensure profile/storage overrides make sense
-6. **Track Image Imports** → Set import status and target catalog IDs
-7. **Review Migration Ops** → Confirm cutover readiness by wave and cutover group
-8. **Generate Terraform** → Build infrastructure with all metadata
-9. **Generate Handoff Package** → ZIP includes manifest + decision audit + remediation backlog + image import plan + cutover readiness
+2. **Use Guided Migration Assistant** → Review the first-run checklist, apply safe tracking defaults, and export a migration action plan if needed
+3. **Review Blockers** → Identify any blocking issues (preflight, readiness)
+4. **Assign Wave Planning** → Set wave, cutover group, owner, application for all VMs
+5. **Track Remediation** → Assign blockers to owners, set due dates, track status
+6. **Review Decision Audit** → Ensure profile/storage overrides make sense
+7. **Track Image Imports** → Set import status and target catalog IDs
+8. **Review Migration Ops** → Confirm cutover readiness by wave and cutover group
+9. **Generate Terraform** → Build infrastructure with all metadata
+10. **Generate Handoff Package** → ZIP includes manifest + decision audit + remediation backlog + image import plan + cutover readiness
 
 ### Data Flow
 
 ```
 RVTools Upload
+    ↓
+Guided Migration Assistant (checklist + safe tracking defaults)
     ↓
 Wave Planning (assign wave/owner/app/priority)
     ↓

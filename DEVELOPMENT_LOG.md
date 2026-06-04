@@ -186,6 +186,12 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Clarified disconnected-NIC preflight guidance so users know to correct source RVTools/vSphere data or exclude the VM.
 - Updated README, user manual, testing guide, and sample folder documentation for first-run testing.
 
+### June 4, 2026: Guided Migration Assistant
+- Added a Guided Migration Assistant to the Overview tab with a first-run checklist, migration action-plan export, and conservative safe-default automation.
+- Safe defaults initialize blank image import statuses to `Pending` and create open remediation tracker rows without changing profiles, subnets, image import completion, Terraform output, or package scope.
+- Added an explicit optional action to queue exclusions for hard-blocked VMs through the existing VM Review quick-fix flow.
+- Updated README, user manual, testing guide, and migration planning documentation.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

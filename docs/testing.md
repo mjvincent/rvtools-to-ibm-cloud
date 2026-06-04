@@ -81,7 +81,8 @@ python -m streamlit run app.py --server.port 8502
 
 5. Confirm the workbench renders without Streamlit errors:
    - Sidebar settings, pricing status, and upload control are visible.
-   - `Overview` shows estate metrics, recommended next actions, and assessment quality.
+   - `Overview` shows estate metrics, recommended next actions, assessment quality, and the Guided Migration Assistant checklist.
+   - `Apply Safe Defaults` in the assistant initializes image import and remediation tracking only; it does not mark images imported, change target mappings, or build Terraform.
    - `Readiness`, `Remediation Backlog`, `VM Review`, `Wave Planning`, `Image Import Planning`, `Migration Ops`, `Networks`, `Storage`, and `Export` tabs open without tracebacks.
    - `Export` shows sections for package settings, subnet CIDRs, package summary, planning downloads, preflight review, and build/download controls.
    - `Download Business Case (CSV)` is available from the `Export` planning downloads section.

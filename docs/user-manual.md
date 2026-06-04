@@ -151,7 +151,7 @@ For browser access through a container or hosted service, see [Deployment Guide]
 4. Select the right-sizing threshold.
 5. Enter the project name.
 6. Upload the RVTools workbook.
-7. Review the `Overview` tab for estate health and recommended next actions.
+7. Review the `Overview` tab for estate health, recommended next actions, and the Guided Migration Assistant checklist.
 8. Review the `Readiness` tab and resolve `Blocked` items before migration execution.
 9. Use `VM Review` to adjust exclusion, profile, storage tier, network, subnet, and security group decisions.
 10. Use `Networks` and `Storage` to confirm placement and disk planning details.
@@ -167,6 +167,8 @@ For browser access through a container or hosted service, see [Deployment Guide]
 ## Assessment Workbench Tabs
 ### Overview
 Shows the estate-level health summary, in-scope and excluded VM counts, monthly estimate, potential savings, blocker count, assessment quality summary, and recommended next actions. Start here after each upload.
+
+The Guided Migration Assistant adds a first-run checklist and an assistive planning panel. `Apply Safe Defaults` initializes blank image import statuses to `Pending` and creates open remediation tracker entries for current readiness findings. It does not mark images as `Imported`, change target profiles or subnets, build Terraform, or migrate workloads. The optional hard-blocked VM exclusion button queues `Exclude?` changes for review in `VM Review`.
 
 ### Readiness
 Groups image, migration, memory, and network readiness by `Blocked`, `Review`, and `Ready`. Blocked and Review rows are sorted first so remediation planning starts with the highest-impact items.

@@ -3,6 +3,7 @@ import streamlit as st
 
 from rvtools_parser import parse_rvtools_workbook
 from streamlit_app.export import render_export_tab
+from streamlit_app.guided_migration import render_guided_migration_assistant
 from streamlit_app.image_import import render_image_import_tab
 from streamlit_app.migration_ops import render_migration_ops_tab
 from streamlit_app.network_storage import (
@@ -83,6 +84,13 @@ if uploaded_file is not None:
 
     with overview:
         render_overview_tab(df_f, assessment_quality)
+        st.write("---")
+        render_guided_migration_assistant(
+            edited_df,
+            processed_vms,
+            disk_details,
+            nic_details,
+        )
 
     with readiness:
         render_readiness_legend()

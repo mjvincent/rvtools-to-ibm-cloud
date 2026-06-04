@@ -59,7 +59,7 @@ make docker-run
 - Optional IBM Cloud API key only when using live catalog discovery.
 
 ### First Successful Run
-After opening the app, upload `samples/rvtools-small-complete.xlsx` in the sidebar for a first test run. The workbench should show Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Migration Ops, Networks, Storage, and Export tabs.
+After opening the app, upload `samples/rvtools-small-complete.xlsx` in the sidebar for a first test run. The workbench should show Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Migration Ops, Networks, Storage, and Export tabs. The Overview tab includes a Guided Migration Assistant with a first-run checklist, safe planning defaults, and a migration action-plan export.
 
 For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`. That workbook intentionally includes source-data issues, so readiness and preflight findings are expected.
 
@@ -144,7 +144,7 @@ Use `scripts/generate_pricing_cache.py` to generate the cached catalog from IBM 
 ## Technical Structure
 The application is split into focused modules with `MigrationVm` as the internal contract:
 1. **Streamlit Entrypoint (`app.py`)**: Keeps the workbench route, upload flow, tab composition, and renderer delegation in one runnable Streamlit entrypoint.
-2. **Streamlit Helpers (`streamlit_app/`)**: Owns focused UI helpers such as page header rendering, sidebar settings, overview/readiness rendering, VM review decisions, final VM assembly, wave planning, image import planning rendering/status handling, network/storage planning, remediation backlog rendering, Export tab package controls, and Terraform bundle assembly.
+2. **Streamlit Helpers (`streamlit_app/`)**: Owns focused UI helpers such as page header rendering, sidebar settings, overview/readiness rendering, guided migration assistance, VM review decisions, final VM assembly, wave planning, image import planning rendering/status handling, network/storage planning, remediation backlog rendering, Export tab package controls, and Terraform bundle assembly.
 3. **RVTools Parsing (`rvtools_parser.py`, `rvtools/`)**: Keeps root import compatibility while focused package modules load worksheets, correlate RVTools tabs, and build normalized VM records.
 4. **Assessments and Sizing (`assessments.py`, `sizing.py`)**: Evaluates readiness, profile matching, storage tiering, baseline cost, and savings.
 5. **Terraform Rendering (`terraform_renderer.py`)**: Outputs HCL in a modular format including networking, storage, and VSI modules.
@@ -272,7 +272,7 @@ Generated resources include standardized naming and tags for project and managem
 1. Install dependencies: `pip install -r requirements.txt`
 2. Launch the utility: `streamlit run app.py`
 3. Upload the RVTools .xlsx file.
-4. Review the Overview and Readiness tabs, resolving Blocked items first.
+4. Review the Overview and Readiness tabs, using Guided Migration Assistant for a first-run checklist and safe planning defaults.
 5. Use VM Review, Networks, and Storage to confirm overrides and placement.
 6. Use Wave Planning to organize VMs into migration waves, specify owners and cutover groups, track dependencies, prioritize workloads, and exchange wave-planning CSVs with project teams.
 7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows; reload saved remediation CSVs when resuming a session.
