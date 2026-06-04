@@ -3,6 +3,72 @@
 ## Overview
 This utility automates the conversion of VMware RVTools exports into modular IBM Cloud VPC Terraform configurations. By correlating performance telemetry and networking metadata across multiple data tabs, the engine generates infrastructure-as-code (IaC) that reflects actual utilization requirements rather than static allocations.
 
+## Quick Start
+Choose one path from the repository root.
+
+### Option 1: Python
+Use this if Python is already installed.
+
+```bash
+python -m pip install -r requirements.txt
+streamlit run app.py
+```
+
+Open the Streamlit URL shown in the terminal, usually:
+
+```text
+http://localhost:8501
+```
+
+### Option 2: Docker
+Use this if Docker Desktop or a compatible Docker runtime is already running.
+
+```bash
+docker build -t rvtools-to-ibm-cloud .
+docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
+```
+
+Open:
+
+```text
+http://localhost:8501
+```
+
+### Option 3: Make
+Use this for the shortest local commands. The Makefile uses `venv/bin/python` when present, otherwise `python3`.
+
+```bash
+make run
+```
+
+Other useful commands:
+
+```bash
+make test
+make docker-build
+make docker-run
+```
+
+### What You Need
+- A standard RVTools `.xlsx` export.
+- Python with `pip`, or Docker.
+- Optional Terraform for deeper package validation.
+- Optional IBM Cloud API key only when using live catalog discovery.
+
+### First Successful Run
+After opening the app, upload the RVTools workbook in the sidebar. The workbench should show Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Migration Ops, Networks, Storage, and Export tabs.
+
+The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container.
+
+## Common First-Run Fixes
+| Symptom | Fix |
+| --- | --- |
+| `streamlit: command not found` | Run `python -m pip install -r requirements.txt`, then try `python -m streamlit run app.py`. |
+| Port `8501` is busy | Run `streamlit run app.py --server.port 8502` or map Docker to another host port with `docker run --rm -p 8502:8501 rvtools-to-ibm-cloud`. |
+| Docker command fails | Confirm Docker Desktop or the Docker daemon is running. |
+| App rejects the upload | Confirm the file is an RVTools `.xlsx` workbook, not CSV or a manually edited spreadsheet. |
+| Terraform validation fails during init | Confirm network access to provider registries, or use the generated ZIP for review without running `terraform init`. |
+
 ## Core Functional Logic
 
 ### Network Schema Discovery

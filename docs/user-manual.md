@@ -93,10 +93,13 @@ The Assessment Quality report still records missing optional tabs so reviewers c
 ## Installation and Launch
 Run the application from the repository root.
 
-1. Install Python dependencies:
+### Python Path
+Use this if Python is already installed.
+
+1. Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 2. Start the Streamlit application:
@@ -105,9 +108,35 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-3. Open the Streamlit URL shown in the terminal.
+If `streamlit` is not on your shell path, run:
+
+```bash
+python -m streamlit run app.py
+```
+
+3. Open the Streamlit URL shown in the terminal, usually `http://localhost:8501`.
 
 4. Upload an RVTools XLSX export in the sidebar.
+
+### Docker Path
+Use this if Docker Desktop or a compatible Docker runtime is already running.
+
+```bash
+docker build -t rvtools-to-ibm-cloud .
+docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
+```
+
+Open `http://localhost:8501` and upload an RVTools XLSX export in the sidebar.
+
+### Makefile Shortcuts
+If `make` is available, these shortcuts run the same commands. The Makefile uses `venv/bin/python` when present, otherwise `python3`.
+
+```bash
+make run
+make test
+make docker-build
+make docker-run
+```
 
 For browser access through a container or hosted service, see [Deployment Guide](deployment.md). Hosted deployments should require authenticated access because RVTools exports and generated migration packages can contain sensitive infrastructure data. A static HTML page can link to the app, but it cannot replace the Streamlit/Python backend.
 

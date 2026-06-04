@@ -14,6 +14,12 @@ python -m pytest tests/test_catalog_pricing.py
 python -m pytest tests/test_disk_mapping.py
 ```
 
+If `make` is available, the full pytest suite can also run with:
+
+```bash
+make test
+```
+
 `pytest.ini` limits collection to `tests/` and excludes `experiments/`. The scripts under `experiments/` are preserved research artifacts, not production test coverage.
 
 ## Fixtures
@@ -109,10 +115,22 @@ Run this checklist after changing deployment assets, dependencies, or Streamlit 
 docker build -t rvtools-to-ibm-cloud .
 ```
 
+Or:
+
+```bash
+make docker-build
+```
+
 2. Run the container:
 
 ```bash
 docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
+```
+
+Or:
+
+```bash
+make docker-run
 ```
 
 3. Confirm the app opens at:

@@ -55,6 +55,19 @@ http://localhost:8501
 
 The container health check uses Streamlit's health endpoint at `/_stcore/health`.
 
+If `make` is available, the same workflow can be run with:
+
+```bash
+make docker-build
+make docker-run
+```
+
+Use another host port if `8501` is already busy:
+
+```bash
+make docker-run PORT=8502
+```
+
 ## IBM Cloud Code Engine
 The container command honors Code Engine's `PORT` environment variable. If no `PORT` is provided, it defaults to `8501` for local use. When creating a Code Engine app for this container, set `--port 8501` so Code Engine routes traffic to the Streamlit listener instead of assuming the default app port.
 

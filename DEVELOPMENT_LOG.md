@@ -164,6 +164,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Tightened IBM Cloud Code Engine notes for port selection, private visibility, and access-control expectations.
 - Expanded RVTools data-security guidance for uploads, generated packages, secrets, downloads, retention, and source uploads.
 
+### June 4, 2026: Quick Start Runbook
+- Added a README Quick Start with Python, Docker, and Makefile paths for first-time users.
+- Added `Makefile` shortcuts for running, testing, compiling, Docker build/run, container health checks, and Terraform validation.
+- Updated the user manual, deployment guide, and testing guide with the simplified run commands.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.
