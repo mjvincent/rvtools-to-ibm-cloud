@@ -59,3 +59,40 @@ jobs:
 
       - name: Validate generated Terraform package
         run: python scripts/validate_terraform_package.py --init-validate
+
+  container-smoke:
+    name: Container smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Build Docker image
+        run: docker build -t rvtools-to-ibm-cloud:ci .
+
+      - name: Run Streamlit container
+        run: |
+          docker run \
+            --detach \
+            --name rvtools-streamlit-smoke \
+            --publish 8503:8501 \
+            rvtools-to-ibm-cloud:ci
+
+      - name: Check Streamlit health endpoint
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error \
+              http://localhost:8503/_stcore/health; then
+              exit 0
+            fi
+            echo "Waiting for Streamlit health endpoint (${attempt}/30)..."
+            sleep 2
+          done
+          docker logs rvtools-streamlit-smoke
+          exit 1
+
+      - name: Stop Streamlit container
+        if: always()
+        run: docker rm --force rvtools-streamlit-smoke

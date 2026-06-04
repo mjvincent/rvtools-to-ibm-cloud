@@ -154,6 +154,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added deployment guidance for IBM Cloud Code Engine, local Docker validation, and sensitive RVTools data handling.
 - Updated README, user manual, and testing checklist with deployment references and container validation steps.
 
+### June 4, 2026: Container CI Smoke Test
+- Added a GitHub Actions container smoke job that builds the Docker image, starts the Streamlit container, and checks the health endpoint.
+- Added failure logging and always-on container cleanup for the CI smoke run.
+- Updated the testing guide to note automated container validation.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.
