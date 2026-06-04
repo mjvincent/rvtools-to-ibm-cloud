@@ -104,6 +104,10 @@ def render_planning_downloads(
 ):
     """Render business case and planning-state download controls."""
     st.markdown("### Planning Downloads")
+    st.info(
+        "Downloaded CSV, planning-state, and Terraform package files may "
+        "contain sensitive infrastructure and migration planning data."
+    )
     st.download_button(
         label="Download Business Case (CSV)",
         data=edited_df.to_csv(index=False).encode("utf-8"),

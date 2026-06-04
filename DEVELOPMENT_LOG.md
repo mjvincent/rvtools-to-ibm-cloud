@@ -169,6 +169,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added `Makefile` shortcuts for running, testing, compiling, Docker build/run, container health checks, and Terraform validation.
 - Updated the user manual, deployment guide, and testing guide with the simplified run commands.
 
+### June 4, 2026: Upload and Export Data Handling Notices
+- Added non-blocking sidebar guidance before RVTools upload to remind users that workbooks can contain sensitive infrastructure inventory.
+- Added Export tab guidance before planning downloads to remind users that CSVs, planning state, and Terraform packages can contain sensitive migration data.
+- Updated the user manual to mention the in-app data-handling reminders.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

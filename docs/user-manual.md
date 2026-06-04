@@ -138,7 +138,7 @@ make docker-build
 make docker-run
 ```
 
-For browser access through a container or hosted service, see [Deployment Guide](deployment.md). Hosted deployments should require authenticated access because RVTools exports and generated migration packages can contain sensitive infrastructure data. A static HTML page can link to the app, but it cannot replace the Streamlit/Python backend.
+For browser access through a container or hosted service, see [Deployment Guide](deployment.md). Hosted deployments should require authenticated access because RVTools exports and generated migration packages can contain sensitive infrastructure data. The app also shows non-blocking reminders near upload and export controls. A static HTML page can link to the app, but it cannot replace the Streamlit/Python backend.
 
 ## End-to-End Workflow
 1. Export the VMware inventory from RVTools as an XLSX workbook.

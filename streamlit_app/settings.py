@@ -97,6 +97,10 @@ def render_sidebar_settings():
         "Upload RVTools, review blockers first, adjust only the decisions that "
         "need human intent, then build the Terraform handoff package."
     )
+    st.sidebar.info(
+        "RVTools exports can contain sensitive infrastructure inventory. "
+        "Use an approved device or hosted environment before uploading."
+    )
     uploaded_file = st.sidebar.file_uploader("Upload RVTools", type=["xlsx"])
 
     settings = MigrationSettings(
