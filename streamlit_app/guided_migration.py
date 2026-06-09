@@ -313,6 +313,11 @@ def render_guided_migration_assistant(
     st.caption(
         "Use this checklist to move from upload review to a migration-ready handoff."
     )
+    st.info(
+        "After applying safe defaults or making planning edits, use Export > "
+        "Planning State to download a reloadable planning session before "
+        "closing the app."
+    )
 
     remediation_tracker = st.session_state.get(TRACKER_KEY, {})
     image_import_status = st.session_state.get("image_import_status", {})

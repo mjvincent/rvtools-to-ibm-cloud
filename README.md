@@ -258,7 +258,7 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `remediation-backlog.csv` — tracking blockers with owner, status, due date, and notes for cross-team remediation workflows
 * `image-import-plan.csv` — image import planning with source image, target catalog ID, import status, and estimated time per VM
 * `cutover-readiness.csv` — wave and cutover-group readiness view across planning, remediation, and image import status
-* `planning-state.json` — reloadable planning state for wave metadata, remediation tracking, and image import status
+* `planning-state.json` — reloadable planning state for VM decisions, wave metadata, remediation tracking, and image import status
 * `image-import-variables.tfvars.example` — Terraform varfile template for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 

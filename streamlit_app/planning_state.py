@@ -19,20 +19,24 @@ WAVE_STATE_COLUMNS = [
     "Dependency Group",
 ]
 
+DECISION_STATE_COLUMNS = [
+    "Exclude?",
+    "Override Profile",
+    "Override Storage Tier",
+    "Network",
+    "Subnet",
+    "Security Group",
+]
 
-def apply_planning_state_to_dataframe(df, state):
-    """Apply wave planning rows from a planning-state bundle to a dataframe."""
-    if not isinstance(df, pd.DataFrame):
-        return df, {"applied": 0, "skipped": 0}
 
-    updated = df.copy()
-    for column in WAVE_STATE_COLUMNS:
-        if column not in updated.columns:
-            updated[column] = ""
+def _is_blank(value):
+    return value is None or pd.isna(value) or str(value).strip() == ""
 
+
+def _apply_rows_by_vm_key(updated, rows, columns):
     applied = 0
     skipped = 0
-    for row in state.get("wave_planning", []) or []:
+    for row in rows or []:
         vm_key = row.get("VM Key")
         if not vm_key or "VM Key" not in updated.columns:
             skipped += 1
@@ -41,11 +45,51 @@ def apply_planning_state_to_dataframe(df, state):
         if not mask.any():
             skipped += 1
             continue
-        for column in WAVE_STATE_COLUMNS:
-            if column in row:
+        for column in columns:
+            if column in row and column in updated.columns:
                 updated.loc[mask, column] = row.get(column, "")
         applied += 1
-    return updated, {"applied": applied, "skipped": skipped}
+    return updated, applied, skipped
+
+
+def apply_planning_state_to_dataframe(df, state):
+    """Apply saved decisions and wave rows from planning-state to a dataframe."""
+    if not isinstance(df, pd.DataFrame):
+        return df, {
+            "applied": 0,
+            "skipped": 0,
+            "wave_applied": 0,
+            "wave_skipped": 0,
+            "decision_applied": 0,
+            "decision_skipped": 0,
+        }
+
+    updated = df.copy()
+    for column in WAVE_STATE_COLUMNS:
+        if column not in updated.columns:
+            updated[column] = ""
+    for column in DECISION_STATE_COLUMNS:
+        if column not in updated.columns and column == "Exclude?":
+            updated[column] = False
+
+    updated, decision_applied, decision_skipped = _apply_rows_by_vm_key(
+        updated,
+        state.get("vm_decisions", []),
+        DECISION_STATE_COLUMNS,
+    )
+    updated, wave_applied, wave_skipped = _apply_rows_by_vm_key(
+        updated,
+        state.get("wave_planning", []),
+        WAVE_STATE_COLUMNS,
+    )
+    return updated, {
+        "applied": wave_applied,
+        "skipped": wave_skipped,
+        "wave_applied": wave_applied,
+        "wave_skipped": wave_skipped,
+        "decision_applied": decision_applied,
+        "decision_skipped": decision_skipped,
+    }
 
 
 def apply_planning_state_to_session(state):
@@ -60,6 +104,74 @@ def apply_planning_state_to_session(state):
     }
 
 
+def summarize_current_planning_state(
+    edited_df,
+    remediation_tracker=None,
+    image_import_status=None,
+):
+    """Summarize planning-state content before export."""
+    if "Exclude?" in edited_df:
+        active_df = edited_df[edited_df["Exclude?"] == False]
+    else:
+        active_df = edited_df
+    complete_wave_rows = 0
+    for _, row in active_df.iterrows():
+        if all(not _is_blank(row.get(column)) for column in WAVE_STATE_COLUMNS[:4]):
+            complete_wave_rows += 1
+    return {
+        "VM Decisions": len(edited_df),
+        "Active VMs": len(active_df),
+        "Complete Wave Rows": complete_wave_rows,
+        "Remediation Rows": len(remediation_tracker or {}),
+        "Image Groups": len(image_import_status or {}),
+    }
+
+
+def build_planning_state_restore_summary(
+    state,
+    dataframe_result=None,
+    session_result=None,
+):
+    """Build human-readable restore summary rows for a loaded state bundle."""
+    dataframe_result = dataframe_result or {}
+    session_result = session_result or {}
+    return [
+        {
+            "Restored Area": "VM decisions",
+            "Applied": dataframe_result.get("decision_applied", 0),
+            "Skipped": dataframe_result.get("decision_skipped", 0),
+        },
+        {
+            "Restored Area": "Wave planning",
+            "Applied": dataframe_result.get("wave_applied", 0),
+            "Skipped": dataframe_result.get("wave_skipped", 0),
+        },
+        {
+            "Restored Area": "Remediation tracker",
+            "Applied": session_result.get("remediation_items", 0),
+            "Skipped": 0,
+        },
+        {
+            "Restored Area": "Image import status",
+            "Applied": session_result.get("image_groups", 0),
+            "Skipped": 0,
+        },
+    ]
+
+
+def render_planning_state_restore_summary():
+    """Render the most recent planning-state restore summary if available."""
+    summary = st.session_state.get("planning_state_restore_summary")
+    if not summary:
+        return
+    st.success("Planning state restored.")
+    st.dataframe(
+        pd.DataFrame(summary),
+        hide_index=True,
+        use_container_width=True,
+    )
+
+
 def render_planning_state_controls(
     edited_df,
     processed_vms,
@@ -71,6 +183,12 @@ def render_planning_state_controls(
 ):
     """Render planning-state export/import controls."""
     st.write("### Planning State")
+    st.info(
+        "Save planning state when you need to pause and resume work later. "
+        "Reload it after uploading the same RVTools workbook to restore VM "
+        "decisions, wave fields, remediation tracking, and image import status."
+    )
+    render_planning_state_restore_summary()
 
     final_vms = build_final_vms(
         edited_df,
@@ -87,6 +205,17 @@ def render_planning_state_controls(
             "target_region": target_region,
             "target_zone": target_zone,
         },
+        decision_records=edited_df.to_dict("records"),
+    )
+    summary = summarize_current_planning_state(
+        edited_df,
+        st.session_state.get("remediation_tracker", {}),
+        st.session_state.get("image_import_status", {}),
+    )
+    st.dataframe(
+        pd.DataFrame([summary]),
+        hide_index=True,
+        use_container_width=True,
     )
     st.download_button(
         label="Download Planning State",
@@ -111,6 +240,9 @@ def render_planning_state_controls(
                     state = load_planning_state_json(uploaded_state)
                     session_result = apply_planning_state_to_session(state)
                     st.session_state["pending_planning_state"] = state
+                    st.session_state["planning_state_session_result"] = (
+                        session_result
+                    )
                     st.session_state["planning_state_import_message"] = (
                         "Loaded planning state with "
                         f"{session_result['remediation_items']} remediation "

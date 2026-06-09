@@ -13,6 +13,7 @@ from handoff import (
 )
 from streamlit_app.package_builder import build_terraform_bundle
 from streamlit_app.planning_state import apply_planning_state_to_dataframe
+from streamlit_app.planning_state import build_planning_state_restore_summary
 
 
 def _vm(**overrides):
@@ -66,6 +67,8 @@ def test_planning_state_json_roundtrip():
 
     assert state["schema_version"] == "1.0"
     assert state["metadata"]["project_name"] == "demo"
+    assert state["vm_decisions"][0]["VM Key"] == "vm-001"
+    assert state["vm_decisions"][0]["Network"] == "app-net"
     assert state["wave_planning"][0]["Wave"] == "wave-01"
     assert extract_remediation_tracker(state) == remediation_tracker
     assert extract_image_import_status(state) == image_import_status
@@ -85,13 +88,77 @@ def test_apply_planning_state_to_dataframe_restores_wave_fields():
 
     updated, result = apply_planning_state_to_dataframe(df, state)
 
-    assert result == {"applied": 1, "skipped": 0}
+    assert result == {
+        "applied": 1,
+        "skipped": 0,
+        "wave_applied": 1,
+        "wave_skipped": 0,
+        "decision_applied": 1,
+        "decision_skipped": 0,
+    }
     assert updated.loc[0, "Wave"] == "wave-01"
     assert updated.loc[0, "Cutover Group"] == "cg-app"
     assert updated.loc[0, "Owner"] == "app-team"
     assert updated.loc[0, "Application"] == "orders"
     assert updated.loc[0, "Priority"] == "High"
     assert updated.loc[0, "Dependency Group"] == "dg-01"
+
+
+def test_apply_planning_state_to_dataframe_restores_vm_decisions():
+    df = pd.DataFrame([{
+        "VM Key": "vm-001",
+        "VM Name": "app-01",
+        "Exclude?": False,
+        "Override Profile": "",
+        "Override Storage Tier": "",
+        "Network": "old-net",
+        "Subnet": "",
+        "Security Group": "",
+    }])
+    state = json.loads(generate_planning_state_json(
+        [_vm()],
+        decision_records=[_vm(
+            **{
+                "Exclude?": True,
+                "Override Profile": "bx2-4x16",
+                "Override Storage Tier": "10iops-tier",
+                "Network": "app-net",
+                "Subnet": "module.networking.app_net_id",
+                "Security Group": "module.networking.app_net_sg_id",
+            }
+        )],
+    ))
+
+    updated, result = apply_planning_state_to_dataframe(df, state)
+
+    assert result["decision_applied"] == 1
+    assert result["decision_skipped"] == 0
+    assert updated.loc[0, "Exclude?"] == True
+    assert updated.loc[0, "Override Profile"] == "bx2-4x16"
+    assert updated.loc[0, "Override Storage Tier"] == "10iops-tier"
+    assert updated.loc[0, "Network"] == "app-net"
+    assert updated.loc[0, "Subnet"] == "module.networking.app_net_id"
+    assert updated.loc[0, "Security Group"] == "module.networking.app_net_sg_id"
+
+
+def test_planning_state_restore_summary_combines_session_and_dataframe_counts():
+    rows = build_planning_state_restore_summary(
+        {"schema_version": "1.0"},
+        {
+            "decision_applied": 2,
+            "decision_skipped": 1,
+            "wave_applied": 3,
+            "wave_skipped": 0,
+        },
+        {"remediation_items": 4, "image_groups": 5},
+    )
+
+    assert rows == [
+        {"Restored Area": "VM decisions", "Applied": 2, "Skipped": 1},
+        {"Restored Area": "Wave planning", "Applied": 3, "Skipped": 0},
+        {"Restored Area": "Remediation tracker", "Applied": 4, "Skipped": 0},
+        {"Restored Area": "Image import status", "Applied": 5, "Skipped": 0},
+    ]
 
 
 def test_manifest_references_planning_state_file():

@@ -192,6 +192,12 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added an explicit optional action to queue exclusions for hard-blocked VMs through the existing VM Review quick-fix flow.
 - Updated README, user manual, testing guide, and migration planning documentation.
 
+### June 9, 2026: Planning State Persistence Polish
+- Added VM decision fields to reloadable planning-state exports so exclusions, target network placement, security group, subnet, and override decisions can be restored.
+- Added planning-state summary and restore summary UI for VM decisions, wave rows, remediation tracker items, image import groups, and skipped rows.
+- Added a Guided Migration Assistant reminder to download planning state before closing the app.
+- Updated README, user manual, testing guide, and migration handoff documentation.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

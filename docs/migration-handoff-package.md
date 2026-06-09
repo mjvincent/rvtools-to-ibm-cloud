@@ -51,9 +51,9 @@ A Migration Ops readiness file showing VM, wave, cutover group, owner, applicati
 Use this file in migration command center reviews to confirm that each VM has complete wave planning fields, resolved remediation, and imported source images before scheduling cutover.
 
 ### `planning-state.json`
-A reloadable planning-state bundle containing wave planning fields, remediation tracker data, image import status, and project metadata.
+A reloadable planning-state bundle containing VM decision fields, wave planning fields, remediation tracker data, image import status, and project metadata.
 
-Use this file to resume planning in a later app session after uploading the same RVTools workbook.
+Use this file to resume planning in a later app session after uploading the same RVTools workbook. The app reports how many VM decisions, wave rows, remediation items, and image groups were restored, plus any skipped rows.
 
 ### `assessment-quality.json`
 A structured workbook-level quality report showing RVTools worksheet coverage, row counts, confidence, and planning impact. Use it to understand whether sizing, readiness, storage, and network planning signals are based on complete workbook data or fallback metadata.

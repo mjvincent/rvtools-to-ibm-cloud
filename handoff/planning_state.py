@@ -15,6 +15,15 @@ WAVE_STATE_COLUMNS = [
     "Dependency Group",
 ]
 
+DECISION_STATE_COLUMNS = [
+    "Exclude?",
+    "Override Profile",
+    "Override Storage Tier",
+    "Network",
+    "Subnet",
+    "Security Group",
+]
+
 
 def _record_value(record, *keys):
     for key in keys:
@@ -40,14 +49,27 @@ def _wave_row(record):
     }
 
 
+def _decision_row(record):
+    row = {
+        "VM Key": _record_value(record, "VM Key", "vm_key")
+        or _safe_vm_key(record.get("VM Name")),
+        "VM Name": _safe_vm_key(record.get("VM Name")),
+    }
+    for column in DECISION_STATE_COLUMNS:
+        row[column] = record.get(column, "")
+    return row
+
+
 def build_planning_state(
     final_vms,
     remediation_tracker=None,
     image_import_status=None,
     metadata=None,
+    decision_records=None,
 ):
     """Build a JSON-serializable planning-state bundle."""
     final_vms = _normalize_vms(final_vms)
+    decision_records = _normalize_vms(decision_records or final_vms)
     metadata = metadata or {}
     return {
         "schema_version": PLANNING_STATE_SCHEMA_VERSION,
@@ -57,6 +79,7 @@ def build_planning_state(
             "target_region": _clean_value(metadata.get("target_region")),
             "target_zone": _clean_value(metadata.get("target_zone")),
         },
+        "vm_decisions": [_decision_row(record) for record in decision_records],
         "wave_planning": [_wave_row(record) for record in final_vms],
         "remediation_tracker": remediation_tracker or {},
         "image_import_status": image_import_status or {},
@@ -68,6 +91,7 @@ def generate_planning_state_json(
     remediation_tracker=None,
     image_import_status=None,
     metadata=None,
+    decision_records=None,
 ):
     """Create a stable JSON planning-state export."""
     state = build_planning_state(
@@ -75,6 +99,7 @@ def generate_planning_state_json(
         remediation_tracker=remediation_tracker,
         image_import_status=image_import_status,
         metadata=metadata,
+        decision_records=decision_records,
     )
     return json.dumps(state, indent=2, sort_keys=True)
 
