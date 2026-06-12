@@ -8,7 +8,7 @@ The demo should emphasize that the app generates IBM Cloud VPC Terraform and mig
 
 Audience: IBM internal reviewers, GitHub repo visitors, and customer demo audiences.
 
-Voice approach: AI voice workflow using Michael Vincent Jones' voice with explicit permission from Michael Vincent Jones for this demo.
+Voice approach: stock synthetic voice for the first free demo cut, with optional AI voice cloning later if a paid or approved tool is selected.
 
 ## Recommended Demo Setup
 
@@ -112,7 +112,21 @@ The tool does not replace application validation or migration execution, but it 
 
 ## Voice Recording Options
 
-### Selected Voice Workflow
+### Selected Free Stock Voice Workflow
+
+Use a stock synthetic voice for the first demo cut. This avoids voice cloning, paid tool setup, and likeness concerns while still producing a usable narrated walkthrough.
+
+On macOS, generate a local draft audio file from the standalone script:
+
+```bash
+mkdir -p demo-output
+sed -n '/^This is the RVTools/,$p' docs/demo-video-script.md > demo-output/rvtools-demo-narration.txt
+say -v Samantha -r 135 -f demo-output/rvtools-demo-narration.txt -o demo-output/rvtools-demo-narration.aiff
+```
+
+The generated `demo-output/` folder is intentionally ignored by Git because narration files are local production artifacts.
+
+### Optional AI Voice Clone Workflow
 
 Use an approved AI voice workflow with Michael Vincent Jones' voice for this demo. The voice model must be created only from a voice sample that Michael Vincent Jones provides for this purpose, and the final narration must be reviewed before publication.
 
@@ -190,13 +204,14 @@ Confirmed choices:
 
 - Length: 5 minutes.
 - Tone: workshop-style.
-- Voice: approved AI voice workflow using Michael Vincent Jones' voice.
+- Voice: free stock synthetic voice for the first cut.
 - Audience: IBM internal use, GitHub repo visitors, and customer demos.
 
 Still needed from Michael:
 
-- Clean 2-5 minute voice sample.
-- Preferred AI voice tool, or approval to choose one.
+- Approval of the stock voice draft, or selection of a different stock voice.
 - Decision on screen-recording-only, real camera intro/outro, or AI talking-head video.
+- Clean 2-5 minute voice sample only if moving from stock voice to a cloned voice later.
+- Preferred AI voice tool, or approval to choose one, only if moving to a cloned voice later.
 - If AI talking-head video: explicit likeness permission and a clean reference video or approved avatar source.
 - Any required IBM/customer branding restrictions, disclaimers, or approval workflow.

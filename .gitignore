@@ -10,6 +10,7 @@ venv/
 # Generated Terraform output
 my-ibm-migration/
 *.zip
+demo-output/
 
 # Local test data
 *.xlsx
