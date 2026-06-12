@@ -244,6 +244,7 @@ The exported ZIP bundle now produces a modular Terraform layout:
 
 ## Migration Handoff Package
 Each ZIP bundle also includes a migration handoff package that bridges generated Terraform with image migration and cutover activities:
+* `README.md` — Terraform operator instructions for local CLI or IBM Schematics execution
 * `migration-manifest.json` — tool-neutral source-to-target mapping for each VM including wave planning metadata and decision audit summary
 * `vm-mapping.csv` — spreadsheet-friendly view for migration planning and customer review
 * `nic-mapping.csv` — per-NIC primary/secondary network interface mapping

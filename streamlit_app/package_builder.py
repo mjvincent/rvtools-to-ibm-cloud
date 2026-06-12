@@ -27,6 +27,97 @@ from preflight import generate_preflight_report_csv, generate_preflight_report_j
 from terraform_renderer import generate_tfvars, render_terraform_templates
 
 
+def generate_terraform_operator_readme(context):
+    """Generate root README instructions for Terraform package operators."""
+    project = context.get("project_name") or "my-ibm-migration"
+    region = context.get("target_region") or "us-south"
+    zone = context.get("target_zone") or "us-south-1"
+    vpc_name = context.get("vpc_name") or "migration-vpc"
+    deployment_target = context.get("deployment_target") or "Plain CLI"
+
+    if deployment_target == "IBM Schematics":
+        target_notes = """## IBM Schematics Notes
+
+This package was generated for IBM Schematics. The root `main.tf` omits a
+local backend block so Schematics can manage Terraform state.
+
+Before creating or updating a Schematics workspace:
+- Upload the extracted Terraform project files.
+- Provide IBM Cloud credentials through the approved Schematics mechanism.
+- Add a populated custom image tfvars file after image import.
+- Review the Schematics plan before applying.
+"""
+    else:
+        target_notes = """## Local CLI Notes
+
+This package was generated for local Terraform CLI usage. The root `main.tf`
+includes a local backend block.
+"""
+
+    return f"""# Terraform Operator README
+
+This package contains IBM Cloud VPC Terraform generated from RVTools planning
+data for `{project}`.
+
+## Package Context
+
+- Project: `{project}`
+- Region: `{region}`
+- Zone: `{zone}`
+- VPC name: `{vpc_name}`
+- Deployment target: `{deployment_target}`
+
+## Operator Workflow
+
+1. Extract this ZIP into a clean working directory.
+2. Review `preflight-report.csv` and resolve blockers before planning.
+3. Review `vm-mapping.csv`, `nic-mapping.csv`, `disk-mapping.csv`, and
+   `cutover-readiness.csv` with the migration team.
+4. Copy `image-import-variables.tfvars.example` to a new tfvars file.
+5. Replace every `replace-with-imported-image-id` placeholder with the IBM
+   Cloud VPC custom image ID created after image import.
+6. Confirm IBM Cloud credentials, region, zone, VPC, subnet, security group,
+   quota, and profile availability outside this app.
+7. Run:
+
+```bash
+terraform fmt -check -recursive
+terraform init
+terraform validate
+terraform plan -var-file=<populated-image-vars.tfvars>
+```
+
+8. Review the Terraform plan with infrastructure, security, application, and
+   migration owners before apply.
+
+{target_notes}
+
+## Required Reviews Before `terraform plan`
+
+- `preflight-report.csv`
+- `image-import-variables.tfvars.example`
+- `vm-mapping.csv`
+- `nic-mapping.csv`
+- `disk-mapping.csv`
+- `cutover-readiness.csv`
+- `migration-runbook.md`
+
+## Manual Inputs Required
+
+- IBM Cloud credentials and account context.
+- Imported IBM Cloud VPC custom image IDs.
+- Region and zone confirmation.
+- VPC, subnet, address prefix, and security group review.
+- Quota, profile, storage, and IP availability confirmation.
+
+## Boundaries
+
+This app generates Terraform and migration handoff files. It does not execute
+Terraform, import images, upload images to IBM Cloud Object Storage, call
+migration tooling, validate quota, or perform application cutover.
+"""
+
+
 def build_terraform_bundle(
     final_vms,
     unique_nets,
@@ -88,6 +179,10 @@ def build_terraform_bundle(
 
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "a") as zf:
+        zf.writestr(
+            "README.md",
+            generate_terraform_operator_readme(migration_context),
+        )
         zf.writestr("main.tf", root_main)
         zf.writestr("variables.tf", root_vars)
         zf.writestr("outputs.tf", root_out)

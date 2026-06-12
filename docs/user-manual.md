@@ -683,6 +683,7 @@ The ZIP bundle contains two categories of output:
 
 | File | Purpose |
 | --- | --- |
+| `README.md` | Terraform operator instructions, package review checklist, image ID workflow, and local CLI or IBM Schematics notes. |
 | `main.tf` | Root Terraform module wiring. |
 | `variables.tf` | Root Terraform variables. |
 | `outputs.tf` | Root Terraform outputs. |

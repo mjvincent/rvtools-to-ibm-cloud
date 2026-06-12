@@ -198,6 +198,12 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added a Guided Migration Assistant reminder to download planning state before closing the app.
 - Updated README, user manual, testing guide, and migration handoff documentation.
 
+### June 12, 2026: Terraform Operator Readiness
+- Added a generated root `README.md` to Terraform ZIP bundles with local CLI and IBM Schematics operator guidance.
+- Documented required review files, custom image ID varfile steps, manual inputs, and automation boundaries for Terraform operators.
+- Added an Export tab note after successful package build so users know operator instructions are included.
+- Updated README, user manual, testing guide, and migration handoff documentation.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

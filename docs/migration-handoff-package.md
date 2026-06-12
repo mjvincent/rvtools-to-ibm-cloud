@@ -6,6 +6,12 @@ The migration handoff package extends the Terraform ZIP bundle with planning fil
 Terraform remains responsible for the target VPC foundation, modules, and infrastructure definitions. The handoff files help customers, migration teams, or partner tooling understand which VMware workload maps to which target IBM Cloud resource.
 
 ## Generated Files
+### `README.md`
+Root Terraform operator instructions for the downloaded package. It lists the
+recommended review order, image ID varfile workflow, local Terraform CLI
+commands, IBM Schematics notes when selected, and clear boundaries for what the
+app does not automate.
+
 ### `migration-manifest.json`
 A tool-neutral JSON document containing project-level target settings and per-VM source, target, migration, and assessment fields.
 

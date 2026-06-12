@@ -245,6 +245,11 @@ def render_build_and_download(
     if st.session_state.get("build_done"):
         st.write("---")
         st.write("### Project Ready")
+        st.info(
+            "The Terraform bundle includes a root README.md with operator "
+            "instructions, required review files, image ID steps, and "
+            "deployment-target notes."
+        )
         st.download_button(
             label="Download Terraform Bundle",
             data=st.session_state["zip_data"],
