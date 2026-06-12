@@ -2,9 +2,13 @@
 
 ## Purpose
 
-Create a 3-5 minute demo that shows how the RVTools to IBM Cloud VPC tool turns an RVTools workbook into a Terraform handoff package with readiness, planning, and operator guidance.
+Create a 5 minute workshop-style demo that shows how the RVTools to IBM Cloud VPC tool turns an RVTools workbook into a Terraform handoff package with readiness, planning, and operator guidance.
 
 The demo should emphasize that the app generates IBM Cloud VPC Terraform and migration handoff files. It does not execute Terraform, import images, move workloads, or perform cutover.
+
+Audience: IBM internal reviewers, GitHub repo visitors, and customer demo audiences.
+
+Voice approach: AI voice workflow using Michael Vincent Jones' voice with explicit permission from Michael Vincent Jones for this demo.
 
 ## Recommended Demo Setup
 
@@ -20,7 +24,8 @@ python -m streamlit run app.py
 - Zoom: 100%.
 - Hide bookmarks and unrelated desktop notifications.
 - Suggested recorder: QuickTime, Loom, OBS, or Screen Studio.
-- Target length: 3-5 minutes.
+- Target length: 5 minutes.
+- Tone: workshop-style, practical, and technical enough for architects and migration teams.
 
 ## Storyboard
 
@@ -107,24 +112,57 @@ The tool does not replace application validation or migration execution, but it 
 
 ## Voice Recording Options
 
-### Best Quality
+### Selected Voice Workflow
+
+Use an approved AI voice workflow with Michael Vincent Jones' voice for this demo. The voice model must be created only from a voice sample that Michael Vincent Jones provides for this purpose, and the final narration must be reviewed before publication.
+
+Recommended external tools:
+
+- Descript Overdub
+- ElevenLabs Professional Voice Cloning
+- PlayHT
+- HeyGen
+- Another IBM-approved or team-approved tool
+
+Required inputs:
+
+- Explicit consent from Michael Vincent Jones to use his voice for this demo.
+- A clean 2-5 minute voice sample, recorded in a quiet room.
+- Confirmation of the target platform/tool used for voice generation.
+- Final script approval before generating the production voiceover.
+- Final audio approval before publishing or sharing the demo.
+
+### Direct Voiceover Alternative
 
 Record yourself reading the script in a quiet room. Use the recording directly as the voiceover.
 
-### Assisted Voiceover
+## Camera And AI Video Options
 
-If you want an AI-assisted version in your voice, you need to provide:
+### Screen Recording Only
 
-- Explicit consent to use your voice for this demo.
-- A clean 2-5 minute voice sample.
-- Preferred tool, such as Descript, ElevenLabs, PlayHT, HeyGen, or another approved service.
-- Confirmation that the demo is for your own repo/product communication.
+Recommended default. Record the app and ZIP walkthrough, then layer AI voiceover and captions on top. This is the simplest and most credible format for IBM internal, GitHub, and customer audiences.
 
-Do not use a cloned or synthetic voice without explicit permission from the person whose voice is being modeled.
+### Camera Intro And Outro
+
+Optional. Record a short real camera introduction and closing from Michael, then use screen recording for the app demo. This is polished without needing a synthetic video avatar.
+
+### AI Talking-Head Video
+
+Possible only through an external approved tool such as HeyGen, Synthesia, Descript, or another service that supports consent-based avatar generation. This repo/session can prepare the script, shot list, prompts, captions, and asset checklist, but the actual AI video generation must happen in that external tool.
+
+Required if using an AI talking-head version:
+
+- Explicit consent from Michael Vincent Jones to use his likeness for this demo.
+- A clean reference video or approved avatar source.
+- Confirmation that the generated avatar may be used for IBM internal, GitHub, and customer demo audiences.
+- Final human review before publication.
+
+Do not use a cloned or synthetic voice or likeness without explicit permission from the person being modeled.
 
 ## Assets To Prepare
 
 - Screen recording of the app flow.
+- Optional real camera intro/outro or approved avatar source.
 - Optional headshot or intro slide.
 - Voiceover audio.
 - Optional background music, kept low or omitted.
@@ -148,11 +186,17 @@ The tool generates Terraform and planning artifacts. It does not execute Terrafo
 
 ## What I Need From You
 
-To produce the final video package, provide:
+Confirmed choices:
 
-- Your preferred video length: 3 minutes, 5 minutes, or longer.
-- Whether the tone should be executive, technical, or workshop-style.
-- Whether you want to appear on camera.
-- Whether you want to narrate yourself or use an approved AI voice workflow.
-- If using AI voice: explicit permission and a clean voice sample.
-- Whether the final video is for IBM internal use, GitHub repo visitors, customer demos, or all three.
+- Length: 5 minutes.
+- Tone: workshop-style.
+- Voice: approved AI voice workflow using Michael Vincent Jones' voice.
+- Audience: IBM internal use, GitHub repo visitors, and customer demos.
+
+Still needed from Michael:
+
+- Clean 2-5 minute voice sample.
+- Preferred AI voice tool, or approval to choose one.
+- Decision on screen-recording-only, real camera intro/outro, or AI talking-head video.
+- If AI talking-head video: explicit likeness permission and a clean reference video or approved avatar source.
+- Any required IBM/customer branding restrictions, disclaimers, or approval workflow.
