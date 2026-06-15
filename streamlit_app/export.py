@@ -120,7 +120,7 @@ def render_planning_downloads(
         data=edited_df.to_csv(index=False).encode("utf-8"),
         file_name=f"{project_name}_proposal.csv",
         mime="text/csv",
-        use_container_width=True,
+        width="stretch",
     )
 
     render_planning_state_controls(
@@ -161,7 +161,7 @@ def render_preflight_review(
         ssh_source_cidr=ssh_source_cidr,
     )
     render_preflight_guidance(preview_findings, edited_df)
-    if st.button("Re-run package preflight", use_container_width=True):
+    if st.button("Re-run package preflight", width="stretch"):
         st.session_state["preflight_needs_rerun"] = False
         st.rerun()
 
@@ -188,7 +188,7 @@ def render_build_and_download(
 ):
     """Render Terraform build and ZIP download controls."""
     st.markdown("### Build And Download")
-    if st.button("Build Terraform Project", use_container_width=True):
+    if st.button("Build Terraform Project", width="stretch"):
         with st.status("Packaging Project...") as status:
             try:
                 final_vms = build_final_vms(
@@ -255,7 +255,7 @@ def render_build_and_download(
             data=st.session_state["zip_data"],
             file_name=f"{project_name}.zip",
             mime="application/zip",
-            use_container_width=True,
+            width="stretch",
         )
 
 

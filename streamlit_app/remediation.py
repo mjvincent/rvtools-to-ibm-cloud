@@ -140,7 +140,7 @@ def render_remediation_backlog_tab(processed_vms):
             type=["csv"],
             key="remediation_tracker_import",
         )
-        if st.button("Load Remediation CSV", use_container_width=True):
+        if st.button("Load Remediation CSV", width="stretch"):
             if uploaded_tracker is None:
                 st.warning("Choose a remediation CSV to load.")
             else:
@@ -189,7 +189,7 @@ def render_remediation_backlog_tab(processed_vms):
         backlog_df,
         column_config=col_cfg,
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         key="remediation_editor",
     )
 
@@ -227,7 +227,7 @@ def render_remediation_backlog_tab(processed_vms):
             {"Owner": owner, "Count": count}
             for owner, count in owner_counts.items()
         ])
-        st.dataframe(owner_df, use_container_width=True)
+        st.dataframe(owner_df, width="stretch")
     else:
         st.write("No owners assigned yet.")
 
@@ -250,7 +250,7 @@ def render_remediation_backlog_tab(processed_vms):
                     "Due Date",
                     "Notes",
                 ]],
-                use_container_width=True,
+                width="stretch",
             )
     except Exception:
         pass
@@ -261,6 +261,6 @@ def render_remediation_backlog_tab(processed_vms):
         data=csv_bytes,
         file_name="p4-remediation-backlog.csv",
         mime="text/csv",
-        use_container_width=True,
+        width="stretch",
         key="p4-tracker-export",
     )

@@ -168,7 +168,7 @@ def render_planning_state_restore_summary():
     st.dataframe(
         pd.DataFrame(summary),
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
     )
 
 
@@ -215,14 +215,14 @@ def render_planning_state_controls(
     st.dataframe(
         pd.DataFrame([summary]),
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
     )
     st.download_button(
         label="Download Planning State",
         data=planning_state_json.encode("utf-8"),
         file_name=f"{project_name}-planning-state.json",
         mime="application/json",
-        use_container_width=True,
+        width="stretch",
         key="planning_state_download",
     )
 
@@ -232,7 +232,7 @@ def render_planning_state_controls(
             type=["json"],
             key="planning_state_import",
         )
-        if st.button("Load Planning State", use_container_width=True):
+        if st.button("Load Planning State", width="stretch"):
             if uploaded_state is None:
                 st.warning("Choose a planning-state JSON file to load.")
             else:

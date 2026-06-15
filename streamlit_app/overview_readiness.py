@@ -123,7 +123,7 @@ def render_assessment_quality(report):
             st.dataframe(
                 pd.DataFrame(tabs),
                 hide_index=True,
-                use_container_width=True,
+                width="stretch",
             )
         else:
             st.write("No worksheet quality data is available.")
@@ -176,7 +176,7 @@ def render_readiness_triage(df_f):
         view = ordered.sort_values(["_status_order", "VM Name"])[
             ["VM Name", column, reason_column, "Power State", "Data Status"]
         ]
-        st.dataframe(view, hide_index=True, use_container_width=True)
+        st.dataframe(view, hide_index=True, width="stretch")
 
 
 def render_readiness_legend():

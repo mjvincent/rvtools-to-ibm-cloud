@@ -126,7 +126,7 @@ def render_image_import_tab(edited_df, processed_vms, disk_details, nic_details)
             type=["csv"],
             key="image_import_status_import",
         )
-        if st.button("Load Image Import CSV", use_container_width=True):
+        if st.button("Load Image Import CSV", width="stretch"):
             if uploaded_images is None:
                 st.warning("Choose an image import CSV to load.")
             else:
@@ -173,7 +173,7 @@ def render_image_import_tab(edited_df, processed_vms, disk_details, nic_details)
         df_images,
         column_config=col_cfg,
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         key="image_import_editor",
     )
 
@@ -202,7 +202,7 @@ def render_image_import_tab(edited_df, processed_vms, disk_details, nic_details)
             key="bulk_image_status",
             help="Track whether the source image group is still pending, being imported, imported, or blocked.",
         )
-        if st.button("Apply Status to Selected", use_container_width=True):
+        if st.button("Apply Status to Selected", width="stretch"):
             if not selected_images:
                 st.warning("No images selected.")
             else:
@@ -218,7 +218,7 @@ def render_image_import_tab(edited_df, processed_vms, disk_details, nic_details)
                 )
 
     with c2:
-        if st.button("Generate Image Import Export", use_container_width=True):
+        if st.button("Generate Image Import Export", width="stretch"):
             csv_text = image_import_export(
                 build_final_vms(
                     edited_df, processed_vms, disk_details, nic_details
@@ -235,6 +235,6 @@ def render_image_import_tab(edited_df, processed_vms, disk_details, nic_details)
                 ),
                 file_name="image-import-plan.csv",
                 mime="text/csv",
-                use_container_width=True,
+                width="stretch",
                 key="image_import_export_download",
             )

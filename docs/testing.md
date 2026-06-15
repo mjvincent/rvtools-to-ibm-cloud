@@ -81,6 +81,7 @@ python -m streamlit run app.py --server.port 8502
 
 5. Confirm the workbench renders without Streamlit errors:
    - Sidebar settings, pricing status, and upload control are visible.
+   - The console does not repeat Streamlit `use_container_width` deprecation warnings.
    - `Overview` shows estate metrics, recommended next actions, assessment quality, and the Guided Migration Assistant checklist.
    - `Apply Safe Defaults` in the assistant initializes image import and remediation tracking only; it does not mark images imported, change target mappings, or build Terraform.
    - `Readiness`, `Remediation Backlog`, `VM Review`, `Wave Planning`, `Image Import Planning`, `Migration Ops`, `Networks`, `Storage`, and `Export` tabs open without tracebacks.

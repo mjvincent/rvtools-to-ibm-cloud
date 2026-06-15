@@ -332,7 +332,7 @@ def render_guided_migration_assistant(
     st.dataframe(
         pd.DataFrame(checklist_rows),
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
     )
 
     action_rows = build_migration_action_plan(
@@ -346,11 +346,11 @@ def render_guided_migration_assistant(
         st.dataframe(
             pd.DataFrame(action_rows),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("Apply Safe Defaults", use_container_width=True):
+            if st.button("Apply Safe Defaults", width="stretch"):
                 remediation, images, applied = apply_safe_migration_defaults(
                     edited_df,
                     processed_vms,
@@ -371,7 +371,7 @@ def render_guided_migration_assistant(
                 data=action_plan_csv(action_rows).encode("utf-8"),
                 file_name="migration-action-plan.csv",
                 mime="text/csv",
-                use_container_width=True,
+                width="stretch",
                 key="migration_action_plan_download",
             )
 
@@ -384,7 +384,7 @@ def render_guided_migration_assistant(
             )
             if st.button(
                 "Queue Exclusions for Hard-Blocked VMs",
-                use_container_width=True,
+                width="stretch",
             ):
                 st.session_state["preflight_quick_fixes"] = (
                     queue_exclusions_for_hard_blockers(

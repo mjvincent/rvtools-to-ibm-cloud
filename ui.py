@@ -413,12 +413,12 @@ def render_preflight_guidance(findings, df_table=None):
             st.dataframe(
                 pd.DataFrame([_finding_record(finding) for finding in warning_findings]),
                 hide_index=True,
-                use_container_width=True,
+                width="stretch",
             )
 
     with st.expander("Full preflight report"):
         st.dataframe(
             pd.DataFrame([_finding_record(finding) for finding in findings]),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )

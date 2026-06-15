@@ -190,7 +190,7 @@ def render_wave_planning_tab(edited_df, table_config):
             "",
             help="Wave label to apply to every active VM, such as Wave 1 or Pilot.",
         )
-        if st.button("Assign All to Wave", use_container_width=True):
+        if st.button("Assign All to Wave", width="stretch"):
             if assign_wave_value:
                 edited_df = apply_wave_fields(
                     edited_df,
@@ -203,7 +203,7 @@ def render_wave_planning_tab(edited_df, table_config):
             else:
                 st.warning("Enter a Wave value to assign to all active VMs.")
     with c2:
-        if st.button("Assign Wave", use_container_width=True):
+        if st.button("Assign Wave", width="stretch"):
             st.session_state["show_assign_wave_form"] = True
     with c3:
         st.write("")
@@ -252,7 +252,7 @@ def render_wave_planning_tab(edited_df, table_config):
             data=wave_export_df.to_csv(index=False).encode("utf-8"),
             file_name="wave-planning.csv",
             mime="text/csv",
-            use_container_width=True,
+            width="stretch",
             key="wave_planning_csv_download",
         )
         uploaded_wave = st.file_uploader(
@@ -260,7 +260,7 @@ def render_wave_planning_tab(edited_df, table_config):
             type=["csv"],
             key="wave_planning_csv_import",
         )
-        if st.button("Load Wave Planning CSV", use_container_width=True):
+        if st.button("Load Wave Planning CSV", width="stretch"):
             if uploaded_wave is None:
                 st.warning("Choose a wave planning CSV to load.")
             else:
@@ -283,7 +283,7 @@ def render_wave_planning_tab(edited_df, table_config):
         active_df[WAVE_DISPLAY_COLUMNS],
         column_config=_wave_column_config(table_config),
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         key="wave_planning_editor",
     )
     edited_df = persist_wave_editor_edits(edited_df, wave_editor)
@@ -316,7 +316,7 @@ def render_wave_planning_tab(edited_df, table_config):
         st.dataframe(
             edited_df[WAVE_DISPLAY_COLUMNS],
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )
 
     return edited_df

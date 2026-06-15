@@ -204,6 +204,10 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added an Export tab note after successful package build so users know operator instructions are included.
 - Updated README, user manual, testing guide, and migration handoff documentation.
 
+### June 15, 2026: Streamlit Width Compatibility
+- Replaced deprecated Streamlit `use_container_width` calls with the current `width` argument across the app UI.
+- Preserved existing tab layout, labels, generated exports, Terraform package contents, and session-state behavior.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

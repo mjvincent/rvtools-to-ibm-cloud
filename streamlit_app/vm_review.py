@@ -46,10 +46,10 @@ def render_vm_review_tab(df_table, table_config):
         column_order=build_decision_column_order(decision_table),
         disabled=build_disabled_decision_columns(decision_input_columns),
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         key="vm_decision_editor",
     )
     edited_df = merge_decision_edits(decision_table, edited_decisions)
     with st.expander("Advanced generated fields"):
-        st.dataframe(edited_df, hide_index=True, use_container_width=True)
+        st.dataframe(edited_df, hide_index=True, width="stretch")
     return edited_df

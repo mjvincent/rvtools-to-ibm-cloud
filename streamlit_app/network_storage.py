@@ -107,12 +107,12 @@ def render_network_planning(df_f, unique_nets):
         ),
     )
     st.subheader("Subnet Defaults")
-    st.dataframe(unique_nets, hide_index=True, use_container_width=True)
+    st.dataframe(unique_nets, hide_index=True, width="stretch")
     st.subheader("VM Network Placement")
     st.dataframe(
         df_f[[col for col in NETWORK_COLUMNS if col in df_f.columns]],
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
     )
     network_rows = build_network_planning_rows(df_f)
     if network_rows:
@@ -120,7 +120,7 @@ def render_network_planning(df_f, unique_nets):
         st.dataframe(
             pd.DataFrame(network_rows),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )
 
 
@@ -138,12 +138,12 @@ def render_storage_planning(df_f, source_vms=None):
     st.dataframe(
         df_f[[col for col in STORAGE_COLUMNS if col in df_f.columns]],
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
     )
     if partition_rows:
         st.subheader("Partition Details")
         st.dataframe(
             pd.DataFrame(partition_rows),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )

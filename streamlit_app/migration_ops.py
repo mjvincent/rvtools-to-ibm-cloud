@@ -49,17 +49,17 @@ def render_migration_ops_tab(edited_df, processed_vms, disk_details, nic_details
     if wave_df.empty:
         st.info("No wave planning data is available yet.")
     else:
-        st.dataframe(wave_df, hide_index=True, use_container_width=True)
+        st.dataframe(wave_df, hide_index=True, width="stretch")
 
     st.write("### By Cutover Group")
     cutover_df = _summary_dataframe(rows, "Cutover Group")
     if cutover_df.empty:
         st.info("No cutover group data is available yet.")
     else:
-        st.dataframe(cutover_df, hide_index=True, use_container_width=True)
+        st.dataframe(cutover_df, hide_index=True, width="stretch")
 
     st.write("### Cutover Readiness Detail")
-    st.dataframe(detail_df, hide_index=True, use_container_width=True)
+    st.dataframe(detail_df, hide_index=True, width="stretch")
 
     csv_text = generate_cutover_readiness_csv(
         final_vms,
@@ -71,6 +71,6 @@ def render_migration_ops_tab(edited_df, processed_vms, disk_details, nic_details
         data=csv_text.encode("utf-8"),
         file_name="cutover-readiness.csv",
         mime="text/csv",
-        use_container_width=True,
+        width="stretch",
         key="cutover_readiness_export_download",
     )
