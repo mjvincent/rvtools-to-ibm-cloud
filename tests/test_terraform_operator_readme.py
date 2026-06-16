@@ -74,6 +74,10 @@ def test_operator_readme_includes_local_cli_workflow():
     assert "terraform init" in readme
     assert "terraform validate" in readme
     assert "terraform plan -var-file=<populated-image-vars.tfvars>" in readme
+    assert "Validation Modes" in readme
+    assert "python scripts/validate_terraform_package.py --init-validate" in readme
+    assert "--allow-provider-download-failure" in readme
+    assert "Do not use the tolerant provider-download flag in CI." in readme
     assert "Local CLI Notes" in readme
     assert "IBM Schematics Notes" not in readme
     assert "does not execute" in readme

@@ -166,6 +166,58 @@ def render_preflight_review(
         st.rerun()
 
 
+def build_terraform_validation_guidance():
+    """Return Terraform validation guidance rows for the Export tab."""
+    return [
+        {
+            "Mode": "Package Preflight",
+            "When To Use": "Before ZIP build in the app",
+            "Command Or Action": "Review Preflight Review and Build Terraform Project",
+            "Purpose": "Blocks unsafe packages before download.",
+        },
+        {
+            "Mode": "Offline Format Check",
+            "When To Use": "Local or offline package review",
+            "Command Or Action": (
+                "python scripts/validate_terraform_package.py or "
+                "terraform fmt -check -recursive"
+            ),
+            "Purpose": "Checks Terraform formatting without provider downloads.",
+        },
+        {
+            "Mode": "Strict Init Validate",
+            "When To Use": "CI, release checks, or connected operator review",
+            "Command Or Action": (
+                "python scripts/validate_terraform_package.py --init-validate"
+            ),
+            "Purpose": "Runs provider-backed init and validate; fails on registry issues.",
+        },
+        {
+            "Mode": "Local Provider Download Tolerance",
+            "When To Use": "Local VPN, proxy, DNS, or offline provider download issues",
+            "Command Or Action": (
+                "python scripts/validate_terraform_package.py --init-validate "
+                "--allow-provider-download-failure"
+            ),
+            "Purpose": "Allows only recognized provider download failures locally.",
+        },
+    ]
+
+
+def render_terraform_validation_guidance():
+    """Render validation mode guidance without executing Terraform."""
+    st.markdown("### Terraform Validation Guidance")
+    st.info(
+        "The app does not execute Terraform or contact provider registries. "
+        "Use these checks after downloading and extracting the Terraform bundle."
+    )
+    st.dataframe(
+        build_terraform_validation_guidance(),
+        hide_index=True,
+        width="stretch",
+    )
+
+
 def render_build_and_download(
     edited_df,
     processed_vms,
@@ -305,6 +357,7 @@ def render_export_tab(
         catalog_profiles=catalog_profiles,
         ssh_source_cidr=ssh_source_cidr,
     )
+    render_terraform_validation_guidance()
     render_build_and_download(
         edited_df,
         processed_vms,

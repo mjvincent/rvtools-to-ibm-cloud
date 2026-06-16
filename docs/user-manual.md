@@ -192,7 +192,7 @@ Shows discovered networks, default CIDRs, VM network placement, multi-NIC count,
 Shows total storage, data disk counts, boot/data planning signals, partition coverage, storage tier choices, and image readiness context. Use this to validate data disk volume planning before package generation.
 
 ### Export
-Groups final package work into workflow sections for package settings, subnet CIDRs, package summary metrics, planning downloads, preflight review, and Terraform ZIP build/download controls.
+Groups final package work into workflow sections for package settings, subnet CIDRs, package summary metrics, planning downloads, preflight review, Terraform validation guidance, and Terraform ZIP build/download controls.
 
 ## Sidebar Settings
 ### Target IBM Region
@@ -663,6 +663,8 @@ Network readiness is advisory. It does not change generated Terraform subnet, se
 On the `Export` tab, click `Build Terraform Project` after reviewing readiness, VM decisions, network placement, storage planning, and Terraform settings.
 
 Before the ZIP is created, the app runs package preflight validation. Blockers stop package generation; warnings are shown in the UI and exported in the package. Preflight checks cover blocked readiness, empty scope, unresolved custom image placeholders, CIDR syntax and overlap, duplicate Terraform names, missing subnet/security group mappings, unsupported storage tiers, and profile/region support warnings.
+
+The `Terraform Validation Guidance` section explains checks to run after downloading and extracting the ZIP. Package preflight runs inside the app. Offline format validation uses `python scripts/validate_terraform_package.py` or `terraform fmt -check -recursive`. Strict init validation uses `python scripts/validate_terraform_package.py --init-validate` for CI, release checks, or connected operator review. The local `--allow-provider-download-failure` flag is only for VPN, proxy, DNS, or offline environments where provider downloads fail; do not use it for CI.
 
 The app packages:
 - Terraform root files.

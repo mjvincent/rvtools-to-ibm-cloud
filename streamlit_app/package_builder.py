@@ -90,6 +90,34 @@ terraform plan -var-file=<populated-image-vars.tfvars>
 8. Review the Terraform plan with infrastructure, security, application, and
    migration owners before apply.
 
+## Validation Modes
+
+- Package preflight runs inside the app before ZIP creation and blocks unsafe
+  packages.
+- Offline format validation checks generated Terraform without provider
+  downloads:
+
+```bash
+python scripts/validate_terraform_package.py
+terraform fmt -check -recursive
+```
+
+- Strict init validation is intended for CI, release checks, or connected
+  operator review:
+
+```bash
+python scripts/validate_terraform_package.py --init-validate
+```
+
+- Local provider download tolerance is only for VPN, proxy, DNS, or offline
+  environments where provider downloads fail:
+
+```bash
+python scripts/validate_terraform_package.py --init-validate --allow-provider-download-failure
+```
+
+Do not use the tolerant provider-download flag in CI.
+
 {target_notes}
 
 ## Required Reviews Before `terraform plan`

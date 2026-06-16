@@ -213,6 +213,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Kept strict `--init-validate` behavior for CI while adding an explicit local `--allow-provider-download-failure` escape hatch.
 - Documented VPN, proxy, DNS, and Terraform Registry troubleshooting guidance for local validation.
 
+### June 16, 2026: Export Validation Visibility
+- Added Export tab guidance that distinguishes app preflight, offline Terraform format checks, strict init validation, and local provider-download tolerance.
+- Added the same validation-mode guidance to the generated Terraform operator README.
+- Updated user-facing documentation without changing generated Terraform resources or ZIP layout.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.
