@@ -208,6 +208,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Replaced deprecated Streamlit `use_container_width` calls with the current `width` argument across the app UI.
 - Preserved existing tab layout, labels, generated exports, Terraform package contents, and session-state behavior.
 
+### June 16, 2026: Terraform Validation Resilience
+- Added provider registry/download failure detection to the Terraform package validation script.
+- Kept strict `--init-validate` behavior for CI while adding an explicit local `--allow-provider-download-failure` escape hatch.
+- Documented VPN, proxy, DNS, and Terraform Registry troubleshooting guidance for local validation.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

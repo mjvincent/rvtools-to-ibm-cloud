@@ -22,6 +22,23 @@ from handoff import (
 )
 from terraform_renderer import generate_tfvars, render_terraform_templates
 
+PROVIDER_DOWNLOAD_FAILURE_MARKERS = (
+    "could not connect to registry.terraform.io",
+    "failed to request discovery document",
+    "could not query provider registry",
+    "failed to query available provider packages",
+    "failed to install provider",
+    "context deadline exceeded",
+    "client.timeout exceeded while awaiting headers",
+    "lookup registry.terraform.io",
+    "no such host",
+    "temporary failure in name resolution",
+    "connection refused",
+    "connection reset",
+    "tls handshake timeout",
+    "i/o timeout",
+)
+
 
 SAMPLE_VM = {
     "VM Key": "vm-001",
@@ -120,16 +137,57 @@ def _run(command, cwd):
     )
     if result.stdout:
         print(result.stdout.rstrip())
-    return result.returncode
+    return result.returncode, result.stdout or ""
 
 
-def validate_package(package_dir, run_init_validate=False):
+def _is_provider_download_failure(output):
+    normalized = output.lower()
+    return any(marker in normalized for marker in PROVIDER_DOWNLOAD_FAILURE_MARKERS)
+
+
+def _print_provider_download_guidance(allow_provider_download_failure):
+    print()
+    print("Terraform provider download failed during terraform init.")
+    print("This usually means the Terraform Registry or provider download endpoint")
+    print("is unreachable from this environment due to DNS, VPN, proxy, firewall,")
+    print("or a temporary registry/network timeout.")
+    print()
+    print("Next steps:")
+    print("- Confirm VPN/proxy/DNS access to registry.terraform.io and provider downloads.")
+    print("- Retry strict validation when network access is available:")
+    print("  python scripts/validate_terraform_package.py --init-validate")
+    print("- For offline/local format-only validation, run:")
+    print("  python scripts/validate_terraform_package.py")
+    print("- To allow only this provider-download failure locally, run:")
+    print(
+        "  python scripts/validate_terraform_package.py --init-validate "
+        "--allow-provider-download-failure"
+    )
+    if allow_provider_download_failure:
+        print()
+        print(
+            "ALLOW: provider download failure was tolerated because "
+            "--allow-provider-download-failure was set."
+        )
+    else:
+        print()
+        print(
+            "FAIL: strict init validation remains nonzero. CI should keep using "
+            "--init-validate without the tolerant flag."
+        )
+
+
+def validate_package(
+    package_dir,
+    run_init_validate=False,
+    allow_provider_download_failure=False,
+):
     terraform = shutil.which("terraform")
     if not terraform:
         print("SKIP: terraform executable not found.")
         return 0
 
-    fmt_code = _run([terraform, "fmt", "-check", "-recursive"], package_dir)
+    fmt_code, _ = _run([terraform, "fmt", "-check", "-recursive"], package_dir)
     if fmt_code:
         return fmt_code
 
@@ -137,10 +195,15 @@ def validate_package(package_dir, run_init_validate=False):
         print("SKIP: terraform init/validate not requested.")
         return 0
 
-    init_code = _run([terraform, "init", "-backend=false"], package_dir)
+    init_code, init_output = _run([terraform, "init", "-backend=false"], package_dir)
     if init_code:
+        if _is_provider_download_failure(init_output):
+            _print_provider_download_guidance(allow_provider_download_failure)
+            if allow_provider_download_failure:
+                return 0
         return init_code
-    return _run([terraform, "validate"], package_dir)
+    validate_code, _ = _run([terraform, "validate"], package_dir)
+    return validate_code
 
 
 def main():
@@ -153,6 +216,15 @@ def main():
         "--init-validate",
         action="store_true",
         help="Run terraform init -backend=false and terraform validate.",
+    )
+    parser.add_argument(
+        "--allow-provider-download-failure",
+        action="store_true",
+        help=(
+            "Return success when terraform init fails only because provider "
+            "registry/download access is unavailable. Intended for local/offline "
+            "validation, not CI."
+        ),
     )
     args = parser.parse_args()
 
@@ -168,7 +240,11 @@ def main():
             package_dir = args.dir
         else:
             _write_sample_package(package_dir)
-        return validate_package(package_dir, args.init_validate)
+        return validate_package(
+            package_dir,
+            args.init_validate,
+            args.allow_provider_download_failure,
+        )
 
 
 if __name__ == "__main__":

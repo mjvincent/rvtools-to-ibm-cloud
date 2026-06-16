@@ -72,7 +72,7 @@ The app is not static HTML. It needs Streamlit/Python running locally or in a ho
 | Port `8501` is busy | Run `streamlit run app.py --server.port 8502` or map Docker to another host port with `docker run --rm -p 8502:8501 rvtools-to-ibm-cloud`. |
 | Docker command fails | Confirm Docker Desktop or the Docker daemon is running. |
 | App rejects the upload | Confirm the file is an RVTools `.xlsx` workbook, not CSV or a manually edited spreadsheet. |
-| Terraform validation fails during init | Confirm network access to provider registries, or use the generated ZIP for review without running `terraform init`. |
+| Terraform validation fails during init | Confirm VPN/proxy/DNS access to `registry.terraform.io` and provider downloads. For local offline checks, run `python scripts/validate_terraform_package.py` or rerun init validation with `--allow-provider-download-failure` to tolerate provider download failures only. |
 
 ## Core Functional Logic
 

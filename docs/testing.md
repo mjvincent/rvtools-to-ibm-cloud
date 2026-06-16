@@ -65,6 +65,23 @@ python scripts/validate_terraform_package.py
 git diff --check
 ```
 
+Strict Terraform init validation is still required for CI and release checks:
+
+```bash
+python scripts/validate_terraform_package.py --init-validate
+```
+
+If `terraform init` fails only because the IBM provider cannot be downloaded from
+the Terraform Registry in a local, offline, VPN, or proxy-constrained
+environment, use the explicit local-only tolerant mode:
+
+```bash
+python scripts/validate_terraform_package.py --init-validate --allow-provider-download-failure
+```
+
+Do not use the tolerant flag in CI; it is intended only to distinguish package
+format validation from external provider download availability.
+
 3. Start Streamlit from the repository root:
 
 ```bash
@@ -99,7 +116,7 @@ python -m streamlit run app.py --server.port 8502
 python scripts/validate_terraform_package.py --dir .
 ```
 
-The harness runs `terraform fmt -check -recursive` when Terraform is installed and skips clearly when the executable is unavailable. It can also build and check a representative sample package when called without `--zip` or `--dir`.
+The harness runs `terraform fmt -check -recursive` when Terraform is installed and skips clearly when the executable is unavailable. It can also build and check a representative sample package when called without `--zip` or `--dir`. When `--init-validate` is used, provider registry or download failures remain nonzero by default and include guidance for VPN, proxy, DNS, and retry troubleshooting.
 
 You can still run Terraform formatting directly:
 
