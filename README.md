@@ -59,7 +59,7 @@ make docker-run
 - Optional IBM Cloud API key only when using live catalog discovery.
 
 ### First Successful Run
-After opening the app, upload `samples/rvtools-small-complete.xlsx` in the sidebar for a first test run. The workbench should show Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Migration Ops, Networks, Storage, and Export tabs. The Overview tab includes a Guided Migration Assistant with a first-run checklist, safe planning defaults, and a migration action-plan export.
+After opening the app, click `Load Sample Workbook` in the sidebar or upload `samples/rvtools-small-complete.xlsx` for a first test run. The workbench should show Overview, Readiness, Remediation Backlog, VM Review, Wave Planning, Image Import Planning, Migration Ops, Networks, Storage, and Export tabs. The Overview tab includes a Guided Migration Assistant with a first-run checklist, safe planning defaults, and a migration action-plan export.
 
 For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`. That workbook intentionally includes source-data issues, so readiness and preflight findings are expected.
 

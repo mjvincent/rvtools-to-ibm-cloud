@@ -9,7 +9,7 @@ Generated sanitized workbook with a small three-VM inventory and all RVTools tab
 - Core tabs: `vInfo`, `vDisk`, `vCPU`, `vMemory`, `vHost`, `vCluster`, `vNetwork`.
 - Readiness/context tabs: `vSnapshot`, `vTools`, `vCD`, `vUSB`, `vHealth`, `vPartition`, `vPort`, `dvPort`, `vSwitch`, `dvSwitch`.
 
-This is the best first upload for confirming the app launches, parses RVTools data, renders every tab, and builds a Terraform handoff package.
+This is the best first workbook for confirming the app launches, parses RVTools data, renders every tab, and builds a Terraform handoff package. In the Streamlit sidebar, click `Load Sample Workbook` to use this workbook directly without browsing for the file.
 
 Regenerate it from the repository root with:
 

@@ -218,6 +218,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added the same validation-mode guidance to the generated Terraform operator README.
 - Updated user-facing documentation without changing generated Terraform resources or ZIP layout.
 
+### June 17, 2026: Guided Sample Workbook Mode
+- Added a sidebar `Load Sample Workbook` action for first-run testing with the bundled small RVTools sample.
+- Kept uploaded RVTools workbooks higher priority than the bundled sample.
+- Updated testing and user documentation for the guided sample workflow.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.
