@@ -72,6 +72,8 @@ Package safety reports generated before ZIP creation. Blocker findings stop pack
 
 These reports cover blocked readiness, empty in-scope packages, unresolved custom image placeholders, invalid or overlapping CIDRs, duplicate Terraform resource names, missing subnet/security group mappings, unsupported storage tiers, and profile/region support warnings.
 
+Each finding includes a `Fix Category` to route work to source RVTools/vSphere remediation, app planning updates, VM exclusion from the package, or Terraform operator review.
+
 ### `pricing-diagnostics.json` and `pricing-diagnostics.csv`
 Pricing audit files showing catalog mode, pricing status, mapped billing dimensions, selected Power VS deployment metadata when available, unmapped catalog metrics and reasons, and per-VM pricing source/status.
 

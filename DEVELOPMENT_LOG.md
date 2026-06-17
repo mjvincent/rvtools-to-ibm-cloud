@@ -228,6 +228,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Kept the panel informational only, with no changes to parsing, planning state, Terraform generation, or handoff outputs.
 - Updated first-run, testing, and sample documentation for the new onboarding panel.
 
+### June 17, 2026: Preflight Quick Fix Guidance
+- Added `Fix Category` routing to preflight findings so blockers and warnings point to source RVTools/vSphere fixes, app planning updates, exclusion, or Terraform operator review.
+- Surfaced fix category summaries in the Export tab preflight review and preserved existing quick-fix behavior.
+- Updated handoff and testing documentation for the clearer preflight report guidance.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

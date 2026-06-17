@@ -18,6 +18,51 @@ PROFILE_REGION_SUPPORT = {
     "jp-tok": {"bx2", "cx2", "mx2"},
 }
 
+FIX_SOURCE = "Fix source RVTools/vSphere data"
+FIX_APP = "Fix app planning"
+FIX_EXCLUDE = "Exclude from package"
+FIX_OPERATOR = "Terraform operator review"
+
+
+def preflight_fix_category(finding):
+    """Return the operator-facing fix category for a preflight finding."""
+    if hasattr(finding, "fix_category"):
+        explicit = clean_value(getattr(finding, "fix_category"))
+    elif isinstance(finding, dict):
+        explicit = clean_value(
+            finding.get("Fix Category") or finding.get("fix_category")
+        )
+    else:
+        explicit = ""
+    if explicit:
+        return explicit
+
+    category = clean_value(
+        getattr(finding, "category", "")
+        if hasattr(finding, "category")
+        else finding.get("Category", "") if isinstance(finding, dict) else ""
+    )
+    quick_fix_type = clean_value(
+        getattr(finding, "quick_fix_type", "")
+        if hasattr(finding, "quick_fix_type")
+        else finding.get("Quick Fix Type", "") if isinstance(finding, dict) else ""
+    )
+    fix_location = clean_value(
+        getattr(finding, "fix_location", "")
+        if hasattr(finding, "fix_location")
+        else finding.get("Fix Location", "") if isinstance(finding, dict) else ""
+    )
+
+    if quick_fix_type == "image_placeholder":
+        return FIX_OPERATOR
+    if category == "readiness":
+        return FIX_SOURCE
+    if category == "network_mapping" and "Source RVTools/vSphere" in fix_location:
+        return FIX_SOURCE
+    if quick_fix_type == "exclude_vm":
+        return FIX_EXCLUDE
+    return FIX_APP
+
 
 @dataclass(frozen=True)
 class PreflightFinding:
@@ -34,11 +79,13 @@ class PreflightFinding:
     field: str = ""
     current_value: str = ""
     constraint: str = ""
+    fix_category: str = ""
 
     def to_record(self):
         return {
             "Severity": self.severity,
             "Category": self.category,
+            "Fix Category": preflight_fix_category(self),
             "Subject": self.subject,
             "Message": self.message,
             "Remediation": self.remediation,
@@ -698,8 +745,8 @@ def summarize_preflight(findings):
 def generate_preflight_report_csv(findings):
     output = io.StringIO()
     fieldnames = [
-        "Severity", "Category", "Subject", "Message", "Remediation",
-        "Fix Location", "Suggested Action", "Valid Options",
+        "Severity", "Category", "Fix Category", "Subject", "Message",
+        "Remediation", "Fix Location", "Suggested Action", "Valid Options",
         "Recommended Option", "Quick Fix Type", "Field", "Current Value",
         "Constraint",
     ]

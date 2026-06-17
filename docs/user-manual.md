@@ -837,6 +837,7 @@ Package validation reports showing build blockers and warnings.
 
 Use them to review:
 - Blocked readiness signals that stopped package generation.
+- `Fix Category` routing for source RVTools/vSphere remediation, app planning updates, package exclusion, or Terraform operator review.
 - Invalid, duplicate, or overlapping custom CIDRs.
 - Duplicate Terraform resource names after sanitization.
 - Missing subnet or security group mappings.

@@ -253,7 +253,7 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `memory-readiness.csv` — VM-level memory pressure, constraint, and sizing review
 * `readiness-findings.csv` — row-level migration readiness findings and remediation actions
 * `assessment-quality.json` / `assessment-quality.csv` — RVTools worksheet coverage and confidence report
-* `preflight-report.json` / `preflight-report.csv` — package safety blockers and warnings
+* `preflight-report.json` / `preflight-report.csv` — package safety blockers and warnings with fix categories for source data, app planning, exclusion, or operator review
 * `pricing-diagnostics.json` / `pricing-diagnostics.csv` — pricing source, mapped dimensions, fallback components, and unmapped catalog metrics
 * `decision-audit.csv` — profile/storage/network/exclusion overrides with pricing impact analysis
 * `remediation-backlog.csv` — tracking blockers with owner, status, due date, and notes for cross-team remediation workflows

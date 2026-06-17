@@ -107,7 +107,7 @@ python -m streamlit run app.py --server.port 8502
    - `Export` shows sections for package settings, subnet CIDRs, package summary, planning downloads, preflight review, Terraform validation guidance, and build/download controls.
    - `Download Business Case (CSV)` is available from the `Export` planning downloads section.
    - `Download Planning State` is available, shows a planning-state summary, and imported planning state reports restored VM decisions, wave rows, remediation items, image groups, and skipped rows.
-   - `Build Terraform Project` runs package preflight. If blockers are present, the build stops with findings; after resolving or excluding affected VMs, it completes and shows `Project Ready`.
+   - `Build Terraform Project` runs package preflight. If blockers are present, the build stops with findings grouped by fix category; after resolving or excluding affected VMs, it completes and shows `Project Ready`.
    - `Download Terraform Bundle` is available.
 
 6. Download and inspect the Terraform bundle. It should include root `README.md` operator instructions, the root Terraform files, networking/storage/VSI module files, mapping CSVs, readiness exports, assessment quality exports, `preflight-report.json`, `preflight-report.csv`, `pricing-diagnostics.json`, `pricing-diagnostics.csv`, `cutover-readiness.csv`, `planning-state.json`, `image-import-variables.tfvars.example`, `migration-manifest.json`, and `migration-runbook.md`.

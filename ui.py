@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 
+from preflight import preflight_fix_category
 from sizing import get_catalog_profiles
 from streamlit_app.network_storage import (
     NETWORK_COLUMNS,
@@ -363,6 +364,23 @@ def render_preflight_guidance(findings, df_table=None):
     if st.session_state.get("preflight_needs_rerun"):
         st.warning("Quick fixes have been queued. Re-run preflight to refresh the blocker list.")
 
+    fix_category_counts = {}
+    for finding in findings:
+        fix_category = preflight_fix_category(finding)
+        fix_category_counts[fix_category] = (
+            fix_category_counts.get(fix_category, 0) + 1
+        )
+    if fix_category_counts:
+        st.caption("Fix categories help route each finding to the right owner.")
+        st.dataframe(
+            pd.DataFrame([
+                {"Fix Category": category, "Findings": count}
+                for category, count in sorted(fix_category_counts.items())
+            ]),
+            hide_index=True,
+            width="stretch",
+        )
+
     blocker_findings = [
         finding for finding in findings
         if _finding_attr(finding, "severity") == "blocker"
@@ -380,6 +398,10 @@ def render_preflight_guidance(findings, df_table=None):
             _render_labeled_detail(
                 "What is wrong",
                 _finding_attr(finding, "message"),
+            )
+            _render_labeled_detail(
+                "Fix category",
+                preflight_fix_category(finding),
             )
             _render_labeled_detail(
                 "Current evidence",

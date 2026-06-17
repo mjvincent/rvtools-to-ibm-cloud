@@ -3,9 +3,13 @@ import io
 import json
 
 from preflight import (
+    FIX_APP,
+    FIX_OPERATOR,
+    FIX_SOURCE,
     generate_preflight_report_csv,
     generate_preflight_report_json,
     has_blockers,
+    preflight_fix_category,
     run_package_preflight,
     summarize_preflight,
 )
@@ -38,6 +42,7 @@ def test_preflight_flags_blocked_readiness(sample_vm_record):
     assert "readiness" in _categories(findings)
     image_blocker = next(finding for finding in findings if finding.category == "readiness")
     assert image_blocker.quick_fix_type == "exclude_vm"
+    assert preflight_fix_category(image_blocker) == FIX_SOURCE
     assert image_blocker.fix_location == "Readiness tab > Image Readiness"
     assert "250 GB" in image_blocker.constraint
     assert "Boot Disk GB: 300" in image_blocker.current_value
@@ -97,6 +102,7 @@ def test_preflight_explains_migration_readiness_source_side_fixes(sample_vm_reco
     assert "vHealth warning" in migration_blocker.current_value
     assert "This app cannot disconnect media" in migration_blocker.constraint
     assert "Fix in app: exclude this VM" in migration_blocker.suggested_action
+    assert preflight_fix_category(migration_blocker) == FIX_SOURCE
 
 
 def test_preflight_detects_invalid_duplicate_and_overlapping_cidrs(sample_vm_record):
@@ -139,6 +145,7 @@ def test_preflight_blocks_invalid_ssh_source_cidr(sample_vm_record):
     )
     assert ssh_finding.severity == "blocker"
     assert ssh_finding.fix_location == "Export > SSH Source CIDR"
+    assert preflight_fix_category(ssh_finding) == FIX_APP
 
 
 def test_preflight_detects_duplicate_terraform_resource_names(sample_vm_record):
@@ -188,6 +195,7 @@ def test_preflight_blocks_unsupported_storage_tier(sample_vm_record):
     assert storage_blocker.valid_options == ("3iops-tier", "5iops-tier", "10iops-tier")
     assert storage_blocker.recommended_option == "5iops-tier"
     assert storage_blocker.field == "Override Storage Tier"
+    assert preflight_fix_category(storage_blocker) == FIX_APP
 
 
 def test_preflight_blank_profile_includes_catalog_quick_fix(sample_vm_record):
@@ -231,10 +239,47 @@ def test_preflight_reports_are_exportable(sample_vm_record):
 
     assert summary["warnings"] >= 1
     assert rows[0]["Severity"]
+    assert "Fix Category" in rows[0]
     assert "Fix Location" in rows[0]
     assert "Suggested Action" in rows[0]
     assert "Valid Options" in rows[0]
     assert payload["summary"]["total"] == len(findings)
+    assert "Fix Category" in payload["findings"][0]
     assert "fix_location" not in payload["findings"][0]
     assert "Fix Location" in payload["findings"][0]
     assert "Fix outside app" in generate_preflight_report_json(findings)
+
+
+def test_preflight_fix_categories_route_common_findings(sample_vm_record):
+    sample_vm_record["Custom Image ID"] = "replace-with-imported-image-id"
+    disconnected_vm = {
+        **sample_vm_record,
+        "VM Name": "no-nic",
+        "Network Details": [{"connected": False, "network": "app-net"}],
+    }
+
+    findings = run_package_preflight(
+        [sample_vm_record, disconnected_vm],
+        [{"name": "app-net", "vlan": "", "cidr": "10.0.1.0/24"}],
+        "us-south",
+        custom_cidrs={"app-net": "not-a-cidr"},
+        catalog_profiles=[{"name": "bx2-2x8"}],
+    )
+
+    image_warning = next(
+        finding for finding in findings
+        if finding.quick_fix_type == "image_placeholder"
+    )
+    cidr_blocker = next(
+        finding for finding in findings
+        if finding.category == "cidr"
+    )
+    nic_blocker = next(
+        finding for finding in findings
+        if finding.category == "network_mapping"
+        and finding.subject == "no-nic"
+    )
+
+    assert preflight_fix_category(image_warning) == FIX_OPERATOR
+    assert preflight_fix_category(cidr_blocker) == FIX_APP
+    assert preflight_fix_category(nic_blocker) == FIX_SOURCE
