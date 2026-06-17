@@ -98,6 +98,7 @@ python -m streamlit run app.py --server.port 8502
 
 5. Confirm the workbench renders without Streamlit errors:
    - Sidebar settings, pricing status, and upload control are visible.
+   - `Help And Samples` explains the bundled samples, workflow, documentation references, and Terraform execution boundary.
    - `Load Sample Workbook` loads the bundled sample and shows the sample workbook status message.
    - The console does not repeat Streamlit `use_container_width` deprecation warnings.
    - `Overview` shows estate metrics, recommended next actions, assessment quality, and the Guided Migration Assistant checklist.

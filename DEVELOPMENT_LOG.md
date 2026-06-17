@@ -223,6 +223,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Kept uploaded RVTools workbooks higher priority than the bundled sample.
 - Updated testing and user documentation for the guided sample workflow.
 
+### June 17, 2026: In-App Help And Samples Panel
+- Added a sidebar `Help And Samples` panel that explains the bundled samples, recommended workflow, documentation references, and Terraform execution boundary.
+- Kept the panel informational only, with no changes to parsing, planning state, Terraform generation, or handoff outputs.
+- Updated first-run, testing, and sample documentation for the new onboarding panel.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

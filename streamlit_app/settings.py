@@ -4,6 +4,7 @@ from pathlib import Path
 import streamlit as st
 
 from catalog_pricing import get_pricing_catalog, pricing_status_summary
+from streamlit_app.help_panel import render_help_and_samples_panel
 
 SAMPLE_WORKBOOK_SESSION_KEY = "use_sample_workbook"
 SAMPLE_WORKBOOK_RELATIVE_PATH = Path("samples") / "rvtools-small-complete.xlsx"
@@ -167,6 +168,7 @@ def render_sidebar_settings():
         st.sidebar.success("Using bundled sample workbook.")
     elif sample_path is None:
         st.sidebar.warning("Bundled sample workbook is unavailable.")
+    render_help_and_samples_panel()
 
     settings = MigrationSettings(
         target_region=target_region,
