@@ -104,7 +104,8 @@ python -m streamlit run app.py --server.port 8502
    - `Overview` shows estate metrics, recommended next actions, assessment quality, and the Guided Migration Assistant checklist.
    - `Apply Safe Defaults` in the assistant initializes image import and remediation tracking only; it does not mark images imported, change target mappings, or build Terraform.
    - `Readiness`, `Remediation Backlog`, `VM Review`, `Wave Planning`, `Image Import Planning`, `Migration Ops`, `Networks`, `Storage`, and `Export` tabs open without tracebacks.
-   - `Export` shows sections for package settings, subnet CIDRs, package summary, planning downloads, preflight review, Terraform validation guidance, and build/download controls.
+   - `Export` shows sections for package settings, subnet CIDRs, package summary, bundle contents preview, planning downloads, preflight review, Terraform validation guidance, and build/download controls.
+   - `Bundle Contents Preview` lists major Terraform, handoff, planning-state, image-import, and operator files before build.
    - `Download Business Case (CSV)` is available from the `Export` planning downloads section.
    - `Session Safety` explains what planning-state JSON restores, what remains session-only, and when to download it.
    - `Download Planning State` is available, shows a planning-state summary, and imported planning state reports restored VM decisions, wave rows, remediation items, image groups, and skipped rows.

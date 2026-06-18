@@ -243,6 +243,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added an Overview reminder when the current session has planning data worth saving.
 - Updated planning persistence documentation to prefer planning-state JSON for full app resume while preserving CSV exchange workflows.
 
+### June 18, 2026: Export Bundle Contents Preview
+- Added a read-only Export tab preview of major Terraform ZIP files, purposes, and primary owners before package build.
+- Kept generated Terraform, ZIP layout, manifest schema, CSV headers, and session-state behavior unchanged.
+- Updated user, testing, and handoff documentation for the new preview section.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

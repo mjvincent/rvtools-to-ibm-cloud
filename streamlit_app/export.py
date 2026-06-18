@@ -100,6 +100,106 @@ def render_package_summary(edited_df, unique_nets):
     c3.metric("Networks", network_count)
 
 
+def build_bundle_contents_preview_rows():
+    """Return major Terraform ZIP contents and their intended reviewers."""
+    return [
+        {
+            "File Or Folder": "README.md",
+            "Purpose": "Terraform operator instructions and package checklist.",
+            "Primary Owner": "Terraform operator",
+        },
+        {
+            "File Or Folder": "Root Terraform files",
+            "Purpose": "Provider, variables, outputs, and module wiring.",
+            "Primary Owner": "Terraform operator",
+        },
+        {
+            "File Or Folder": "modules/networking/",
+            "Purpose": "Generated VPC, subnet, address prefix, and security group resources.",
+            "Primary Owner": "Cloud network reviewer",
+        },
+        {
+            "File Or Folder": "modules/storage/",
+            "Purpose": "Generated block volume resources and attachment inputs.",
+            "Primary Owner": "Storage reviewer",
+        },
+        {
+            "File Or Folder": "modules/vsi/",
+            "Purpose": "Generated VSI resources, NIC references, volumes, and image variables.",
+            "Primary Owner": "Terraform operator",
+        },
+        {
+            "File Or Folder": "vm-mapping.csv",
+            "Purpose": "Source VM to target VSI planning map.",
+            "Primary Owner": "Migration team",
+        },
+        {
+            "File Or Folder": "nic-mapping.csv",
+            "Purpose": "Per-NIC source-to-target network interface mapping.",
+            "Primary Owner": "Network reviewer",
+        },
+        {
+            "File Or Folder": "disk-mapping.csv",
+            "Purpose": "Per-disk boot/data volume mapping and storage tier review.",
+            "Primary Owner": "Storage reviewer",
+        },
+        {
+            "File Or Folder": "readiness-findings.csv",
+            "Purpose": "Migration readiness findings and remediation actions.",
+            "Primary Owner": "Migration team",
+        },
+        {
+            "File Or Folder": "preflight-report.csv/json",
+            "Purpose": "Package blockers, warnings, fix categories, and evidence.",
+            "Primary Owner": "Migration lead",
+        },
+        {
+            "File Or Folder": "pricing-diagnostics.csv/json",
+            "Purpose": "Pricing source, confidence, fallback, and catalog diagnostics.",
+            "Primary Owner": "Solution architect",
+        },
+        {
+            "File Or Folder": "cutover-readiness.csv",
+            "Purpose": "Cutover readiness by VM, wave, group, owner, and blocker.",
+            "Primary Owner": "Migration lead",
+        },
+        {
+            "File Or Folder": "planning-state.json",
+            "Purpose": "Reloadable app planning state for later sessions.",
+            "Primary Owner": "Planning owner",
+        },
+        {
+            "File Or Folder": "image-import-variables.tfvars.example",
+            "Purpose": "Template for custom image IDs after image import.",
+            "Primary Owner": "Image import owner",
+        },
+        {
+            "File Or Folder": "migration-manifest.json",
+            "Purpose": "Structured handoff manifest for tools and audit review.",
+            "Primary Owner": "Migration team",
+        },
+        {
+            "File Or Folder": "migration-runbook.md",
+            "Purpose": "Operational runbook for handoff review and migration execution.",
+            "Primary Owner": "Migration team",
+        },
+    ]
+
+
+def render_bundle_contents_preview():
+    """Render a read-only preview of major Terraform ZIP contents."""
+    st.markdown("### Bundle Contents Preview")
+    st.caption(
+        "This preview explains major files before build. It does not inspect "
+        "or change the generated ZIP."
+    )
+    st.dataframe(
+        build_bundle_contents_preview_rows(),
+        hide_index=True,
+        width="stretch",
+    )
+
+
 def render_planning_downloads(
     edited_df,
     processed_vms,
@@ -336,6 +436,7 @@ def render_export_tab(
     ) = render_package_settings()
     custom_cidrs = render_subnet_cidr_inputs(unique_nets)
     render_package_summary(edited_df, unique_nets)
+    render_bundle_contents_preview()
     render_planning_downloads(
         edited_df,
         processed_vms,

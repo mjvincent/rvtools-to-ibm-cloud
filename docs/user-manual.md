@@ -192,7 +192,7 @@ Shows discovered networks, default CIDRs, VM network placement, multi-NIC count,
 Shows total storage, data disk counts, boot/data planning signals, partition coverage, storage tier choices, and image readiness context. Use this to validate data disk volume planning before package generation.
 
 ### Export
-Groups final package work into workflow sections for package settings, subnet CIDRs, package summary metrics, planning downloads, preflight review, Terraform validation guidance, and Terraform ZIP build/download controls.
+Groups final package work into workflow sections for package settings, subnet CIDRs, package summary metrics, bundle contents preview, planning downloads, preflight review, Terraform validation guidance, and Terraform ZIP build/download controls.
 
 ## Sidebar Settings
 ### Target IBM Region
@@ -716,6 +716,8 @@ The ZIP bundle contains two categories of output:
 | `planning-state.json` | Reloadable planning state for VM decisions, wave metadata, remediation tracking, and image import status. |
 | `image-import-variables.tfvars.example` | Terraform varfile template for IBM Cloud custom image IDs after image import. |
 | `migration-runbook.md` | Operational runbook for migration planning and execution. |
+
+The Export tab shows a Bundle Contents Preview before build so users can identify the major Terraform, handoff, planning-state, image-import, and operator files before downloading the ZIP.
 
 ## Terraform Output Reference
 ### Root Module

@@ -244,6 +244,7 @@ The exported ZIP bundle now produces a modular Terraform layout:
 
 ## Migration Handoff Package
 Each ZIP bundle also includes a migration handoff package that bridges generated Terraform with image migration and cutover activities:
+The Export tab includes a Bundle Contents Preview so users can see the major files and owners before building the ZIP.
 * `README.md` — Terraform operator instructions for local CLI or IBM Schematics execution
 * `migration-manifest.json` — tool-neutral source-to-target mapping for each VM including wave planning metadata and decision audit summary
 * `vm-mapping.csv` — spreadsheet-friendly view for migration planning and customer review
@@ -279,7 +280,7 @@ Generated resources include standardized naming and tags for project and managem
 7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows; use planning-state JSON for full app resume and CSV exports for external team workflows.
 8. Use Image Import Planning to sequence custom image import stages, track status, and include image status in planning-state JSON.
 9. Use Migration Ops to confirm cutover readiness by wave and cutover group.
-10. Use Export to review package settings, subnet CIDRs, package summary metrics, planning downloads, preflight findings, Terraform validation guidance, and Terraform Bundle ZIP build/download controls for IBM Cloud CLI or IBM Cloud Schematics.
+10. Use Export to review package settings, subnet CIDRs, package summary metrics, bundle contents preview, planning downloads, preflight findings, Terraform validation guidance, and Terraform Bundle ZIP build/download controls for IBM Cloud CLI or IBM Cloud Schematics.
 11. Review the included migration handoff files (including wave metadata and remediation tracking) before image import, replication, or cutover planning.
 
 ## User Manual
