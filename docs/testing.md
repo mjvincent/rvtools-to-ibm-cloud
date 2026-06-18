@@ -94,11 +94,11 @@ If the default port is busy, choose another local port:
 python -m streamlit run app.py --server.port 8502
 ```
 
-4. In the browser, click `Load Sample Workbook` for the first pass, or upload `samples/rvtools-small-complete.xlsx` manually. For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`; readiness and preflight findings are expected in that workbook.
+4. In the browser, click `Load Sample Workbook` for the first pass, or upload `samples/rvtools-small-complete.xlsx` manually. For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`; readiness and preflight findings documented in `docs/sample-findings-walkthrough.md` are expected in that workbook.
 
 5. Confirm the workbench renders without Streamlit errors:
    - Sidebar settings, pricing status, and upload control are visible.
-   - `Help And Samples` explains the bundled samples, workflow, documentation references, and Terraform execution boundary.
+   - `Help And Samples` explains the bundled samples, workshop practice findings, workflow, documentation references, and Terraform execution boundary.
    - `Load Sample Workbook` loads the bundled sample and shows the sample workbook status message.
    - The console does not repeat Streamlit `use_container_width` deprecation warnings.
    - `Overview` shows estate metrics, recommended next actions, assessment quality, and the Guided Migration Assistant checklist.

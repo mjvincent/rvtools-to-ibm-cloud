@@ -233,6 +233,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Surfaced fix category summaries in the Export tab preflight review and preserved existing quick-fix behavior.
 - Updated handoff and testing documentation for the clearer preflight report guidance.
 
+### June 17, 2026: Sample Findings Walkthrough
+- Added a sample findings walkthrough for the larger workshop workbook so expected warnings and blockers are distinguishable from app defects.
+- Surfaced workshop practice findings in the sidebar `Help And Samples` panel.
+- Updated first-run, testing, and samples documentation to reference the walkthrough.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.

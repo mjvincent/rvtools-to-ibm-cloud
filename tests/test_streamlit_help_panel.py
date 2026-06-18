@@ -1,4 +1,7 @@
-from streamlit_app.help_panel import build_help_samples_sections
+from streamlit_app.help_panel import (
+    build_help_samples_sections,
+    build_workshop_sample_findings,
+)
 
 
 def _help_text():
@@ -41,3 +44,16 @@ def test_help_panel_mentions_tool_boundary():
     assert "does not run Terraform" in text
     assert "import images" in text
     assert "perform cutover" in text
+
+
+def test_workshop_sample_findings_describe_expected_practice_cases():
+    text = " ".join(
+        f"{finding['title']} {finding['body']}"
+        for finding in build_workshop_sample_findings()
+    )
+
+    assert "image placeholder" in text
+    assert "unknown-net" in text
+    assert "wowas3" in text
+    assert "network readiness review" in text
+    assert "exclude it from the package" in text

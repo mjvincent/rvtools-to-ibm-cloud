@@ -25,6 +25,8 @@ venv/bin/python scripts/generate_sample_workbook.py
 
 ## `SizingWorkshop-RVTools.xlsx`
 
-Larger generic workshop workbook for a more realistic user test. It intentionally includes source-data issues that should produce readiness and preflight findings. For example, VM `wowas3` has no connected NIC with a usable source network, so the app should recommend correcting the source RVTools/vSphere data or excluding that VM before packaging.
+Larger generic workshop workbook for a more realistic user test. It intentionally includes source-data issues and planning gaps that should produce readiness and preflight findings. For example, VM `wowas3` should show network readiness review because its connected source NIC lacks a usable network name. Export preflight can also flag `unknown-net` until a valid target CIDR is supplied.
 
 Use this workbook to practice the full workflow: readiness review, remediation backlog, VM exclusion or correction decisions, wave planning, Migration Ops, and package preflight.
+
+See `../docs/sample-findings-walkthrough.md` for the expected practice findings.

@@ -116,7 +116,7 @@ streamlit run app.py
 
 3. Open the Streamlit URL shown in the terminal, usually `http://localhost:8501`.
 
-4. Click `Load Sample Workbook` in the sidebar for a first test run, or upload an RVTools XLSX export. Open `Help And Samples` in the sidebar for sample descriptions, recommended workflow, documentation paths, and the reminder that the app generates Terraform handoff files but does not run Terraform or perform cutover. For a larger practice workbook with expected readiness findings, upload `samples/SizingWorkshop-RVTools.xlsx`.
+4. Click `Load Sample Workbook` in the sidebar for a first test run, or upload an RVTools XLSX export. Open `Help And Samples` in the sidebar for sample descriptions, expected workshop findings, recommended workflow, documentation paths, and the reminder that the app generates Terraform handoff files but does not run Terraform or perform cutover. For a larger practice workbook with expected readiness findings, upload `samples/SizingWorkshop-RVTools.xlsx` and review `docs/sample-findings-walkthrough.md`.
 
 The sidebar and major planning controls include hover help for key selections such as target region, sizing threshold, pricing mode, wave fields, image import status, and Export package settings.
 
