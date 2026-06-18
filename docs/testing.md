@@ -106,7 +106,7 @@ python -m streamlit run app.py --server.port 8502
    - `Readiness`, `Remediation Backlog`, `VM Review`, `Wave Planning`, `Image Import Planning`, `Migration Ops`, `Networks`, `Storage`, and `Export` tabs open without tracebacks.
    - `Export` shows sections for package settings, subnet CIDRs, package summary, bundle contents preview, build readiness checklist, planning downloads, preflight review, Terraform validation guidance, and build/download controls.
    - `Bundle Contents Preview` lists major Terraform, handoff, planning-state, image-import, and operator files before build.
-   - `Build Readiness Checklist` summarizes readiness, wave planning, image import, planning-state, and preflight signals without blocking the build.
+   - `Build Readiness Checklist` shows Ready, Review, and Blocked counts and summarizes readiness, wave planning, image import, planning-state, and preflight signals without blocking the build.
    - `Download Business Case (CSV)` is available from the `Export` planning downloads section.
    - `Session Safety` explains what planning-state JSON restores, what remains session-only, and when to download it.
    - `Download Planning State` is available, shows a planning-state summary, and imported planning state reports restored VM decisions, wave rows, remediation items, image groups, and skipped rows.

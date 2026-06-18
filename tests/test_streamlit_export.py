@@ -6,6 +6,7 @@ from streamlit_app.export import (
     build_export_readiness_checklist,
     build_terraform_validation_guidance,
     calculate_package_summary,
+    summarize_export_readiness_statuses,
 )
 
 
@@ -208,3 +209,20 @@ def test_export_readiness_checklist_reports_preflight_findings():
 
     assert preflight["Status"] == "Blocked"
     assert preflight["Signal"] == "1 blocker(s), 1 warning(s)"
+
+
+def test_export_readiness_status_summary_counts_display_states():
+    rows = [
+        {"Status": "Ready"},
+        {"Status": "Ready"},
+        {"Status": "Review"},
+        {"Status": "Blocked"},
+        {"Status": "Unexpected"},
+    ]
+
+    assert summarize_export_readiness_statuses(rows) == {
+        "Ready": 2,
+        "Review": 1,
+        "Blocked": 1,
+        "Unexpected": 1,
+    }

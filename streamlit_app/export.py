@@ -313,6 +313,15 @@ def build_export_readiness_checklist(
     ]
 
 
+def summarize_export_readiness_statuses(rows):
+    """Count checklist rows by display status."""
+    summary = {"Ready": 0, "Review": 0, "Blocked": 0}
+    for row in rows or []:
+        status = row.get("Status", "Review")
+        summary[status] = summary.get(status, 0) + 1
+    return summary
+
+
 def render_build_readiness_checklist(
     edited_df,
     processed_vms,
@@ -342,13 +351,19 @@ def render_build_readiness_checklist(
     st.caption(
         "This checklist is informational. Package preflight remains the build gate."
     )
+    checklist_rows = build_export_readiness_checklist(
+        edited_df,
+        image_import_status=st.session_state.get("image_import_status", {}),
+        remediation_tracker=st.session_state.get("remediation_tracker", {}),
+        preflight_findings=preflight_findings,
+    )
+    status_summary = summarize_export_readiness_statuses(checklist_rows)
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Ready", status_summary.get("Ready", 0))
+    c2.metric("Review", status_summary.get("Review", 0))
+    c3.metric("Blocked", status_summary.get("Blocked", 0))
     st.dataframe(
-        build_export_readiness_checklist(
-            edited_df,
-            image_import_status=st.session_state.get("image_import_status", {}),
-            remediation_tracker=st.session_state.get("remediation_tracker", {}),
-            preflight_findings=preflight_findings,
-        ),
+        checklist_rows,
         hide_index=True,
         width="stretch",
     )

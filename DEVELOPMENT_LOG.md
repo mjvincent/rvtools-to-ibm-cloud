@@ -250,6 +250,7 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 
 ### June 18, 2026: Export Build Readiness Checklist
 - Added an informational Export tab checklist for readiness blockers, wave planning, image import status, planning-state/session safety, and package preflight.
+- Added Ready, Review, and Blocked summary counters above the checklist for faster scanning.
 - Preserved preflight as the only package build gate and left generated Terraform and handoff outputs unchanged.
 - Added focused tests and documentation for the checklist behavior.
 
