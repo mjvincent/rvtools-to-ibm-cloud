@@ -1,10 +1,13 @@
+import pandas as pd
 import streamlit as st
 
 from preflight import has_blockers, run_package_preflight
 from rvtools_parser import normalize_network_name
 from streamlit_app.final_vms import build_final_vms
+from streamlit_app.image_import import build_image_import_rows
 from streamlit_app.package_builder import build_terraform_bundle
 from streamlit_app.planning_state import render_planning_state_controls
+from streamlit_app.wave_planning import REQUIRED_WAVE_COLUMNS
 from ui import render_preflight_guidance
 
 
@@ -195,6 +198,157 @@ def render_bundle_contents_preview():
     )
     st.dataframe(
         build_bundle_contents_preview_rows(),
+        hide_index=True,
+        width="stretch",
+    )
+
+
+def _is_blank(value):
+    return value is None or pd.isna(value) or str(value).strip() == ""
+
+
+def build_export_readiness_checklist(
+    edited_df,
+    image_import_status=None,
+    remediation_tracker=None,
+    preflight_findings=None,
+):
+    """Return non-blocking readiness checklist rows for Export users."""
+    image_import_status = image_import_status or {}
+    remediation_tracker = remediation_tracker or {}
+    preflight_findings = preflight_findings or []
+    active_df = edited_df[~edited_df["Exclude?"]].copy()
+
+    blocker_count = 0
+    for column in READINESS_BLOCKER_COLUMNS:
+        if column in active_df.columns:
+            blocker_count += len(active_df[active_df[column] == "Blocked"])
+
+    missing_wave_rows = 0
+    for _, row in active_df.iterrows():
+        if any(_is_blank(row.get(column)) for column in REQUIRED_WAVE_COLUMNS):
+            missing_wave_rows += 1
+
+    image_rows = build_image_import_rows(edited_df, image_import_status)
+    pending_images = 0
+    if not image_rows.empty:
+        pending_images = len(
+            image_rows[
+                image_rows["Import Status"].fillna("").astype(str) != "Imported"
+            ]
+        )
+
+    preflight_blockers = sum(
+        1 for finding in preflight_findings
+        if getattr(finding, "severity", "") == "blocker"
+    )
+    preflight_warnings = sum(
+        1 for finding in preflight_findings
+        if getattr(finding, "severity", "") == "warning"
+    )
+
+    return [
+        {
+            "Area": "Readiness blockers",
+            "Status": "Blocked" if blocker_count else "Ready",
+            "Signal": f"{blocker_count} blocker signal(s)",
+            "Recommended Next Action": (
+                "Resolve readiness blockers or exclude affected VMs."
+                if blocker_count else
+                "Continue to preflight and package review."
+            ),
+        },
+        {
+            "Area": "Wave planning",
+            "Status": "Review" if missing_wave_rows else "Ready",
+            "Signal": f"{missing_wave_rows} active VM(s) missing required wave fields",
+            "Recommended Next Action": (
+                "Complete Wave, Cutover Group, Owner, and Application."
+                if missing_wave_rows else
+                "Review Migration Ops by wave and cutover group."
+            ),
+        },
+        {
+            "Area": "Image import status",
+            "Status": "Review" if pending_images else "Ready",
+            "Signal": f"{pending_images} image group(s) not marked Imported",
+            "Recommended Next Action": (
+                "Update Image Import Planning as imports complete."
+                if pending_images else
+                "Confirm image IDs before Terraform plan/apply."
+            ),
+        },
+        {
+            "Area": "Planning state",
+            "Status": "Review" if len(active_df) else "Ready",
+            "Signal": (
+                f"{len(active_df)} active VM(s), "
+                f"{len(remediation_tracker)} remediation item(s)"
+            ),
+            "Recommended Next Action": (
+                "Download planning-state.json before closing or handing off work."
+                if len(active_df) else
+                "Include at least one VM before saving package planning state."
+            ),
+        },
+        {
+            "Area": "Package preflight",
+            "Status": (
+                "Blocked" if preflight_blockers
+                else "Review" if preflight_warnings
+                else "Ready"
+            ),
+            "Signal": (
+                f"{preflight_blockers} blocker(s), "
+                f"{preflight_warnings} warning(s)"
+            ),
+            "Recommended Next Action": (
+                "Resolve preflight blockers before building."
+                if preflight_blockers else
+                "Review warnings; they will be included in the package report."
+                if preflight_warnings else
+                "Build when package settings and planning are reviewed."
+            ),
+        },
+    ]
+
+
+def render_build_readiness_checklist(
+    edited_df,
+    processed_vms,
+    disk_details,
+    nic_details,
+    unique_nets,
+    target_region,
+    custom_cidrs,
+    generate_security_groups,
+    catalog_profiles,
+    ssh_source_cidr,
+):
+    """Render a non-blocking checklist before package build."""
+    st.markdown("### Build Readiness Checklist")
+    preview_vms = build_final_vms(
+        edited_df, processed_vms, disk_details, nic_details
+    )
+    preflight_findings = run_package_preflight(
+        preview_vms,
+        unique_nets,
+        target_region,
+        custom_cidrs=custom_cidrs,
+        enable_security_groups=generate_security_groups,
+        catalog_profiles=catalog_profiles,
+        ssh_source_cidr=ssh_source_cidr,
+    )
+    st.caption(
+        "This checklist is informational. Package preflight remains the build gate."
+    )
+    st.dataframe(
+        build_export_readiness_checklist(
+            edited_df,
+            image_import_status=st.session_state.get("image_import_status", {}),
+            remediation_tracker=st.session_state.get("remediation_tracker", {}),
+            preflight_findings=preflight_findings,
+        ),
         hide_index=True,
         width="stretch",
     )
@@ -437,6 +591,18 @@ def render_export_tab(
     custom_cidrs = render_subnet_cidr_inputs(unique_nets)
     render_package_summary(edited_df, unique_nets)
     render_bundle_contents_preview()
+    render_build_readiness_checklist(
+        edited_df,
+        processed_vms,
+        disk_details,
+        nic_details,
+        unique_nets,
+        target_region,
+        custom_cidrs=custom_cidrs,
+        generate_security_groups=generate_security_groups,
+        catalog_profiles=catalog_profiles,
+        ssh_source_cidr=ssh_source_cidr,
+    )
     render_planning_downloads(
         edited_df,
         processed_vms,

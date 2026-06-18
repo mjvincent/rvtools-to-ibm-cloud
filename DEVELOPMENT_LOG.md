@@ -248,6 +248,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Kept generated Terraform, ZIP layout, manifest schema, CSV headers, and session-state behavior unchanged.
 - Updated user, testing, and handoff documentation for the new preview section.
 
+### June 18, 2026: Export Build Readiness Checklist
+- Added an informational Export tab checklist for readiness blockers, wave planning, image import status, planning-state/session safety, and package preflight.
+- Preserved preflight as the only package build gate and left generated Terraform and handoff outputs unchanged.
+- Added focused tests and documentation for the checklist behavior.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.
