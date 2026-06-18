@@ -127,6 +127,61 @@ def summarize_current_planning_state(
     }
 
 
+def build_session_safety_rows():
+    """Describe what planning state restores and what remains session-only."""
+    return [
+        {
+            "Area": "Restored by planning-state.json",
+            "What It Covers": (
+                "VM decisions, wave planning, remediation tracker, image import "
+                "status, and project metadata."
+            ),
+            "Recommended Action": (
+                "Download planning state before closing, refreshing, switching "
+                "machines, or handing work to another teammate."
+            ),
+        },
+        {
+            "Area": "Not saved in planning-state.json",
+            "What It Covers": (
+                "Uploaded RVTools workbook, generated ZIP bytes after closing, "
+                "live Streamlit session state, Terraform execution state, and "
+                "imported IBM Cloud images."
+            ),
+            "Recommended Action": (
+                "Keep the source RVTools workbook and downloaded Terraform ZIP "
+                "in an approved storage location."
+            ),
+        },
+        {
+            "Area": "Resume workflow",
+            "What It Covers": (
+                "Upload the same RVTools workbook, then import planning-state.json "
+                "from Export > Planning Downloads."
+            ),
+            "Recommended Action": (
+                "Review the restore summary for applied and skipped rows before "
+                "continuing planning."
+            ),
+        },
+    ]
+
+
+def render_session_safety_guidance():
+    """Render planning-state session safety guidance."""
+    st.write("### Session Safety")
+    st.info(
+        "Planning edits live in the current Streamlit session until you "
+        "download planning-state.json. The app does not autosave to disk or "
+        "cloud storage."
+    )
+    st.dataframe(
+        pd.DataFrame(build_session_safety_rows()),
+        hide_index=True,
+        width="stretch",
+    )
+
+
 def build_planning_state_restore_summary(
     state,
     dataframe_result=None,
@@ -188,6 +243,7 @@ def render_planning_state_controls(
         "Reload it after uploading the same RVTools workbook to restore VM "
         "decisions, wave fields, remediation tracking, and image import status."
     )
+    render_session_safety_guidance()
     render_planning_state_restore_summary()
 
     final_vms = build_final_vms(

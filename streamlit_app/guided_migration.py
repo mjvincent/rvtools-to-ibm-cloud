@@ -302,6 +302,26 @@ def action_plan_csv(action_rows):
     return output.getvalue()
 
 
+def has_session_planning_state(
+    edited_df,
+    remediation_tracker=None,
+    image_import_status=None,
+):
+    """Return True when the current session has planning data worth saving."""
+    remediation_tracker = remediation_tracker or {}
+    image_import_status = image_import_status or {}
+    if remediation_tracker or image_import_status:
+        return True
+    active = _active_df(edited_df)
+    if "Exclude?" in edited_df.columns and bool(edited_df["Exclude?"].any()):
+        return True
+    for _, row in active.iterrows():
+        for column in REQUIRED_WAVE_COLUMNS:
+            if not _blank(row.get(column)):
+                return True
+    return False
+
+
 def render_guided_migration_assistant(
     edited_df,
     processed_vms,
@@ -321,6 +341,15 @@ def render_guided_migration_assistant(
 
     remediation_tracker = st.session_state.get(TRACKER_KEY, {})
     image_import_status = st.session_state.get("image_import_status", {})
+    if has_session_planning_state(
+        edited_df,
+        remediation_tracker=remediation_tracker,
+        image_import_status=image_import_status,
+    ):
+        st.warning(
+            "This session has planning data. Use Export > Planning Downloads "
+            "to download planning-state.json before closing or refreshing."
+        )
     checklist_rows = build_guided_checklist(
         edited_df,
         processed_vms,

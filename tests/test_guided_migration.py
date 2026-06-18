@@ -9,6 +9,7 @@ from streamlit_app.guided_migration import (
     apply_safe_migration_defaults,
     build_guided_checklist,
     build_migration_action_plan,
+    has_session_planning_state,
     hard_blocked_vm_names,
     queue_exclusions_for_hard_blockers,
 )
@@ -104,6 +105,30 @@ def test_guided_checklist_flags_missing_planning_and_blockers():
     assert by_step["Complete wave planning"]["Count"] == 1
     assert by_step["Update image import status"]["Count"] == 1
     assert by_step["Build Terraform bundle"]["Status"] == "Needs attention"
+
+
+def test_session_planning_state_reminder_detects_saved_work():
+    empty = pd.DataFrame([{
+        "VM Name": "app-01",
+        "Exclude?": False,
+        "Wave": "",
+        "Cutover Group": "",
+        "Owner": "",
+        "Application": "",
+    }])
+    planned = empty.copy()
+    planned.loc[0, "Wave"] = "wave-01"
+    excluded = empty.copy()
+    excluded.loc[0, "Exclude?"] = True
+
+    assert has_session_planning_state(empty) is False
+    assert has_session_planning_state(planned) is True
+    assert has_session_planning_state(excluded) is True
+    assert has_session_planning_state(empty, remediation_tracker={"b1": {}}) is True
+    assert has_session_planning_state(
+        empty,
+        image_import_status={"template": {"import_status": "Pending"}},
+    ) is True
 
 
 def test_action_plan_and_safe_defaults_do_not_mark_imported_or_exclude():

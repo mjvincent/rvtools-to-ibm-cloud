@@ -259,7 +259,7 @@ Each ZIP bundle also includes a migration handoff package that bridges generated
 * `remediation-backlog.csv` — tracking blockers with owner, status, due date, and notes for cross-team remediation workflows
 * `image-import-plan.csv` — image import planning with source image, target catalog ID, import status, and estimated time per VM
 * `cutover-readiness.csv` — wave and cutover-group readiness view across planning, remediation, and image import status
-* `planning-state.json` — reloadable planning state for VM decisions, wave metadata, remediation tracking, and image import status
+* `planning-state.json` — reloadable planning state for VM decisions, wave metadata, remediation tracking, and image import status; Export includes session-safety guidance for what it does and does not restore
 * `image-import-variables.tfvars.example` — Terraform varfile template for IBM Cloud VPC custom image IDs after image import
 * `migration-runbook.md` — operational runbook for image staging, Terraform apply, validation, and cutover
 
@@ -276,8 +276,8 @@ Generated resources include standardized naming and tags for project and managem
 4. Review the Overview and Readiness tabs, using Guided Migration Assistant for a first-run checklist and safe planning defaults.
 5. Use VM Review, Networks, and Storage to confirm overrides and placement.
 6. Use Wave Planning to organize VMs into migration waves, specify owners and cutover groups, track dependencies, prioritize workloads, and exchange wave-planning CSVs with project teams.
-7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows; reload saved remediation CSVs when resuming a session.
-8. Use Image Import Planning to sequence custom image import stages, track status, and reload saved image import plan CSVs.
+7. Use Decision Audit and Remediation Backlog for override tracking and issue resolution workflows; use planning-state JSON for full app resume and CSV exports for external team workflows.
+8. Use Image Import Planning to sequence custom image import stages, track status, and include image status in planning-state JSON.
 9. Use Migration Ops to confirm cutover readiness by wave and cutover group.
 10. Use Export to review package settings, subnet CIDRs, package summary metrics, planning downloads, preflight findings, Terraform validation guidance, and Terraform Bundle ZIP build/download controls for IBM Cloud CLI or IBM Cloud Schematics.
 11. Review the included migration handoff files (including wave metadata and remediation tracking) before image import, replication, or cutover planning.

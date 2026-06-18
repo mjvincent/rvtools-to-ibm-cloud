@@ -14,6 +14,7 @@ from handoff import (
 from streamlit_app.package_builder import build_terraform_bundle
 from streamlit_app.planning_state import apply_planning_state_to_dataframe
 from streamlit_app.planning_state import build_planning_state_restore_summary
+from streamlit_app.planning_state import build_session_safety_rows
 
 
 def _vm(**overrides):
@@ -159,6 +160,24 @@ def test_planning_state_restore_summary_combines_session_and_dataframe_counts():
         {"Restored Area": "Remediation tracker", "Applied": 4, "Skipped": 0},
         {"Restored Area": "Image import status", "Applied": 5, "Skipped": 0},
     ]
+
+
+def test_session_safety_rows_explain_restore_boundary_and_actions():
+    text = " ".join(
+        f"{row['Area']} {row['What It Covers']} {row['Recommended Action']}"
+        for row in build_session_safety_rows()
+    )
+
+    assert "VM decisions" in text
+    assert "wave planning" in text
+    assert "remediation tracker" in text
+    assert "image import status" in text
+    assert "project metadata" in text
+    assert "Uploaded RVTools workbook" in text
+    assert "generated ZIP bytes" in text
+    assert "Terraform execution state" in text
+    assert "Download planning state before closing" in text
+    assert "handing work to another teammate" in text
 
 
 def test_manifest_references_planning_state_file():

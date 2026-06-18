@@ -208,13 +208,13 @@ Remediation tracker edits live in browser session state while the app is open. I
 - Refresh the page
 - Exit the app
 
-Export the remediation backlog CSV before leaving the session.
+Download planning-state JSON from Export > Planning Downloads before leaving the session when you want to resume the full app workflow. Export the remediation backlog CSV when you need a spreadsheet for external tracking or project-management import.
 
 **To resume tracking data across sessions:**
-1. Export remediation backlog CSV (contains all data)
-2. Share CSV with team or store in project management system
+1. Download planning-state JSON for full app resume, or export remediation backlog CSV for external tracking
+2. Share the file with the team or store it in an approved project location
 3. Upload the same RVTools workbook in a later app session
-4. Open **Import saved remediation tracker** and load the CSV
+4. Import planning-state JSON from Export > Planning Downloads, or open **Import saved remediation tracker** and load the CSV
 5. The app reloads status, due date, notes, and owner values by blocker ID or matching blocker details
 
 ---
@@ -287,9 +287,9 @@ Click **"Export Image Import Plan"** button to download CSV with:
 
 ### Image Import Planning Data Persistence
 
-Like remediation tracker, image import status lives in browser session state while the app is open. To resume:
+Like remediation tracker, image import status lives in browser session state while the app is open. To resume the full app workflow, download planning-state JSON from Export > Planning Downloads. To exchange image status with an external image team or pipeline:
 1. Export image import plan CSV
-2. Share with image import team/pipeline
+2. Share with the image import team or pipeline
 3. After import completes, upload RVTools again
 4. Open **Import saved image import plan** and load the CSV
 5. The app reloads target catalog IDs, import statuses, estimated timing, and notes

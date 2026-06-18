@@ -238,6 +238,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Surfaced workshop practice findings in the sidebar `Help And Samples` panel.
 - Updated first-run, testing, and samples documentation to reference the walkthrough.
 
+### June 18, 2026: Planning State Session Safety
+- Added Export tab session-safety guidance that explains what planning-state JSON restores and what remains session-only.
+- Added an Overview reminder when the current session has planning data worth saving.
+- Updated planning persistence documentation to prefer planning-state JSON for full app resume while preserving CSV exchange workflows.
+
 ### June 3, 2026: Migration Ops Readiness
 - Added the Migration Ops tab for cutover readiness by wave and cutover group.
 - Added `cutover-readiness.csv` to the Terraform handoff ZIP and manifest file references.
