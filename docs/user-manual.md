@@ -168,7 +168,7 @@ For browser access through a container or hosted service, see [Deployment Guide]
 ### Overview
 Shows the estate-level health summary, in-scope and excluded VM counts, monthly estimate, potential savings, blocker count, assessment quality summary, and recommended next actions. Start here after each upload.
 
-The Guided Migration Assistant adds a first-run checklist and an assistive planning panel. `Apply Safe Defaults` initializes blank image import statuses to `Pending` and creates open remediation tracker entries for current readiness findings. It does not mark images as `Imported`, change target profiles or subnets, build Terraform, or migrate workloads. The optional hard-blocked VM exclusion button queues `Exclude?` changes for review in `VM Review`.
+The Guided Migration Assistant adds a first-run checklist and an assistive planning panel. `Initialize Pending/Open Defaults` initializes blank image import statuses to `Pending` and creates open remediation tracker entries for current readiness findings. Its hover help explains that it does not mark images as `Imported`, exclude VMs, change target profiles or subnets, build Terraform, or migrate workloads. The optional hard-blocked VM exclusion button queues `Exclude?` changes for review in `VM Review`.
 
 ### Readiness
 Groups image, migration, memory, and network readiness by `Blocked`, `Review`, and `Ready`. Blocked and Review rows are sorted first so remediation planning starts with the highest-impact items.

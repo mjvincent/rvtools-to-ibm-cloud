@@ -5,6 +5,8 @@ import pandas as pd
 
 from models import MigrationVm, ReadinessFinding
 from streamlit_app.guided_migration import (
+    SAFE_DEFAULTS_BUTTON_LABEL,
+    SAFE_DEFAULTS_HELP,
     action_plan_csv,
     apply_safe_migration_defaults,
     build_guided_checklist,
@@ -157,6 +159,17 @@ def test_action_plan_and_safe_defaults_do_not_mark_imported_or_exclude():
     assert images["windows-template"]["import_status"] == "Pending"
     assert next(iter(remediation.values()))["status"] == "Open"
     assert "Exclude?" not in next(iter(remediation.values()))
+
+
+def test_safe_defaults_control_copy_explains_scope():
+    assert "Pending/Open" in SAFE_DEFAULTS_BUTTON_LABEL
+    assert "Pending" in SAFE_DEFAULTS_HELP
+    assert "Open remediation" in SAFE_DEFAULTS_HELP
+    assert "does not mark images Imported" in SAFE_DEFAULTS_HELP
+    assert "exclude VMs" in SAFE_DEFAULTS_HELP
+    assert "change profiles" in SAFE_DEFAULTS_HELP
+    assert "build Terraform" in SAFE_DEFAULTS_HELP
+    assert "migrate workloads" in SAFE_DEFAULTS_HELP
 
 
 def test_hard_blocked_exclusions_are_explicit_and_queued_by_vm_name():
