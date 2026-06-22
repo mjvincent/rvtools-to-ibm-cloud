@@ -22,6 +22,13 @@ READINESS_COLUMNS = [
     "Network Readiness",
 ]
 ACTION_PLAN_FIELDS = ["Action", "Count", "Impact", "Next Step"]
+SAFE_DEFAULTS_BUTTON_LABEL = "Initialize Pending/Open Defaults"
+SAFE_DEFAULTS_HELP = (
+    "Sets blank image import statuses to Pending and creates Open "
+    "remediation tracker rows for current readiness findings. It does not "
+    "mark images Imported, exclude VMs, change profiles, change subnets, "
+    "build Terraform, or migrate workloads."
+)
 
 
 def _active_df(df):
@@ -379,7 +386,11 @@ def render_guided_migration_assistant(
         )
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("Apply Safe Defaults", width="stretch"):
+            if st.button(
+                SAFE_DEFAULTS_BUTTON_LABEL,
+                help=SAFE_DEFAULTS_HELP,
+                width="stretch",
+            ):
                 remediation, images, applied = apply_safe_migration_defaults(
                     edited_df,
                     processed_vms,
