@@ -33,7 +33,23 @@ def test_carbon_ui_prototype_declares_expected_stack_and_workflows():
     assert "next" in package_json["dependencies"]
     assert "FileUploaderDropContainer" in page_text
     assert "/api/workbooks/summary" in page_text
+    assert "/api/projects" in page_text
+    assert "carbon-prototype-0.1" in page_text
+    assert "Load" in page_text
+    assert "Save project" in page_text
     assert "Streamlit remains the supported app" in page_text
+
+
+def test_carbon_strategy_documents_parallel_track_and_promotion_gates():
+    strategy_text = (
+        ROOT / "docs" / "carbon-react-ui-strategy.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Keep Streamlit as the production workbench" in strategy_text
+    assert "Do not fork the repository" in strategy_text
+    assert "prototype/carbon-ui" in strategy_text
+    assert "Promotion Gates" in strategy_text
+    assert "FastAPI" in strategy_text
 
 
 def test_github_actions_publish_ghcr_and_smoke_compose():

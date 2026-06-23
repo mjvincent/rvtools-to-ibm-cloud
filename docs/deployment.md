@@ -236,6 +236,10 @@ http://localhost:3000
 
 The Carbon upload area calls the real FastAPI workbook summary endpoint. Deeper planning and export panels are intentionally mocked in this first prototype slice.
 
+See [Carbon/React UI Strategy](carbon-react-ui-strategy.md) for the branch,
+prototype directory, and promotion-gate rules that keep Streamlit production
+ready while Carbon is evaluated.
+
 ## Deployment Files
 - `Dockerfile` builds the Streamlit container and starts `app.py`.
 - `docker-compose.yml` runs the prebuilt app image with Postgres, artifact storage, and the experimental API.
