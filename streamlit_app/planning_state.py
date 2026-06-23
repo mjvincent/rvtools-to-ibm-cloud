@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import pandas as pd
 import streamlit as st
@@ -241,6 +242,76 @@ def database_persistence_available():
     return persistence.persistence_enabled()
 
 
+def database_persistence_status():
+    """Return database persistence status and an optional diagnostic message."""
+    if persistence is None:
+        return "unavailable", "Persistence helpers are not importable."
+    if not persistence.persistence_enabled():
+        return "not_configured", "DATABASE_URL is not configured."
+    try:
+        persistence.initialize_schema()
+        return "ready", ""
+    except Exception as exc:
+        return "error", str(exc)
+
+
+def build_current_planning_state_json(
+    edited_df,
+    processed_vms,
+    disk_details,
+    nic_details,
+    project_name,
+    target_region,
+    target_zone,
+):
+    """Build planning-state JSON for the current Streamlit planning view."""
+    final_vms = build_final_vms(
+        edited_df,
+        processed_vms,
+        disk_details,
+        nic_details,
+    )
+    return generate_planning_state_json(
+        final_vms,
+        remediation_tracker=st.session_state.get("remediation_tracker", {}),
+        image_import_status=st.session_state.get("image_import_status", {}),
+        metadata={
+            "project_name": project_name,
+            "target_region": target_region,
+            "target_zone": target_zone,
+        },
+        decision_records=edited_df.to_dict("records"),
+    )
+
+
+def _save_planning_state_to_database(
+    planning_state_json,
+    project_name,
+    target_region,
+    target_zone,
+    save_name=None,
+    description="",
+    project_id=None,
+):
+    state = json.loads(planning_state_json)
+    if project_id:
+        saved_project_id = project_id
+    else:
+        project = persistence.create_project(
+            (save_name or project_name).strip(),
+            description.strip(),
+        )
+        saved_project_id = project["id"]
+    persistence.save_project_state(
+        saved_project_id,
+        state,
+        target_region=target_region,
+        target_zone=target_zone,
+        project_name=project_name,
+    )
+    return saved_project_id
+
+
 def _project_options(projects):
     return {
         f"{project['name']} ({project['id'][:8]})": project["id"]
@@ -329,22 +400,20 @@ def render_database_project_controls(
                 st.warning("Choose an existing project to update.")
             else:
                 try:
-                    state = json.loads(planning_state_json)
-                    if save_mode == "Create new project":
-                        project = persistence.create_project(
-                            save_name.strip(),
-                            save_description.strip(),
-                        )
-                        project_id = project["id"]
-                    else:
-                        project_id = selected_save_project
-                    persistence.save_project_state(
-                        project_id,
-                        state,
+                    project_id = _save_planning_state_to_database(
+                        planning_state_json,
+                        project_name,
                         target_region=target_region,
                         target_zone=target_zone,
-                        project_name=project_name,
+                        save_name=save_name,
+                        description=save_description,
+                        project_id=(
+                            selected_save_project
+                            if save_mode == "Update existing project"
+                            else None
+                        ),
                     )
+                    st.session_state["active_database_project_id"] = project_id
                     st.success("Planning state saved to the project database.")
                 except Exception as exc:
                     st.error(f"Could not save project: {exc}")
@@ -386,6 +455,102 @@ def render_database_project_controls(
                     st.error(f"Could not delete project: {exc}")
 
 
+def render_sidebar_save_progress(
+    edited_df,
+    processed_vms,
+    disk_details,
+    nic_details,
+    project_name,
+    target_region,
+    target_zone,
+):
+    """Render persistent sidebar progress-save controls after workbook upload."""
+    planning_state_json = build_current_planning_state_json(
+        edited_df,
+        processed_vms,
+        disk_details,
+        nic_details,
+        project_name,
+        target_region,
+        target_zone,
+    )
+    st.sidebar.markdown("---")
+    with st.sidebar.expander("Save Progress", expanded=True):
+        st.caption("Planning edits are not automatically saved.")
+        st.download_button(
+            label="Download Planning State",
+            data=planning_state_json.encode("utf-8"),
+            file_name=f"{project_name}-planning-state.json",
+            mime="application/json",
+            width="stretch",
+            key="sidebar_planning_state_download",
+            help=(
+                "Universal fallback for saving progress. Upload the same "
+                "RVTools workbook, then import this file to resume."
+            ),
+        )
+
+        status, message = database_persistence_status()
+        if status == "ready":
+            st.success("Database save available.")
+            save_name = st.text_input(
+                "Database project name",
+                value=project_name,
+                key="sidebar_db_project_name",
+            )
+            if st.button("Save To Database", width="stretch"):
+                try:
+                    project_id = _save_planning_state_to_database(
+                        planning_state_json,
+                        project_name,
+                        target_region,
+                        target_zone,
+                        save_name=save_name,
+                        project_id=st.session_state.get(
+                            "active_database_project_id"
+                        ),
+                    )
+                    st.session_state["active_database_project_id"] = project_id
+                    st.session_state["last_database_save_at"] = (
+                        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    )
+                    st.success(
+                        "Progress saved to database. Keep the source RVTools "
+                        "workbook; restore after uploading the same workbook."
+                    )
+                except Exception as exc:
+                    st.error(f"Could not save to database: {exc}")
+                    st.warning(
+                        "To avoid losing progress: download planning-state.json "
+                        "now, keep the source RVTools workbook, restart the "
+                        "database or Docker Compose stack, then upload the same "
+                        "workbook and import planning-state.json."
+                    )
+            if st.session_state.get("last_database_save_at"):
+                st.caption(
+                    "Last database save: "
+                    f"{st.session_state['last_database_save_at']}"
+                )
+        elif status == "not_configured":
+            st.info(
+                "Database save is not enabled. Download planning-state.json "
+                "before closing or refreshing."
+            )
+            st.caption("To enable database saves:")
+            st.write("1. Run `docker compose up --detach`.")
+            st.write("2. Confirm Postgres is healthy and reachable.")
+            st.write("3. Restart the app with `DATABASE_URL` configured.")
+        else:
+            st.error("Database save is configured but unavailable.")
+            st.caption(message)
+            st.warning(
+                "To avoid losing progress: download planning-state.json now, "
+                "keep the source RVTools workbook, restart the database or "
+                "Docker Compose stack, then upload the same workbook and import "
+                "planning-state.json."
+            )
+
+
 def render_planning_state_controls(
     edited_df,
     processed_vms,
@@ -405,22 +570,14 @@ def render_planning_state_controls(
     render_session_safety_guidance()
     render_planning_state_restore_summary()
 
-    final_vms = build_final_vms(
+    planning_state_json = build_current_planning_state_json(
         edited_df,
         processed_vms,
         disk_details,
         nic_details,
-    )
-    planning_state_json = generate_planning_state_json(
-        final_vms,
-        remediation_tracker=st.session_state.get("remediation_tracker", {}),
-        image_import_status=st.session_state.get("image_import_status", {}),
-        metadata={
-            "project_name": project_name,
-            "target_region": target_region,
-            "target_zone": target_zone,
-        },
-        decision_records=edited_df.to_dict("records"),
+        project_name,
+        target_region,
+        target_zone,
     )
     summary = summarize_current_planning_state(
         edited_df,

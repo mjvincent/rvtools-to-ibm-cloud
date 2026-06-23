@@ -97,7 +97,7 @@ The Compose stack includes:
 - `postgres-data` — Docker volume for Postgres data.
 - `rvtools-artifacts` — Docker volume for uploaded RVTools workbooks and generated artifacts.
 
-In the Streamlit app, database save/load stores planning-state JSON and project metadata. It does not remove the need to keep the source RVTools workbook. Upload the same RVTools workbook before loading a saved project so saved VM decisions and wave rows can be applied to the current dataframe.
+In the Streamlit app, the sidebar `Save Progress` panel is available after workbook upload. It always offers a planning-state JSON download and shows database save status when persistence is configured. Database save/load stores planning-state JSON and project metadata. It does not remove the need to keep the source RVTools workbook. Upload the same RVTools workbook before loading a saved project so saved VM decisions and wave rows can be applied to the current dataframe.
 
 The stack uses the prebuilt image by default:
 

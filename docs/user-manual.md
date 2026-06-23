@@ -928,7 +928,9 @@ A reloadable planning-state bundle containing VM decision fields, wave planning 
 
 Use it from the Export tab to save a planning session and restore it later after uploading the same RVTools workbook. After import, the app summarizes restored VM decisions, wave rows, remediation items, image groups, and skipped rows so reviewers know what was applied.
 
-When the app is running with a configured `DATABASE_URL`, the Export tab also shows `Database Project Save/Load` controls. These controls save the same planning-state data to Postgres so teams can reopen a saved project later. They do not replace the RVTools workbook itself; upload the same RVTools workbook before loading a saved database project so VM decisions and wave rows can be matched back to the current assessment data.
+After a workbook is loaded, the sidebar shows a persistent `Save Progress` panel. Use `Download Planning State` there at any time to save progress locally. When the app is running with a configured `DATABASE_URL`, the same panel also shows `Save To Database` with success or recovery messages.
+
+When the app is running with a configured `DATABASE_URL`, the Export tab also shows `Database Project Save/Load` controls. These controls save the same planning-state data to Postgres so teams can reopen a saved project later. They do not replace the RVTools workbook itself; upload the same RVTools workbook before loading a saved database project so VM decisions and wave rows can be matched back to the current assessment data. If database save fails, immediately download `planning-state.json`, keep the source RVTools workbook, restart the database or Docker Compose stack, then restore after uploading the same workbook.
 
 Planning state does not include the uploaded RVTools workbook itself, generated ZIP bytes after the app closes, live Streamlit session state, Terraform execution state, or imported IBM Cloud images. Download planning-state JSON before closing, refreshing, switching machines, or handing work to another teammate.
 

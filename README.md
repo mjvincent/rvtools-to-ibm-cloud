@@ -74,7 +74,7 @@ After opening the app, click `Load Sample Workbook` in the sidebar or upload `sa
 
 For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`. That workbook intentionally includes source-data issues and planning gaps, so readiness and preflight findings are expected. See `docs/sample-findings-walkthrough.md` for the expected practice findings.
 
-The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container. For a persistent local/team deployment, use `docker compose up` to run the prebuilt app image with Postgres and an artifact volume. In Streamlit, database save/load persists planning-state JSON and project metadata; keep the source RVTools workbook and upload it again before restoring a saved project.
+The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container. For a persistent local/team deployment, use `docker compose up` to run the prebuilt app image with Postgres and an artifact volume. In Streamlit, the sidebar `Save Progress` panel can download planning-state JSON at any time after upload, and database save/load persists planning-state JSON and project metadata when `DATABASE_URL` is configured. Keep the source RVTools workbook and upload it again before restoring a saved project.
 
 ## Common First-Run Fixes
 | Symptom | Fix |

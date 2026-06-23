@@ -13,8 +13,10 @@ from handoff import (
 )
 from streamlit_app.package_builder import build_terraform_bundle
 from streamlit_app.planning_state import apply_planning_state_to_dataframe
+from streamlit_app.planning_state import build_current_planning_state_json
 from streamlit_app.planning_state import build_planning_state_restore_summary
 from streamlit_app.planning_state import build_session_safety_rows
+from streamlit_app.planning_state import database_persistence_status
 from streamlit_app.planning_state import database_persistence_available
 
 
@@ -187,6 +189,34 @@ def test_database_persistence_availability_follows_database_url(monkeypatch):
 
     monkeypatch.setenv("DATABASE_URL", "postgresql://example")
     assert database_persistence_available() is True
+
+
+def test_database_persistence_status_reports_not_configured(monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+
+    status, message = database_persistence_status()
+
+    assert status == "not_configured"
+    assert "DATABASE_URL" in message
+
+
+def test_build_current_planning_state_json_matches_export_shape():
+    df = pd.DataFrame([_vm(**{"Exclude?": False})])
+
+    state = json.loads(build_current_planning_state_json(
+        df,
+        [_vm()],
+        disk_details={},
+        nic_details={},
+        project_name="demo",
+        target_region="us-south",
+        target_zone="us-south-1",
+    ))
+
+    assert state["metadata"]["project_name"] == "demo"
+    assert state["metadata"]["target_region"] == "us-south"
+    assert state["vm_decisions"][0]["VM Key"] == "vm-001"
+    assert state["wave_planning"][0]["Wave"] == "wave-01"
 
 
 def test_manifest_references_planning_state_file():
