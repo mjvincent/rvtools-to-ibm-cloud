@@ -8,8 +8,10 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_compose_declares_persistent_services_and_volumes():
     compose_text = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
 
-    assert "ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest" in compose_text
+    assert "rvtools-to-ibm-cloud:local" in compose_text
+    assert "build:" in compose_text
     assert "postgres:" in compose_text
+    assert "${POSTGRES_PORT:-5432}:5432" in compose_text
     assert "rvtools-artifacts:" in compose_text
     assert "DATABASE_URL:" in compose_text
     assert "ARTIFACT_STORAGE_PATH:" in compose_text
@@ -42,3 +44,27 @@ def test_github_actions_publish_ghcr_and_smoke_compose():
     assert "docker/build-push-action" in workflow_text
     assert "Docker Compose persistence smoke test" in workflow_text
     assert "docker compose up --detach" in workflow_text
+
+
+def test_makefile_compose_up_builds_persistent_stack():
+    makefile_text = (ROOT / "Makefile").read_text(encoding="utf-8")
+
+    assert "start:" in makefile_text
+    assert "scripts/start_local_app.sh" in makefile_text
+    assert "compose-up:" in makefile_text
+    assert "docker compose up --build --detach" in makefile_text
+    assert "compose-pull:" in makefile_text
+    assert "ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest" in makefile_text
+
+
+def test_local_launcher_starts_compose_and_opens_streamlit():
+    launcher_text = (
+        ROOT / "scripts" / "start_local_app.sh"
+    ).read_text(encoding="utf-8")
+    command_text = (ROOT / "start-rvtools.command").read_text(encoding="utf-8")
+
+    assert "docker compose up --build --detach" in launcher_text
+    assert "http://localhost:8501" in launcher_text
+    assert "/_stcore/health" in launcher_text
+    assert "open \"$APP_URL\"" in launcher_text
+    assert "scripts/start_local_app.sh" in command_text

@@ -125,23 +125,36 @@ Press `Ctrl+C` in the terminal to stop the app.
 ### Docker Path
 Use this if Docker Desktop or a compatible Docker runtime is already running.
 
-Pull the prebuilt image:
+For the simplest database-backed local launch on macOS, start OrbStack or Docker Desktop, then double-click `start-rvtools.command` from the repository root. The launcher builds and starts Streamlit, Postgres, the experimental FastAPI prototype, and Docker volumes for project metadata and artifacts. It waits for the app to become healthy and opens `http://localhost:8501` automatically.
+
+For the same persistent launch from a terminal:
 
 ```bash
-docker pull ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
-docker run --rm -p 8501:8501 ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+make start
 ```
 
-Or build the image locally:
+Or run the persistent Compose stack directly:
+
+```bash
+docker compose up --build --detach
+```
+
+Open `http://localhost:8501` and upload an RVTools XLSX export in the sidebar. Streamlit receives `DATABASE_URL` automatically in the Compose-backed launch, so the sidebar `Save Progress` panel can save planning state to the database.
+
+For a stateless single-container run without database save:
 
 ```bash
 docker build -t rvtools-to-ibm-cloud .
 docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
 ```
 
-Open `http://localhost:8501` and upload an RVTools XLSX export in the sidebar.
+After the prebuilt GHCR image is published, use it with:
 
-For persistent private/team evaluation, run `docker compose up --detach`. This starts the Streamlit app, an experimental FastAPI prototype, Postgres, and Docker volumes for project metadata and artifacts. See [Deployment Guide](deployment.md) before storing customer RVTools data.
+```bash
+APP_IMAGE=ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest docker compose up --detach
+```
+
+See [Deployment Guide](deployment.md) before storing customer RVTools data.
 
 ### Makefile Shortcuts
 If `make` is available, these shortcuts run the same commands. The Makefile uses `venv/bin/python` when present, otherwise `python3`.
@@ -152,6 +165,7 @@ make test
 make docker-build
 make docker-run
 make compose-up
+make compose-pull
 make compose-down
 ```
 
@@ -927,6 +941,10 @@ Use it to review:
 A reloadable planning-state bundle containing VM decision fields, wave planning fields, remediation tracker data, image import status, and project metadata.
 
 Use it from the Export tab to save a planning session and restore it later after uploading the same RVTools workbook. After import, the app summarizes restored VM decisions, wave rows, remediation items, image groups, and skipped rows so reviewers know what was applied.
+
+After a workbook is loaded, the sidebar shows a persistent `Save Progress` panel. Use `Download Planning State` there at any time to save progress locally. The panel also shows the database save area. When the app is running with a configured `DATABASE_URL`, `Save To Database` is enabled and shows success or recovery messages. If the button is disabled or the panel says database save is not enabled, the current Streamlit process was started without a usable database connection. Start the Compose stack with `docker compose up --build --detach`, then open `http://localhost:8501`; or, for local virtualenv Streamlit, start the app with `DATABASE_URL=postgresql://rvtools:rvtools@localhost:5432/rvtools`.
+
+When the app is running with a configured `DATABASE_URL`, the Export tab also shows `Database Project Save/Load` controls. These controls save the same planning-state data to Postgres so teams can reopen a saved project later. They do not replace the RVTools workbook itself; upload the same RVTools workbook before loading a saved database project so VM decisions and wave rows can be matched back to the current assessment data. If database save fails, immediately download `planning-state.json`, keep the source RVTools workbook, restart the database or Docker Compose stack, then restore after uploading the same workbook.
 
 Planning state does not include the uploaded RVTools workbook itself, generated ZIP bytes after the app closes, live Streamlit session state, Terraform execution state, or imported IBM Cloud images. Download planning-state JSON before closing, refreshing, switching machines, or handing work to another teammate.
 

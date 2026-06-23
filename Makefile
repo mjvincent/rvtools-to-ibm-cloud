@@ -1,12 +1,15 @@
-.PHONY: run test compile docker-build docker-run docker-health compose-up compose-down sample-workbook validate-terraform
+.PHONY: run start test compile docker-build docker-run docker-health compose-up compose-pull compose-down sample-workbook validate-terraform
 
 PORT ?= 8501
 IMAGE ?= rvtools-to-ibm-cloud
-APP_IMAGE ?= ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+APP_IMAGE ?= rvtools-to-ibm-cloud:local
 PYTHON ?= $(shell if [ -x venv/bin/python ]; then echo venv/bin/python; else echo python3; fi)
 
 run:
 	$(PYTHON) -m streamlit run app.py
+
+start:
+	scripts/start_local_app.sh
 
 test:
 	$(PYTHON) -m pytest
@@ -31,7 +34,10 @@ docker-health:
 	exit 1
 
 compose-up:
-	APP_IMAGE=$(APP_IMAGE) docker compose up --detach
+	APP_IMAGE=$(APP_IMAGE) docker compose up --build --detach
+
+compose-pull:
+	APP_IMAGE=ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest docker compose up --detach
 
 compose-down:
 	docker compose down

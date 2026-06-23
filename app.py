@@ -20,6 +20,7 @@ from streamlit_app.page_header import render_page_header
 from streamlit_app.planning_state import (
     apply_planning_state_to_dataframe,
     build_planning_state_restore_summary,
+    render_sidebar_save_progress,
 )
 from streamlit_app.remediation import render_remediation_backlog_tab
 from streamlit_app.settings import render_sidebar_settings
@@ -173,3 +174,13 @@ if uploaded_file is not None:
             pricing_catalog,
             catalog_profiles,
         )
+
+    render_sidebar_save_progress(
+        edited_df,
+        processed_vms,
+        disk_details,
+        nic_details,
+        project_name,
+        target_region,
+        target_zone,
+    )

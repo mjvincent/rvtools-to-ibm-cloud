@@ -25,24 +25,51 @@ Press `Ctrl+C` in the terminal to stop the app.
 ### Option 2: Docker
 Use this if Docker Desktop or a compatible Docker runtime is already running.
 
-Pull the prebuilt image from GitHub Container Registry:
+For the simplest local database-backed launch on macOS, start OrbStack or Docker Desktop, then double-click:
 
-```bash
-docker pull ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
-docker run --rm -p 8501:8501 ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+```text
+start-rvtools.command
 ```
 
-Or build it locally:
+The launcher builds and starts Streamlit, Postgres, the prototype API, and persistent Docker volumes. It waits for the app to become healthy and opens `http://localhost:8501` automatically. Streamlit receives `DATABASE_URL`, so the sidebar `Save Progress` panel can save planning state to the database.
+
+For the same persistent launch from a terminal:
 
 ```bash
-docker build -t rvtools-to-ibm-cloud .
-docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
+make start
+```
+
+Or run the Compose stack directly:
+
+```bash
+docker compose up --build --detach
 ```
 
 Open:
 
 ```text
 http://localhost:8501
+```
+
+For a stateless single-container run without database save:
+
+```bash
+docker build -t rvtools-to-ibm-cloud .
+docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
+```
+
+After the GHCR image is published, use the prebuilt persistent stack with:
+
+```bash
+APP_IMAGE=ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest docker compose up --detach
+```
+
+Postgres is also exposed on `localhost:5432` for local Python/Streamlit development.
+
+```bash
+DATABASE_URL=postgresql://rvtools:rvtools@localhost:5432/rvtools \
+ARTIFACT_STORAGE_PATH=.local-artifacts \
+venv/bin/python -m streamlit run app.py
 ```
 
 ### Option 3: Make
@@ -57,9 +84,11 @@ Other useful commands:
 ```bash
 make test
 make sample-workbook
+make start
 make docker-build
 make docker-run
 make compose-up
+make compose-pull
 make compose-down
 ```
 
@@ -74,7 +103,7 @@ After opening the app, click `Load Sample Workbook` in the sidebar or upload `sa
 
 For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`. That workbook intentionally includes source-data issues and planning gaps, so readiness and preflight findings are expected. See `docs/sample-findings-walkthrough.md` for the expected practice findings.
 
-The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container. For a persistent local/team deployment, use `docker compose up` to run the prebuilt app image with Postgres and an artifact volume.
+The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container. For a persistent local/team deployment, use `docker compose up` to run the prebuilt app image with Postgres and an artifact volume. In Streamlit, the sidebar `Save Progress` panel can download planning-state JSON at any time after upload, and database save/load persists planning-state JSON and project metadata when `DATABASE_URL` is configured. Keep the source RVTools workbook and upload it again before restoring a saved project.
 
 ## Common First-Run Fixes
 | Symptom | Fix |

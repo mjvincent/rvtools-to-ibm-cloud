@@ -1,6 +1,8 @@
 services:
   app:
-    image: ${APP_IMAGE:-ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest}
+    image: ${APP_IMAGE:-rvtools-to-ibm-cloud:local}
+    build:
+      context: .
     ports:
       - "${STREAMLIT_PORT:-8501}:8501"
     environment:
@@ -20,7 +22,9 @@ services:
       start_period: 30s
 
   api:
-    image: ${APP_IMAGE:-ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest}
+    image: ${APP_IMAGE:-rvtools-to-ibm-cloud:local}
+    build:
+      context: .
     command: >
       uvicorn prototype.api.app:app
       --host 0.0.0.0
@@ -45,6 +49,8 @@ services:
 
   postgres:
     image: postgres:17-alpine
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: rvtools
       POSTGRES_PASSWORD: rvtools
