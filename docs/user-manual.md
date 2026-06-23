@@ -274,6 +274,8 @@ Use `--dry-run` to validate credentials and IBM Global Catalog mapping without w
 
 For live mode, set `IBMCLOUD_API_KEY` in the shell that starts Streamlit or in a local `.env` file at the repository root. Restart Streamlit after creating or changing `.env`.
 
+When using `start-rvtools.command`, `make run`, or Docker Compose, the local `.env` value is passed into the running app container automatically. The key is not committed, copied into the Docker image, or included in generated handoff files.
+
 ### Download Business Case CSV
 The Export tab downloads the current full planning table as a CSV. This file is useful for stakeholder review before building the full Terraform project.
 

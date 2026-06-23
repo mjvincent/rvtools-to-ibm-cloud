@@ -17,6 +17,8 @@ start-rvtools.command
 
 The launcher builds and starts Streamlit, Postgres, the prototype API, and persistent Docker volumes. It waits for the app to become healthy and opens `http://localhost:8501` automatically. Streamlit receives `DATABASE_URL`, so the sidebar `Save Progress` panel can save planning state to the database.
 
+If you use `Live IBM profile discovery`, put `IBMCLOUD_API_KEY=...` in a local `.env` file at the repository root before starting the launcher. Compose passes that value into the app container without baking it into the image.
+
 For the same preconfigured launch from a terminal:
 
 ```bash

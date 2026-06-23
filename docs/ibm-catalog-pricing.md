@@ -105,6 +105,8 @@ IBMCLOUD_API_KEY=...
 
 After creating or changing `.env`, restart Streamlit so the running process reloads the value. The standalone cache generator also reads `IBMCLOUD_API_KEY` from the process environment or the env file passed with `--env-file`.
 
+For the preconfigured local Docker path (`start-rvtools.command`, `make run`, or `docker compose up --build --detach`), Compose passes `IBMCLOUD_API_KEY` from the local `.env` file or shell environment into the app container. The `.env` file remains excluded from Git and the Docker image.
+
 ## Limitations
 Exact catalog pricing means exact against the public IBM Global Catalog metrics that the mapper can uniquely resolve for the selected region, country, and currency. Invoices can still differ because of account-specific discounts, subscriptions, taxes, billing-cycle proration, reserved terms, or private offers.
 

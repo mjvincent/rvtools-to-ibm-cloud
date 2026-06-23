@@ -15,6 +15,7 @@ def test_compose_declares_persistent_services_and_volumes():
     assert "rvtools-artifacts:" in compose_text
     assert "DATABASE_URL:" in compose_text
     assert "ARTIFACT_STORAGE_PATH:" in compose_text
+    assert "IBMCLOUD_API_KEY: ${IBMCLOUD_API_KEY:-}" in compose_text
     assert "uvicorn prototype.api.app:app" in compose_text
 
 
