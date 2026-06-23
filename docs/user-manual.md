@@ -125,12 +125,23 @@ Press `Ctrl+C` in the terminal to stop the app.
 ### Docker Path
 Use this if Docker Desktop or a compatible Docker runtime is already running.
 
+Pull the prebuilt image:
+
+```bash
+docker pull ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+docker run --rm -p 8501:8501 ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+```
+
+Or build the image locally:
+
 ```bash
 docker build -t rvtools-to-ibm-cloud .
 docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
 ```
 
 Open `http://localhost:8501` and upload an RVTools XLSX export in the sidebar.
+
+For persistent private/team evaluation, run `docker compose up --detach`. This starts the Streamlit app, an experimental FastAPI prototype, Postgres, and Docker volumes for project metadata and artifacts. See [Deployment Guide](deployment.md) before storing customer RVTools data.
 
 ### Makefile Shortcuts
 If `make` is available, these shortcuts run the same commands. The Makefile uses `venv/bin/python` when present, otherwise `python3`.
@@ -140,6 +151,8 @@ make run
 make test
 make docker-build
 make docker-run
+make compose-up
+make compose-down
 ```
 
 For browser access through a container or hosted service, see [Deployment Guide](deployment.md). Hosted deployments should require authenticated access because RVTools exports and generated migration packages can contain sensitive infrastructure data. The app also shows non-blocking reminders near upload and export controls. A static HTML page can link to the app, but it cannot replace the Streamlit/Python backend.

@@ -25,6 +25,15 @@ Press `Ctrl+C` in the terminal to stop the app.
 ### Option 2: Docker
 Use this if Docker Desktop or a compatible Docker runtime is already running.
 
+Pull the prebuilt image from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+docker run --rm -p 8501:8501 ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+```
+
+Or build it locally:
+
 ```bash
 docker build -t rvtools-to-ibm-cloud .
 docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
@@ -50,6 +59,8 @@ make test
 make sample-workbook
 make docker-build
 make docker-run
+make compose-up
+make compose-down
 ```
 
 ### What You Need
@@ -63,7 +74,7 @@ After opening the app, click `Load Sample Workbook` in the sidebar or upload `sa
 
 For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`. That workbook intentionally includes source-data issues and planning gaps, so readiness and preflight findings are expected. See `docs/sample-findings-walkthrough.md` for the expected practice findings.
 
-The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container.
+The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container. For a persistent local/team deployment, use `docker compose up` to run the prebuilt app image with Postgres and an artifact volume.
 
 ## Common First-Run Fixes
 | Symptom | Fix |

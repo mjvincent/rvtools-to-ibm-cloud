@@ -4,6 +4,10 @@ __pycache__/
 .pytest_cache/
 venv/
 
+# Frontend artifacts
+node_modules/
+.next/
+
 # macOS Finder metadata
 .DS_Store
 

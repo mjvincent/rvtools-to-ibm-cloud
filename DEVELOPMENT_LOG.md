@@ -22,6 +22,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### June 22, 2026: Registry, Persistent Compose, and Carbon Prototype
+- Added a GHCR publishing path for prebuilt Docker images while preserving local Docker builds.
+- Added a Docker Compose stack with Streamlit, an experimental FastAPI service, Postgres, and artifact storage volumes for persistent project evaluation.
+- Added a thin FastAPI prototype that reuses the existing RVTools parser and summary logic for a real workbook upload/readiness summary endpoint.
+- Added an experimental Next.js/Carbon UI prototype with an IBM Cloud-style shell, drag-and-drop upload, dashboard metrics, readiness table, and mocked deeper planning panels.
+- Documented the prebuilt image, persistent Compose path, and prototype boundaries while keeping Streamlit as the supported production workbench.
+
 ### May 5, 2026: Dynamic Networking & Modular HCL
 - Resolved `KeyError` issues via dynamic column discovery for non-standard RVTools exports.
 - Implemented automated CIDR extraction from `vNetwork` IPv4 column.
