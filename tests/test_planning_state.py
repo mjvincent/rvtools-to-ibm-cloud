@@ -1,4 +1,5 @@
 import json
+import inspect
 import zipfile
 from io import BytesIO
 
@@ -18,6 +19,7 @@ from streamlit_app.planning_state import build_planning_state_restore_summary
 from streamlit_app.planning_state import build_session_safety_rows
 from streamlit_app.planning_state import database_persistence_status
 from streamlit_app.planning_state import database_persistence_available
+from streamlit_app import planning_state
 
 
 def _vm(**overrides):
@@ -198,6 +200,15 @@ def test_database_persistence_status_reports_not_configured(monkeypatch):
 
     assert status == "not_configured"
     assert "DATABASE_URL" in message
+
+
+def test_database_unavailable_guidance_keeps_save_action_visible():
+    source = inspect.getsource(planning_state._render_database_save_unavailable)
+
+    assert '"Save To Database"' in source
+    assert "disabled=True" in source
+    assert "docker compose up --build --detach" in source
+    assert "DATABASE_URL=postgresql://rvtools:rvtools@localhost:5432/rvtools" in source
 
 
 def test_build_current_planning_state_json_matches_export_shape():

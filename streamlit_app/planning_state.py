@@ -255,6 +255,42 @@ def database_persistence_status():
         return "error", str(exc)
 
 
+def _render_database_save_unavailable(status, message):
+    """Explain why database save is unavailable without hiding the action."""
+    st.button(
+        "Save To Database",
+        width="stretch",
+        disabled=True,
+        help="Requires the Docker Compose stack or a running Postgres DATABASE_URL.",
+    )
+    if status == "not_configured":
+        st.info(
+            "Database save is not enabled in this running app session because "
+            "`DATABASE_URL` is not configured."
+        )
+        st.caption("Use one of these database-backed launch paths:")
+        st.code("docker compose up --build --detach", language="bash")
+        st.caption(
+            "Then open http://localhost:8501. If you are running Streamlit "
+            "from the local virtualenv, start it with:"
+        )
+        st.code(
+            "DATABASE_URL=postgresql://rvtools:rvtools@localhost:5432/rvtools \\\n"
+            "ARTIFACT_STORAGE_PATH=.local-artifacts \\\n"
+            "venv/bin/python -m streamlit run app.py",
+            language="bash",
+        )
+    else:
+        st.error("Database save is configured but unavailable.")
+        st.caption(message)
+        st.warning(
+            "To avoid losing progress: download planning-state.json now, "
+            "keep the source RVTools workbook, restart the database or "
+            "Docker Compose stack, then upload the same workbook and import "
+            "planning-state.json."
+        )
+
+
 def build_current_planning_state_json(
     edited_df,
     processed_vms,
@@ -532,23 +568,9 @@ def render_sidebar_save_progress(
                     f"{st.session_state['last_database_save_at']}"
                 )
         elif status == "not_configured":
-            st.info(
-                "Database save is not enabled. Download planning-state.json "
-                "before closing or refreshing."
-            )
-            st.caption("To enable database saves:")
-            st.write("1. Run `docker compose up --detach`.")
-            st.write("2. Confirm Postgres is healthy and reachable.")
-            st.write("3. Restart the app with `DATABASE_URL` configured.")
+            _render_database_save_unavailable(status, message)
         else:
-            st.error("Database save is configured but unavailable.")
-            st.caption(message)
-            st.warning(
-                "To avoid losing progress: download planning-state.json now, "
-                "keep the source RVTools workbook, restart the database or "
-                "Docker Compose stack, then upload the same workbook and import "
-                "planning-state.json."
-            )
+            _render_database_save_unavailable(status, message)
 
 
 def render_planning_state_controls(
