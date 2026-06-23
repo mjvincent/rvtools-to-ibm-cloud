@@ -62,3 +62,11 @@ def test_project_endpoints_require_configured_persistence():
 
     assert response.status_code == 503
     assert "DATABASE_URL" in response.json()["detail"]
+
+    response = client.patch(
+        "/api/projects/project-1",
+        json={"name": "Renamed project", "description": "updated"},
+    )
+
+    assert response.status_code == 503
+    assert "DATABASE_URL" in response.json()["detail"]

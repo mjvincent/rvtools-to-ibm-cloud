@@ -143,6 +143,32 @@ def get_project(project_id: str) -> dict[str, Any] | None:
     return dict(row) if row else None
 
 
+def update_project(
+    project_id: str,
+    name: str,
+    description: str = "",
+) -> dict[str, Any] | None:
+    with _connect() as conn:
+        row = conn.execute(
+            """
+            update projects
+            set name = %s, description = %s, updated_at = now()
+            where id = %s and deleted_at is null
+            returning id, name, description, created_at, updated_at
+            """,
+            (name, description, project_id),
+        ).fetchone()
+        if row:
+            conn.execute(
+                """
+                insert into project_events (id, project_id, event_type, message)
+                values (%s, %s, %s, %s)
+                """,
+                (str(uuid4()), project_id, "updated", "Project updated."),
+            )
+    return dict(row) if row else None
+
+
 def save_project_state(
     project_id: str,
     planning_state: dict[str, Any],

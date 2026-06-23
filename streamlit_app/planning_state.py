@@ -379,6 +379,99 @@ def _load_database_project_state(project_id):
     st.rerun()
 
 
+def render_sidebar_saved_projects():
+    """Render persistent database project load/manage controls."""
+    try:
+        projects = persistence.list_projects()
+    except Exception as exc:
+        st.sidebar.error(f"Could not load saved projects: {exc}")
+        return
+
+    st.sidebar.markdown("---")
+    with st.sidebar.expander("Saved Projects", expanded=False):
+        st.caption(
+            "Saved projects store planning state, not the RVTools workbook. "
+            "Upload the same workbook before loading a saved project."
+        )
+        if not projects:
+            st.info("No saved projects yet.")
+            return
+
+        options = _project_options(projects)
+        selected_label = st.selectbox(
+            "Project",
+            list(options),
+            key="sidebar_saved_project",
+        )
+        selected_project_id = options[selected_label]
+        selected_project = next(
+            project for project in projects
+            if project["id"] == selected_project_id
+        )
+        st.caption(
+            "Updated "
+            f"{selected_project.get('updated_at')} | ID "
+            f"{selected_project_id[:8]}"
+        )
+
+        if st.button("Load Saved Project", width="stretch"):
+            try:
+                _load_database_project_state(selected_project_id)
+            except Exception as exc:
+                st.error(f"Could not load project: {exc}")
+
+        with st.form("sidebar_saved_project_manage"):
+            new_name = st.text_input(
+                "Rename project",
+                value=selected_project.get("name", ""),
+                key="sidebar_saved_project_name",
+            )
+            new_description = st.text_area(
+                "Description",
+                value=selected_project.get("description", ""),
+                key="sidebar_saved_project_description",
+            )
+            c1, c2 = st.columns(2)
+            with c1:
+                rename_submitted = st.form_submit_button(
+                    "Rename",
+                    width="stretch",
+                )
+            with c2:
+                delete_submitted = st.form_submit_button(
+                    "Delete",
+                    width="stretch",
+                )
+
+        if rename_submitted:
+            if not new_name.strip():
+                st.warning("Enter a project name before renaming.")
+            else:
+                try:
+                    persistence.update_project(
+                        selected_project_id,
+                        new_name.strip(),
+                        new_description.strip(),
+                    )
+                    st.success("Saved project updated.")
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"Could not rename project: {exc}")
+
+        if delete_submitted:
+            try:
+                persistence.delete_project(selected_project_id)
+                if (
+                    st.session_state.get("active_database_project_id")
+                    == selected_project_id
+                ):
+                    st.session_state.pop("active_database_project_id", None)
+                st.success("Saved project deleted.")
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Could not delete project: {exc}")
+
+
 def render_database_project_controls(
     planning_state_json,
     project_name,
@@ -405,7 +498,9 @@ def render_database_project_controls(
     st.info(
         "Database save stores planning-state JSON and project metadata. "
         "Upload the same RVTools workbook before loading a saved project so "
-        "VM decisions and wave rows can be matched back to the current data."
+        "VM decisions and wave rows can be matched back to the current data. "
+        "Use the sidebar Saved Projects panel for day-to-day load, rename, "
+        "and delete actions."
     )
     with st.expander("Save current planning state to database"):
         save_name = st.text_input(
@@ -492,6 +587,11 @@ def render_database_project_controls(
             if st.button("Delete Saved Project", width="stretch"):
                 try:
                     persistence.delete_project(selected_project_id)
+                    if (
+                        st.session_state.get("active_database_project_id")
+                        == selected_project_id
+                    ):
+                        st.session_state.pop("active_database_project_id", None)
                     st.success("Saved project deleted.")
                     st.rerun()
                 except Exception as exc:
@@ -519,7 +619,11 @@ def render_sidebar_save_progress(
     )
     st.sidebar.markdown("---")
     with st.sidebar.expander("Save Progress", expanded=True):
-        st.caption("Planning edits are not automatically saved.")
+        st.caption(
+            "Planning edits are saved only when you download JSON or click "
+            "Save To Database. Keep the source RVTools workbook and download "
+            "generated ZIPs separately."
+        )
         st.download_button(
             label="Download Planning State",
             data=planning_state_json.encode("utf-8"),
@@ -574,6 +678,7 @@ def render_sidebar_save_progress(
                     "Last database save: "
                     f"{st.session_state['last_database_save_at']}"
                 )
+            render_sidebar_saved_projects()
         elif status == "not_configured":
             _render_database_save_unavailable(status, message)
         else:

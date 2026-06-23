@@ -52,7 +52,9 @@ def test_makefile_compose_up_builds_persistent_stack():
 
     assert "run:\n\tscripts/start_local_app.sh" in makefile_text
     assert "start:" in makefile_text
+    assert "stop:" in makefile_text
     assert "scripts/start_local_app.sh" in makefile_text
+    assert "scripts/stop_local_app.sh" in makefile_text
     assert "compose-up:" in makefile_text
     assert "docker compose up --build --detach" in makefile_text
     assert "compose-pull:" in makefile_text
@@ -63,10 +65,19 @@ def test_local_launcher_starts_compose_and_opens_streamlit():
     launcher_text = (
         ROOT / "scripts" / "start_local_app.sh"
     ).read_text(encoding="utf-8")
+    stop_text = (
+        ROOT / "scripts" / "stop_local_app.sh"
+    ).read_text(encoding="utf-8")
     command_text = (ROOT / "start-rvtools.command").read_text(encoding="utf-8")
+    stop_command_text = (
+        ROOT / "stop-rvtools.command"
+    ).read_text(encoding="utf-8")
 
     assert "docker compose up --build --detach" in launcher_text
     assert "http://localhost:8501" in launcher_text
     assert "/_stcore/health" in launcher_text
     assert "open \"$APP_URL\"" in launcher_text
+    assert "docker compose down" in stop_text
+    assert "Persistent database and artifact volumes were kept" in stop_text
     assert "scripts/start_local_app.sh" in command_text
+    assert "scripts/stop_local_app.sh" in stop_command_text

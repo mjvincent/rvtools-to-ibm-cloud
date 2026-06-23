@@ -1,4 +1,4 @@
-.PHONY: run start test compile docker-build docker-run docker-health compose-up compose-pull compose-down sample-workbook validate-terraform
+.PHONY: run start stop test compile docker-build docker-run docker-health compose-up compose-pull compose-down sample-workbook validate-terraform
 
 PORT ?= 8501
 IMAGE ?= rvtools-to-ibm-cloud
@@ -10,6 +10,9 @@ run:
 
 start:
 	scripts/start_local_app.sh
+
+stop:
+	scripts/stop_local_app.sh
 
 test:
 	$(PYTHON) -m pytest

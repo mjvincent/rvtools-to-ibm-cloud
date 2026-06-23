@@ -213,6 +213,17 @@ def test_database_unavailable_guidance_keeps_save_action_visible():
     assert "DATABASE_URL is only needed manually" in source
 
 
+def test_sidebar_saved_projects_ui_exposes_load_rename_delete():
+    source = inspect.getsource(planning_state.render_sidebar_saved_projects)
+
+    assert '"Saved Projects"' in source
+    assert '"Load Saved Project"' in source
+    assert '"Rename project"' in source
+    assert '"Delete"' in source
+    assert "planning state, not the RVTools workbook" in source
+    assert "persistence.update_project" in source
+
+
 def test_build_current_planning_state_json_matches_export_shape():
     df = pd.DataFrame([_vm(**{"Exclude?": False})])
 

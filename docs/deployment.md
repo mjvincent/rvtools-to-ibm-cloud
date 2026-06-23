@@ -94,6 +94,14 @@ The same launch is available from a terminal:
 make run
 ```
 
+Stop the local stack without deleting saved projects:
+
+```bash
+make stop
+```
+
+On macOS, `stop-rvtools.command` runs the same stop command. It keeps the persistent database and artifact volumes.
+
 ```bash
 docker compose up --build --detach
 ```
@@ -111,7 +119,7 @@ The Compose stack includes:
 - `postgres-data` — Docker volume for Postgres data.
 - `rvtools-artifacts` — Docker volume for uploaded RVTools workbooks and generated artifacts.
 
-In the Streamlit app, the sidebar `Save Progress` panel is available after workbook upload. It always offers a planning-state JSON download and shows database save status when persistence is configured. Database save/load stores planning-state JSON and project metadata. It does not remove the need to keep the source RVTools workbook. Upload the same RVTools workbook before loading a saved project so saved VM decisions and wave rows can be applied to the current dataframe.
+In the Streamlit app, the sidebar `Save Progress` panel is available after workbook upload. It always offers a planning-state JSON download and shows database save status when persistence is configured. The sidebar `Saved Projects` panel lists saved work and provides load, rename, and delete actions. Database save/load stores planning-state JSON and project metadata. It does not remove the need to keep the source RVTools workbook, and it does not replace downloaded Terraform ZIPs. Upload the same RVTools workbook before loading a saved project so saved VM decisions and wave rows can be applied to the current dataframe.
 
 Postgres is exposed on `localhost:5432` for local Python development. To run Streamlit from a local virtual environment against the Compose database:
 

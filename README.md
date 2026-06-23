@@ -34,8 +34,10 @@ http://localhost:8501
 To stop the app and database:
 
 ```bash
-docker compose down
+make stop
 ```
+
+On macOS, you can also double-click `stop-rvtools.command`. Stop keeps the persistent database and artifact volumes. Use `docker compose down --volumes` only when you intentionally want to erase saved projects.
 
 ### Option 2: Docker Compose
 Use this if you prefer the direct Docker command.
@@ -90,6 +92,7 @@ make test
 make sample-workbook
 make run
 make start
+make stop
 make docker-build
 make docker-run
 make compose-up
@@ -108,7 +111,7 @@ After opening the app, click `Load Sample Workbook` in the sidebar or upload `sa
 
 For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`. That workbook intentionally includes source-data issues and planning gaps, so readiness and preflight findings are expected. See `docs/sample-findings-walkthrough.md` for the expected practice findings.
 
-The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container. For a persistent local/team deployment, use `docker compose up` to run the prebuilt app image with Postgres and an artifact volume. In Streamlit, the sidebar `Save Progress` panel can download planning-state JSON at any time after upload, and database save/load persists planning-state JSON and project metadata when `DATABASE_URL` is configured. Keep the source RVTools workbook and upload it again before restoring a saved project.
+The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container. For a persistent local/team deployment, use `start-rvtools.command`, `make run`, or `docker compose up` to run the app with Postgres and an artifact volume. In Streamlit, the sidebar `Save Progress` panel can download planning-state JSON at any time after upload, save progress to Postgres, and reopen saved projects from the `Saved Projects` panel. Database save stores planning state and project metadata; it does not store the source RVTools workbook or replace downloaded Terraform ZIPs. Keep the source RVTools workbook and upload it again before restoring a saved project.
 
 ## Common First-Run Fixes
 | Symptom | Fix |

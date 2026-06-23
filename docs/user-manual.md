@@ -120,6 +120,7 @@ Click `Load Sample Workbook` in the sidebar for a first test run, or upload an R
 The sidebar and major planning controls include hover help for key selections such as target region, sizing threshold, pricing mode, wave fields, image import status, and Export package settings.
 
 Press `Ctrl+C` in the terminal to stop the app.
+If you started the preconfigured Docker stack, stop it with `make stop` or by double-clicking `stop-rvtools.command`. This keeps saved projects in the persistent database volume.
 
 ### Docker Path
 Use this if Docker Desktop or a compatible Docker runtime is already running.
@@ -162,6 +163,7 @@ If `make` is available, these shortcuts run the same commands. The Makefile uses
 make run
 make test
 make start
+make stop
 make docker-build
 make docker-run
 make compose-up
@@ -946,9 +948,11 @@ Use it from the Export tab to save a planning session and restore it later after
 
 After a workbook is loaded, the sidebar shows a persistent `Save Progress` panel. Use `Download Planning State` there at any time to save progress locally. The panel also shows the database save area. In the preconfigured launcher path, `Save To Database` is enabled and shows success or recovery messages. If the button is disabled or the panel says database save is not enabled, the current Streamlit process was started as a plain developer session without the database-backed stack. Stop that session and start the app with `start-rvtools.command` or `make run`.
 
-When the app is running with a configured `DATABASE_URL`, the Export tab also shows `Database Project Save/Load` controls. These controls save the same planning-state data to Postgres so teams can reopen a saved project later. They do not replace the RVTools workbook itself; upload the same RVTools workbook before loading a saved database project so VM decisions and wave rows can be matched back to the current assessment data. If database save fails, immediately download `planning-state.json`, keep the source RVTools workbook, restart the database or Docker Compose stack, then restore after uploading the same workbook.
+When database save is available, the sidebar also shows `Saved Projects`. Use it to load, rename, or delete saved planning work without going to the Export tab. Load a saved project only after uploading the same source RVTools workbook, so saved VM decisions, wave rows, remediation items, and image-import status can be applied to the current workbook data.
 
-Planning state does not include the uploaded RVTools workbook itself, generated ZIP bytes after the app closes, live Streamlit session state, Terraform execution state, or imported IBM Cloud images. Download planning-state JSON before closing, refreshing, switching machines, or handing work to another teammate.
+When the app is running with a configured `DATABASE_URL`, the Export tab also shows `Database Project Save/Load` controls. These controls save the same planning-state data to Postgres so teams can reopen a saved project later. They do not replace the RVTools workbook itself; upload the same RVTools workbook before loading a saved database project so VM decisions and wave rows can be matched back to the current assessment data. If database save fails, immediately download `planning-state.json`, keep the source RVTools workbook, restart the app with `start-rvtools.command` or `make run`, then restore after uploading the same workbook.
+
+Planning state does not include the uploaded RVTools workbook itself, generated ZIP bytes after the app closes, live Streamlit session state, Terraform execution state, or imported IBM Cloud images. Download generated ZIPs when they are built, keep the RVTools workbook with the project record, and download planning-state JSON before switching machines or handing work to another teammate.
 
 ## Priority 2 Migration Planning Workflow
 

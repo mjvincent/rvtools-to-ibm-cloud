@@ -39,6 +39,11 @@ class ProjectCreate(BaseModel):
     description: str = ""
 
 
+class ProjectUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    description: str = ""
+
+
 class ProjectStateSave(BaseModel):
     planning_state: dict[str, Any]
     target_region: str = DEFAULT_REGION
@@ -192,6 +197,19 @@ def get_project(project_id: str) -> dict[str, Any]:
         "state": persistence.get_project_state(project_id),
         "artifacts": persistence.list_artifacts(project_id),
     }
+
+
+@app.patch("/api/projects/{project_id}")
+def update_project(project_id: str, payload: ProjectUpdate) -> dict[str, Any]:
+    _require_persistence()
+    project = persistence.update_project(
+        project_id,
+        payload.name,
+        payload.description,
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    return {"project": project}
 
 
 @app.put("/api/projects/{project_id}/state")
