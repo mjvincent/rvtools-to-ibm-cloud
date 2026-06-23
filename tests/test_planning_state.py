@@ -208,7 +208,9 @@ def test_database_unavailable_guidance_keeps_save_action_visible():
     assert '"Save To Database"' in source
     assert "disabled=True" in source
     assert "docker compose up --build --detach" in source
-    assert "DATABASE_URL=postgresql://rvtools:rvtools@localhost:5432/rvtools" in source
+    assert "start-rvtools.command" in source
+    assert "make run" in source
+    assert "DATABASE_URL is only needed manually" in source
 
 
 def test_build_current_planning_state_json_matches_export_shape():

@@ -268,16 +268,23 @@ def _render_database_save_unavailable(status, message):
             "Database save is not enabled in this running app session because "
             "`DATABASE_URL` is not configured."
         )
-        st.caption("Use one of these database-backed launch paths:")
+        st.caption(
+            "Stop this plain Streamlit session and start the preconfigured "
+            "persistent app instead. It starts Postgres, configures "
+            "DATABASE_URL, waits for Streamlit, and opens the browser."
+        )
+        st.code("Double-click start-rvtools.command", language="text")
+        st.caption("Terminal equivalent:")
+        st.code("make run", language="bash")
+        st.caption("Direct Compose equivalent:")
         st.code("docker compose up --build --detach", language="bash")
         st.caption(
-            "Then open http://localhost:8501. If you are running Streamlit "
-            "from the local virtualenv, start it with:"
+            "After the preconfigured app opens at http://localhost:8501, "
+            "upload the workbook again and database save will be enabled."
         )
         st.code(
-            "DATABASE_URL=postgresql://rvtools:rvtools@localhost:5432/rvtools \\\n"
-            "ARTIFACT_STORAGE_PATH=.local-artifacts \\\n"
-            "venv/bin/python -m streamlit run app.py",
+            "DATABASE_URL is only needed manually for developer-only "
+            "plain Streamlit runs.",
             language="bash",
         )
     else:

@@ -98,25 +98,24 @@ Use this if Python is already installed.
 
 1. Install dependencies:
 
+For the normal local app with database-backed `Save Progress`, start OrbStack or Docker Desktop, then double-click `start-rvtools.command` from the repository root. The launcher builds and starts Streamlit, Postgres, the experimental FastAPI prototype, and Docker volumes for project metadata and artifacts. It waits for the app to become healthy and opens `http://localhost:8501` automatically.
+
+For the same preconfigured launch from a terminal:
+
 ```bash
-python -m pip install -r requirements.txt
+make run
 ```
 
-2. Start the Streamlit application:
+Plain Python is a developer-only path and does not start Postgres automatically:
 
 ```bash
+python -m pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
-If `streamlit` is on your shell path, this shorter command is equivalent:
+Open the Streamlit URL shown in the terminal, usually `http://localhost:8501`.
 
-```bash
-streamlit run app.py
-```
-
-3. Open the Streamlit URL shown in the terminal, usually `http://localhost:8501`.
-
-4. Click `Load Sample Workbook` in the sidebar for a first test run, or upload an RVTools XLSX export. Open `Help And Samples` in the sidebar for sample descriptions, expected workshop findings, recommended workflow, documentation paths, and the reminder that the app generates Terraform handoff files but does not run Terraform or perform cutover. For a larger practice workbook with expected readiness findings, upload `samples/SizingWorkshop-RVTools.xlsx` and review `docs/sample-findings-walkthrough.md`.
+Click `Load Sample Workbook` in the sidebar for a first test run, or upload an RVTools XLSX export. Open `Help And Samples` in the sidebar for sample descriptions, expected workshop findings, recommended workflow, documentation paths, and the reminder that the app generates Terraform handoff files but does not run Terraform or perform cutover. For a larger practice workbook with expected readiness findings, upload `samples/SizingWorkshop-RVTools.xlsx` and review `docs/sample-findings-walkthrough.md`.
 
 The sidebar and major planning controls include hover help for key selections such as target region, sizing threshold, pricing mode, wave fields, image import status, and Export package settings.
 
@@ -130,7 +129,7 @@ For the simplest database-backed local launch on macOS, start OrbStack or Docker
 For the same persistent launch from a terminal:
 
 ```bash
-make start
+make run
 ```
 
 Or run the persistent Compose stack directly:
@@ -162,6 +161,7 @@ If `make` is available, these shortcuts run the same commands. The Makefile uses
 ```bash
 make run
 make test
+make start
 make docker-build
 make docker-run
 make compose-up
@@ -942,7 +942,7 @@ A reloadable planning-state bundle containing VM decision fields, wave planning 
 
 Use it from the Export tab to save a planning session and restore it later after uploading the same RVTools workbook. After import, the app summarizes restored VM decisions, wave rows, remediation items, image groups, and skipped rows so reviewers know what was applied.
 
-After a workbook is loaded, the sidebar shows a persistent `Save Progress` panel. Use `Download Planning State` there at any time to save progress locally. The panel also shows the database save area. When the app is running with a configured `DATABASE_URL`, `Save To Database` is enabled and shows success or recovery messages. If the button is disabled or the panel says database save is not enabled, the current Streamlit process was started without a usable database connection. Start the Compose stack with `docker compose up --build --detach`, then open `http://localhost:8501`; or, for local virtualenv Streamlit, start the app with `DATABASE_URL=postgresql://rvtools:rvtools@localhost:5432/rvtools`.
+After a workbook is loaded, the sidebar shows a persistent `Save Progress` panel. Use `Download Planning State` there at any time to save progress locally. The panel also shows the database save area. In the preconfigured launcher path, `Save To Database` is enabled and shows success or recovery messages. If the button is disabled or the panel says database save is not enabled, the current Streamlit process was started as a plain developer session without the database-backed stack. Stop that session and start the app with `start-rvtools.command` or `make run`.
 
 When the app is running with a configured `DATABASE_URL`, the Export tab also shows `Database Project Save/Load` controls. These controls save the same planning-state data to Postgres so teams can reopen a saved project later. They do not replace the RVTools workbook itself; upload the same RVTools workbook before loading a saved database project so VM decisions and wave rows can be matched back to the current assessment data. If database save fails, immediately download `planning-state.json`, keep the source RVTools workbook, restart the database or Docker Compose stack, then restore after uploading the same workbook.
 

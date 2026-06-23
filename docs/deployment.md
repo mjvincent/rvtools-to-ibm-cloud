@@ -91,7 +91,7 @@ It builds and starts the persistent stack, waits for Streamlit health, and opens
 The same launch is available from a terminal:
 
 ```bash
-make start
+make run
 ```
 
 ```bash

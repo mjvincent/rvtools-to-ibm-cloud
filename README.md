@@ -6,26 +6,10 @@ This utility automates the conversion of VMware RVTools exports into modular IBM
 ## Quick Start
 Choose one path from the repository root.
 
-### Option 1: Python
-Use this if Python is already installed.
+### Option 1: Preconfigured Local App
+Use this for the normal local experience with database-backed `Save Progress`.
 
-```bash
-python -m pip install -r requirements.txt
-python -m streamlit run app.py
-```
-
-Open the Streamlit URL shown in the terminal, usually:
-
-```text
-http://localhost:8501
-```
-
-Press `Ctrl+C` in the terminal to stop the app.
-
-### Option 2: Docker
-Use this if Docker Desktop or a compatible Docker runtime is already running.
-
-For the simplest local database-backed launch on macOS, start OrbStack or Docker Desktop, then double-click:
+Start OrbStack or Docker Desktop, then double-click:
 
 ```text
 start-rvtools.command
@@ -33,13 +17,26 @@ start-rvtools.command
 
 The launcher builds and starts Streamlit, Postgres, the prototype API, and persistent Docker volumes. It waits for the app to become healthy and opens `http://localhost:8501` automatically. Streamlit receives `DATABASE_URL`, so the sidebar `Save Progress` panel can save planning state to the database.
 
-For the same persistent launch from a terminal:
+For the same preconfigured launch from a terminal:
 
 ```bash
-make start
+make run
 ```
 
-Or run the Compose stack directly:
+Open:
+
+```text
+http://localhost:8501
+```
+
+To stop the app and database:
+
+```bash
+docker compose down
+```
+
+### Option 2: Docker Compose
+Use this if you prefer the direct Docker command.
 
 ```bash
 docker compose up --build --detach
@@ -50,6 +47,8 @@ Open:
 ```text
 http://localhost:8501
 ```
+
+This is the same database-backed stack used by the launcher.
 
 For a stateless single-container run without database save:
 
@@ -64,7 +63,7 @@ After the GHCR image is published, use the prebuilt persistent stack with:
 APP_IMAGE=ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest docker compose up --detach
 ```
 
-Postgres is also exposed on `localhost:5432` for local Python/Streamlit development.
+Postgres is also exposed on `localhost:5432` for developer-only local Python/Streamlit runs.
 
 ```bash
 DATABASE_URL=postgresql://rvtools:rvtools@localhost:5432/rvtools \
@@ -72,18 +71,22 @@ ARTIFACT_STORAGE_PATH=.local-artifacts \
 venv/bin/python -m streamlit run app.py
 ```
 
-### Option 3: Make
-Use this for the shortest local commands. The Makefile uses `venv/bin/python` when present, otherwise `python3`.
+### Option 3: Python Development
+Use this only for development when you intentionally do not want the preconfigured Docker/Postgres stack.
 
 ```bash
-make run
+python -m pip install -r requirements.txt
+python -m streamlit run app.py
 ```
+
+Plain Python does not start Postgres by itself. Use `start-rvtools.command` or `make run` for the normal database-backed app.
 
 Other useful commands:
 
 ```bash
 make test
 make sample-workbook
+make run
 make start
 make docker-build
 make docker-run

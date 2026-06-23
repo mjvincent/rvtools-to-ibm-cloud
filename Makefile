@@ -6,7 +6,7 @@ APP_IMAGE ?= rvtools-to-ibm-cloud:local
 PYTHON ?= $(shell if [ -x venv/bin/python ]; then echo venv/bin/python; else echo python3; fi)
 
 run:
-	$(PYTHON) -m streamlit run app.py
+	scripts/start_local_app.sh
 
 start:
 	scripts/start_local_app.sh

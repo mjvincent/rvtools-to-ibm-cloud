@@ -49,6 +49,7 @@ def test_github_actions_publish_ghcr_and_smoke_compose():
 def test_makefile_compose_up_builds_persistent_stack():
     makefile_text = (ROOT / "Makefile").read_text(encoding="utf-8")
 
+    assert "run:\n\tscripts/start_local_app.sh" in makefile_text
     assert "start:" in makefile_text
     assert "scripts/start_local_app.sh" in makefile_text
     assert "compose-up:" in makefile_text
