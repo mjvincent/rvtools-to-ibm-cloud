@@ -1,0 +1,62 @@
+services:
+  app:
+    image: ${APP_IMAGE:-ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest}
+    ports:
+      - "${STREAMLIT_PORT:-8501}:8501"
+    environment:
+      APP_PERSISTENCE_ENABLED: "true"
+      DATABASE_URL: postgresql://rvtools:rvtools@postgres:5432/rvtools
+      ARTIFACT_STORAGE_PATH: /data/artifacts
+    volumes:
+      - rvtools-artifacts:/data/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  api:
+    image: ${APP_IMAGE:-ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest}
+    command: >
+      uvicorn prototype.api.app:app
+      --host 0.0.0.0
+      --port 8000
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      APP_PERSISTENCE_ENABLED: "true"
+      DATABASE_URL: postgresql://rvtools:rvtools@postgres:5432/rvtools
+      ARTIFACT_STORAGE_PATH: /data/artifacts
+    volumes:
+      - rvtools-artifacts:/data/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: rvtools
+      POSTGRES_PASSWORD: rvtools
+      POSTGRES_DB: rvtools
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rvtools -d rvtools"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+  rvtools-artifacts:

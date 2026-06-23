@@ -10,7 +10,8 @@ Use one of these patterns:
 | Pattern | Best for | Notes |
 | --- | --- | --- |
 | Local Streamlit | Individual assessments and sensitive customer data that should stay on one workstation. | Run `streamlit run app.py` and use the local browser URL. |
-| Local container | Validating deployment behavior before sharing the app. | Builds and runs the same container used by hosted platforms. |
+| Local container | Validating deployment behavior before sharing the app. | Pulls or builds the same container used by hosted platforms. |
+| Persistent Docker Compose | Private team evaluation with saved projects. | Runs the app image with Postgres and a Docker artifact volume. |
 | Hosted private Streamlit container | Migration teams that need shared browser access. | Recommended for team use; require authentication and HTTPS. |
 | Static HTML landing page | Intranet navigation or documentation only. | Can link to the Streamlit app, but cannot replace the Python backend. |
 | Full web app rewrite | Multi-user saved projects, database-backed workflows, audit trails, or enterprise productization. | Larger architecture change; not required for the current migration workbench. |
@@ -20,8 +21,9 @@ For migration team use, deploy the app as a private containerized Streamlit serv
 
 Recommended order:
 1. Run locally for individual assessment work.
-2. Run the included container image for team validation.
-3. Deploy the container to IBM Cloud Code Engine or an internal container platform.
+2. Pull the prebuilt GHCR image or run the included container image for team validation.
+3. Use Docker Compose when project metadata, uploaded workbooks, and generated artifacts should persist across restarts.
+4. Deploy the container to IBM Cloud Code Engine or an internal container platform.
 
 IBM Cloud Code Engine is a good first hosted target because it can run containerized web apps and supports Dockerfile-based source builds. IBM documents that Code Engine apps default to port `8080` unless the app is created with another port, and that private visibility can keep an app off the public internet.
 
@@ -35,6 +37,13 @@ Streamlit's Docker deployment guidance is also useful for local and container-pl
 - https://docs.streamlit.io/deploy/concepts
 
 ## Local Container Run
+Pull the prebuilt image from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+docker run --rm -p 8501:8501 ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+```
+
 Build the image from the repository root:
 
 ```bash
@@ -66,6 +75,51 @@ Use another host port if `8501` is already busy:
 
 ```bash
 make docker-run PORT=8502
+```
+
+## Persistent Docker Compose
+Use Docker Compose when the team wants the prebuilt app image plus persistent project storage on one host:
+
+```bash
+docker compose up --detach
+```
+
+Open:
+
+```text
+http://localhost:8501
+```
+
+The Compose stack includes:
+- `app` — the supported Streamlit workbench.
+- `api` — an experimental FastAPI prototype for project persistence and the Carbon UI upload slice.
+- `postgres` — project metadata and planning-state storage.
+- `postgres-data` — Docker volume for Postgres data.
+- `rvtools-artifacts` — Docker volume for uploaded RVTools workbooks and generated artifacts.
+
+The stack uses the prebuilt image by default:
+
+```text
+ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+```
+
+Use a local image instead:
+
+```bash
+docker build -t rvtools-to-ibm-cloud:local .
+APP_IMAGE=rvtools-to-ibm-cloud:local docker compose up --detach
+```
+
+Stop the stack:
+
+```bash
+docker compose down
+```
+
+Remove persisted database and artifact volumes only when the saved project data is no longer needed:
+
+```bash
+docker compose down --volumes
 ```
 
 ## IBM Cloud Code Engine
@@ -109,6 +163,7 @@ Before shared deployment:
 - Define retention expectations for browser downloads, exported handoff packages, and any platform logs.
 - Do not store IBM Cloud API keys in the image. Use approved environment variable, secret, or workload identity patterns if live catalog access is needed.
 - Treat generated Terraform and handoff files as sensitive migration planning artifacts.
+- Persistent Docker Compose stores project metadata in Postgres and uploaded/generated files in the `rvtools-artifacts` volume until explicitly removed.
 
 The included `.dockerignore` and `.ceignore` exclude common local secrets, virtual environments, Terraform state files, generated ZIPs, logs, and workbook inputs from container builds and Code Engine source uploads. These ignore files reduce accidental packaging risk; they do not replace source-control review or secret scanning.
 
@@ -122,8 +177,36 @@ A static HTML page can be useful as a landing page, internal launch page, or doc
 
 Keeping Streamlit as the served app is the lowest-risk path. A separate HTML/React frontend plus API backend would be a new product architecture, not a packaging change.
 
+## Experimental Carbon UI Prototype
+The repository includes an experimental IBM Carbon Design System prototype under `prototype/carbon-ui` and a thin FastAPI prototype under `prototype/api`.
+
+The prototype is not the supported production UI. It exists to evaluate whether an IBM Cloud-style Carbon interface materially improves usability and credibility before any future Streamlit replacement is considered.
+
+Run the API:
+
+```bash
+uvicorn prototype.api.app:app --reload --port 8000
+```
+
+Run the Carbon frontend:
+
+```bash
+cd prototype/carbon-ui
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+The Carbon upload area calls the real FastAPI workbook summary endpoint. Deeper planning and export panels are intentionally mocked in this first prototype slice.
+
 ## Deployment Files
 - `Dockerfile` builds the Streamlit container and starts `app.py`.
+- `docker-compose.yml` runs the prebuilt app image with Postgres, artifact storage, and the experimental API.
 - `.dockerignore` keeps local artifacts and sensitive input/output files out of the image.
 - `.ceignore` keeps local artifacts and sensitive input/output files out of Code Engine source uploads.
 - `.streamlit/config.toml` disables usage stats and sets the app to run headless on `0.0.0.0`.
