@@ -30,6 +30,18 @@ The workbook upload area calls the real FastAPI summary endpoint. The saved
 project controls call the real FastAPI/Postgres project endpoints. Deeper
 planning and export panels are intentionally mocked in this first slice.
 
+## Smoke Test
+
+With Docker Compose running and the Carbon dev server available on
+`http://localhost:3000`, run:
+
+```bash
+npm run test:e2e
+```
+
+The smoke test uploads the bundled small RVTools workbook, saves a Carbon
+prototype project, reloads it from Postgres, and deletes the temporary project.
+
 ## Git Hygiene
 
 - Keep Carbon UI work under `prototype/carbon-ui`.

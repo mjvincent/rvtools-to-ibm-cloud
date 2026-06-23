@@ -38,6 +38,9 @@ def test_carbon_ui_prototype_declares_expected_stack_and_workflows():
     assert "Load" in page_text
     assert "Save project" in page_text
     assert "Streamlit remains the supported app" in page_text
+    assert (
+        ROOT / "prototype" / "carbon-ui" / "e2e" / "carbon-smoke.spec.ts"
+    ).exists()
 
 
 def test_carbon_strategy_documents_parallel_track_and_promotion_gates():
