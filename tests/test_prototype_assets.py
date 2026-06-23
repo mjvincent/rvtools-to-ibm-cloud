@@ -34,9 +34,16 @@ def test_carbon_ui_prototype_declares_expected_stack_and_workflows():
     assert "FileUploaderDropContainer" in page_text
     assert "/api/workbooks/summary" in page_text
     assert "/api/projects" in page_text
-    assert "carbon-prototype-0.1" in page_text
+    assert "carbon-prototype-0.2" in page_text
     assert "Load" in page_text
     assert "Save project" in page_text
+    assert "VM Assignment Workbench" in page_text
+    assert "Create VPC" in page_text
+    assert "Storage / IOPS Plan" in page_text
+    assert "carbon_resources" in page_text
+    assert "Generated network diagram" in page_text
+    assert "Create network component" in page_text
+    assert "Transit Gateway" in page_text
     assert "Streamlit remains the supported app" in page_text
     assert (
         ROOT / "prototype" / "carbon-ui" / "e2e" / "carbon-smoke.spec.ts"

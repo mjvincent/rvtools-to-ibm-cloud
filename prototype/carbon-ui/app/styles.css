@@ -52,7 +52,16 @@ body {
 }
 
 .metric-tile {
+  cursor: default;
   min-height: 8rem;
+}
+
+.metric-tile--button {
+  cursor: pointer;
+}
+
+.metric-tile--button:hover {
+  outline: 2px solid #0f62fe;
 }
 
 .metric-value {
@@ -78,6 +87,266 @@ body {
   font-size: 1.5rem;
   font-weight: 400;
   margin-bottom: 0.25rem;
+}
+
+.section-header.compact {
+  margin-bottom: 0.75rem;
+}
+
+.section-header.compact h2 {
+  font-size: 1.25rem;
+}
+
+.assignment-layout {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+}
+
+.assignment-main,
+.assignment-panel {
+  min-height: 34rem;
+}
+
+.assignment-toolbar {
+  align-items: end;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(18rem, 1fr) minmax(14rem, 18rem);
+  margin-bottom: 1rem;
+}
+
+.vm-table-wrap {
+  overflow-x: auto;
+}
+
+.vm-table {
+  border-collapse: collapse;
+  min-width: 72rem;
+  width: 100%;
+}
+
+.vm-table th,
+.vm-table td {
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.vm-table th {
+  background: #f4f4f4;
+  color: #525252;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.vm-table th button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.vm-table td span {
+  color: #6f6f6f;
+  display: block;
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+}
+
+.vm-table .cds--tag {
+  margin-bottom: 0.25rem;
+  margin-right: 0.25rem;
+}
+
+.empty-value {
+  color: #8d8d8d;
+  font-style: italic;
+}
+
+.mode-switcher {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.mode-switcher .cds--btn {
+  justify-content: center;
+  max-width: none;
+  width: 100%;
+}
+
+.bucket-actions {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr;
+  margin-bottom: 1rem;
+}
+
+.bucket-actions .cds--btn {
+  max-width: none;
+  width: 100%;
+}
+
+.bucket-list,
+.resource-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.bucket-group-label {
+  color: #525252;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.vpc-bucket-strip {
+  border-bottom: 1px solid #e0e0e0;
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+}
+
+.vpc-pill-tile {
+  border-left: 4px solid #0f62fe;
+  min-height: 4rem;
+  padding: 0.75rem;
+}
+
+.vpc-pill-tile span {
+  color: #525252;
+  display: block;
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+}
+
+.bucket-tile {
+  align-items: start;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.bucket-tile h3,
+.resource-tile h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.bucket-tile p,
+.resource-tile p {
+  color: #525252;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.resource-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.network-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.network-diagram {
+  display: grid;
+  gap: 1rem;
+}
+
+.diagram-vpc {
+  background: #f4f4f4;
+  border: 2px solid #0f62fe;
+  padding: 1rem;
+}
+
+.diagram-vpc-header {
+  align-items: start;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.diagram-vpc-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.diagram-kicker,
+.diagram-label {
+  color: #525252;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.diagram-lane {
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+}
+
+.diagram-node-grid,
+.diagram-component-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 0.75rem;
+}
+
+.diagram-node,
+.diagram-component {
+  background: #ffffff;
+  border: 1px solid #8d8d8d;
+  min-height: 6.5rem;
+  padding: 0.75rem;
+}
+
+.diagram-node strong,
+.diagram-node span,
+.diagram-component strong,
+.diagram-component span {
+  display: block;
+}
+
+.diagram-node span,
+.diagram-component span {
+  color: #525252;
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+}
+
+.diagram-node .cds--tag,
+.diagram-component .cds--tag {
+  margin-top: 0.5rem;
+}
+
+.diagram-node--empty {
+  align-items: center;
+  color: #6f6f6f;
+  display: flex;
+  font-style: italic;
+}
+
+.network-component-catalog {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 1rem;
 }
 
 .summary-grid {
@@ -126,5 +395,18 @@ body {
 
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .assignment-layout,
+  .assignment-toolbar,
+  .diagram-component-grid,
+  .diagram-node-grid,
+  .resource-list {
+    grid-template-columns: 1fr;
+  }
+
+  .assignment-main,
+  .assignment-panel {
+    min-height: auto;
   }
 }

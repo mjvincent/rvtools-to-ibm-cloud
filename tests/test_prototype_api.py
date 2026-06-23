@@ -41,6 +41,14 @@ def test_workbook_summary_upload_uses_existing_engine():
     assert payload["estate_summary"]["excluded"] == 1
     assert "readiness_counts" in payload
     assert payload["readiness_rows"]
+    assert payload["assignment_rows"]
+    assignment_row = payload["assignment_rows"][0]
+    assert "VM Key" in assignment_row
+    assert "VM Name" in assignment_row
+    assert "Subnet" in assignment_row
+    assert "Security Group" in assignment_row
+    assert "Override Storage Tier" in assignment_row
+    assert "Wave" in assignment_row
 
 
 def test_workbook_summary_rejects_non_xlsx_upload():
