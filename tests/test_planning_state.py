@@ -15,6 +15,7 @@ from streamlit_app.package_builder import build_terraform_bundle
 from streamlit_app.planning_state import apply_planning_state_to_dataframe
 from streamlit_app.planning_state import build_planning_state_restore_summary
 from streamlit_app.planning_state import build_session_safety_rows
+from streamlit_app.planning_state import database_persistence_available
 
 
 def _vm(**overrides):
@@ -178,6 +179,14 @@ def test_session_safety_rows_explain_restore_boundary_and_actions():
     assert "Terraform execution state" in text
     assert "Download planning state before closing" in text
     assert "handing work to another teammate" in text
+
+
+def test_database_persistence_availability_follows_database_url(monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    assert database_persistence_available() is False
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://example")
+    assert database_persistence_available() is True
 
 
 def test_manifest_references_planning_state_file():

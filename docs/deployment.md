@@ -91,11 +91,13 @@ http://localhost:8501
 ```
 
 The Compose stack includes:
-- `app` — the supported Streamlit workbench.
+- `app` — the supported Streamlit workbench, including optional database project save/load for planning state.
 - `api` — an experimental FastAPI prototype for project persistence and the Carbon UI upload slice.
 - `postgres` — project metadata and planning-state storage.
 - `postgres-data` — Docker volume for Postgres data.
 - `rvtools-artifacts` — Docker volume for uploaded RVTools workbooks and generated artifacts.
+
+In the Streamlit app, database save/load stores planning-state JSON and project metadata. It does not remove the need to keep the source RVTools workbook. Upload the same RVTools workbook before loading a saved project so saved VM decisions and wave rows can be applied to the current dataframe.
 
 The stack uses the prebuilt image by default:
 
