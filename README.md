@@ -25,7 +25,21 @@ Press `Ctrl+C` in the terminal to stop the app.
 ### Option 2: Docker
 Use this if Docker Desktop or a compatible Docker runtime is already running.
 
-For a persistent Streamlit app with Postgres-backed save progress, run the Compose stack from the repository root:
+For the simplest local database-backed launch on macOS, start OrbStack or Docker Desktop, then double-click:
+
+```text
+start-rvtools.command
+```
+
+The launcher builds and starts Streamlit, Postgres, the prototype API, and persistent Docker volumes. It waits for the app to become healthy and opens `http://localhost:8501` automatically. Streamlit receives `DATABASE_URL`, so the sidebar `Save Progress` panel can save planning state to the database.
+
+For the same persistent launch from a terminal:
+
+```bash
+make start
+```
+
+Or run the Compose stack directly:
 
 ```bash
 docker compose up --build --detach
@@ -36,8 +50,6 @@ Open:
 ```text
 http://localhost:8501
 ```
-
-This starts Streamlit, Postgres, the prototype API, and persistent Docker volumes. Streamlit receives `DATABASE_URL` automatically, so the sidebar `Save Progress` panel can save planning state to the database.
 
 For a stateless single-container run without database save:
 
@@ -72,6 +84,7 @@ Other useful commands:
 ```bash
 make test
 make sample-workbook
+make start
 make docker-build
 make docker-run
 make compose-up

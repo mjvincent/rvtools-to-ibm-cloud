@@ -1,4 +1,4 @@
-.PHONY: run test compile docker-build docker-run docker-health compose-up compose-pull compose-down sample-workbook validate-terraform
+.PHONY: run start test compile docker-build docker-run docker-health compose-up compose-pull compose-down sample-workbook validate-terraform
 
 PORT ?= 8501
 IMAGE ?= rvtools-to-ibm-cloud
@@ -7,6 +7,9 @@ PYTHON ?= $(shell if [ -x venv/bin/python ]; then echo venv/bin/python; else ech
 
 run:
 	$(PYTHON) -m streamlit run app.py
+
+start:
+	scripts/start_local_app.sh
 
 test:
 	$(PYTHON) -m pytest

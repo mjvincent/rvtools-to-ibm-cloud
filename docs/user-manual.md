@@ -125,13 +125,21 @@ Press `Ctrl+C` in the terminal to stop the app.
 ### Docker Path
 Use this if Docker Desktop or a compatible Docker runtime is already running.
 
-For database-backed `Save Progress`, run the persistent Compose stack from the repository root:
+For the simplest database-backed local launch on macOS, start OrbStack or Docker Desktop, then double-click `start-rvtools.command` from the repository root. The launcher builds and starts Streamlit, Postgres, the experimental FastAPI prototype, and Docker volumes for project metadata and artifacts. It waits for the app to become healthy and opens `http://localhost:8501` automatically.
+
+For the same persistent launch from a terminal:
+
+```bash
+make start
+```
+
+Or run the persistent Compose stack directly:
 
 ```bash
 docker compose up --build --detach
 ```
 
-Open `http://localhost:8501` and upload an RVTools XLSX export in the sidebar. This starts Streamlit, Postgres, an experimental FastAPI prototype, and Docker volumes for project metadata and artifacts. Streamlit receives `DATABASE_URL` automatically, so the sidebar `Save Progress` panel can save planning state to the database.
+Open `http://localhost:8501` and upload an RVTools XLSX export in the sidebar. Streamlit receives `DATABASE_URL` automatically in the Compose-backed launch, so the sidebar `Save Progress` panel can save planning state to the database.
 
 For a stateless single-container run without database save:
 

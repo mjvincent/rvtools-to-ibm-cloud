@@ -80,6 +80,20 @@ make docker-run PORT=8502
 ## Persistent Docker Compose
 Use Docker Compose when the team wants Streamlit plus persistent project storage on one host. This is the recommended Docker path when users need database-backed `Save Progress`.
 
+On macOS with OrbStack or Docker Desktop running, the simplest local launch is the root launcher:
+
+```text
+start-rvtools.command
+```
+
+It builds and starts the persistent stack, waits for Streamlit health, and opens `http://localhost:8501` automatically.
+
+The same launch is available from a terminal:
+
+```bash
+make start
+```
+
 ```bash
 docker compose up --build --detach
 ```
