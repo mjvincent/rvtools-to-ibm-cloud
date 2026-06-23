@@ -78,10 +78,10 @@ make docker-run PORT=8502
 ```
 
 ## Persistent Docker Compose
-Use Docker Compose when the team wants the prebuilt app image plus persistent project storage on one host:
+Use Docker Compose when the team wants Streamlit plus persistent project storage on one host. This is the recommended Docker path when users need database-backed `Save Progress`.
 
 ```bash
-docker compose up --detach
+docker compose up --build --detach
 ```
 
 Open:
@@ -99,17 +99,25 @@ The Compose stack includes:
 
 In the Streamlit app, the sidebar `Save Progress` panel is available after workbook upload. It always offers a planning-state JSON download and shows database save status when persistence is configured. Database save/load stores planning-state JSON and project metadata. It does not remove the need to keep the source RVTools workbook. Upload the same RVTools workbook before loading a saved project so saved VM decisions and wave rows can be applied to the current dataframe.
 
-The stack uses the prebuilt image by default:
-
-```text
-ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
-```
-
-Use a local image instead:
+Postgres is exposed on `localhost:5432` for local Python development. To run Streamlit from a local virtual environment against the Compose database:
 
 ```bash
-docker build -t rvtools-to-ibm-cloud:local .
-APP_IMAGE=rvtools-to-ibm-cloud:local docker compose up --detach
+DATABASE_URL=postgresql://rvtools:rvtools@localhost:5432/rvtools \
+ARTIFACT_STORAGE_PATH=.local-artifacts \
+venv/bin/python -m streamlit run app.py
+```
+
+After the GHCR image is published, use the prebuilt image with:
+
+```bash
+APP_IMAGE=ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest docker compose up --detach
+```
+
+For a stateless single-container run without database save:
+
+```bash
+docker build -t rvtools-to-ibm-cloud .
+docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
 ```
 
 Stop the stack:

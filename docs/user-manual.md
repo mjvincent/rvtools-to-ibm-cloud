@@ -125,23 +125,28 @@ Press `Ctrl+C` in the terminal to stop the app.
 ### Docker Path
 Use this if Docker Desktop or a compatible Docker runtime is already running.
 
-Pull the prebuilt image:
+For database-backed `Save Progress`, run the persistent Compose stack from the repository root:
 
 ```bash
-docker pull ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
-docker run --rm -p 8501:8501 ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
+docker compose up --build --detach
 ```
 
-Or build the image locally:
+Open `http://localhost:8501` and upload an RVTools XLSX export in the sidebar. This starts Streamlit, Postgres, an experimental FastAPI prototype, and Docker volumes for project metadata and artifacts. Streamlit receives `DATABASE_URL` automatically, so the sidebar `Save Progress` panel can save planning state to the database.
+
+For a stateless single-container run without database save:
 
 ```bash
 docker build -t rvtools-to-ibm-cloud .
 docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
 ```
 
-Open `http://localhost:8501` and upload an RVTools XLSX export in the sidebar.
+After the prebuilt GHCR image is published, use it with:
 
-For persistent private/team evaluation, run `docker compose up --detach`. This starts the Streamlit app, an experimental FastAPI prototype, Postgres, and Docker volumes for project metadata and artifacts. See [Deployment Guide](deployment.md) before storing customer RVTools data.
+```bash
+APP_IMAGE=ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest docker compose up --detach
+```
+
+See [Deployment Guide](deployment.md) before storing customer RVTools data.
 
 ### Makefile Shortcuts
 If `make` is available, these shortcuts run the same commands. The Makefile uses `venv/bin/python` when present, otherwise `python3`.
@@ -152,6 +157,7 @@ make test
 make docker-build
 make docker-run
 make compose-up
+make compose-pull
 make compose-down
 ```
 

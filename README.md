@@ -25,24 +25,39 @@ Press `Ctrl+C` in the terminal to stop the app.
 ### Option 2: Docker
 Use this if Docker Desktop or a compatible Docker runtime is already running.
 
-Pull the prebuilt image from GitHub Container Registry:
+For a persistent Streamlit app with Postgres-backed save progress, run the Compose stack from the repository root:
 
 ```bash
-docker pull ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
-docker run --rm -p 8501:8501 ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest
-```
-
-Or build it locally:
-
-```bash
-docker build -t rvtools-to-ibm-cloud .
-docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
+docker compose up --build --detach
 ```
 
 Open:
 
 ```text
 http://localhost:8501
+```
+
+This starts Streamlit, Postgres, the prototype API, and persistent Docker volumes. Streamlit receives `DATABASE_URL` automatically, so the sidebar `Save Progress` panel can save planning state to the database.
+
+For a stateless single-container run without database save:
+
+```bash
+docker build -t rvtools-to-ibm-cloud .
+docker run --rm -p 8501:8501 rvtools-to-ibm-cloud
+```
+
+After the GHCR image is published, use the prebuilt persistent stack with:
+
+```bash
+APP_IMAGE=ghcr.io/mjvincent/rvtools-to-ibm-cloud:latest docker compose up --detach
+```
+
+Postgres is also exposed on `localhost:5432` for local Python/Streamlit development.
+
+```bash
+DATABASE_URL=postgresql://rvtools:rvtools@localhost:5432/rvtools \
+ARTIFACT_STORAGE_PATH=.local-artifacts \
+venv/bin/python -m streamlit run app.py
 ```
 
 ### Option 3: Make
@@ -60,6 +75,7 @@ make sample-workbook
 make docker-build
 make docker-run
 make compose-up
+make compose-pull
 make compose-down
 ```
 
