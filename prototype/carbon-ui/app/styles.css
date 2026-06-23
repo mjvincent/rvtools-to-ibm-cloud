@@ -42,6 +42,15 @@ body {
   gap: 0.75rem;
 }
 
+.project-controls .cds--form-item {
+  min-width: 16rem;
+}
+
+.page-heading + .cds--inline-notification {
+  margin-bottom: 1rem;
+  max-width: none;
+}
+
 .metric-tile {
   min-height: 8rem;
 }
@@ -95,6 +104,10 @@ body {
   margin-bottom: 0.75rem;
 }
 
+.cds--modal-content .cds--form-item + .cds--form-item {
+  margin-top: 1rem;
+}
+
 @media (max-width: 1055px) {
   .workbench-content {
     margin-left: 0;
@@ -105,6 +118,10 @@ body {
   .section-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .project-controls .cds--form-item {
+    min-width: 0;
   }
 
   .summary-grid {

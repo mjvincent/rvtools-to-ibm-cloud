@@ -35,6 +35,8 @@ import {
   TabPanels,
   Tabs,
   Tag,
+  TextArea,
+  TextInput,
   Tile,
 } from '@carbon/react';
 import {
@@ -62,6 +64,21 @@ type WorkbookSummary = {
   readiness_counts: Record<string, Record<string, number>>;
   assessment_quality: Record<string, string | number>;
   readiness_rows: Array<Record<string, string | number>>;
+};
+
+type SavedProject = {
+  id: string;
+  name: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+type SavedProjectState = {
+  planning_state_json?: {
+    carbon_summary?: WorkbookSummary;
+    metadata?: Record<string, string>;
+  };
 };
 
 const sampleRows = [
@@ -143,12 +160,21 @@ export default function WorkbenchPage() {
   const [uploadError, setUploadError] = useState('');
   const [panelOpen, setPanelOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [projects, setProjects] = useState<SavedProject[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [projectName, setProjectName] = useState('Migration assessment');
+  const [projectDescription, setProjectDescription] = useState('');
+  const [projectStatus, setProjectStatus] = useState('');
+  const [projectError, setProjectError] = useState('');
 
   useEffect(() => {
     fetch('/health')
       .then((response) => response.json())
       .then((payload) => {
         setApiStatus(payload.persistence_enabled ? 'API online with persistence' : 'API online');
+        if (payload.persistence_enabled) {
+          refreshProjects();
+        }
       })
       .catch(() => setApiStatus('API unavailable'));
   }, []);
@@ -182,10 +208,115 @@ export default function WorkbenchPage() {
         throw new Error(payload.detail || 'Workbook upload failed.');
       }
       setSummary(payload);
+      setProjectName(payload.filename.replace(/\.xlsx$/i, '') || projectName);
       setUploadStatus(`Loaded ${payload.filename}`);
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Workbook upload failed.');
       setUploadStatus('');
+    }
+  }
+
+  async function refreshProjects() {
+    try {
+      const response = await fetch('/api/projects');
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.detail || 'Could not load saved projects.');
+      }
+      setProjects(payload.projects || []);
+    } catch (error) {
+      setProjectError(error instanceof Error ? error.message : 'Could not load saved projects.');
+    }
+  }
+
+  async function saveProject() {
+    setProjectStatus('');
+    setProjectError('');
+    try {
+      if (!projectName.trim()) {
+        throw new Error('Enter a project name before saving.');
+      }
+      let projectId = selectedProjectId;
+      if (!projectId) {
+        const createResponse = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: projectName.trim(),
+            description: projectDescription.trim(),
+          }),
+        });
+        const createPayload = await createResponse.json();
+        if (!createResponse.ok) {
+          throw new Error(createPayload.detail || 'Could not create project.');
+        }
+        projectId = createPayload.project.id;
+        setSelectedProjectId(projectId);
+      } else {
+        const updateResponse = await fetch(`/api/projects/${projectId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: projectName.trim(),
+            description: projectDescription.trim(),
+          }),
+        });
+        const updatePayload = await updateResponse.json();
+        if (!updateResponse.ok) {
+          throw new Error(updatePayload.detail || 'Could not update project.');
+        }
+      }
+
+      const stateResponse = await fetch(`/api/projects/${projectId}/state`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planning_state: {
+            schema_version: 'carbon-prototype-0.1',
+            metadata: {
+              project_name: projectName.trim(),
+              source: 'carbon-ui-prototype',
+            },
+            carbon_summary: summary,
+          },
+          project_name: projectName.trim(),
+        }),
+      });
+      const statePayload = await stateResponse.json();
+      if (!stateResponse.ok) {
+        throw new Error(statePayload.detail || 'Could not save project state.');
+      }
+      setProjectStatus('Project saved to Postgres.');
+      setModalOpen(false);
+      await refreshProjects();
+    } catch (error) {
+      setProjectError(error instanceof Error ? error.message : 'Project save failed.');
+    }
+  }
+
+  async function loadProject(projectId: string) {
+    if (!projectId) {
+      return;
+    }
+    setProjectStatus('');
+    setProjectError('');
+    try {
+      const response = await fetch(`/api/projects/${projectId}`);
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.detail || 'Could not load project.');
+      }
+      const project = payload.project as SavedProject;
+      const state = payload.state as SavedProjectState | null;
+      setSelectedProjectId(project.id);
+      setProjectName(project.name || 'Migration assessment');
+      setProjectDescription(project.description || '');
+      if (state?.planning_state_json?.carbon_summary) {
+        setSummary(state.planning_state_json.carbon_summary);
+      }
+      setProjectStatus(`Loaded ${project.name}. Upload the matching workbook before production restore.`);
+    } catch (error) {
+      setProjectError(error instanceof Error ? error.message : 'Project load failed.');
     }
   }
 
@@ -233,15 +364,45 @@ export default function WorkbenchPage() {
                 <h1>RVTools to IBM Cloud VPC</h1>
               </div>
               <div className="project-controls">
-                <Select id="project" labelText="Project" defaultValue="demo">
-                  <SelectItem text="Migration assessment" value="demo" />
-                  <SelectItem text="New project" value="new" />
+                <Select
+                  id="project"
+                  labelText="Saved project"
+                  value={selectedProjectId}
+                  onChange={(event) => setSelectedProjectId(event.target.value)}
+                >
+                  <SelectItem text="New project" value="" />
+                  {projects.map((project) => (
+                    <SelectItem
+                      key={project.id}
+                      text={`${project.name} (${project.id.slice(0, 8)})`}
+                      value={project.id}
+                    />
+                  ))}
                 </Select>
+                <Button kind="tertiary" renderIcon={Renew} onClick={() => loadProject(selectedProjectId)} disabled={!selectedProjectId}>
+                  Load
+                </Button>
                 <Button kind="secondary" renderIcon={Save} onClick={() => setModalOpen(true)}>
                   Save project
                 </Button>
               </div>
             </div>
+            {projectStatus && (
+              <InlineNotification
+                kind="success"
+                lowContrast
+                title={projectStatus}
+                subtitle="Carbon project save uses the same FastAPI/Postgres persistence layer as the prototype API."
+              />
+            )}
+            {projectError && (
+              <InlineNotification
+                kind="error"
+                lowContrast
+                title="Project action failed"
+                subtitle={projectError}
+              />
+            )}
           </Column>
 
           <Column lg={4} md={4} sm={4}>
@@ -373,15 +534,27 @@ export default function WorkbenchPage() {
       <Modal
         open={modalOpen}
         modalHeading="Save project"
-        primaryButtonText="Save"
+        primaryButtonText={selectedProjectId ? 'Update project' : 'Create project'}
         secondaryButtonText="Cancel"
         onRequestClose={() => setModalOpen(false)}
-        onRequestSubmit={() => setModalOpen(false)}
+        onRequestSubmit={saveProject}
       >
         <p>
-          Project persistence is available through the prototype API when the
-          Docker Compose stack is running with Postgres.
+          Save the current Carbon prototype summary to the shared FastAPI/Postgres
+          persistence layer. Streamlit remains the production restore workflow.
         </p>
+        <TextInput
+          id="carbon-project-name"
+          labelText="Project name"
+          value={projectName}
+          onChange={(event) => setProjectName(event.target.value)}
+        />
+        <TextArea
+          id="carbon-project-description"
+          labelText="Description"
+          value={projectDescription}
+          onChange={(event) => setProjectDescription(event.target.value)}
+        />
       </Modal>
     </>
   );

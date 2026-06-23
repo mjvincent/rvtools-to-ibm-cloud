@@ -7,6 +7,8 @@ venv/
 # Frontend artifacts
 node_modules/
 .next/
+test-results/
+playwright-report/
 
 # macOS Finder metadata
 .DS_Store
