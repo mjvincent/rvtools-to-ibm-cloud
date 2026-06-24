@@ -523,18 +523,36 @@ export default function WorkbenchPage() {
       .catch(() => setApiStatus('API unavailable'));
   }, []);
 
-  const estate = summary?.estate_summary || {
-    in_scope: assignmentRows.length,
-    excluded: 0,
-    monthly: 0,
-    savings: 0,
-    blocked: assignmentRows.filter((row) => (
-      [row.image, row.migration, row.memory, row.networkReadiness].includes('Blocked')
-    )).length,
-    review: assignmentRows.filter((row) => (
-      [row.image, row.migration, row.memory, row.networkReadiness].includes('Review')
-    )).length,
-  };
+  // Refresh data when switching workflows to ensure UI reflects current state
+  useEffect(() => {
+    // Force re-computation of derived state when workflow changes
+    // This ensures metric tiles and data tables show current values
+    if (summary) {
+      const refreshedRows = rowsFromSummary(summary);
+      if (JSON.stringify(refreshedRows) !== JSON.stringify(assignmentRows)) {
+        setAssignmentRows(refreshedRows);
+      }
+    }
+  }, [activeWorkflow, summary]);
+
+  // Memoize estate calculation to ensure it updates when assignmentRows changes
+  const estate = useMemo(() => {
+    if (summary?.estate_summary) {
+      return summary.estate_summary;
+    }
+    return {
+      in_scope: assignmentRows.length,
+      excluded: 0,
+      monthly: 0,
+      savings: 0,
+      blocked: assignmentRows.filter((row) => (
+        [row.image, row.migration, row.memory, row.networkReadiness].includes('Blocked')
+      )).length,
+      review: assignmentRows.filter((row) => (
+        [row.image, row.migration, row.memory, row.networkReadiness].includes('Review')
+      )).length,
+    };
+  }, [summary, assignmentRows]);
 
   const selectedRows = useMemo(
     () => assignmentRows.filter((row) => selectedVmIds.includes(row.id)),
@@ -1614,7 +1632,10 @@ export default function WorkbenchPage() {
           </Column>
 
           <Column lg={4} md={4} sm={4}>
-            <MetricTile label="In scope" value={estate.in_scope} helper="Active VM candidates" onClick={() => setActiveWorkflow('assignment')} />
+            <MetricTile label="In scope" value={estate.in_scope} helper="Active VM candidates" onClick={() => {
+              setReadinessFilter('all');
+              setActiveWorkflow('assignment');
+            }} />
           </Column>
           <Column lg={4} md={4} sm={4}>
             <MetricTile label="Readiness blockers" value={estate.blocked} helper="Signals to resolve" onClick={() => {

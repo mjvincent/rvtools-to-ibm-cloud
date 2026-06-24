@@ -484,8 +484,41 @@ def generate_networking_module_outputs(
     return hcl
 
 
-def generate_vsi_module_main(ssh_key_name: Optional[str] = None) -> str:
-    """Generate modules/vsi/main.tf with SSH key support"""
+def _select_ibm_profile(vm: VmNetworkAssignment) -> str:
+    """
+    Select IBM Cloud profile for a VM based on CPU/RAM specs.
+
+    Priority:
+    1. override_profile (if set)
+    2. ibm_profile (if set)
+    3. Calculate from cpu_count/memory_gb using sizing logic
+    4. Default to cx2-2x4
+    """
+    # Use override if specified
+    if vm.override_profile:
+        return vm.override_profile
+
+    # Use pre-calculated profile if available
+    if vm.ibm_profile:
+        return vm.ibm_profile
+
+    # Calculate from CPU/RAM if available
+    if vm.cpu_count and vm.memory_gb:
+        from sizing import find_cheapest_fit
+        profile_data = find_cheapest_fit(vm.cpu_count, vm.memory_gb)
+        return profile_data.get('name', 'cx2-2x4')
+
+    # Default fallback
+    return 'cx2-2x4'
+
+
+def generate_vsi_module_main(
+    vm_assignments: List[VmNetworkAssignment],
+    subnets: List[SubnetPlan],
+    security_groups: List[SecurityGroupPlan],
+    ssh_key_name: Optional[str] = None
+) -> str:
+    """Generate modules/vsi/main.tf with SSH key and VSI resources"""
     hcl = "# VSI Module - SSH Keys and Virtual Server Instances\n\n"
 
     # Generate SSH key resource
@@ -503,8 +536,144 @@ def generate_vsi_module_main(ssh_key_name: Optional[str] = None) -> str:
 
 """
 
-    hcl += """# VSI instances will be generated here based on VM assignments
-# TODO: Implement VSI generation from vm_assignments
+    # Generate VSI instances from VM assignments
+    if not vm_assignments:
+        hcl += "# No VM assignments defined\n\n"
+        # Still include stock image data sources even if no VMs
+        hcl += """# Stock IBM Cloud Images
+data "ibm_is_image" "ubuntu_22_04" {
+  name = "ibm-ubuntu-22-04-3-minimal-amd64-1"
+}
+
+data "ibm_is_image" "rhel_9" {
+  name = "ibm-redhat-9-3-minimal-amd64-1"
+}
+
+data "ibm_is_image" "windows_2022" {
+  name = "ibm-windows-server-2022-full-standard-amd64-10"
+}
+
+"""
+        return hcl
+
+    # Create subnet and security group lookup maps
+    subnet_map = {s.id: s for s in subnets}
+    sg_map = {sg.id: sg for sg in security_groups}
+
+    hcl += "# Virtual Server Instances\n\n"
+
+    for vm in vm_assignments:
+        if vm.excluded:
+            hcl += f"# VM {vm.vm_name} excluded: {vm.exclusion_reason or 'No reason provided'}\n\n"
+            continue
+
+        vm_resource_name = _safe_resource_name(vm.vm_name)
+        vm_ibm_name = _ibm_name(vm.vm_name)
+
+        # Select profile
+        profile = _select_ibm_profile(vm)
+
+        # Get subnet and security group names
+        primary_subnet = subnet_map.get(vm.primary_subnet_id)
+        primary_sg = sg_map.get(vm.primary_security_group_id)
+
+        if not primary_subnet or not primary_sg:
+            hcl += f"# VM {vm.vm_name} skipped: missing subnet or security group reference\n\n"
+            continue
+
+        subnet_name = primary_subnet.name
+        sg_name = primary_sg.name
+
+        # Determine image source
+        if vm.custom_image_id:
+            image_ref = f'var.custom_image_ids["{vm.vm_name}"]'
+        else:
+            # Use stock IBM image based on guest OS
+            guest_os_lower = vm.guest_os.lower() if vm.guest_os else ''
+            if 'windows' in guest_os_lower:
+                image_ref = 'data.ibm_is_image.windows_2022.id'
+            elif 'rhel' in guest_os_lower or 'red hat' in guest_os_lower:
+                image_ref = 'data.ibm_is_image.rhel_9.id'
+            elif 'ubuntu' in guest_os_lower:
+                image_ref = 'data.ibm_is_image.ubuntu_22_04.id'
+            else:
+                image_ref = 'data.ibm_is_image.ubuntu_22_04.id'  # Default
+
+        # Boot volume size
+        boot_volume_capacity = int(vm.boot_disk_gb) if vm.boot_disk_gb else 100
+
+        hcl += f"""resource "ibm_is_instance" "{vm_resource_name}" {{
+  name           = "{vm_ibm_name}"
+  profile        = "{profile}"
+  vpc            = var.vpc_id
+  zone           = var.zone
+  keys           = [ibm_is_ssh_key.{key_resource_name}.id]
+  resource_group = var.resource_group_id
+
+  primary_network_interface {{
+    subnet          = var.subnet_ids["{subnet_name}"]
+    security_groups = [var.security_group_ids["{sg_name}"]]
+  }}
+
+  boot_volume {{
+    name     = "{vm_ibm_name}-boot"
+    size     = {boot_volume_capacity}
+  }}
+
+  image = {image_ref}
+
+  tags = [
+    var.project_tag,
+    "managed-by:carbon-ui",
+    "vm:{vm.vm_name}",
+"""
+
+        # Add wave tag if assigned
+        if vm.wave_id:
+            hcl += f'    "wave:{vm.wave_id}",\n'
+
+        hcl += "  ]\n"
+
+        # Add metadata for profile override reasoning
+        if vm.override_profile and vm.override_profile_reason:
+            hcl += f'\n  # Profile override: {vm.override_profile_reason}\n'
+
+        hcl += "}\n\n"
+
+        # Generate secondary NICs if present
+        if vm.secondary_nics:
+            for idx, nic in enumerate(vm.secondary_nics, start=1):
+                nic_subnet = subnet_map.get(nic.subnet_id)
+                nic_sg = sg_map.get(nic.security_group_id)
+
+                if not nic_subnet or not nic_sg:
+                    continue
+
+                nic_resource_name = f"{vm_resource_name}_nic_{idx}"
+                nic_ibm_name = f"{vm_ibm_name}-nic-{idx}"
+
+                hcl += f"""resource "ibm_is_instance_network_interface" "{nic_resource_name}" {{
+  instance        = ibm_is_instance.{vm_resource_name}.id
+  name            = "{nic_ibm_name}"
+  subnet          = var.subnet_ids["{nic_subnet.name}"]
+  security_groups = [var.security_group_ids["{nic_sg.name}"]]
+}}
+
+"""
+
+    # Add stock image data sources
+    hcl += """# Stock IBM Cloud Images
+data "ibm_is_image" "ubuntu_22_04" {
+  name = "ibm-ubuntu-22-04-3-minimal-amd64-1"
+}
+
+data "ibm_is_image" "rhel_9" {
+  name = "ibm-redhat-9-3-minimal-amd64-1"
+}
+
+data "ibm_is_image" "windows_2022" {
+  name = "ibm-windows-server-2022-full-standard-amd64-10"
+}
 
 """
 
@@ -736,7 +905,12 @@ def render_modular_terraform_from_carbon_plan(
         )
 
     # Generate VSI module (always generate for SSH key support)
-    terraform_files["modules/vsi/main.tf"] = generate_vsi_module_main(ssh_key_name)
+    terraform_files["modules/vsi/main.tf"] = generate_vsi_module_main(
+        network_plan.vm_assignments,
+        network_plan.subnets,
+        network_plan.security_groups,
+        ssh_key_name
+    )
     terraform_files["modules/vsi/variables.tf"] = generate_vsi_module_variables()
     terraform_files["modules/vsi/outputs.tf"] = generate_vsi_module_outputs()
 

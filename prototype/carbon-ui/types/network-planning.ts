@@ -142,6 +142,17 @@ export type VmNetworkAssignment = {
   waveId?: string;
   excluded: boolean;
   exclusionReason?: string;
+  // Compute specifications for VSI generation
+  cpuCount?: number;
+  memoryGb?: number;
+  ibmProfile?: string;
+  overrideProfile?: string;
+  overrideProfileReason?: string;
+  // Boot disk specifications
+  bootDiskGb?: number;
+  // Custom image reference
+  customImageId?: string;
+  guestOs?: string;
 };
 
 export type SecondaryNic = {

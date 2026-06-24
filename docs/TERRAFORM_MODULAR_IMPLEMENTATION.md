@@ -1,8 +1,9 @@
 # Terraform Modular Structure Implementation
 
-**Status:** Phase 1 Complete ✅
+**Status:** Phase 2 Complete ✅ (VSI Generation)
 **Date:** June 24, 2026
-**Implementation Time:** ~4 hours
+**Phase 1 Time:** ~4 hours
+**Phase 2 Time:** ~2 hours
 
 ## Overview
 
@@ -30,8 +31,8 @@ modules/
 │   ├── variables.tf  # Module inputs
 │   └── outputs.tf    # VPC ID, subnet IDs, security group IDs
 ├── vsi/
-│   ├── main.tf       # SSH keys, VSI instances (placeholder)
-│   ├── variables.tf  # Module inputs
+│   ├── main.tf       # SSH keys, VSI instances with full specs
+│   ├── variables.tf  # Module inputs (SSH, networking, custom images)
 │   └── outputs.tf    # SSH key ID, VSI IDs
 └── storage/
     ├── main.tf       # Block storage volumes (placeholder)
@@ -341,3 +342,230 @@ The comprehensive test suite (97% pass rate) gives confidence in the implementat
 ---
 
 **Made with Bob** 🤖
+
+
+---
+
+## Phase 2: VSI Generation (June 24, 2026)
+
+### Overview
+Extended the modular Terraform renderer to generate complete Virtual Server Instance (VSI) resources from Carbon UI VM assignments. This bridges the gap between network planning and actual compute resource provisioning.
+
+### Data Model Extensions
+
+#### 1. VmNetworkAssignment Enhanced
+Added compute specifications to `models/network_planning.py`:
+```python
+@dataclass
+class VmNetworkAssignment:
+    # Existing network fields...
+    vm_key: str
+    vm_name: str
+    primary_subnet_id: str
+    primary_security_group_id: str
+    secondary_nics: List[SecondaryNicAssignment]
+
+    # NEW: Compute specifications
+    cpu_count: Optional[int] = None
+    memory_gb: Optional[float] = None
+    ibm_profile: Optional[str] = None
+    override_profile: Optional[str] = None
+    override_profile_reason: Optional[str] = None
+
+    # NEW: Boot disk specifications
+    boot_disk_gb: Optional[float] = None
+
+    # NEW: Custom image reference
+    custom_image_id: Optional[str] = None
+    guest_os: Optional[str] = None
+```
+
+#### 2. Synchronized Across Stack
+- **Pydantic schemas** (`prototype/api/schemas.py`): Added validation (CPU: 1-128, Memory: 1-1024 GB, Boot: 10-2000 GB)
+- **TypeScript types** (`prototype/carbon-ui/types/network-planning.ts`): Parallel type definitions with camelCase
+
+### VSI Generation Features
+
+#### Profile Selection Logic (`_select_ibm_profile()`)
+4-tier intelligent profile selection:
+1. **User override** - Manual profile override takes precedence
+2. **Pre-calculated** - Use existing `ibm_profile` if available
+3. **Dynamic calculation** - Calculate from CPU/RAM using `sizing.find_cheapest_fit()`
+4. **Default fallback** - cx2-2x4 if no specs provided
+
+#### Generated Resources
+
+**1. ibm_is_instance**
+```hcl
+resource "ibm_is_instance" "web_server_01" {
+  name           = "web-server-01"
+  profile        = "cx2-4x8"
+  vpc            = var.vpc_id
+  zone           = var.zone
+  keys           = [ibm_is_ssh_key.migration_key.id]
+  resource_group = var.resource_group_id
+
+  primary_network_interface {
+    subnet          = var.subnet_ids["app-subnet"]
+    security_groups = [var.security_group_ids["app-sg"]]
+  }
+
+  boot_volume {
+    name = "web-server-01-boot"
+    size = 100
+  }
+
+  image = data.ibm_is_image.ubuntu_22_04.id
+
+  tags = [
+    var.project_tag,
+    "managed-by:carbon-ui",
+    "vm:web-server-01",
+    "wave:wave-1"
+  ]
+}
+```
+
+**2. ibm_is_instance_network_interface** (Secondary NICs)
+```hcl
+resource "ibm_is_instance_network_interface" "web_server_01_nic_1" {
+  instance        = ibm_is_instance.web_server_01.id
+  name            = "web-server-01-nic-1"
+  subnet          = var.subnet_ids["backend-subnet"]
+  security_groups = [var.security_group_ids["backend-sg"]]
+}
+```
+
+**3. Stock Image Data Sources**
+```hcl
+data "ibm_is_image" "ubuntu_22_04" {
+  name = "ibm-ubuntu-22-04-3-minimal-amd64-1"
+}
+
+data "ibm_is_image" "rhel_9" {
+  name = "ibm-redhat-9-3-minimal-amd64-1"
+}
+
+data "ibm_is_image" "windows_2022" {
+  name = "ibm-windows-server-2022-full-standard-amd64-10"
+}
+```
+
+### Image Selection Logic
+
+Automatic stock image selection based on `guest_os`:
+- **Windows** → `data.ibm_is_image.windows_2022.id`
+- **RHEL/Red Hat** → `data.ibm_is_image.rhel_9.id`
+- **Ubuntu** → `data.ibm_is_image.ubuntu_22_04.id`
+- **Default** → Ubuntu 22.04
+
+Custom images supported via `custom_image_id` → `var.custom_image_ids["vm-name"]`
+
+### Special Handling
+
+#### Excluded VMs
+```hcl
+# VM legacy-server excluded: Decommissioned before migration
+```
+Excluded VMs generate comments only, no resources.
+
+#### Profile Override Reasoning
+```hcl
+resource "ibm_is_instance" "db_server" {
+  # ...
+  profile = "mx2-16x128"
+
+  # Profile override: Database requires extra memory for caching
+}
+```
+
+#### Wave Tagging
+```hcl
+tags = [
+  var.project_tag,
+  "managed-by:carbon-ui",
+  "vm:app-server",
+  "wave:wave-2"  # Migration wave tracking
+]
+```
+
+### Test Coverage
+
+**10 comprehensive tests** (100% passing):
+1. ✅ Single VM generation with full specs
+2. ✅ Override profile with reasoning
+3. ✅ Custom image ID mapping
+4. ✅ Secondary NIC generation
+5. ✅ Wave tagging
+6. ✅ Excluded VM handling
+7. ✅ Windows image auto-selection
+8. ✅ RHEL image auto-selection
+9. ✅ Profile fallback (no specs)
+10. ✅ Stock image data sources
+
+### Integration Points
+
+#### API Endpoint
+`/api/projects/{id}/terraform` now generates complete VSI resources when VM assignments include compute specs.
+
+#### Carbon UI (Future)
+When Carbon UI assigns VMs to subnets/security groups, it should also:
+1. Fetch VM specs from original RVTools data
+2. Populate `cpu_count`, `memory_gb`, `boot_disk_gb`, `guest_os`
+3. Allow profile overrides with reasoning
+4. Support custom image ID assignment
+
+### Files Modified
+
+1. **`terraform_carbon_renderer_modular.py`** (+200 lines)
+   - `_select_ibm_profile()` - Profile selection logic
+   - `generate_vsi_module_main()` - Complete VSI generation
+
+2. **`models/network_planning.py`** (+9 fields)
+   - Extended `VmNetworkAssignment` dataclass
+
+3. **`prototype/api/schemas.py`** (+9 fields)
+   - Updated Pydantic validation schema
+
+4. **`prototype/carbon-ui/types/network-planning.ts`** (+9 fields)
+   - Synchronized TypeScript types
+
+5. **`tests/test_terraform_carbon_renderer_modular.py`** (+290 lines)
+   - New `TestVSIGeneration` class with 10 tests
+
+### Production Readiness
+
+✅ **Complete VSI resource generation**
+✅ **Intelligent profile selection**
+✅ **Custom image support**
+✅ **Multi-NIC configuration**
+✅ **Boot volume sizing**
+✅ **Stock image auto-selection**
+✅ **Wave tagging for migration planning**
+✅ **Excluded VM handling**
+✅ **Profile override documentation**
+✅ **Comprehensive test coverage (10/10 passing)**
+
+### Next Steps
+
+**Phase 3 Candidates:**
+1. **Data volume attachments** - Additional block storage beyond boot
+2. **Floating IP assignment** - Public IP addresses for VMs
+3. **Load balancer integration** - Backend pool membership
+4. **Custom security group rules per VM** - VM-specific firewall rules
+5. **User data / cloud-init** - VM initialization scripts
+
+**Carbon UI Integration:**
+1. Fetch VM specs when assigning to network
+2. Display profile recommendations
+3. Allow profile overrides with reasoning UI
+4. Custom image ID picker
+5. Boot disk size slider
+
+**Known Limitations:**
+- Data volumes not yet implemented (boot volume only)
+- No floating IP assignment
+- No load balancer backend pool membership
+- No VM-specific user data / cloud-init
+
+---

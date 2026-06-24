@@ -159,7 +159,7 @@ class SecondaryNicAssignment:
 
 @dataclass
 class VmNetworkAssignment:
-    """VM network assignment."""
+    """VM network assignment with compute specifications."""
     vm_key: str
     vm_name: str
     primary_subnet_id: str
@@ -169,6 +169,17 @@ class VmNetworkAssignment:
     wave_id: Optional[str] = None
     excluded: bool = False
     exclusion_reason: Optional[str] = None
+    # Compute specifications for VSI generation
+    cpu_count: Optional[int] = None
+    memory_gb: Optional[float] = None
+    ibm_profile: Optional[str] = None
+    override_profile: Optional[str] = None
+    override_profile_reason: Optional[str] = None
+    # Boot disk specifications
+    boot_disk_gb: Optional[float] = None
+    # Custom image reference
+    custom_image_id: Optional[str] = None
+    guest_os: Optional[str] = None
 
     def __post_init__(self):
         # Convert dict secondary_nics to SecondaryNicAssignment objects

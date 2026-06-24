@@ -377,7 +377,7 @@ class TestVSIModule:
 
     def test_vsi_ssh_key_generation(self):
         """Verify SSH key resource is generated."""
-        content = generate_vsi_module_main("migration-key")
+        content = generate_vsi_module_main([], [], [], "migration-key")
 
         assert 'resource "ibm_is_ssh_key"' in content
         assert 'name           = var.ssh_key_name' in content
@@ -385,9 +385,302 @@ class TestVSIModule:
 
     def test_vsi_ssh_key_default_name(self):
         """Verify default SSH key name."""
-        content = generate_vsi_module_main(None)
+        content = generate_vsi_module_main([], [], [], None)
 
         assert 'resource "ibm_is_ssh_key" "migration_key"' in content
+
+class TestVSIGeneration:
+    """Test VSI instance generation with VM assignments."""
+
+    def test_vsi_generation_with_single_vm(self):
+        """Test generating a single VSI instance."""
+        from models.network_planning import VmNetworkAssignment
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south")
+        subnet = SubnetPlan(
+            id="subnet-1",
+            name="app-subnet",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.240.0.0/24"
+        )
+        sg = SecurityGroupPlan(id="sg-1", name="app-sg", vpc_id="vpc-1")
+
+        vm = VmNetworkAssignment(
+            vm_key="vm-001",
+            vm_name="web-server-01",
+            primary_subnet_id="subnet-1",
+            primary_security_group_id="sg-1",
+            cpu_count=4,
+            memory_gb=16,
+            ibm_profile="cx2-4x8",
+            boot_disk_gb=100,
+            guest_os="Ubuntu 22.04"
+        )
+
+        content = generate_vsi_module_main([vm], [subnet], [sg], "test-key")
+
+        assert 'resource "ibm_is_instance" "web_server_01"' in content
+        assert 'name           = "web-server-01"' in content
+        assert 'profile        = "cx2-4x8"' in content
+        assert 'subnet          = var.subnet_ids["app-subnet"]' in content
+        assert 'security_groups = [var.security_group_ids["app-sg"]]' in content
+        assert 'size     = 100' in content
+        assert 'data.ibm_is_image.ubuntu_22_04.id' in content
+
+    def test_vsi_generation_with_override_profile(self):
+        """Test VSI with override profile and reasoning."""
+        from models.network_planning import VmNetworkAssignment
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south")
+        subnet = SubnetPlan(
+            id="subnet-1",
+            name="db-subnet",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.240.1.0/24"
+        )
+        sg = SecurityGroupPlan(id="sg-1", name="db-sg", vpc_id="vpc-1")
+
+        vm = VmNetworkAssignment(
+            vm_key="vm-002",
+            vm_name="db-server-01",
+            primary_subnet_id="subnet-1",
+            primary_security_group_id="sg-1",
+            cpu_count=8,
+            memory_gb=32,
+            ibm_profile="mx2-8x64",
+            override_profile="mx2-16x128",
+            override_profile_reason="Database requires extra memory for caching",
+            boot_disk_gb=250
+        )
+
+        content = generate_vsi_module_main([vm], [subnet], [sg], "test-key")
+
+        assert 'profile        = "mx2-16x128"' in content
+        assert 'Database requires extra memory for caching' in content
+
+    def test_vsi_generation_with_custom_image(self):
+        """Test VSI with custom image ID."""
+        from models.network_planning import VmNetworkAssignment
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south")
+        subnet = SubnetPlan(
+            id="subnet-1",
+            name="app-subnet",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.240.0.0/24"
+        )
+        sg = SecurityGroupPlan(id="sg-1", name="app-sg", vpc_id="vpc-1")
+
+        vm = VmNetworkAssignment(
+            vm_key="vm-003",
+            vm_name="custom-app-01",
+            primary_subnet_id="subnet-1",
+            primary_security_group_id="sg-1",
+            cpu_count=2,
+            memory_gb=4,
+            custom_image_id="r006-custom-image-123",
+            boot_disk_gb=100
+        )
+
+        content = generate_vsi_module_main([vm], [subnet], [sg], "test-key")
+
+        assert 'var.custom_image_ids["custom-app-01"]' in content
+
+    def test_vsi_generation_with_secondary_nics(self):
+        """Test VSI with secondary network interfaces."""
+        from models.network_planning import VmNetworkAssignment, SecondaryNicAssignment
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south")
+        subnet1 = SubnetPlan(
+            id="subnet-1",
+            name="frontend-subnet",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.240.0.0/24"
+        )
+        subnet2 = SubnetPlan(
+            id="subnet-2",
+            name="backend-subnet",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.240.1.0/24"
+        )
+        sg1 = SecurityGroupPlan(id="sg-1", name="frontend-sg", vpc_id="vpc-1")
+        sg2 = SecurityGroupPlan(id="sg-2", name="backend-sg", vpc_id="vpc-1")
+
+        vm = VmNetworkAssignment(
+            vm_key="vm-004",
+            vm_name="multi-nic-server",
+            primary_subnet_id="subnet-1",
+            primary_security_group_id="sg-1",
+            secondary_nics=[
+                SecondaryNicAssignment(
+                    id="nic-1",
+                    subnet_id="subnet-2",
+                    security_group_id="sg-2",
+                    order=1
+                )
+            ],
+            cpu_count=4,
+            memory_gb=8
+        )
+
+        content = generate_vsi_module_main([vm], [subnet1, subnet2], [sg1, sg2], "test-key")
+
+        assert 'resource "ibm_is_instance_network_interface" "multi_nic_server_nic_1"' in content
+        assert 'instance        = ibm_is_instance.multi_nic_server.id' in content
+        assert 'subnet          = var.subnet_ids["backend-subnet"]' in content
+
+    def test_vsi_generation_with_wave_tagging(self):
+        """Test VSI with migration wave tagging."""
+        from models.network_planning import VmNetworkAssignment
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south")
+        subnet = SubnetPlan(
+            id="subnet-1",
+            name="app-subnet",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.240.0.0/24"
+        )
+        sg = SecurityGroupPlan(id="sg-1", name="app-sg", vpc_id="vpc-1")
+
+        vm = VmNetworkAssignment(
+            vm_key="vm-005",
+            vm_name="wave1-app",
+            primary_subnet_id="subnet-1",
+            primary_security_group_id="sg-1",
+            wave_id="wave-1",
+            cpu_count=2,
+            memory_gb=4
+        )
+
+        content = generate_vsi_module_main([vm], [subnet], [sg], "test-key")
+
+        assert '"wave:wave-1"' in content
+
+    def test_vsi_generation_excluded_vm(self):
+        """Test that excluded VMs are commented out."""
+        from models.network_planning import VmNetworkAssignment
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south")
+        subnet = SubnetPlan(
+            id="subnet-1",
+            name="app-subnet",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.240.0.0/24"
+        )
+        sg = SecurityGroupPlan(id="sg-1", name="app-sg", vpc_id="vpc-1")
+
+        vm = VmNetworkAssignment(
+            vm_key="vm-006",
+            vm_name="excluded-server",
+            primary_subnet_id="subnet-1",
+            primary_security_group_id="sg-1",
+            excluded=True,
+            exclusion_reason="Decommissioned before migration"
+        )
+
+        content = generate_vsi_module_main([vm], [subnet], [sg], "test-key")
+
+        assert '# VM excluded-server excluded: Decommissioned before migration' in content
+        assert 'resource "ibm_is_instance" "excluded_server"' not in content
+
+    def test_vsi_generation_windows_image_selection(self):
+        """Test automatic Windows image selection."""
+        from models.network_planning import VmNetworkAssignment
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south")
+        subnet = SubnetPlan(
+            id="subnet-1",
+            name="app-subnet",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.240.0.0/24"
+        )
+        sg = SecurityGroupPlan(id="sg-1", name="app-sg", vpc_id="vpc-1")
+
+        vm = VmNetworkAssignment(
+            vm_key="vm-007",
+            vm_name="windows-server",
+            primary_subnet_id="subnet-1",
+            primary_security_group_id="sg-1",
+            guest_os="Windows Server 2022",
+            cpu_count=4,
+            memory_gb=16
+        )
+
+        content = generate_vsi_module_main([vm], [subnet], [sg], "test-key")
+
+        assert 'data.ibm_is_image.windows_2022.id' in content
+
+    def test_vsi_generation_rhel_image_selection(self):
+        """Test automatic RHEL image selection."""
+        from models.network_planning import VmNetworkAssignment
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south")
+        subnet = SubnetPlan(
+            id="subnet-1",
+            name="app-subnet",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.240.0.0/24"
+        )
+        sg = SecurityGroupPlan(id="sg-1", name="app-sg", vpc_id="vpc-1")
+
+        vm = VmNetworkAssignment(
+            vm_key="vm-008",
+            vm_name="rhel-server",
+            primary_subnet_id="subnet-1",
+            primary_security_group_id="sg-1",
+            guest_os="Red Hat Enterprise Linux 9",
+            cpu_count=2,
+            memory_gb=8
+        )
+
+        content = generate_vsi_module_main([vm], [subnet], [sg], "test-key")
+
+        assert 'data.ibm_is_image.rhel_9.id' in content
+
+    def test_vsi_generation_profile_fallback(self):
+        """Test profile fallback when no specs provided."""
+        from models.network_planning import VmNetworkAssignment
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south")
+        subnet = SubnetPlan(
+            id="subnet-1",
+            name="app-subnet",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.240.0.0/24"
+        )
+        sg = SecurityGroupPlan(id="sg-1", name="app-sg", vpc_id="vpc-1")
+
+        vm = VmNetworkAssignment(
+            vm_key="vm-009",
+            vm_name="default-server",
+            primary_subnet_id="subnet-1",
+            primary_security_group_id="sg-1"
+        )
+
+        content = generate_vsi_module_main([vm], [subnet], [sg], "test-key")
+
+        assert 'profile        = "cx2-2x4"' in content
+
+    def test_vsi_stock_image_data_sources(self):
+        """Test that stock image data sources are included."""
+        from models.network_planning import VmNetworkAssignment
+
+        content = generate_vsi_module_main([], [], [], "test-key")
+
+        assert 'data "ibm_is_image" "ubuntu_22_04"' in content
+        assert 'data "ibm_is_image" "rhel_9"' in content
+        assert 'data "ibm_is_image" "windows_2022"' in content
+
 
 
 class TestModularRendering:

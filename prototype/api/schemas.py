@@ -178,6 +178,17 @@ class VmNetworkAssignmentSchema(BaseModel):
     wave_id: Optional[str] = Field(default=None, alias="waveId")
     excluded: bool = False
     exclusion_reason: Optional[str] = Field(default=None, alias="exclusionReason")
+    # Compute specifications for VSI generation
+    cpu_count: Optional[int] = Field(default=None, alias="cpuCount", ge=1, le=128)
+    memory_gb: Optional[float] = Field(default=None, alias="memoryGb", ge=1, le=1024)
+    ibm_profile: Optional[str] = Field(default=None, alias="ibmProfile")
+    override_profile: Optional[str] = Field(default=None, alias="overrideProfile")
+    override_profile_reason: Optional[str] = Field(default=None, alias="overrideProfileReason")
+    # Boot disk specifications
+    boot_disk_gb: Optional[float] = Field(default=None, alias="bootDiskGb", ge=10, le=2000)
+    # Custom image reference
+    custom_image_id: Optional[str] = Field(default=None, alias="customImageId")
+    guest_os: Optional[str] = Field(default=None, alias="guestOs")
 
 
 class PlanningMetadataSchema(BaseModel):
