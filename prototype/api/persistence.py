@@ -226,6 +226,34 @@ def get_project_state(project_id: str) -> dict[str, Any] | None:
     return dict(row) if row else None
 
 
+def update_project_state(
+    project_id: str,
+    planning_state: dict[str, Any],
+) -> dict[str, Any]:
+    """Update only the planning_state_json field, preserving other fields."""
+    try:
+        from psycopg.types.json import Jsonb
+    except ImportError as exc:
+        raise PersistenceUnavailable("psycopg JSON support is unavailable.") from exc
+    with _connect() as conn:
+        row = conn.execute(
+            """
+            update project_state
+            set planning_state_json = %s, updated_at = now()
+            where project_id = %s
+            returning project_id, planning_state_json, target_region,
+                target_zone, project_name, updated_at
+            """,
+            (Jsonb(planning_state), project_id),
+        ).fetchone()
+        if row:
+            conn.execute(
+                "update projects set updated_at = now() where id = %s",
+                (project_id,),
+            )
+    return dict(row) if row else {}
+
+
 def save_artifact(
     project_id: str,
     artifact_type: str,

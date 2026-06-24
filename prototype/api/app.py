@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
+import io
 import json
+import zipfile
 from contextlib import asynccontextmanager
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
+import logging
 
 from catalog_pricing import get_pricing_catalog
 from rvtools_parser import parse_rvtools_workbook
@@ -19,6 +25,7 @@ from streamlit_app.overview_readiness import (
     calculate_estate_summary,
     calculate_overview_blockers,
 )
+from terraform_carbon_renderer import render_networking_from_carbon_plan
 
 from . import persistence
 
@@ -47,19 +54,34 @@ class ProjectUpdate(BaseModel):
 class ProjectStateSave(BaseModel):
     planning_state: dict[str, Any]
     target_region: str = DEFAULT_REGION
+    target_zone: str = DEFAULT_ZONE
+    project_name: str = ""
+
 
 # Import network planning schemas
 from .schemas import NetworkPlanningStateSchema, VmNetworkAssignmentSchema
 from models.network_planning import NetworkPlanningState, from_dict, to_dict
-    target_zone: str = DEFAULT_ZONE
-    project_name: str = ""
 
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="RVTools to IBM Cloud Prototype API",
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Add custom exception handler for validation errors
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.error(f"Validation error for {request.url}: {exc.errors()}")
+    logger.error(f"Request body: {await request.body()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": str(await request.body())}
+    )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -342,6 +364,7 @@ async def validate_planning_state(file: UploadFile = File(...)) -> dict[str, Any
         "wave_planning": len(state.get("wave_planning", [])),
         "remediation_items": len(state.get("remediation_tracker", {})),
         "image_groups": len(state.get("image_import_status", {})),
+    }
 
 
 # Network Planning Endpoints
@@ -361,7 +384,7 @@ async def save_network_plan(
     # Validate network plan
     try:
         # Convert Pydantic model to dict
-        plan_dict = network_plan.dict()
+        plan_dict = network_plan.model_dump()
         # Validate by creating NetworkPlanningState
         validated_plan = from_dict(plan_dict)
     except Exception as exc:
@@ -370,10 +393,15 @@ async def save_network_plan(
             detail=f"Invalid network plan: {exc}"
         )
 
-    # Save to planning_state_json
-    planning_state_json = project.get("planning_state_json", {})
-    planning_state_json["carbon_network_plan"] = plan_dict
+    # Get existing project state or create new one
+    project_state = persistence.get_project_state(project_id)
+    if project_state:
+        planning_state_json = project_state.get("planning_state_json", {})
+    else:
+        planning_state_json = {}
 
+    # Save network plan
+    planning_state_json["carbon_network_plan"] = plan_dict
     persistence.update_project_state(project_id, planning_state_json)
 
     return {"status": "success", "message": "Network plan saved"}
@@ -431,4 +459,252 @@ async def update_vm_assignments(
         "status": "success",
         "message": f"Updated {len(assignments)} VM assignments"
     }
-    }
+
+
+
+@app.post("/api/projects/{project_id}/terraform")
+async def generate_terraform_package(project_id: str) -> StreamingResponse:
+    """Generate Terraform ZIP package from Carbon network planning state."""
+    _require_persistence()
+
+    project = persistence.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Load network plan from project state
+    project_state = persistence.get_project_state(project_id)
+    if not project_state:
+        raise HTTPException(
+            status_code=400,
+            detail="Project state not found. Save the project first."
+        )
+
+    planning_state_json = project_state.get("planning_state_json", {})
+    network_plan_data = planning_state_json.get("carbon_network_plan")
+
+    if not network_plan_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Network plan not found. Create network plan first."
+        )
+
+    # Convert to NetworkPlanningState
+    try:
+        network_plan = from_dict(network_plan_data)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid network plan data: {exc}"
+        ) from exc
+
+    # Validate network plan has required data
+    if not network_plan.vpcs:
+        raise HTTPException(
+            status_code=400,
+            detail="Network plan must contain at least one VPC"
+        )
+
+    # Get project metadata
+    target_region = project_state.get("target_region", "us-south")
+    target_zone = project_state.get("target_zone", "us-south-1")
+    project_name = project.get("name", "carbon-migration")
+
+    # Generate Terraform files
+    try:
+        terraform_files = render_networking_from_carbon_plan(
+            network_plan,
+            project_name=project_name,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Terraform generation failed: {exc}"
+        ) from exc
+
+    # Create ZIP in memory
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        # Add Terraform files
+        for file_path, content in terraform_files.items():
+            zip_file.writestr(file_path, content)
+
+        # Add README
+        readme_content = _generate_carbon_terraform_readme(
+            project_name=project_name,
+            target_region=target_region,
+            target_zone=target_zone,
+            vpc_count=len(network_plan.vpcs),
+            subnet_count=len(network_plan.subnets),
+            vm_count=len(network_plan.vm_assignments),
+        )
+        zip_file.writestr("README.md", readme_content)
+
+        # Add network plan JSON for reference
+        zip_file.writestr(
+            "network-plan.json",
+            json.dumps(network_plan_data, indent=2)
+        )
+
+    zip_buffer.seek(0)
+
+    # Generate filename with timestamp
+    timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    filename = f"{project_name}-terraform-{timestamp}.zip"
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+def _generate_carbon_terraform_readme(
+    project_name: str,
+    target_region: str,
+    target_zone: str,
+    vpc_count: int,
+    subnet_count: int,
+    vm_count: int,
+) -> str:
+    """Generate README for Carbon-generated Terraform package."""
+    return f"""# Terraform Package: {project_name}
+
+Generated from Carbon UI network planning workbench.
+
+## Package Contents
+
+- **main.tf**: VPC, subnet, security group, and VSI resources
+- **variables.tf**: Input variable declarations
+- **outputs.tf**: Output value declarations
+- **network-plan.json**: Original Carbon network planning state (reference)
+
+## Configuration
+
+- **Region**: {target_region}
+- **Zone**: {target_zone}
+- **VPCs**: {vpc_count}
+- **Subnets**: {subnet_count}
+- **VMs**: {vm_count}
+
+## Prerequisites
+
+1. IBM Cloud CLI with VPC plugin
+2. Terraform >= 1.0
+3. IBM Cloud API key with VPC permissions
+4. Custom images imported to IBM Cloud (if using custom images)
+
+## Deployment Steps
+
+### 1. Review Configuration
+
+Review the generated Terraform files and ensure they match your requirements:
+
+```bash
+cat main.tf
+cat variables.tf
+```
+
+### 2. Initialize Terraform
+
+```bash
+terraform init
+```
+
+### 3. Validate Configuration
+
+```bash
+terraform validate
+terraform fmt -check
+```
+
+### 4. Plan Deployment
+
+```bash
+terraform plan
+```
+
+Review the plan output carefully. Terraform will show:
+- Resources to be created
+- Estimated costs (if available)
+- Any configuration issues
+
+### 5. Apply Configuration
+
+```bash
+terraform apply
+```
+
+Type `yes` when prompted to confirm deployment.
+
+### 6. Verify Deployment
+
+```bash
+terraform show
+terraform output
+```
+
+## Network Architecture
+
+This Terraform package creates:
+
+- **VPC(s)**: Isolated virtual private clouds
+- **Subnets**: Network segments within VPCs
+- **Security Groups**: Firewall rules for VMs
+- **VSIs**: Virtual server instances assigned to subnets
+- **Network Components**: Public gateways, load balancers, VPE gateways (if configured)
+
+## Customization
+
+### Variables
+
+You can override default values by creating a `terraform.tfvars` file:
+
+```hcl
+# terraform.tfvars
+ibmcloud_api_key = "your-api-key-here"
+resource_group = "your-resource-group"
+```
+
+### Image IDs
+
+If using custom images, update the image IDs in the VSI resources after importing images to IBM Cloud.
+
+## Troubleshooting
+
+### Authentication Issues
+
+Ensure your IBM Cloud API key is set:
+
+```bash
+export IC_API_KEY="your-api-key"
+```
+
+### Resource Quota
+
+Verify you have sufficient quota for:
+- VPCs
+- Subnets
+- Floating IPs
+- VSIs
+
+Check quota in IBM Cloud Console → VPC Infrastructure → Overview
+
+### State Management
+
+Terraform state is stored locally by default. For team collaboration, consider:
+- IBM Cloud Schematics (managed Terraform)
+- Remote state backend (S3, Terraform Cloud)
+
+## Support
+
+For issues with:
+- **Terraform syntax**: Review Terraform documentation
+- **IBM Cloud resources**: Check IBM Cloud VPC documentation
+- **Carbon UI**: Contact the migration planning team
+
+## Generated
+
+- **Date**: {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")}
+- **Source**: Carbon UI Network Planning Workbench
+- **Project**: {project_name}
+"""
