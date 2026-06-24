@@ -1,4 +1,26 @@
 services:
+  carbon-ui:
+    build:
+      context: ./prototype/carbon-ui
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://api:8000
+    ports:
+      - "${CARBON_UI_PORT:-3000}:3000"
+    environment:
+      # Server-side API URL (used by Next.js rewrites)
+      NEXT_PUBLIC_API_BASE_URL: http://api:8000
+      NODE_ENV: production
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   app:
     image: ${APP_IMAGE:-rvtools-to-ibm-cloud:local}
     build:
