@@ -26,6 +26,8 @@ from streamlit_app.overview_readiness import (
     calculate_overview_blockers,
 )
 from terraform_carbon_renderer import render_networking_from_carbon_plan
+from terraform_carbon_renderer_modular import render_modular_terraform_from_carbon_plan
+from terraform_readme_generator import generate_modular_terraform_readme
 
 from . import persistence
 
@@ -509,9 +511,9 @@ async def generate_terraform_package(project_id: str) -> StreamingResponse:
     target_zone = project_state.get("target_zone", "us-south-1")
     project_name = project.get("name", "carbon-migration")
 
-    # Generate Terraform files
+    # Generate Terraform files using modular structure
     try:
-        terraform_files = render_networking_from_carbon_plan(
+        terraform_files = render_modular_terraform_from_carbon_plan(
             network_plan,
             project_name=project_name,
         )
@@ -528,14 +530,16 @@ async def generate_terraform_package(project_id: str) -> StreamingResponse:
         for file_path, content in terraform_files.items():
             zip_file.writestr(file_path, content)
 
-        # Add README
-        readme_content = _generate_carbon_terraform_readme(
+        # Add README (modular structure)
+        readme_content = generate_modular_terraform_readme(
             project_name=project_name,
             target_region=target_region,
             target_zone=target_zone,
             vpc_count=len(network_plan.vpcs),
             subnet_count=len(network_plan.subnets),
             vm_count=len(network_plan.vm_assignments),
+            has_ssh_key=bool(network_plan.metadata.ssh_public_key),
+            backend_type=network_plan.metadata.backend_type or "local",
         )
         zip_file.writestr("README.md", readme_content)
 
