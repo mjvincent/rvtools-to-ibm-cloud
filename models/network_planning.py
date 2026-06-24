@@ -185,6 +185,10 @@ class PlanningMetadata:
     target_region: str = "us-south"
     target_zone: str = "us-south-1"
     deployment_target: str = "plain_cli"
+    ssh_public_key: Optional[str] = None
+    ssh_key_name: Optional[str] = None
+    resource_group_id: Optional[str] = None
+    backend_type: str = "local"
     created_by: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
