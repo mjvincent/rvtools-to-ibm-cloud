@@ -34,6 +34,7 @@ import {
   CloudUpload,
   DataTable as DataTableIcon,
   DeploymentPattern,
+  Download,
   Information,
   Renew,
   Save,
@@ -506,6 +507,9 @@ export default function WorkbenchPage() {
   const [sortKey, setSortKey] = useState('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [bucketDraft, setBucketDraft] = useState<Record<string, string>>({});
+  const [terraformStatus, setTerraformStatus] = useState('');
+  const [terraformError, setTerraformError] = useState('');
+  const [generatingTerraform, setGeneratingTerraform] = useState(false);
 
   useEffect(() => {
     fetch('/health')
@@ -725,6 +729,96 @@ export default function WorkbenchPage() {
       await refreshProjects();
     } catch (error) {
       setProjectError(error instanceof Error ? error.message : 'Project save failed.');
+    }
+  }
+
+  async function generateTerraform() {
+    setTerraformStatus('');
+    setTerraformError('');
+    setGeneratingTerraform(true);
+    try {
+      if (!selectedProjectId) {
+        throw new Error('Save the project before generating Terraform.');
+      }
+      if (resources.vpcs.length === 0) {
+        throw new Error('Network plan must contain at least one VPC.');
+      }
+
+      setTerraformStatus('Saving network plan...');
+
+      // First, save the network plan to the project
+      const networkPlanPayload = {
+        version: '1.0',
+        vpcs: resources.vpcs,
+        subnets: resources.subnets,
+        security_groups: resources.securityGroups,
+        storage_profiles: resources.storageProfiles || [],
+        waves: resources.waves || [],
+        network_components: resources.networkComponents || [],
+        vm_assignments: assignmentRows.map((row) => ({
+          vm_key: row.id,
+          vm_name: row.name,
+          primary_subnet_id: row.subnet || '',
+          primary_security_group_id: row.securityGroup || '',
+          secondary_nics: [],
+          storage_profile_id: row.storageLabel || null,
+          wave_id: row.wave || null,
+          excluded: false,
+          exclusion_reason: null,
+        })),
+        metadata: {
+          project_name: projectName.trim(),
+          target_region: 'us-south',
+          target_zone: 'us-south-1',
+          deployment_target: 'plain_cli',
+          created_by: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          rvtools_filename: summary?.filename || null,
+          rvtools_uploaded_at: null,
+        },
+      };
+
+      const networkPlanResponse = await fetch(`/api/projects/${selectedProjectId}/network-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(networkPlanPayload),
+      });
+
+      if (!networkPlanResponse.ok) {
+        const errorPayload = await networkPlanResponse.json();
+        throw new Error(errorPayload.detail || 'Failed to save network plan.');
+      }
+
+      setTerraformStatus('Generating Terraform package...');
+
+      // Now generate Terraform from the saved network plan
+      const response = await fetch(`/api/projects/${selectedProjectId}/terraform`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json();
+        throw new Error(errorPayload.detail || 'Terraform generation failed.');
+      }
+
+      // Download the ZIP file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${projectName.replace(/\s+/g, '-')}-terraform-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      setTerraformStatus('Terraform package downloaded successfully!');
+    } catch (error) {
+      setTerraformError(error instanceof Error ? error.message : 'Terraform generation failed.');
+    } finally {
+      setGeneratingTerraform(false);
     }
   }
 
@@ -1241,6 +1335,7 @@ export default function WorkbenchPage() {
 
   function renderNetworkPlan() {
     const components = resources.networkComponents || [];
+    const canGenerateTerraform = selectedProjectId && resources.vpcs.length > 0;
     return (
       <Layer className="workbench-section">
         <div className="section-header">
@@ -1258,8 +1353,37 @@ export default function WorkbenchPage() {
             <Button kind="secondary" size="sm" onClick={() => openBucketModal('component')}>
               Create network component
             </Button>
+            <Button
+              kind="primary"
+              size="sm"
+              renderIcon={Download}
+              onClick={generateTerraform}
+              disabled={!canGenerateTerraform || generatingTerraform}
+            >
+              {generatingTerraform ? 'Generating...' : 'Generate Terraform'}
+            </Button>
           </div>
         </div>
+
+        {terraformStatus && (
+          <InlineNotification
+            kind="success"
+            title="Success"
+            subtitle={terraformStatus}
+            onCloseButtonClick={() => setTerraformStatus('')}
+            lowContrast
+          />
+        )}
+
+        {terraformError && (
+          <InlineNotification
+            kind="error"
+            title="Error"
+            subtitle={terraformError}
+            onCloseButtonClick={() => setTerraformError('')}
+            lowContrast
+          />
+        )}
 
         <div className="network-diagram" aria-label="Generated network diagram">
           {resources.vpcs.map((vpc) => {

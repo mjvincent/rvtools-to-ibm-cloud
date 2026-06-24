@@ -157,6 +157,10 @@ export type PlanningMetadata = {
   targetRegion: string;
   targetZone: string;
   deploymentTarget: 'plain_cli' | 'schematics';
+  sshPublicKey?: string;
+  sshKeyName?: string;
+  resourceGroupId?: string;
+  backendType: 'local' | 's3' | 'cos';
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
@@ -180,6 +184,7 @@ export function createEmptyNetworkPlan(): NetworkPlanningState {
       targetRegion: 'us-south',
       targetZone: 'us-south-1',
       deploymentTarget: 'plain_cli',
+      backendType: 'local',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -262,6 +267,7 @@ export function createInitialNetworkPlan(projectName: string): NetworkPlanningSt
       targetRegion: 'us-south',
       targetZone: 'us-south-1',
       deploymentTarget: 'plain_cli',
+      backendType: 'local',
       createdAt: now,
       updatedAt: now,
     },
