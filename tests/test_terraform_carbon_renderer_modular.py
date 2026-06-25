@@ -826,4 +826,325 @@ class TestEdgeCases:
         assert files["modules/networking/main.tf"].count('resource "ibm_is_security_group_rule"') == 0
 
 
+
+
+# =============================================================================
+# Phase 3: Network Component Generation Tests
+# =============================================================================
+
+class TestNetworkComponentGeneration:
+    """Test advanced network component generation."""
+
+    def test_public_gateway_generation(self):
+        """Test public gateway resource generation"""
+        from models.network_planning import NetworkComponentPlan
+
+        vpc = VpcPlan(
+            id="vpc-1",
+            name="test-vpc",
+            region="us-south",
+            address_prefix_mode="auto"
+        )
+
+        pgw = NetworkComponentPlan(
+            id="pgw-1",
+            name="test-public-gateway",
+            type="public_gateway",
+            vpc_id="vpc-1",
+            config={
+                "vpc_id": "vpc-1",
+                "zone": "us-south-1"
+            }
+        )
+
+        result = generate_networking_module_main(
+            vpcs=[vpc],
+            subnets=[],
+            security_groups=[],
+            network_components=[pgw],
+            project_name="test-project"
+        )
+
+        assert 'resource "ibm_is_public_gateway" "test_public_gateway"' in result
+        assert 'name           = "test-public-gateway"' in result
+        assert 'vpc            = ibm_is_vpc.test_vpc.id' in result
+        assert 'zone           = "us-south-1"' in result
+        assert 'component:public-gateway' in result
+
+    def test_floating_ip_generation(self):
+        """Test floating IP resource generation"""
+        from models.network_planning import NetworkComponentPlan
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south", address_prefix_mode="auto")
+
+        fip = NetworkComponentPlan(
+            id="fip-1",
+            name="test-floating-ip",
+            type="floating_ip",
+            vpc_id="vpc-1",
+            config={
+                "zone": "us-south-2",
+                "target_type": "vsi"
+            }
+        )
+
+        result = generate_networking_module_main(
+            vpcs=[vpc],
+            subnets=[],
+            security_groups=[],
+            network_components=[fip],
+            project_name="test-project"
+        )
+
+        assert 'resource "ibm_is_floating_ip" "test_floating_ip"' in result
+        assert 'name           = "test-floating-ip"' in result
+        assert 'zone           = "us-south-2"' in result
+        assert 'component:floating-ip' in result
+        assert '# Target: vsi' in result
+
+    def test_load_balancer_generation(self):
+        """Test load balancer resource generation"""
+        from models.network_planning import NetworkComponentPlan
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south", address_prefix_mode="auto")
+
+        subnet1 = SubnetPlan(
+            id="subnet-1",
+            name="lb-subnet-1",
+            vpc_id="vpc-1",
+            zone="us-south-1",
+            cidr="10.0.1.0/24"
+        )
+
+        subnet2 = SubnetPlan(
+            id="subnet-2",
+            name="lb-subnet-2",
+            vpc_id="vpc-1",
+            zone="us-south-2",
+            cidr="10.0.2.0/24"
+        )
+
+        lb = NetworkComponentPlan(
+            id="lb-1",
+            name="test-load-balancer",
+            type="load_balancer",
+            vpc_id="vpc-1",
+            config={
+                "type": "public",
+                "subnets": ["lb-subnet-1", "lb-subnet-2"]
+            }
+        )
+
+        result = generate_networking_module_main(
+            vpcs=[vpc],
+            subnets=[subnet1, subnet2],
+            security_groups=[],
+            network_components=[lb],
+            project_name="test-project"
+        )
+
+        assert 'resource "ibm_is_lb" "test_load_balancer"' in result
+        assert 'name           = "test-load-balancer"' in result
+        assert 'type           = "public"' in result
+        assert 'var.subnet_ids["lb-subnet-1"]' in result
+        assert 'var.subnet_ids["lb-subnet-2"]' in result
+        assert 'component:load-balancer' in result
+
+    def test_vpn_gateway_placeholder(self):
+        """Test VPN gateway placeholder generation"""
+        from models.network_planning import NetworkComponentPlan
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south", address_prefix_mode="auto")
+
+        vpn = NetworkComponentPlan(
+            id="vpn-1",
+            name="test-vpn-gateway",
+            type="vpn_gateway",
+            vpc_id="vpc-1",
+            config={"vpc_id": "vpc-1"}
+        )
+
+        result = generate_networking_module_main(
+            vpcs=[vpc],
+            subnets=[],
+            security_groups=[],
+            network_components=[vpn],
+            project_name="test-project"
+        )
+
+        assert '# VPN Gateway: test-vpn-gateway' in result
+        assert '# resource "ibm_is_vpn_gateway" "test_vpn_gateway"' in result
+        assert '#   vpc            = ibm_is_vpc.test_vpc.id' in result
+        assert 'component:vpn-gateway' in result
+
+    def test_vpe_gateway_placeholder(self):
+        """Test VPE gateway placeholder generation"""
+        from models.network_planning import NetworkComponentPlan
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south", address_prefix_mode="auto")
+
+        vpe = NetworkComponentPlan(
+            id="vpe-1",
+            name="test-vpe-gateway",
+            type="vpe_gateway",
+            vpc_id="vpc-1",
+            config={
+                "vpc_id": "vpc-1",
+                "service_name": "cloud-object-storage"
+            }
+        )
+
+        result = generate_networking_module_main(
+            vpcs=[vpc],
+            subnets=[],
+            security_groups=[],
+            network_components=[vpe],
+            project_name="test-project"
+        )
+
+        assert '# VPE Gateway: test-vpe-gateway' in result
+        assert '# resource "ibm_is_virtual_endpoint_gateway" "test_vpe_gateway"' in result
+        assert '#   vpc            = ibm_is_vpc.test_vpc.id' in result
+        assert 'service:cloud-object-storage' in result
+
+    def test_route_table_placeholder(self):
+        """Test route table placeholder generation"""
+        from models.network_planning import NetworkComponentPlan
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south", address_prefix_mode="auto")
+
+        rt = NetworkComponentPlan(
+            id="rt-1",
+            name="test-route-table",
+            type="route_table",
+            vpc_id="vpc-1",
+            config={"vpc_id": "vpc-1"}
+        )
+
+        result = generate_networking_module_main(
+            vpcs=[vpc],
+            subnets=[],
+            security_groups=[],
+            network_components=[rt],
+            project_name="test-project"
+        )
+
+        assert '# Route Table: test-route-table' in result
+        assert '# resource "ibm_is_vpc_routing_table" "test_route_table"' in result
+        assert '#   vpc  = ibm_is_vpc.test_vpc.id' in result
+
+    def test_network_acl_placeholder(self):
+        """Test network ACL placeholder generation"""
+        from models.network_planning import NetworkComponentPlan
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south", address_prefix_mode="auto")
+
+        acl = NetworkComponentPlan(
+            id="acl-1",
+            name="test-network-acl",
+            type="acl",
+            vpc_id="vpc-1",
+            config={"vpc_id": "vpc-1"}
+        )
+
+        result = generate_networking_module_main(
+            vpcs=[vpc],
+            subnets=[],
+            security_groups=[],
+            network_components=[acl],
+            project_name="test-project"
+        )
+
+        assert '# Network ACL: test-network-acl' in result
+        assert '# resource "ibm_is_network_acl" "test_network_acl"' in result
+        assert '#   vpc  = ibm_is_vpc.test_vpc.id' in result
+
+    def test_multiple_network_components(self):
+        """Test generation of multiple network component types together"""
+        from models.network_planning import NetworkComponentPlan
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south", address_prefix_mode="auto")
+
+        components = [
+            NetworkComponentPlan(
+                id="pgw-1",
+                name="public-gateway-1",
+                type="public_gateway",
+                vpc_id="vpc-1",
+                config={"vpc_id": "vpc-1", "zone": "us-south-1"}
+            ),
+            NetworkComponentPlan(
+                id="fip-1",
+                name="floating-ip-1",
+                type="floating_ip",
+                vpc_id="vpc-1",
+                config={"zone": "us-south-1"}
+            ),
+            NetworkComponentPlan(
+                id="lb-1",
+                name="load-balancer-1",
+                type="load_balancer",
+                vpc_id="vpc-1",
+                config={"type": "private", "subnets": []}
+            ),
+        ]
+
+        result = generate_networking_module_main(
+            vpcs=[vpc],
+            subnets=[],
+            security_groups=[],
+            network_components=components,
+            project_name="test-project"
+        )
+
+        # Verify all components are present
+        assert 'resource "ibm_is_public_gateway" "public_gateway_1"' in result
+        assert 'resource "ibm_is_floating_ip" "floating_ip_1"' in result
+        assert 'resource "ibm_is_lb" "load_balancer_1"' in result
+        assert 'type           = "private"' in result
+
+    def test_network_components_with_missing_vpc_id(self):
+        """Test network components gracefully handle missing vpc_id"""
+        from models.network_planning import NetworkComponentPlan
+
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south", address_prefix_mode="auto")
+
+        pgw = NetworkComponentPlan(
+            id="pgw-1",
+            name="test-gateway",
+            type="public_gateway",
+            vpc_id="vpc-1",
+            config={"zone": "us-south-1"}  # No vpc_id in config
+        )
+
+        result = generate_networking_module_main(
+            vpcs=[vpc],
+            subnets=[],
+            security_groups=[],
+            network_components=[pgw],
+            project_name="test-project"
+        )
+
+        # Should default to first VPC
+        assert 'vpc            = ibm_is_vpc.test_vpc.id' in result
+
+    def test_empty_network_components(self):
+        """Test that empty network components list doesn't break generation"""
+        vpc = VpcPlan(id="vpc-1", name="test-vpc", region="us-south", address_prefix_mode="auto")
+
+        result = generate_networking_module_main(
+            vpcs=[vpc],
+            subnets=[],
+            security_groups=[],
+            network_components=[],
+            project_name="test-project"
+        )
+
+        # Should not have network components section
+        assert '# Network Components' not in result
+        # But should still have VPC
+        assert 'resource "ibm_is_vpc" "test_vpc"' in result
+
+
+# Made with Bob
 # Made with Bob

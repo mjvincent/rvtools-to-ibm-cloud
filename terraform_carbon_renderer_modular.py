@@ -403,10 +403,157 @@ def generate_networking_module_main(
 
             hcl += "}\n\n"
 
-    # Generate Network Components (placeholders for now)
+    # Generate Network Components
     if network_components:
-        hcl += "# Network Components\n"
-        hcl += "# TODO: Implement public gateways, load balancers, VPN gateways, etc.\n\n"
+        hcl += "# Network Components\n\n"
+
+        # Group components by type for organized output
+        public_gateways = [nc for nc in network_components if nc.type == 'public_gateway']
+        floating_ips = [nc for nc in network_components if nc.type == 'floating_ip']
+        load_balancers = [nc for nc in network_components if nc.type == 'load_balancer']
+        vpn_gateways = [nc for nc in network_components if nc.type == 'vpn_gateway']
+        vpe_gateways = [nc for nc in network_components if nc.type == 'vpe_gateway']
+        route_tables = [nc for nc in network_components if nc.type == 'route_table']
+        acls = [nc for nc in network_components if nc.type == 'acl']
+
+        # Generate Public Gateways
+        for pgw in public_gateways:
+            pgw_resource_name = _safe_resource_name(pgw.name)
+            pgw_ibm_name = _ibm_name(pgw.name)
+            zone = pgw.config.get('zone', 'us-south-1')
+            vpc_id = pgw.config.get('vpc_id', '')
+            vpc_res_name = vpc_resource_names.get(vpc_id, list(vpc_resource_names.values())[0] if vpc_resource_names else "unknown_vpc")
+
+            hcl += f"""resource "ibm_is_public_gateway" "{pgw_resource_name}" {{
+  name           = "{pgw_ibm_name}"
+  vpc            = ibm_is_vpc.{vpc_res_name}.id
+  zone           = "{zone}"
+  resource_group = var.resource_group_id
+  tags           = [var.project_tag, "component:public-gateway", "managed-by:carbon-ui"]
+}}
+
+"""
+
+        # Generate Floating IPs
+        for fip in floating_ips:
+            fip_resource_name = _safe_resource_name(fip.name)
+            fip_ibm_name = _ibm_name(fip.name)
+            zone = fip.config.get('zone', 'us-south-1')
+            target_type = fip.config.get('target_type', '')  # 'vsi' or 'load_balancer'
+
+            hcl += f"""resource "ibm_is_floating_ip" "{fip_resource_name}" {{
+  name           = "{fip_ibm_name}"
+  zone           = "{zone}"
+  resource_group = var.resource_group_id
+  tags           = [var.project_tag, "component:floating-ip", "managed-by:carbon-ui"]
+"""
+
+            # Add target if specified (will be wired later)
+            if target_type:
+                hcl += f"  # Target: {target_type} (to be wired after resource creation)\n"
+
+            hcl += "}\n\n"
+
+        # Generate Load Balancers (basic structure)
+        for lb in load_balancers:
+            lb_resource_name = _safe_resource_name(lb.name)
+            lb_ibm_name = _ibm_name(lb.name)
+            lb_type = lb.config.get('type', 'public')  # 'public' or 'private'
+            subnets = lb.config.get('subnets', [])
+
+            hcl += f"""resource "ibm_is_lb" "{lb_resource_name}" {{
+  name           = "{lb_ibm_name}"
+  type           = "{lb_type}"
+  resource_group = var.resource_group_id
+  tags           = [var.project_tag, "component:load-balancer", "managed-by:carbon-ui"]
+"""
+
+            # Add subnets if specified
+            if subnets:
+                hcl += "\n  subnets = [\n"
+                for subnet_name in subnets:
+                    hcl += f'    var.subnet_ids["{subnet_name}"],\n'
+                hcl += "  ]\n"
+
+            hcl += "}\n\n"
+
+        # Generate VPN Gateways (placeholder)
+        for vpn in vpn_gateways:
+            vpn_resource_name = _safe_resource_name(vpn.name)
+            vpn_ibm_name = _ibm_name(vpn.name)
+            vpc_id = vpn.config.get('vpc_id', '')
+            vpc_res_name = vpc_resource_names.get(vpc_id, list(vpc_resource_names.values())[0] if vpc_resource_names else "unknown_vpc")
+
+            hcl += f"""# VPN Gateway: {vpn.name}
+# resource "ibm_is_vpn_gateway" "{vpn_resource_name}" {{
+#   name           = "{vpn_ibm_name}"
+#   vpc            = ibm_is_vpc.{vpc_res_name}.id
+#   subnet         = var.subnet_ids["<subnet-name>"]
+#   resource_group = var.resource_group_id
+#   mode           = "route"  # or "policy"
+#   tags           = [var.project_tag, "component:vpn-gateway", "managed-by:carbon-ui"]
+# }}
+
+"""
+
+        # Generate VPE Gateways (placeholder)
+        for vpe in vpe_gateways:
+            vpe_resource_name = _safe_resource_name(vpe.name)
+            vpe_ibm_name = _ibm_name(vpe.name)
+            service_name = vpe.config.get('service_name', 'cloud-object-storage')
+            vpc_id = vpe.config.get('vpc_id', '')
+            vpc_res_name = vpc_resource_names.get(vpc_id, list(vpc_resource_names.values())[0] if vpc_resource_names else "unknown_vpc")
+
+            hcl += f"""# VPE Gateway: {vpe.name}
+# resource "ibm_is_virtual_endpoint_gateway" "{vpe_resource_name}" {{
+#   name           = "{vpe_ibm_name}"
+#   vpc            = ibm_is_vpc.{vpc_res_name}.id
+#   resource_group = var.resource_group_id
+#   target {{
+#     crn           = "<service-crn>"
+#     resource_type = "provider_cloud_service"
+#   }}
+#   tags = [var.project_tag, "component:vpe-gateway", "service:{service_name}", "managed-by:carbon-ui"]
+# }}
+
+"""
+
+        # Generate Route Tables (placeholder)
+        for rt in route_tables:
+            rt_resource_name = _safe_resource_name(rt.name)
+            rt_ibm_name = _ibm_name(rt.name)
+            vpc_id = rt.config.get('vpc_id', '')
+            vpc_res_name = vpc_resource_names.get(vpc_id, list(vpc_resource_names.values())[0] if vpc_resource_names else "unknown_vpc")
+
+            hcl += f"""# Route Table: {rt.name}
+# resource "ibm_is_vpc_routing_table" "{rt_resource_name}" {{
+#   name = "{rt_ibm_name}"
+#   vpc  = ibm_is_vpc.{vpc_res_name}.id
+# }}
+
+"""
+
+        # Generate Network ACLs (placeholder)
+        for acl in acls:
+            acl_resource_name = _safe_resource_name(acl.name)
+            acl_ibm_name = _ibm_name(acl.name)
+            vpc_id = acl.config.get('vpc_id', '')
+            vpc_res_name = vpc_resource_names.get(vpc_id, list(vpc_resource_names.values())[0] if vpc_resource_names else "unknown_vpc")
+
+            hcl += f"""# Network ACL: {acl.name}
+# resource "ibm_is_network_acl" "{acl_resource_name}" {{
+#   name = "{acl_ibm_name}"
+#   vpc  = ibm_is_vpc.{vpc_res_name}.id
+#   rules {{
+#     name        = "allow-all-inbound"
+#     action      = "allow"
+#     source      = "0.0.0.0/0"
+#     destination = "0.0.0.0/0"
+#     direction   = "inbound"
+#   }}
+# }}
+
+"""
 
     return hcl
 
