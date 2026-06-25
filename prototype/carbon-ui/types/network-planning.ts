@@ -285,4 +285,92 @@ export function createInitialNetworkPlan(projectName: string): NetworkPlanningSt
   };
 }
 
+// ─── UI-level types (moved from app/page.tsx) ───────────────────────────────
+
+export type EstateSummary = {
+  in_scope: number;
+  excluded: number;
+  monthly: number;
+  savings: number;
+  blocked: number;
+  review: number;
+};
+
+export type WorkbookSummary = {
+  filename: string;
+  estate_summary: EstateSummary;
+  overview_blockers: Record<string, number>;
+  readiness_counts: Record<string, Record<string, number>>;
+  assessment_quality: Record<string, string | number>;
+  readiness_rows: Array<Record<string, string | number>>;
+  assignment_rows?: Array<Record<string, string | number>>;
+};
+
+/** UI-level flattened view of a VM row — distinct from VmNetworkAssignment (API shape). */
+export type AssignmentVm = {
+  id: string;
+  name: string;
+  image: string;
+  imageReasons: string;
+  migration: string;
+  migrationReasons: string;
+  memory: string;
+  memoryReasons: string;
+  networkReadiness: string;
+  networkReasons: string;
+  profile: string;
+  overrideProfile: string;
+  storageTier: string;
+  overrideStorageTier: string;
+  network: string;
+  subnet: string;
+  securityGroup: string;
+  power: string;
+  owner: string;
+  application: string;
+  wave: string;
+  cutoverGroup: string;
+  priority: string;
+  dependencyGroup: string;
+  storageLabel?: string;
+};
+
+export type SavedProject = {
+  id: string;
+  name: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type ResourceState = {
+  vpcs: VpcBucket[];
+  subnets: SubnetBucket[];
+  securityGroups: SecurityBucket[];
+  storageProfiles: StorageBucket[];
+  waves: WaveBucket[];
+  networkComponents: NetworkComponent[];
+};
+
+export type SavedProjectState = {
+  planning_state_json?: {
+    carbon_summary?: WorkbookSummary;
+    carbon_assignment_rows?: AssignmentVm[];
+    carbon_resources?: ResourceState;
+    metadata?: Record<string, string>;
+  };
+};
+
+export type AssignmentMode = 'network' | 'security' | 'storage' | 'wave';
+
+export type Workflow =
+  | 'overview'
+  | 'intake'
+  | 'assignment'
+  | 'network'
+  | 'security'
+  | 'storage'
+  | 'waves'
+  | 'export';
+
 // Made with Bob

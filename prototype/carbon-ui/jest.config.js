@@ -4,10 +4,15 @@
 
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   roots: ['<rootDir>'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  setupFilesAfterEnv: ['@testing-library/jest-dom'],
+  moduleNameMapper: {
+    '^@carbon/react$': '<rootDir>/__mocks__/@carbon/react.tsx',
+    '^@carbon/icons-react$': '<rootDir>/__mocks__/@carbon/icons-react.tsx',
+  },
   collectCoverageFrom: [
     'types/**/*.ts',
     'utils/**/*.ts',
