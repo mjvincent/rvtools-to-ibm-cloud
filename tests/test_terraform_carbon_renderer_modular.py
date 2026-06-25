@@ -782,8 +782,9 @@ class TestEdgeCases:
         plan = NetworkPlanningState(metadata=PlanningMetadata())
         files = render_modular_terraform_from_carbon_plan(plan)
 
-        # Should still generate all files
-        assert len(files) == 15
+        # Empty plan: 6 root files + 6 vsi/storage module files = 12
+        # Networking module files are omitted when there are no VPCs
+        assert len(files) == 12
 
         # Main.tf should not have networking module
         assert 'module "networking"' not in files["main.tf"]

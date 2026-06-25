@@ -418,7 +418,8 @@ async def get_network_plan(project_id: str) -> dict[str, Any]:
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    planning_state_json = project.get("planning_state_json", {})
+    project_state = persistence.get_project_state(project_id)
+    planning_state_json = project_state.get("planning_state_json", {}) if project_state else {}
     network_plan_data = planning_state_json.get("carbon_network_plan")
 
     if not network_plan_data:
@@ -442,7 +443,8 @@ async def update_vm_assignments(
         raise HTTPException(status_code=404, detail="Project not found")
 
     # Load existing network plan
-    planning_state_json = project.get("planning_state_json", {})
+    project_state = persistence.get_project_state(project_id)
+    planning_state_json = project_state.get("planning_state_json", {}) if project_state else {}
     network_plan_data = planning_state_json.get("carbon_network_plan")
 
     if not network_plan_data:

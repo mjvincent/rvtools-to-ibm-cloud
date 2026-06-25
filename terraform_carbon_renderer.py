@@ -431,7 +431,12 @@ def render_networking_from_carbon_plan(
         }
     """
     if project_name is None:
-        project_name = network_plan.metadata.get('project_name', 'carbon-migration')
+        metadata = network_plan.metadata
+        project_name = (
+            metadata.get('project_name', 'carbon-migration')
+            if isinstance(metadata, dict)
+            else getattr(metadata, 'project_name', None) or 'carbon-migration'
+        )
 
     terraform_files = {}
 
