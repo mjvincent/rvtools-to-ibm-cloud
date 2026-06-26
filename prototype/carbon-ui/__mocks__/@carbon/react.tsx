@@ -139,8 +139,8 @@ export const TextInput = ({ id, labelText, value, onChange }: any) => (
   </div>
 );
 
-export const Tile = ({ children, className, onClick }: any) => (
-  <div className={className} onClick={onClick} data-testid="tile">{children}</div>
+export const Tile = ({ children, className, onClick, ...rest }: any) => (
+  <div className={className} onClick={onClick} data-testid="tile" {...rest}>{children}</div>
 );
 
 export const InlineLoading = ({ description }: any) => <span data-testid="inline-loading">{description}</span>;

@@ -1,8 +1,18 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AssignmentWorkflow from '../../components/workflows/AssignmentWorkflow';
 import { AppProvider } from '../../store/AppContext';
+
+function dataTransfer() {
+  const store = new Map<string, string>();
+  return {
+    dropEffect: '',
+    effectAllowed: '',
+    getData: jest.fn((type: string) => store.get(type) || ''),
+    setData: jest.fn((type: string, value: string) => store.set(type, value)),
+  };
+}
 
 function renderWithProvider(ui: React.ReactElement) {
   return render(<AppProvider>{ui}</AppProvider>);
@@ -67,5 +77,21 @@ describe('AssignmentWorkflow', () => {
     await userEvent.click(securityButton);
     // After switch, security groups should be visible
     expect(screen.getByText('sg-app-private')).toBeTruthy();
+  });
+
+  it('assigns a VM by dropping it on a subnet bucket', async () => {
+    renderWithProvider(<AssignmentWorkflow />);
+    const transfer = dataTransfer();
+    const row = screen.getByText('app-01').closest('tr');
+
+    await userEvent.click(screen.getByText('Network'));
+    fireEvent.dragStart(row!, { dataTransfer: transfer });
+    fireEvent.drop(screen.getByText('prod-app-us-south-1').closest('[data-testid="tile"]')!, {
+      dataTransfer: transfer,
+    });
+
+    expect(screen.getByText('Assign 1 VM to prod-app-us-south-1?')).toBeTruthy();
+    await userEvent.click(screen.getByText('Assign VMs'));
+    expect(screen.getAllByText('prod-app-us-south-1').length).toBeGreaterThan(1);
   });
 });

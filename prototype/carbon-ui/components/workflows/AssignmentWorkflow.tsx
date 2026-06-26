@@ -15,8 +15,10 @@ import {
   Tile,
 } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
-import type { AssignmentMode } from '../../types/network-planning';
-import ReadinessTag from '../ui/ReadinessTag';
+import type { AssignmentMode, AssignmentVm } from '../../types/network-planning';
+import DraggableVmRow from '../dnd/DraggableVmRow';
+import PlacementModal from '../dnd/PlacementModal';
+import SubnetDropZone from '../dnd/SubnetDropZone';
 
 function textValue(value: unknown) {
   return value === null || value === undefined ? '' : String(value);
@@ -35,6 +37,11 @@ function newBucketId(prefix: string, name: string) {
 }
 
 export default function AssignmentWorkflow() {
+  const [pendingPlacement, setPendingPlacement] = React.useState<{
+    vmIds: string[];
+    bucket: Record<string, string>;
+    mode: AssignmentMode;
+  } | null>(null);
   const { state, dispatch } = useAppState();
   const {
     assignmentRows,
@@ -110,27 +117,34 @@ export default function AssignmentWorkflow() {
     }
   }
 
-  function assignSelected(type: AssignmentMode, bucket: Record<string, string>) {
-    if (selectedVmIds.length === 0) {
-      dispatch({ type: 'SET_PROJECT_ERROR', payload: 'Select one or more VMs before assigning a bucket.' });
+  function applyAssignment(type: AssignmentMode, bucket: Record<string, string>, vmIds: string[]) {
+    const targetIds = [...new Set(vmIds)].filter(Boolean);
+    if (targetIds.length === 0) {
+      dispatch({ type: 'SET_PROJECT_ERROR', payload: 'Select or drag one or more VMs before assigning a bucket.' });
       return;
     }
     dispatch({ type: 'SET_PROJECT_ERROR', payload: '' });
     dispatch({
       type: 'SET_ASSIGNMENT_ROWS',
       payload: assignmentRows.map((row) => {
-        if (!selectedVmIds.includes(row.id)) return row;
+        if (!targetIds.includes(row.id)) return row;
         if (type === 'network') return { ...row, subnet: bucket.name, network: bucket.purpose || row.network };
         if (type === 'security') return { ...row, securityGroup: bucket.name };
         if (type === 'storage') return { ...row, overrideStorageTier: bucket.tier, storageLabel: bucket.label };
         return { ...row, wave: bucket.name, owner: row.owner || bucket.owner, cutoverGroup: row.cutoverGroup || bucket.name };
       }),
     });
-    dispatch({ type: 'SET_PROJECT_STATUS', payload: `${selectedVmIds.length} VM(s) assigned to ${bucket.name}.` });
+    dispatch({ type: 'SET_SELECTED_VM_IDS', payload: targetIds });
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: `${targetIds.length} VM(s) assigned to ${bucket.name}.` });
   }
 
-  function clearSelectedAssignment() {
-    if (selectedVmIds.length === 0) {
+  function assignSelected(type: AssignmentMode, bucket: Record<string, string>) {
+    applyAssignment(type, bucket, selectedVmIds);
+  }
+
+  function clearAssignments(vmIds: string[]) {
+    const targetIds = [...new Set(vmIds)].filter(Boolean);
+    if (targetIds.length === 0) {
       dispatch({ type: 'SET_PROJECT_ERROR', payload: 'Select one or more VMs before clearing assignments.' });
       return;
     }
@@ -138,14 +152,37 @@ export default function AssignmentWorkflow() {
     dispatch({
       type: 'SET_ASSIGNMENT_ROWS',
       payload: assignmentRows.map((row) => {
-        if (!selectedVmIds.includes(row.id)) return row;
+        if (!targetIds.includes(row.id)) return row;
         if (assignmentMode === 'network') return { ...row, subnet: '' };
         if (assignmentMode === 'security') return { ...row, securityGroup: '' };
         if (assignmentMode === 'storage') return { ...row, overrideStorageTier: '', storageLabel: '' };
         return { ...row, wave: '', cutoverGroup: '' };
       }),
     });
-    dispatch({ type: 'SET_PROJECT_STATUS', payload: `${selectedVmIds.length} VM assignment(s) cleared.` });
+    dispatch({ type: 'SET_SELECTED_VM_IDS', payload: targetIds });
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: `${targetIds.length} VM assignment(s) cleared.` });
+  }
+
+  function clearSelectedAssignment() {
+    clearAssignments(selectedVmIds);
+  }
+
+  function dragVm(row: AssignmentVm, event: React.DragEvent<HTMLTableRowElement>) {
+    const vmIds = selectedVmIds.includes(row.id) ? selectedVmIds : [row.id];
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('application/json', JSON.stringify({ vmIds }));
+    event.dataTransfer.setData('text/plain', vmIds.join(','));
+    dispatch({ type: 'SET_SELECTED_VM_IDS', payload: vmIds });
+  }
+
+  function requestDropPlacement(vmIds: string[], bucket: Record<string, string>) {
+    setPendingPlacement({ vmIds, bucket, mode: assignmentMode });
+  }
+
+  function confirmDropPlacement() {
+    if (!pendingPlacement) return;
+    applyAssignment(pendingPlacement.mode, pendingPlacement.bucket, pendingPlacement.vmIds);
+    setPendingPlacement(null);
   }
 
   function openBucketModal(type: AssignmentMode | 'vpc' | 'component') {
@@ -354,6 +391,7 @@ export default function AssignmentWorkflow() {
                     ['overrideStorageTier', 'Storage / IOPS'],
                     ['wave', 'Wave'],
                     ['power', 'Power'],
+                    ['actions', 'Actions'],
                   ].map(([key, label]) => (
                     <th key={key}>
                       <button type="button" onClick={() => toggleSort(key)}>
@@ -365,33 +403,15 @@ export default function AssignmentWorkflow() {
               </thead>
               <tbody>
                 {filteredRows.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <Checkbox
-                        id={`select-${row.id}`}
-                        labelText=""
-                        checked={selectedVmIds.includes(row.id)}
-                        onChange={(_: unknown, data: { checked?: boolean }) =>
-                          toggleSelected(row.id, Boolean(data.checked))
-                        }
-                      />
-                    </td>
-                    <td>
-                      <strong>{row.name}</strong>
-                      <span>{row.profile || 'No profile'} | {row.network || 'No source network'}</span>
-                    </td>
-                    <td>
-                      <ReadinessTag status={row.image} />
-                      <ReadinessTag status={row.migration} />
-                      <ReadinessTag status={row.memory} />
-                      <ReadinessTag status={row.networkReadiness} />
-                    </td>
-                    <td>{row.subnet || <span className="empty-value">Unassigned</span>}</td>
-                    <td>{row.securityGroup || <span className="empty-value">Unassigned</span>}</td>
-                    <td>{row.overrideStorageTier || row.storageTier || <span className="empty-value">Unassigned</span>}</td>
-                    <td>{row.wave || <span className="empty-value">Unassigned</span>}</td>
-                    <td>{row.power}</td>
-                  </tr>
+                  <DraggableVmRow
+                    key={row.id}
+                    row={row}
+                    selected={selectedVmIds.includes(row.id)}
+                    assignmentMode={assignmentMode}
+                    onSelect={toggleSelected}
+                    onDragStart={dragVm}
+                    onUnassign={(rowId) => clearAssignments([rowId])}
+                  />
                 ))}
               </tbody>
             </table>
@@ -445,19 +465,29 @@ export default function AssignmentWorkflow() {
           <div className="bucket-list">
             {assignmentMode === 'network' && <p className="bucket-group-label">Subnets assignable to selected VMs</p>}
             {assignmentBuckets().map((bucket) => (
-              <Tile key={bucket.id} className="bucket-tile">
-                <div>
-                  <h3>{bucket.name}</h3>
-                  <p>{(bucket as any).details}</p>
-                </div>
-                <Button size="sm" onClick={() => assignSelected(assignmentMode, bucket as any)}>
-                  Assign
-                </Button>
-              </Tile>
+              <SubnetDropZone
+                key={bucket.id}
+                bucket={bucket as any}
+                assignmentMode={assignmentMode}
+                onAssign={() => assignSelected(assignmentMode, bucket as any)}
+                onDropVmIds={requestDropPlacement}
+              >
+                <h3>{bucket.name}</h3>
+                <p>{(bucket as any).details}</p>
+              </SubnetDropZone>
             ))}
           </div>
         </Layer>
       </div>
+
+      <PlacementModal
+        open={Boolean(pendingPlacement)}
+        assignmentMode={pendingPlacement?.mode || assignmentMode}
+        bucketName={pendingPlacement?.bucket.name || ''}
+        vmCount={pendingPlacement?.vmIds.length || 0}
+        onCancel={() => setPendingPlacement(null)}
+        onConfirm={confirmDropPlacement}
+      />
 
       {/* Bucket creation modal */}
       <Modal
