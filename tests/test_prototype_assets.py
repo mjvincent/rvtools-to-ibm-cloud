@@ -28,22 +28,37 @@ def test_carbon_ui_prototype_declares_expected_stack_and_workflows():
     page_text = (
         ROOT / "prototype" / "carbon-ui" / "app" / "page.tsx"
     ).read_text(encoding="utf-8")
+    intake_text = (
+        ROOT / "prototype" / "carbon-ui" / "components" / "workflows" / "IntakeWorkflow.tsx"
+    ).read_text(encoding="utf-8")
+    assignment_text = (
+        ROOT / "prototype" / "carbon-ui" / "components" / "workflows" / "AssignmentWorkflow.tsx"
+    ).read_text(encoding="utf-8")
+    network_text = (
+        ROOT / "prototype" / "carbon-ui" / "components" / "workflows" / "NetworkPlanWorkflow.tsx"
+    ).read_text(encoding="utf-8")
+    storage_text = (
+        ROOT / "prototype" / "carbon-ui" / "components" / "workflows" / "StorageWorkflow.tsx"
+    ).read_text(encoding="utf-8")
+    api_text = (
+        ROOT / "prototype" / "carbon-ui" / "hooks" / "useApi.ts"
+    ).read_text(encoding="utf-8")
 
     assert "@carbon/react" in package_json["dependencies"]
     assert "next" in package_json["dependencies"]
-    assert "FileUploaderDropContainer" in page_text
-    assert "/api/workbooks/summary" in page_text
-    assert "/api/projects" in page_text
+    assert "FileUploaderDropContainer" in intake_text
+    assert "/api/workbooks/summary" in api_text
+    assert "/api/projects" in api_text
     assert "carbon-prototype-0.2" in page_text
     assert "Load" in page_text
     assert "Save project" in page_text
-    assert "VM Assignment Workbench" in page_text
-    assert "Create VPC" in page_text
-    assert "Storage / IOPS Plan" in page_text
+    assert "VM Assignment Workbench" in assignment_text
+    assert "Create VPC" in assignment_text
+    assert "Storage / IOPS Plan" in storage_text
     assert "carbon_resources" in page_text
-    assert "Generated network diagram" in page_text
-    assert "Create network component" in page_text
-    assert "Transit Gateway" in page_text
+    assert "Generated network diagram" in network_text
+    assert "Create network component" in network_text
+    assert "Transit Gateway" in assignment_text
     assert "Streamlit remains the supported app" in page_text
     assert (
         ROOT / "prototype" / "carbon-ui" / "e2e" / "carbon-smoke.spec.ts"

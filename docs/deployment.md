@@ -234,7 +234,11 @@ Open:
 http://localhost:3000
 ```
 
-The Carbon upload area calls the real FastAPI workbook summary endpoint. Deeper planning and export panels are intentionally mocked in this first prototype slice.
+The Carbon upload area calls the real FastAPI workbook summary endpoint. Saved
+project controls, network-plan save/load, drag-and-drop VM assignment, autosave,
+and Terraform ZIP export use the shared FastAPI/Postgres prototype stack.
+Streamlit remains the supported production UI until Carbon passes the promotion
+gates in [Carbon/React UI Strategy](carbon-react-ui-strategy.md).
 
 See [Carbon/React UI Strategy](carbon-react-ui-strategy.md) for the branch,
 prototype directory, and promotion-gate rules that keep Streamlit production
@@ -242,7 +246,8 @@ ready while Carbon is evaluated.
 
 ## Deployment Files
 - `Dockerfile` builds the Streamlit container and starts `app.py`.
-- `docker-compose.yml` runs the prebuilt app image with Postgres, artifact storage, and the experimental API.
+- `docker-compose.yml` runs the prebuilt app image with Postgres, artifact
+  storage, the experimental API, and the Carbon UI prototype.
 - `.dockerignore` keeps local artifacts and sensitive input/output files out of the image.
 - `.ceignore` keeps local artifacts and sensitive input/output files out of Code Engine source uploads.
 - `.streamlit/config.toml` disables usage stats and sets the app to run headless on `0.0.0.0`.

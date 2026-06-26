@@ -8,21 +8,25 @@ proceeds in three sequential phases: component architecture, API wiring, and
 drag-and-drop assignment.
 
 **Branch:** `feature/carbon-ui-network-planning-phase1`
-**App entry point:** `prototype/carbon-ui/app/page.tsx` (1,856 lines, monolithic)
+**App entry point:** `prototype/carbon-ui/app/page.tsx` (thin shell)
 **Backend:** FastAPI + Postgres + modular Terraform renderer — fully implemented
 and tested. No backend changes required for Phases 1–3.
 
 **Current state of the Carbon UI:**
-- 8 workflow tabs rendered from a single file
-- API calls for health, upload, project CRUD, and Terraform generation already
-  exist and use snake_case JSON bodies correctly
-- Network plan save, VM assignment persistence, and drag-and-drop are mocked
-- No `components/` directory exists yet
-- `types/network-planning.ts` is complete but the inline types in `page.tsx`
-  partially duplicate it
+- 8 workflow tabs are split into `components/workflows/`
+- API calls are centralized in `hooks/useApi.ts` and use relative `/api/` paths
+- Network plan save/load, VM assignment persistence, autosave, Terraform ZIP
+  export, and drag-and-drop assignment are wired to the FastAPI/Postgres stack
+- DnD is implemented with native browser drag/drop components under
+  `components/dnd/`
+- `types/network-planning.ts` is the single TypeScript schema source
 
 **Goal:** After all three phases, Carbon UI satisfies promotion Gates 1–4
 (upload/parse, save/load projects, core workflows, interactive VM assignment).
+
+**Verified status as of 2026-06-26:** Phases 1–3 are complete. Carbon Jest,
+TypeScript, and Playwright smoke tests pass; the live Docker Compose stack
+reports API, Streamlit, Carbon UI, and Postgres healthy.
 
 ---
 
@@ -195,7 +199,7 @@ prototype/carbon-ui/
   use relative `/api/` paths — no hardcoded `localhost` needed
 
 ### Status
-[ ] pending
+[x] done — commit 5852ca0
 
 ---
 
@@ -310,17 +314,16 @@ a live API call in a single pass.
 - `next.config.mjs` rewrites `/api/*` to backend so all calls use relative paths
 
 ### Status
-[ ] pending
+[x] done — verified 2026-06-26
 
 ---
 
 ## Phase 3 — Drag-and-Drop VM Assignment
 
 ### Intent
-Replace the current checkbox-select-then-click assignment model with a proper
-drag-and-drop workbench using `@dnd-kit`. This is the highest-value UX
-differentiator over the Streamlit workbench and the primary Carbon UI showcase
-capability.
+Extend the checkbox-select-then-click assignment model with a proper
+drag-and-drop workbench. This is the highest-value UX differentiator over the
+Streamlit workbench and the primary Carbon UI showcase capability.
 
 ### Drag Model
 Drag one or more VM rows from the left panel onto a **subnet** `BucketCard` in
@@ -331,113 +334,80 @@ Multi-select drag carries all selected VMs through the same modal in one
 operation. Existing assignments can be cleared via a VM row overflow menu.
 
 ### Expected Outcomes
-- `@dnd-kit/core`, `@dnd-kit/sortable`, and `@dnd-kit/utilities` installed
+- Native browser drag/drop components under `components/dnd/`
 - VM rows are draggable with a visible drag handle
 - Subnet bucket cards are drop zones that highlight on hover during drag
 - Dragging opens `PlacementModal` pre-filled from drop target
-- Modal has dropdowns for subnet (pre-filled), security group (VPC-filtered),
-  storage profile, and wave
-- Confirm assigns all dragged VMs and calls `updateVmAssignments`
+- Modal confirms target bucket placement for subnet, security group, storage,
+  or wave modes
+- Confirm assigns all dragged VMs and flows through debounced
+  `updateVmAssignments`
 - Multi-select: dragging a selected VM carries the entire selected set
 - VM rows show Carbon `Tag` chips for current subnet and wave assignments
 - Unassign via overflow menu on each assigned VM row
 - Focused unit tests for drag components and modal logic
-- Playwright E2E test: drag VM to subnet → modal opens → confirm → tag appears
+- Playwright E2E test: upload, save/load, drag/drop subnet, multi-select
+  security/storage/wave drops, autosave reload
 
 ### Todo List
 
-1. **Install @dnd-kit:**
-   ```
-   npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
-   ```
+1. **Create `components/dnd/DraggableVmRow.tsx`:**
+   - Native `draggable` row with drag payload `{ vmIds: string[] }`
+   - Shows subnet and wave Carbon tags when assigned
+   - Includes per-row placement actions
 
-2. **Create `components/dnd/DraggableVmRow.tsx`:**
-   - Wrap `VmRow.tsx` with `useDraggable` from `@dnd-kit/core`
-   - Drag data: `{ type: 'vm', vmKey: string, selectedVmKeys: string[] }`
-   - When `isDragging`: apply Carbon-compatible opacity/transform style
-   - Show `Draggable` icon (Carbon: `Draggable` from `@carbon/icons-react`)
-     as handle on the left of the row
+2. **Create `components/dnd/SubnetDropZone.tsx`:**
+   - Native drag/drop wrapper for subnet/security/storage/wave bucket tiles
+   - Applies highlighted drop-zone styling during drag hover
+   - Keeps the existing Assign button path
 
-3. **Create `components/dnd/SubnetDropZone.tsx`:**
-   - Wrap `BucketCard.tsx` for subnet type with `useDroppable`
-   - `isOver` → apply Carbon `$layer-02` background token as highlight
-   - Show "Drop VMs here" copy when bucket is empty
-   - `data`: `{ subnetId: string, subnetName: string, vpcId: string }`
+3. **Create `components/dnd/PlacementModal.tsx`:**
+   - Carbon `Modal` confirms the target mode, bucket, and VM count
+   - On confirm: dispatch assignment state updates through the shared
+     `AssignmentWorkflow` helper; autosave and VM assignment debounce persist it
 
-4. **Create `components/dnd/PlacementModal.tsx`:**
-   - Carbon `ComposedModal` with `ModalHeader`, `ModalBody`, `ModalFooter`
-   - Header: "Place VM(s) into network" / "Place X VMs into network" for multi
-   - Body:
-     - Read-only list of VM name(s) being placed (Carbon `StructuredList`)
-     - `Dropdown` for subnet (pre-filled with drop target, options from context
-       `resources.subnets` filtered to same VPC as drop target)
-     - `Dropdown` for security group (options from `resources.securityGroups`
-       filtered to same VPC as selected subnet's `vpcId`)
-     - `Dropdown` for storage profile (options from `resources.storageProfiles`)
-     - `Dropdown` for wave (optional, options from `resources.waves`)
-   - Security group dropdown re-filters when subnet selection changes
-   - Footer: "Confirm placement" (primary) and "Cancel" (secondary)
-   - On confirm: build `VmNetworkAssignment[]` for each dragged VM, dispatch to
-     context, call `useApi.updateVmAssignments(projectId, allAssignments)`
+4. **Wire drag/drop in `AssignmentWorkflow.tsx`:**
+   - Dragging an unselected VM carries only that VM
+   - Dragging a selected VM carries the full selected set
+   - Drop opens `PlacementModal`; confirm assigns all dragged VMs
 
-5. **Wire `DndContext` in `AssignmentWorkflow.tsx`:**
-   - Wrap the two-column layout (VM list + bucket columns) in `<DndContext>`
-   - `onDragStart`: store `activeVmKeys` in local state
-   - `onDragEnd`: if `over` target is a subnet drop zone, open `PlacementModal`
-     with `subnetId`, `vpcId`, and `vmKeys` pre-filled
-   - `onDragCancel`: clear `activeVmKeys`
-   - `<DragOverlay>`: render a `VmRow` snapshot with count badge for multi-select
-     (e.g. "web-server-01 +3 more")
-
-6. **Multi-select drag interaction:**
+5. **Multi-select drag interaction:**
    - Existing checkbox selection in `AssignmentWorkflow` populates
      `selectedVmIds` in context
    - `DraggableVmRow` passes `selectedVmIds` when `vmKey` is in the selected set
    - Dragging an unselected VM: `PlacementModal` receives only that VM's key
-   - After successful placement, clear `selectedVmIds`
+   - After successful placement, selected VM IDs remain highlighted for review
 
-7. **Unassign via overflow menu:**
-   - Add Carbon `OverflowMenu` + `OverflowMenuItem` to each `VmRow` when a
-     subnet assignment exists
-   - "Remove placement" item: clear `primarySubnetId`, `primarySecurityGroupId`,
-     `storageProfileId`, `waveId` for that VM in context and call
-     `updateVmAssignments`
+6. **Unassign via overflow menu:**
+   - Add row-level placement action to clear the active assignment mode for that
+     VM and flow through autosave/debounced persistence
 
-8. **Assignment status chips on VM rows:**
+7. **Assignment status chips on VM rows:**
    - `VmRow.tsx`: when `vm.subnet` is set, render Carbon `Tag` type="blue"
      with subnet short-name (up to 20 chars, truncated with ellipsis)
    - When `vm.wave` is set, render Carbon `Tag` type="green" with wave name
    - Tags appear in the right column of the VM row
 
-9. **Write focused tests:**
-   - `PlacementModal.test.tsx`:
-     - Renders correct VM name(s) in structured list
-     - Subnet dropdown shows only subnets in matching VPC
-     - Security group dropdown filters when subnet changes
-     - Confirm button calls `updateVmAssignments` with correct shape
-   - `DraggableVmRow.test.tsx`:
-     - Drag data includes selected VM keys when vm is in selection
-     - Drag data contains only self when vm is not selected
-   - `SubnetDropZone.test.tsx`:
-     - Renders BucketCard with "Drop VMs here" when empty
-   - Playwright E2E addition to `carbon-smoke.spec.ts`:
-     - Upload sample workbook, create subnet bucket, drag VM row onto bucket,
-       confirm in modal, verify subnet tag appears on VM row
+8. **Write focused tests:**
+   - `DndComponents.test.tsx`: draggable row, drop-zone payload, placement modal
+   - `AssignmentWorkflow.test.tsx`: drop onto subnet and confirm assignment
+   - Playwright E2E addition to `carbon-smoke.spec.ts`: upload, save/load,
+     subnet drag/drop, multi-select security/storage/wave drops, autosave reload
 
 ### Relevant Context
 - `prototype/carbon-ui/components/workflows/AssignmentWorkflow.tsx` — created
   in Phase 1, source for drag wiring
 - `prototype/carbon-ui/components/ui/BucketCard.tsx` — base for `SubnetDropZone`
 - `prototype/carbon-ui/hooks/useApi.ts` — `updateVmAssignments` created in Phase 2
-- `@dnd-kit/core` API: `DndContext`, `useDraggable`, `useDroppable`, `DragOverlay`,
-  `DragStartEvent`, `DragEndEvent`
-- Carbon `ComposedModal` vs `Modal`: use `ComposedModal` for custom footer layout
+- Native browser drag/drop is used to avoid adding a new dependency in the
+  prototype track
+- Carbon `Modal` is sufficient for the current confirm-placement flow
 - `PUT /api/projects/{id}/vm-assignments` — bare list (not wrapped), confirmed
   correct in `tests/test_prototype_api_network_planning.py`
 - `@carbon/icons-react` icon for drag handle: `Draggable` component
 
 ### Status
-[ ] pending
+[x] done — verified 2026-06-26
 
 ---
 

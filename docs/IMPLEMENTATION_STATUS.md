@@ -2,336 +2,159 @@
 
 ## Overview
 
-This document tracks the implementation status of the Carbon UI integration with the RVTools to IBM Cloud migration tool.
+This document tracks the implementation status of the Carbon UI integration with
+the RVTools to IBM Cloud migration tool.
 
-**Last Updated**: 2026-06-23
-**Current Phase**: Phase 1 - Foundation (Weeks 1-2) ✅ COMPLETE
-**Overall Progress**: 14% (4 of 28 weeks)
-
----
-
-## ✅ Completed Implementation
-
-### Phase 1: Foundation (Weeks 1-2)
-
-#### Week 1: Network Schema Definition ✅
-
-**TypeScript Schema** (`prototype/carbon-ui/types/network-planning.ts`)
-- [x] NetworkPlanningState type definition
-- [x] VpcBucket, SubnetBucket, SecurityBucket types
-- [x] StorageBucket, WaveBucket types
-- [x] NetworkComponent and VmNetworkAssignment types
-- [x] Helper functions: createEmptyNetworkPlan(), createInitialNetworkPlan()
-- **Lines**: 283
-
-**TypeScript Validation** (`prototype/carbon-ui/utils/network-validation.ts`)
-- [x] isValidCidr() - CIDR format validation
-- [x] validateSecurityRule() - Security rule validation
-- [x] validateVmAssignment() - VM assignment validation
-- [x] validateNetworkPlan() - Complete plan validation
-- [x] detectCidrOverlaps() - CIDR overlap detection
-- **Lines**: 203
-
-**Python Dataclass Models** (`models/network_planning.py`)
-- [x] NetworkPlanningState dataclass
-- [x] VpcPlan, SubnetPlan, SecurityGroupPlan dataclasses
-- [x] StorageProfilePlan, WavePlan, NetworkComponentPlan dataclasses
-- [x] VmNetworkAssignment, SecondaryNicAssignment dataclasses
-- [x] Automatic dict-to-dataclass conversion
-- [x] Helper functions: to_dict(), from_dict()
-- **Lines**: 263
-
-**Pydantic Validation Schemas** (`prototype/api/schemas.py`)
-- [x] NetworkPlanningStateSchema
-- [x] VpcPlanSchema, SubnetPlanSchema, SecurityGroupPlanSchema
-- [x] Field validators for names, CIDRs, port ranges
-- [x] Regex validation for enums
-- **Lines**: 175
-
-#### Week 2: API Endpoints ✅
-
-**FastAPI Endpoints** (`prototype/api/app.py`)
-- [x] POST /api/projects/{id}/network-plan - Save network planning state
-- [x] GET /api/projects/{id}/network-plan - Retrieve network planning state
-- [x] PUT /api/projects/{id}/vm-assignments - Update VM assignments
-- [x] Error handling and validation
-- [x] Postgres persistence integration
-- **Lines Added**: 93
-
-**Python Unit Tests** (`tests/test_network_planning.py`)
-- [x] VPC plan creation and validation tests
-- [x] Subnet plan creation tests
-- [x] Security rule and group tests
-- [x] Network planning state serialization tests
-- [x] Round-trip conversion tests
-- **Lines**: 352
+**Last Updated**: 2026-06-26  
+**Current Phase**: Carbon UI Phases 1-3 complete; promotion gate review next  
+**Production UI**: Streamlit remains production until Carbon closes the remaining
+feature-parity and production-readiness gaps.
 
 ---
 
-## 📊 Implementation Statistics
+## Completed Implementation
 
-### Code Metrics
-- **Total Lines Implemented**: 1,369 lines
-- **Files Created**: 5 new files
-- **Files Modified**: 1 file
-- **Test Coverage**: 15 test cases
+### Foundation and Backend
 
-### File Breakdown
-| File | Type | Lines | Status |
-|------|------|-------|--------|
-| `prototype/carbon-ui/types/network-planning.ts` | TypeScript | 283 | ✅ Complete |
-| `prototype/carbon-ui/utils/network-validation.ts` | TypeScript | 203 | ✅ Complete |
-| `models/network_planning.py` | Python | 263 | ✅ Complete |
-| `prototype/api/schemas.py` | Python | 175 | ✅ Complete |
-| `prototype/api/app.py` | Python | +93 | ✅ Complete |
-| `tests/test_network_planning.py` | Python | 352 | ✅ Complete |
+**Network Planning Schema**
+- [x] TypeScript schema in `prototype/carbon-ui/types/network-planning.ts`
+- [x] CIDR and network validation in `prototype/carbon-ui/utils/network-validation.ts`
+- [x] Python dataclasses in `models/network_planning.py`
+- [x] Pydantic validation schemas in `prototype/api/schemas.py`
 
----
+**FastAPI Endpoints**
+- [x] `POST /api/projects/{id}/network-plan`
+- [x] `GET /api/projects/{id}/network-plan`
+- [x] `PUT /api/projects/{id}/vm-assignments`
+- [x] `POST /api/projects/{id}/terraform`
+- [x] Postgres-backed project CRUD and project-state persistence
 
-## 🔄 Current Status
+**Terraform Renderer**
+- [x] Modular Carbon renderer supports VPCs, subnets, security groups, storage,
+  waves, network components, and VM assignments
+- [x] Terraform ZIP generation works from saved Carbon network plans
+- [x] Direct API smoke verified ZIP generation with `application/zip` response
 
-### What Works Now
+### Carbon UI Phase 1: Component Architecture
 
-1. **Schema Definition** ✅
-   - Complete TypeScript types for network planning
-   - Python dataclasses mirror TypeScript schema
-   - Pydantic schemas for API validation
+- [x] `app/page.tsx` is a thin shell around the Carbon workbench
+- [x] 8 workflow tabs live under `components/workflows/`
+- [x] Shared primitives live under `components/ui/`
+- [x] Shared state lives in `store/AppContext.tsx`
+- [x] API client lives in `hooks/useApi.ts`
+- [x] React component tests run with Jest jsdom and Testing Library
 
-2. **Validation** ✅
-   - CIDR format validation
-   - Security rule validation
-   - Network plan completeness validation
-   - Type safety across the stack
+### Carbon UI Phase 2: API Wiring and Export
 
-3. **API Endpoints** ✅
-   - Save network plans to Postgres
-   - Retrieve network plans from Postgres
-   - Update VM assignments
-   - Full error handling
+- [x] Workbook intake calls the real upload/summary API
+- [x] Project create/update/load/list/delete is wired to FastAPI/Postgres
+- [x] Full network-plan save/load is wired
+- [x] VM assignment updates are debounced and persisted
+- [x] Dirty-state autosave persists active projects
+- [x] Persistence-unavailable warning is shown when API/Postgres is unavailable
+- [x] Export tab saves latest network plan and downloads Terraform ZIP
+- [x] Docker Compose Carbon UI healthcheck uses Node `fetch()` and reports healthy
 
-4. **Testing** ✅
-   - 15 Python unit tests
-   - Serialization/deserialization tests
-   - Validation tests
-   - Round-trip conversion tests
+### Carbon UI Phase 3: Drag-and-Drop Assignment
 
-### What's Next
-
-**Phase 1: Weeks 3-4** (In Progress)
-- [ ] TypeScript unit tests
-- [ ] API integration tests
-- [ ] Postgres persistence testing
-- [ ] API documentation updates
-
-**Phase 2: Weeks 5-8** (Planned)
-- [ ] Enhanced Terraform renderer
-- [ ] Network component placeholders
-- [ ] Terraform generation API endpoint
-- [ ] ZIP packaging
+- [x] Native drag/drop components under `components/dnd/`
+- [x] `DraggableVmRow`
+- [x] `SubnetDropZone`
+- [x] `PlacementModal`
+- [x] Single VM drag
+- [x] Multi-select drag
+- [x] Drop targets for subnet, security, storage, and wave modes
+- [x] Confirmation modal before assignment
+- [x] Row-level unassign action for the active assignment mode
+- [x] Subnet and wave Carbon `Tag` chips in VM rows
+- [x] DnD updates flow through existing autosave and VM debounce paths
 
 ---
 
-## 🚀 How to Use
+## Verification Status
 
-### Prerequisites
+Latest verified commands:
 
 ```bash
-# Python dependencies
-pip install fastapi>=0.104.0 pydantic>=2.0.0 pandas>=2.0.0 uvicorn>=0.24.0 pytest>=7.0.0
-
-# Node.js dependencies (in prototype/carbon-ui/)
-npm install
+cd prototype/carbon-ui
+npx tsc --noEmit --incremental false
+npm test -- --runInBand
+npm run test:e2e
 ```
 
-### Running Tests
+Results:
+- TypeScript: 0 errors
+- Jest: 105 tests passing
+- Playwright: 1 browser smoke passing
+- Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
-```bash
-# Python tests
-python -m pytest tests/test_network_planning.py -v
-
-# Expected output:
-# test_vpc_plan_creation PASSED
-# test_vpc_plan_invalid_mode PASSED
-# test_network_planning_state_serialization PASSED
-# ... (15 tests total)
-```
-
-### Using the API
-
-```python
-# Start the FastAPI server
-uvicorn prototype.api.app:app --reload --port 8000
-
-# Create a network plan
-import requests
-
-network_plan = {
-    "version": "1.0",
-    "vpcs": [{
-        "id": "vpc-1",
-        "name": "migration-vpc",
-        "region": "us-south",
-        "addressPrefixMode": "manual",
-        "addressPrefixes": [{
-            "id": "prefix-1",
-            "name": "zone-1-prefix",
-            "cidr": "10.240.0.0/16",
-            "zone": "us-south-1",
-            "isDefault": True
-        }],
-        "tags": {},
-        "notes": "",
-        "createdAt": "2026-06-23T00:00:00",
-        "updatedAt": "2026-06-23T00:00:00"
-    }],
-    "subnets": [],
-    "securityGroups": [],
-    "storageProfiles": [],
-    "waves": [],
-    "networkComponents": [],
-    "vmAssignments": [],
-    "metadata": {
-        "projectName": "My Migration",
-        "targetRegion": "us-south",
-        "targetZone": "us-south-1",
-        "deploymentTarget": "plain_cli",
-        "createdAt": "2026-06-23T00:00:00",
-        "updatedAt": "2026-06-23T00:00:00"
-    }
-}
-
-# Save network plan
-response = requests.post(
-    "http://localhost:8000/api/projects/project-123/network-plan",
-    json=network_plan
-)
-print(response.json())  # {"status": "success", "message": "Network plan saved"}
-
-# Retrieve network plan
-response = requests.get(
-    "http://localhost:8000/api/projects/project-123/network-plan"
-)
-print(response.json())  # Returns the saved network plan
-```
-
-### Using in TypeScript
-
-```typescript
-import { createInitialNetworkPlan, validateNetworkPlan } from './types/network-planning';
-import { isValidCidr } from './utils/network-validation';
-
-// Create a new network plan
-const plan = createInitialNetworkPlan('My Migration Project');
-
-// Validate CIDR
-const isValid = isValidCidr('10.240.0.0/16');  // true
-
-// Validate complete plan
-const errors = validateNetworkPlan(plan);
-if (errors.length === 0) {
-  console.log('Network plan is valid!');
-}
-
-// Save to API
-const response = await fetch('/api/projects/project-123/network-plan', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(plan)
-});
-```
+The Playwright smoke covers workbook upload, project save/load, subnet
+drag/drop, multi-select security/storage/wave drops, autosave reload, and cleanup
+of temporary smoke projects.
 
 ---
 
-## 📝 Known Issues & Limitations
+## Current Limitations
 
-### Type Checker Warnings
-- **basedpyright warnings**: Expected for external dependencies (pydantic, fastapi, pandas)
-- **Dict unpacking warnings**: Overly strict type checking; code works correctly at runtime
-- **Status**: Non-blocking, will resolve when dependencies are installed
+Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
-### Current Limitations
-1. **CIDR Overlap Detection**: Simplified implementation, needs proper IP address library
-2. **Network Components**: Placeholder types defined, full implementation in Phase 2
-3. **Terraform Generation**: Not yet wired to Carbon network plans (Phase 2)
-4. **Drag-and-Drop UI**: Not yet implemented (Phase 3)
+1. **Feature parity**
+   - Wave Planning beyond basic wave bucket assignment
+   - Remediation Tracker
+   - Image Import Planning
+   - Migration Ops
+   - Decision audit and full CSV/handoff parity
+
+2. **Production readiness**
+   - Large-workbook performance benchmark
+   - Accessibility audit
+   - Full browser coverage beyond the smoke path
+   - User documentation for Carbon-specific workflows
+   - Promotion/cutover guide from Streamlit to Carbon
+
+3. **UX polish**
+   - Editable network diagram nodes
+   - Richer validation and preflight feedback in Carbon
+   - Terraform preview inside the UI
 
 ---
 
-## 🎯 Roadmap
+## Roadmap
 
-### Phase 1: Foundation (Weeks 1-4) - 50% Complete
-- [x] Week 1: Network schema definition
-- [x] Week 2: API endpoints
-- [ ] Week 3: Postgres persistence testing
-- [ ] Week 4: Testing & documentation
+### Promotion Gate Review - Next
+- [ ] Review against `docs/carbon-react-ui-strategy.md`
+- [ ] Run full repo validation
+- [ ] Document gate pass/fail status
+- [ ] Decide whether Phase 4 starts before or after additional UX/accessibility
+  polish
 
-### Phase 2: Terraform Integration (Weeks 5-8) - 0% Complete
-- [ ] Enhanced Terraform renderer
-- [ ] Network component placeholders
-- [ ] Terraform generation API
-- [ ] ZIP packaging
-
-### Phase 3: Drag-and-Drop UI (Weeks 9-12) - 0% Complete
-- [ ] Install @dnd-kit
-- [ ] Draggable components
-- [ ] Multi-select support
-- [ ] E2E tests
-
-### Phase 4: Priority 2 Features (Weeks 13-20) - 0% Complete
+### Phase 4: Streamlit Feature Parity
 - [ ] Wave Planning
 - [ ] Remediation Tracker
 - [ ] Image Import Planning
 - [ ] Migration Ops
+- [ ] Decision audit
 
-### Phase 5: Handoff Package (Weeks 21-24) - 0% Complete
-- [ ] Manifest generation
-- [ ] CSV exports
-- [ ] Preflight validation
-- [ ] ZIP packaging
+### Phase 5: Complete Handoff Package Parity
+- [ ] All CSV exports
+- [ ] Migration manifest parity
+- [ ] Preflight parity
+- [ ] Planning-state import/export parity
 
-### Phase 6: Polish & Promotion (Weeks 25-28) - 0% Complete
-- [ ] Clickable diagram nodes
-- [ ] Performance optimization
+### Phase 6: Polish and Promotion
 - [ ] Accessibility audit
-- [ ] Production readiness
+- [ ] Performance benchmark
+- [ ] Documentation
+- [ ] User acceptance testing
+- [ ] Go/no-go promotion decision
 
 ---
 
-## 📚 Related Documentation
+## Related Documentation
 
-- **[carbon-ui-integration-summary.md](./carbon-ui-integration-summary.md)** - Executive summary
-- **[carbon-network-schema-spec.md](./carbon-network-schema-spec.md)** - Detailed schema specification
-- **[carbon-integration-diagrams.md](./carbon-integration-diagrams.md)** - Visual architecture diagrams
-- **[carbon-react-ui-strategy.md](./carbon-react-ui-strategy.md)** - Strategic direction
+- [Carbon React UI Strategy](./carbon-react-ui-strategy.md)
+- [Carbon UI Integration Summary](./carbon-ui-integration-summary.md)
+- [Carbon Network Schema Spec](./carbon-network-schema-spec.md)
+- [Carbon Integration Diagrams](./carbon-integration-diagrams.md)
+- [Terraform Modular Implementation](./TERRAFORM_MODULAR_IMPLEMENTATION.md)
 
----
-
-## 🤝 Contributing
-
-### Adding New Features
-
-1. **Update Schema**: Modify TypeScript types and Python dataclasses
-2. **Add Validation**: Update validation utilities
-3. **Update API**: Add/modify FastAPI endpoints
-4. **Write Tests**: Add unit and integration tests
-5. **Update Docs**: Update this status document
-
-### Running the Full Test Suite
-
-```bash
-# Python tests
-python -m pytest tests/ -v
-
-# TypeScript tests (when implemented)
-cd prototype/carbon-ui
-npm test
-
-# API integration tests (when implemented)
-python -m pytest tests/test_prototype_api_network_planning.py -v
-```
-
----
-
-**Status**: Phase 1 (Weeks 1-2) Complete ✅
-**Next Milestone**: Week 3 - Persistence testing
-**Overall Progress**: 14% (4 of 28 weeks)

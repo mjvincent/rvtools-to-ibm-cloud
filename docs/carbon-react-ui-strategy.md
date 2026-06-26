@@ -27,9 +27,11 @@ instead of duplicating parser, readiness, pricing, planning, or export logic.
 
 - `app.py` and `streamlit_app/` remain the production UI.
 - `prototype/api` provides FastAPI endpoints for health, workbook summary,
-  projects, project state, and artifacts.
+  projects, project state, artifacts, Carbon network plans, VM assignments, and
+  Terraform ZIP generation.
 - `prototype/carbon-ui` provides the experimental IBM Carbon Design System UI.
-- `docker-compose.yml` starts Streamlit, FastAPI, and Postgres together.
+- `docker-compose.yml` starts Streamlit, FastAPI, Carbon UI, and Postgres
+  together.
 - Postgres stores project metadata and planning-state JSON.
 
 ## Carbon Prototype Scope
@@ -39,20 +41,30 @@ The Carbon UI should prove enterprise value through real workflow slices:
 1. Upload an RVTools workbook and return estate/readiness summary.
 2. Save and load Carbon project state through FastAPI/Postgres.
 3. Display readiness and assessment quality in an IBM Cloud-style shell.
-4. Keep deeper VM review, wave planning, image import planning, and export
-   package actions mocked until the shell proves useful.
+4. Persist Carbon network plans and VM assignments through the shared API.
+5. Generate Terraform ZIP packages from saved Carbon network plans.
+6. Provide drag-and-drop VM placement for subnet, security, storage, and wave
+   assignment.
+
+Verified as of 2026-06-26: those slices are implemented and covered by
+TypeScript, Jest, and Playwright smoke validation. Streamlit-only feature parity
+still remains before promotion.
 
 ## Promotion Gates
 
 Carbon should not replace Streamlit until it can:
 
-- Upload and parse RVTools workbooks through the shared backend.
-- Save, load, rename, and delete project state.
-- Reproduce the core Streamlit planning workflows: VM review, wave planning,
+- [x] Upload and parse RVTools workbooks through the shared backend.
+- [x] Save, load, rename, and delete project state.
+- [x] Assign VMs to subnet, security, storage, and wave buckets with
+  drag-and-drop and autosave.
+- [x] Generate Terraform ZIP packages from saved Carbon network plans.
+- [ ] Reproduce the core Streamlit planning workflows: VM review, wave planning,
   remediation tracking, image import planning, and export package generation.
-- Pass browser-level smoke tests for upload, persistence, and primary views.
-- Preserve or improve accessibility, performance, and auditability.
-- Support the same Docker/Postgres runtime without manual setup.
+- [x] Pass browser-level smoke tests for upload, persistence, DnD assignment,
+  autosave reload, and primary views.
+- [ ] Preserve or improve accessibility, performance, and auditability.
+- [x] Support the same Docker/Postgres runtime without manual setup.
 
 ## Recommendation
 

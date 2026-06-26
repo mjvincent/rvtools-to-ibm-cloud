@@ -19,14 +19,16 @@ This document provides a concise summary of the Carbon UI integration plan. For 
 
 ### Current State
 - **Streamlit**: Production app with full Terraform generation
-- **Carbon UI**: Prototype with visualization-only network planning
-- **FastAPI**: Shared backend for parsing and state management
-- **Gap**: Carbon network plans don't generate Terraform
+- **Carbon UI**: Prototype with real upload, persistence, network planning,
+  Terraform ZIP export, and drag-and-drop assignment
+- **FastAPI**: Shared backend for parsing, state management, Carbon network
+  planning, VM assignment persistence, and Terraform generation
+- **Gap**: Carbon still lacks several Streamlit-only planning workflows
 
 ### Target State
 - **Carbon UI** → **FastAPI** → **Enhanced Terraform Renderer** → **Terraform ZIP**
 - Network planning schema bridges UI state and Terraform generation
-- Drag-and-drop replaces checkbox assignment
+- Native drag-and-drop augments checkbox assignment
 - Full handoff package with manifest, CSVs, runbook
 
 ---
@@ -61,14 +63,17 @@ class NetworkPlanningState:
 
 ### 2. API Endpoints
 
-**New FastAPI endpoints required:**
+**Implemented FastAPI endpoints:**
 
 - `POST /api/projects/{id}/network-plan` - Save network planning state
 - `GET /api/projects/{id}/network-plan` - Retrieve network planning state
-- `POST /api/projects/{id}/terraform/generate` - Generate Terraform from Carbon state
-- `GET /api/projects/{id}/terraform/download/{artifact_id}` - Download Terraform ZIP
-- `POST /api/projects/{id}/terraform/validate` - Run preflight validation
+- `POST /api/projects/{id}/terraform` - Generate and stream Terraform ZIP from Carbon state
 - `PUT /api/projects/{id}/vm-assignments` - Update VM assignments from drag-and-drop
+
+Still planned:
+- Preflight/validation endpoint dedicated to Carbon UI feedback
+- Artifact download endpoint for saved Terraform packages, if Carbon starts
+  storing generated ZIPs server-side
 
 ### 3. Enhanced Terraform Renderer
 
@@ -114,24 +119,19 @@ def render_networking_templates(
 
 ### 4. Drag-and-Drop Architecture
 
-**Replace checkbox assignment with drag-and-drop using `@dnd-kit`:**
+**Drag-and-drop uses native browser drag/drop components:**
 
 ```typescript
-// prototype/carbon-ui/components/DragDropAssignment.tsx
-import { DndContext, DragOverlay } from '@dnd-kit/core';
-
-export function DragDropAssignment({ vms, buckets, mode, onAssign }) {
-  // Drag VMs from left panel
-  // Drop onto subnet/security/storage/wave buckets on right
-  // Support multi-select drag (drag multiple VMs at once)
-  // Visual feedback (drag overlay, drop zones, validation)
-}
+// prototype/carbon-ui/components/dnd/
+DraggableVmRow
+SubnetDropZone
+PlacementModal
 ```
 
 **Features:**
 - Drag single or multiple VMs
 - Drop onto target buckets (subnet, security group, storage, wave)
-- Visual feedback during drag (overlay, drop zone highlighting)
+- Visual feedback during drag (drop zone highlighting)
 - Validation (prevent invalid drops)
 - Persist assignments via API
 
@@ -140,12 +140,12 @@ export function DragDropAssignment({ vms, buckets, mode, onAssign }) {
 ## 📋 Feature Parity Checklist
 
 ### Core Functionality
-- [ ] Upload and parse RVTools workbooks ✅ (Already implemented)
-- [ ] Display estate summary and readiness ✅ (Already implemented)
-- [ ] Save and load projects ✅ (Already implemented)
-- [ ] Assign VMs to subnets/security/storage/waves ⚠️ (Checkbox only, needs drag-and-drop)
-- [ ] Generate Terraform packages ❌ (Not implemented)
-- [ ] Download Terraform ZIP ❌ (Not implemented)
+- [x] Upload and parse RVTools workbooks
+- [x] Display estate summary and readiness
+- [x] Save and load projects
+- [x] Assign VMs to subnets/security/storage/waves
+- [x] Generate Terraform packages
+- [x] Download Terraform ZIP
 
 ### Priority 2 Features
 - [ ] Wave Planning (wave, cutover group, owner, priority, dependency)
@@ -161,7 +161,7 @@ export function DragDropAssignment({ vms, buckets, mode, onAssign }) {
 - [ ] Public gateway support
 - [ ] Network component placeholders (VPN, LB, VPE, floating IP, route tables, ACLs)
 - [ ] Network diagram with clickable/editable nodes
-- [ ] Terraform generation from network plan
+- [x] Terraform generation from network plan
 
 ### Handoff Package
 - [ ] Migration manifest JSON
@@ -175,7 +175,7 @@ export function DragDropAssignment({ vms, buckets, mode, onAssign }) {
 
 ## 🗓️ Implementation Roadmap
 
-### Phase 1: Foundation (Weeks 1-4)
+### Phase 1: Foundation (Weeks 1-4) ✅
 **Goal**: Establish network planning schema and API endpoints
 
 **Tasks:**
@@ -190,7 +190,7 @@ export function DragDropAssignment({ vms, buckets, mode, onAssign }) {
 - `prototype/api/schemas.py`
 - Updated `prototype/api/app.py`
 
-### Phase 2: Terraform Integration (Weeks 5-8)
+### Phase 2: Terraform Integration (Weeks 5-8) ✅
 **Goal**: Wire Carbon network plans to Terraform generation
 
 **Tasks:**
@@ -206,21 +206,22 @@ export function DragDropAssignment({ vms, buckets, mode, onAssign }) {
 - Terraform generation API endpoint
 - Test coverage
 
-### Phase 3: Drag-and-Drop UI (Weeks 9-12)
+### Phase 3: Drag-and-Drop UI (Weeks 9-12) ✅
 **Goal**: Replace checkbox assignment with drag-and-drop
 
 **Tasks:**
-- Install and configure `@dnd-kit`
-- Create draggable VM cards
-- Create droppable buckets
+- Create native draggable VM rows
+- Create droppable bucket zones
 - Implement multi-select drag
 - Add visual feedback
 - Implement assignment persistence
 - Write Playwright tests
 
 **Deliverables:**
-- `prototype/carbon-ui/components/DragDropAssignment.tsx`
-- E2E tests
+- `prototype/carbon-ui/components/dnd/DraggableVmRow.tsx`
+- `prototype/carbon-ui/components/dnd/SubnetDropZone.tsx`
+- `prototype/carbon-ui/components/dnd/PlacementModal.tsx`
+- E2E tests covering multi-select DnD and autosave reload
 
 ### Phase 4: Priority 2 Features (Weeks 13-20)
 **Goal**: Achieve feature parity with Streamlit Priority 2 features
@@ -428,7 +429,7 @@ For questions or feedback on this integration plan:
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2026-06-23
-**Status**: Planning Phase
-**Next Review**: After Phase 1 completion
+**Document Version**: 1.1
+**Last Updated**: 2026-06-26
+**Status**: Phases 1-3 implemented and verified; Phase 4 parity planning next
+**Next Review**: Promotion gate review

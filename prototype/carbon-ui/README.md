@@ -26,9 +26,11 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-The workbook upload area calls the real FastAPI summary endpoint. The saved
-project controls call the real FastAPI/Postgres project endpoints. Deeper
-planning and export panels are intentionally mocked in this first slice.
+The workbook upload area calls the real FastAPI summary endpoint. Saved project
+controls, network-plan save/load, drag-and-drop VM assignment, autosave, and
+Terraform ZIP export all use the shared FastAPI/Postgres prototype stack.
+Streamlit remains the supported production UI while Carbon is evaluated against
+the promotion gates.
 
 ## Smoke Test
 
@@ -40,7 +42,8 @@ npm run test:e2e
 ```
 
 The smoke test uploads the bundled small RVTools workbook, saves a Carbon
-prototype project, reloads it from Postgres, and deletes the temporary project.
+prototype project, exercises drag-and-drop assignment plus autosave reload,
+reloads it from Postgres, and deletes temporary smoke projects.
 
 ## Git Hygiene
 
