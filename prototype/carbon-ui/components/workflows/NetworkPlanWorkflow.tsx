@@ -5,6 +5,7 @@ import { Button, InlineNotification, Layer, Tag } from '@carbon/react';
 import { Download } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import { generateTerraform, saveNetworkPlan } from '../../hooks/useApi';
+import { buildNetworkPlanBody } from '../../utils/planning-state';
 
 export default function NetworkPlanWorkflow() {
   const { state, dispatch } = useAppState();
@@ -32,38 +33,10 @@ export default function NetworkPlanWorkflow() {
 
       dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Saving network plan...' });
 
-      const now = new Date().toISOString();
-      await saveNetworkPlan(selectedProjectId, {
-        version: '1.0',
-        vpcs: resources.vpcs,
-        subnets: resources.subnets,
-        security_groups: resources.securityGroups,
-        storage_profiles: resources.storageProfiles || [],
-        waves: resources.waves || [],
-        network_components: resources.networkComponents || [],
-        vm_assignments: assignmentRows.map((row) => ({
-          vm_key: row.id,
-          vm_name: row.name,
-          primary_subnet_id: row.subnet || '',
-          primary_security_group_id: row.securityGroup || '',
-          secondary_nics: [],
-          storage_profile_id: row.storageLabel || null,
-          wave_id: row.wave || null,
-          excluded: false,
-          exclusion_reason: null,
-        })),
-        metadata: {
-          project_name: projectName.trim(),
-          target_region: 'us-south',
-          target_zone: 'us-south-1',
-          deployment_target: 'plain_cli',
-          created_by: null,
-          created_at: now,
-          updated_at: now,
-          rvtools_filename: summary?.filename || null,
-          rvtools_uploaded_at: null,
-        },
-      });
+      await saveNetworkPlan(
+        selectedProjectId,
+        buildNetworkPlanBody({ resources, assignmentRows, projectName, summary }),
+      );
 
       dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Generating Terraform package...' });
       const blob = await generateTerraform(selectedProjectId);
@@ -94,6 +67,27 @@ export default function NetworkPlanWorkflow() {
           <p>Build the target IBM Cloud VPC network intent and watch the topology preview update as resources are added.</p>
         </div>
         <div className="network-actions">
+          <Button
+            kind="secondary"
+            size="sm"
+            onClick={() => {
+              dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'assignment' });
+              dispatch({ type: 'SET_BUCKET_MODAL', payload: 'component' });
+              dispatch({
+                type: 'SET_BUCKET_DRAFT',
+                payload: {
+                  name: '',
+                  label: '',
+                  type: 'Public Gateway',
+                  vpcId: resources.vpcs[0]?.id || '',
+                  attachment: '',
+                  notes: '',
+                },
+              });
+            }}
+          >
+            Create network component
+          </Button>
           <Button
             kind="primary"
             size="sm"

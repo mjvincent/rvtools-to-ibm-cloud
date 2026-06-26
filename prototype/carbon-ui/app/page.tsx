@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Button,
   Column,
@@ -35,6 +35,12 @@ import {
 import { AppProvider, useAppState } from '../store/AppContext';
 import * as api from '../hooks/useApi';
 import { rowsFromSummary } from '../components/workflows/IntakeWorkflow';
+import {
+  buildNetworkPlanBody,
+  resourcesFromNetworkPlan,
+  rowsFromNetworkPlan,
+  vmAssignmentsFromRows,
+} from '../utils/planning-state';
 import type { Workflow } from '../types/network-planning';
 
 import OverviewWorkflow from '../components/workflows/OverviewWorkflow';
@@ -88,8 +94,10 @@ function WorkbenchShell() {
   const {
     apiStatus, panelOpen, saveModalOpen, projects, selectedProjectId,
     projectName, projectDescription, projectStatus, projectError, uploadStatus,
-    activeWorkflow, assignmentRows, resources, summary,
+    activeWorkflow, assignmentRows, resources, summary, persistenceEnabled,
+    isDirty, autoSaveStatus, autoSaveError,
   } = state;
+  const hasLoadedProject = useRef(false);
 
   // Compute estate locally (not in state — it's derived)
   const computedEstate = React.useMemo(() => {
@@ -112,23 +120,56 @@ function WorkbenchShell() {
   useEffect(() => {
     api.checkApiHealth()
       .then((payload) => {
+        dispatch({ type: 'SET_PERSISTENCE_ENABLED', payload: payload.persistence_enabled });
         dispatch({ type: 'SET_API_STATUS', payload: payload.persistence_enabled ? 'API online with persistence' : 'API online' });
         if (payload.persistence_enabled) {
           api.listProjects().then((projects) => dispatch({ type: 'SET_PROJECTS', payload: projects })).catch(() => {});
         }
       })
-      .catch(() => dispatch({ type: 'SET_API_STATUS', payload: 'API unavailable' }));
+      .catch(() => {
+        dispatch({ type: 'SET_API_STATUS', payload: 'API unavailable' });
+        dispatch({ type: 'SET_PERSISTENCE_ENABLED', payload: false });
+      });
   }, []);
 
-  // Refresh derived rows when workflow changes
+  // Autosave full network plan after resource or assignment edits.
   useEffect(() => {
-    if (summary) {
-      const refreshedRows = rowsFromSummary(summary);
-      if (JSON.stringify(refreshedRows) !== JSON.stringify(assignmentRows)) {
-        dispatch({ type: 'SET_ASSIGNMENT_ROWS', payload: refreshedRows });
+    if (!selectedProjectId || !persistenceEnabled || !isDirty || !hasLoadedProject.current) return;
+    const timer = window.setTimeout(async () => {
+      dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'Saving planning changes...' });
+      dispatch({ type: 'SET_AUTO_SAVE_ERROR', payload: '' });
+      try {
+        await api.saveNetworkPlan(
+          selectedProjectId,
+          buildNetworkPlanBody({ resources, assignmentRows, projectName, summary }),
+        );
+        dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'Planning changes saved.' });
+        dispatch({ type: 'SET_IS_DIRTY', payload: false });
+      } catch (error) {
+        dispatch({
+          type: 'SET_AUTO_SAVE_ERROR',
+          payload: error instanceof Error ? error.message : 'Autosave failed.',
+        });
       }
-    }
-  }, [activeWorkflow, summary]);
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [assignmentRows, resources, selectedProjectId, persistenceEnabled, isDirty, projectName, summary]);
+
+  // Push VM placement edits through the narrower assignment endpoint.
+  useEffect(() => {
+    if (!selectedProjectId || !persistenceEnabled || !hasLoadedProject.current) return;
+    const timer = window.setTimeout(async () => {
+      try {
+        await api.updateVmAssignments(
+          selectedProjectId,
+          vmAssignmentsFromRows(assignmentRows, resources),
+        );
+      } catch {
+        // Full-plan autosave creates the network plan when this endpoint is not ready yet.
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [assignmentRows, resources, selectedProjectId, persistenceEnabled]);
 
   async function saveProject() {
     dispatch({ type: 'SET_PROJECT_STATUS', payload: '' });
@@ -152,7 +193,14 @@ function WorkbenchShell() {
         carbon_assignment_rows: assignmentRows,
         carbon_resources: resources,
       }, projectName.trim());
+      await api.saveNetworkPlan(
+        projectId,
+        buildNetworkPlanBody({ resources, assignmentRows, projectName, summary }),
+      );
       dispatch({ type: 'SET_PROJECT_STATUS', payload: 'Project saved to Postgres.' });
+      dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'Network plan saved.' });
+      dispatch({ type: 'SET_IS_DIRTY', payload: false });
+      hasLoadedProject.current = true;
       dispatch({ type: 'SET_SAVE_MODAL_OPEN', payload: false });
       api.listProjects().then((p) => dispatch({ type: 'SET_PROJECTS', payload: p })).catch(() => {});
     } catch (error) {
@@ -180,8 +228,31 @@ function WorkbenchShell() {
       if (savedState?.planning_state_json?.carbon_resources) {
         dispatch({ type: 'SET_RESOURCES', payload: savedState.planning_state_json.carbon_resources });
       }
+      try {
+        const networkPlan = await api.loadNetworkPlan(projectId);
+        const nextResources = resourcesFromNetworkPlan(networkPlan);
+        const baseRows = savedState?.planning_state_json?.carbon_assignment_rows
+          || (savedState?.planning_state_json?.carbon_summary ? rowsFromSummary(savedState.planning_state_json.carbon_summary) : assignmentRows);
+        const hasPersistedResources = [
+          nextResources.vpcs,
+          nextResources.subnets,
+          nextResources.securityGroups,
+          nextResources.storageProfiles,
+          nextResources.waves,
+          nextResources.networkComponents,
+        ].some((bucket) => bucket.length > 0);
+        if (hasPersistedResources) {
+          dispatch({ type: 'SET_RESOURCES', payload: nextResources });
+        }
+        dispatch({ type: 'SET_ASSIGNMENT_ROWS', payload: rowsFromNetworkPlan(networkPlan, baseRows) });
+      } catch {
+        // Legacy project state may not have a Carbon network plan yet.
+      }
       dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [] });
       dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'assignment' });
+      dispatch({ type: 'SET_IS_DIRTY', payload: false });
+      dispatch({ type: 'SET_AUTO_SAVE_ERROR', payload: '' });
+      hasLoadedProject.current = true;
       dispatch({ type: 'SET_PROJECT_STATUS', payload: `Loaded ${project.name}. Assignment buckets and VM planning state restored.` });
     } catch (error) {
       dispatch({ type: 'SET_PROJECT_ERROR', payload: error instanceof Error ? error.message : 'Project load failed.' });
@@ -293,6 +364,30 @@ function WorkbenchShell() {
                 lowContrast
                 title="Project action failed"
                 subtitle={projectError}
+              />
+            )}
+            {!persistenceEnabled && apiStatus !== 'Checking API' && (
+              <InlineNotification
+                kind="warning"
+                lowContrast
+                title="Persistence unavailable"
+                subtitle="Postgres persistence is disabled or the API is offline. Save, load, autosave, assignment sync, and Terraform ZIP export need the FastAPI persistence layer."
+              />
+            )}
+            {autoSaveStatus && persistenceEnabled && (
+              <InlineNotification
+                kind="info"
+                lowContrast
+                title={autoSaveStatus}
+                subtitle={isDirty ? 'Unsaved changes are queued.' : 'Latest Carbon network-plan payload is persisted.'}
+              />
+            )}
+            {autoSaveError && (
+              <InlineNotification
+                kind="error"
+                lowContrast
+                title="Autosave failed"
+                subtitle={autoSaveError}
               />
             )}
             {uploadStatus && activeWorkflow !== 'intake' && (

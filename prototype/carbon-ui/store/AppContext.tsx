@@ -267,6 +267,10 @@ export type AppState = {
 
   // UI state
   apiStatus: string;
+  persistenceEnabled: boolean;
+  isDirty: boolean;
+  autoSaveStatus: string;
+  autoSaveError: string;
   panelOpen: boolean;
   saveModalOpen: boolean;
   bucketModal: AssignmentMode | 'vpc' | 'component' | '';
@@ -298,6 +302,10 @@ const initialState: AppState = {
   sortKey: 'name',
   sortDirection: 'asc',
   apiStatus: 'Checking API',
+  persistenceEnabled: false,
+  isDirty: false,
+  autoSaveStatus: '',
+  autoSaveError: '',
   panelOpen: false,
   saveModalOpen: false,
   bucketModal: '',
@@ -329,6 +337,10 @@ export type AppAction =
   | { type: 'SET_SORT_KEY'; payload: string }
   | { type: 'SET_SORT_DIRECTION'; payload: 'asc' | 'desc' }
   | { type: 'SET_API_STATUS'; payload: string }
+  | { type: 'SET_PERSISTENCE_ENABLED'; payload: boolean }
+  | { type: 'SET_IS_DIRTY'; payload: boolean }
+  | { type: 'SET_AUTO_SAVE_STATUS'; payload: string }
+  | { type: 'SET_AUTO_SAVE_ERROR'; payload: string }
   | { type: 'SET_PANEL_OPEN'; payload: boolean }
   | { type: 'SET_SAVE_MODAL_OPEN'; payload: boolean }
   | { type: 'SET_BUCKET_MODAL'; payload: AssignmentMode | 'vpc' | 'component' | '' }
@@ -341,7 +353,7 @@ export type AppAction =
 
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case 'SET_SUMMARY': return { ...state, summary: action.payload };
+    case 'SET_SUMMARY': return { ...state, summary: action.payload, isDirty: true };
     case 'SET_UPLOAD_STATUS': return { ...state, uploadStatus: action.payload };
     case 'SET_UPLOAD_ERROR': return { ...state, uploadError: action.payload };
     case 'SET_PROJECTS': return { ...state, projects: action.payload };
@@ -350,14 +362,18 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_PROJECT_DESCRIPTION': return { ...state, projectDescription: action.payload };
     case 'SET_PROJECT_STATUS': return { ...state, projectStatus: action.payload };
     case 'SET_PROJECT_ERROR': return { ...state, projectError: action.payload };
-    case 'SET_RESOURCES': return { ...state, resources: action.payload };
-    case 'SET_ASSIGNMENT_ROWS': return { ...state, assignmentRows: action.payload };
+    case 'SET_RESOURCES': return { ...state, resources: action.payload, isDirty: true };
+    case 'SET_ASSIGNMENT_ROWS': return { ...state, assignmentRows: action.payload, isDirty: true };
     case 'SET_SELECTED_VM_IDS': return { ...state, selectedVmIds: action.payload };
     case 'SET_SEARCH_VALUE': return { ...state, searchValue: action.payload };
     case 'SET_READINESS_FILTER': return { ...state, readinessFilter: action.payload };
     case 'SET_SORT_KEY': return { ...state, sortKey: action.payload };
     case 'SET_SORT_DIRECTION': return { ...state, sortDirection: action.payload };
     case 'SET_API_STATUS': return { ...state, apiStatus: action.payload };
+    case 'SET_PERSISTENCE_ENABLED': return { ...state, persistenceEnabled: action.payload };
+    case 'SET_IS_DIRTY': return { ...state, isDirty: action.payload };
+    case 'SET_AUTO_SAVE_STATUS': return { ...state, autoSaveStatus: action.payload };
+    case 'SET_AUTO_SAVE_ERROR': return { ...state, autoSaveError: action.payload };
     case 'SET_PANEL_OPEN': return { ...state, panelOpen: action.payload };
     case 'SET_SAVE_MODAL_OPEN': return { ...state, saveModalOpen: action.payload };
     case 'SET_BUCKET_MODAL': return { ...state, bucketModal: action.payload };

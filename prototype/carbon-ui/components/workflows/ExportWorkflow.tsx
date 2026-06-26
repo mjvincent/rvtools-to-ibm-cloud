@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Layer, Tag, Tile } from '@carbon/react';
+import { Button, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
+import { Download } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
+import { generateTerraform, saveNetworkPlan } from '../../hooks/useApi';
+import { buildNetworkPlanBody } from '../../utils/planning-state';
 
 function terraformLabel(value: string) {
   return value
@@ -13,8 +16,17 @@ function terraformLabel(value: string) {
 }
 
 export default function ExportWorkflow() {
-  const { state } = useAppState();
-  const { assignmentRows, resources } = state;
+  const { state, dispatch } = useAppState();
+  const {
+    assignmentRows,
+    resources,
+    selectedProjectId,
+    projectName,
+    summary,
+    terraformStatus,
+    terraformError,
+    generatingTerraform,
+  } = state;
 
   const planningCompleteness = useMemo(() => {
     const total = assignmentRows.length || 1;
@@ -41,16 +53,77 @@ export default function ExportWorkflow() {
     ['Subnets missing CIDR', planningCompleteness.missingCidr],
     ['Labels needing Terraform cleanup', planningCompleteness.invalidLabels],
   ];
+  const blockingFindingCount = findings.reduce((total, [, count]) => total + count, 0);
+
+  async function handleDownloadTerraform() {
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
+    dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
+    dispatch({ type: 'SET_GENERATING_TERRAFORM', payload: true });
+    try {
+      if (!selectedProjectId) throw new Error('Save or load a persisted project before exporting Terraform.');
+      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Saving latest network plan...' });
+      await saveNetworkPlan(
+        selectedProjectId,
+        buildNetworkPlanBody({ resources, assignmentRows, projectName, summary }),
+      );
+      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Generating Terraform ZIP...' });
+      const blob = await generateTerraform(selectedProjectId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${projectName.replace(/\s+/g, '-')}-terraform-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Terraform ZIP downloaded.' });
+      dispatch({ type: 'SET_IS_DIRTY', payload: false });
+    } catch (error) {
+      dispatch({
+        type: 'SET_TERRAFORM_ERROR',
+        payload: error instanceof Error ? error.message : 'Terraform export failed.',
+      });
+    } finally {
+      dispatch({ type: 'SET_GENERATING_TERRAFORM', payload: false });
+    }
+  }
 
   return (
     <Layer className="workbench-section">
       <div className="section-header">
         <div>
           <h2>Export readiness</h2>
-          <p>Carbon saves planning state now. Streamlit remains the production Terraform ZIP generator.</p>
+          <p>Review planning gaps, then save the latest Carbon network plan and download a Terraform ZIP from FastAPI.</p>
         </div>
-        <Tag type="gray">Save state only</Tag>
+        <div className="network-actions">
+          <Tag type={blockingFindingCount === 0 ? 'green' : 'warm-gray'}>{blockingFindingCount === 0 ? 'Ready' : 'Needs review'}</Tag>
+          <Button
+            kind="primary"
+            size="sm"
+            renderIcon={Download}
+            onClick={handleDownloadTerraform}
+            disabled={!selectedProjectId || generatingTerraform}
+          >
+            {generatingTerraform ? 'Generating...' : 'Download Terraform ZIP'}
+          </Button>
+        </div>
       </div>
+      {terraformStatus && (
+        <InlineNotification
+          kind="success"
+          lowContrast
+          title="Export status"
+          subtitle={terraformStatus}
+        />
+      )}
+      {terraformError && (
+        <InlineNotification
+          kind="error"
+          lowContrast
+          title="Export failed"
+          subtitle={terraformError}
+        />
+      )}
       <div className="resource-list">
         {findings.map(([label, count]) => (
           <Tile key={label} className="resource-tile">

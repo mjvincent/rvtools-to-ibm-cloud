@@ -1,10 +1,12 @@
 import type {
   AssignmentVm,
+  NetworkPlanningState,
   ResourceState,
   SavedProject,
   SavedProjectState,
   WorkbookSummary,
 } from '../types/network-planning';
+import type { ApiVmAssignmentPayload } from '../utils/planning-state';
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
@@ -115,7 +117,7 @@ export async function saveProjectState(
 
 // ─── Network plan ─────────────────────────────────────────────────────────────
 
-type NetworkPlanBody = {
+export type NetworkPlanBody = {
   version: string;
   vpcs: unknown[];
   subnets: unknown[];
@@ -139,7 +141,7 @@ export async function saveNetworkPlan(projectId: string, plan: NetworkPlanBody):
   }
 }
 
-export async function loadNetworkPlan(projectId: string): Promise<unknown> {
+export async function loadNetworkPlan(projectId: string): Promise<NetworkPlanningState | Record<string, unknown>> {
   const response = await fetch(`/api/projects/${projectId}/network-plan`);
   const payload = await response.json();
   if (!response.ok) {
@@ -150,21 +152,9 @@ export async function loadNetworkPlan(projectId: string): Promise<unknown> {
 
 // ─── VM assignments ───────────────────────────────────────────────────────────
 
-type VmAssignmentPayload = {
-  vm_key: string;
-  vm_name: string;
-  primary_subnet_id: string;
-  primary_security_group_id: string;
-  secondary_nics: unknown[];
-  storage_profile_id: string | null;
-  wave_id: string | null;
-  excluded: boolean;
-  exclusion_reason: string | null;
-};
-
 export async function updateVmAssignments(
   projectId: string,
-  assignments: VmAssignmentPayload[],
+  assignments: ApiVmAssignmentPayload[],
 ): Promise<void> {
   const response = await fetch(`/api/projects/${projectId}/vm-assignments`, {
     method: 'PUT',
