@@ -76,6 +76,7 @@ feature-parity and production-readiness gaps.
 - [x] Owner, status, due date, and notes are editable in Carbon state
 - [x] Remediation tracker persists through project-state save/load and autosave
 - [x] Remediation CSV export is available from the Carbon workflow
+- [x] Remediation CSV import matches by blocker ID or Streamlit fallback signature
 - [ ] Image Import Planning
 - [ ] Migration Ops
 - [ ] Wave Planning parity beyond basic bucket assignment
@@ -96,7 +97,7 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 108 tests passing
+- Jest: 110 tests passing
 - Playwright: 1 browser smoke passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -112,7 +113,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 1. **Feature parity**
    - Wave Planning beyond basic wave bucket assignment
-   - Remediation Tracker export/import parity and full Streamlit finding parity
+   - Remediation Tracker full Streamlit finding/category and handoff parity
    - Image Import Planning
    - Migration Ops
    - Decision audit and full CSV/handoff parity
@@ -143,7 +144,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 ### Phase 4: Streamlit Feature Parity
 - [x] Remediation Tracker initial Carbon workflow
 - [ ] Wave Planning
-- [ ] Remediation Tracker import and full handoff parity
+- [ ] Remediation Tracker full finding/category and handoff parity
 - [ ] Image Import Planning
 - [ ] Migration Ops
 - [ ] Decision audit

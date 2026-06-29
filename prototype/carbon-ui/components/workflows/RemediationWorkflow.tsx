@@ -2,6 +2,8 @@
 
 import React, { useMemo } from 'react';
 import {
+  FileUploaderDropContainer,
+  InlineNotification,
   Layer,
   Select,
   SelectItem,
@@ -19,6 +21,12 @@ import type {
 } from '../../types/network-planning';
 
 const statusOptions: RemediationStatus[] = ['Open', 'In Progress', 'Resolved', 'Deferred'];
+
+type ImportResult = {
+  tracker: RemediationTracker;
+  applied: number;
+  skipped: number;
+};
 
 function readinessFindings(row: AssignmentVm) {
   return [
@@ -98,9 +106,91 @@ function backlogCsv(items: RemediationBacklogItem[]) {
   return [headers.join(','), ...lines].join('\n');
 }
 
+function parseCsv(text: string): Record<string, string>[] {
+  const rows: string[][] = [];
+  let field = '';
+  let row: string[] = [];
+  let inQuotes = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+    if (char === '"' && inQuotes && next === '"') {
+      field += '"';
+      index += 1;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      row.push(field);
+      field = '';
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') index += 1;
+      row.push(field);
+      if (row.some((value) => value.trim())) rows.push(row);
+      field = '';
+      row = [];
+    } else {
+      field += char;
+    }
+  }
+
+  row.push(field);
+  if (row.some((value) => value.trim())) rows.push(row);
+  if (rows.length < 2) return [];
+
+  const headers = rows[0].map((header) => header.trim());
+  return rows.slice(1).map((values) => Object.fromEntries(
+    headers.map((header, index) => [header, values[index]?.trim() || '']),
+  ));
+}
+
+function normalizeStatus(value: string): RemediationStatus {
+  return statusOptions.includes(value as RemediationStatus) ? value as RemediationStatus : 'Open';
+}
+
+export function importRemediationCsv(
+  csvText: string,
+  backlog: RemediationBacklogItem[],
+  tracker: RemediationTracker,
+): ImportResult {
+  const rows = parseCsv(csvText);
+  const bySignature = new Map(
+    backlog.map((item) => [
+      `${item.vmKey}::${item.blockerType}::${item.blockerDescription}`,
+      item.blockerId,
+    ]),
+  );
+  const validIds = new Set(backlog.map((item) => item.blockerId));
+  const nextTracker = { ...tracker };
+  let applied = 0;
+  let skipped = 0;
+
+  rows.forEach((row) => {
+    const blockerId = row.blocker_id || row['Blocker ID'] || bySignature.get(
+      `${row['VM Key'] || ''}::${row['Blocker Type'] || ''}::${row['Blocker Description'] || ''}`,
+    );
+    if (!blockerId || !validIds.has(blockerId)) {
+      skipped += 1;
+      return;
+    }
+    const existing = backlog.find((item) => item.blockerId === blockerId);
+    nextTracker[blockerId] = {
+      status: normalizeStatus(row.Status || existing?.status || 'Open'),
+      owner: row.Owner || existing?.owner || '',
+      dueDate: row['Due Date'] || row.due_date || '',
+      notes: row.Notes || '',
+    };
+    applied += 1;
+  });
+
+  return { tracker: nextTracker, applied, skipped };
+}
+
 export default function RemediationWorkflow() {
   const { state, dispatch } = useAppState();
   const { assignmentRows, remediationTracker } = state;
+  const [importStatus, setImportStatus] = React.useState('');
+  const [importError, setImportError] = React.useState('');
 
   const backlog = useMemo(
     () => buildRemediationBacklog(assignmentRows, remediationTracker),
@@ -139,6 +229,20 @@ export default function RemediationWorkflow() {
     });
   }
 
+  async function importCsvFile(_event: unknown, content: { addedFiles?: File[] }) {
+    const file = content.addedFiles?.[0];
+    if (!file) return;
+    setImportStatus('');
+    setImportError('');
+    try {
+      const result = importRemediationCsv(await file.text(), backlog, remediationTracker);
+      dispatch({ type: 'SET_REMEDIATION_TRACKER', payload: result.tracker });
+      setImportStatus(`Imported ${result.applied} remediation row(s)${result.skipped ? `; skipped ${result.skipped} unmatched row(s).` : '.'}`);
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Could not import remediation CSV.');
+    }
+  }
+
   return (
     <Layer className="workbench-section">
       <div className="section-header">
@@ -171,6 +275,13 @@ export default function RemediationWorkflow() {
       </div>
 
       <div className="export-actions">
+        <div className="remediation-import">
+          <FileUploaderDropContainer
+            accept={['.csv', 'text/csv']}
+            labelText="Import remediation CSV"
+            onAddFiles={importCsvFile}
+          />
+        </div>
         <a
           className={`cds--btn cds--btn--secondary${backlog.length === 0 ? ' cds--btn--disabled' : ''}`}
           href={csvHref}
@@ -183,6 +294,22 @@ export default function RemediationWorkflow() {
           Export remediation CSV
         </a>
       </div>
+      {importStatus && (
+        <InlineNotification
+          kind="success"
+          lowContrast
+          title="Remediation CSV imported"
+          subtitle={importStatus}
+        />
+      )}
+      {importError && (
+        <InlineNotification
+          kind="error"
+          lowContrast
+          title="Remediation CSV import failed"
+          subtitle={importError}
+        />
+      )}
 
       {backlog.length === 0 ? (
         <Tile className="empty-state">

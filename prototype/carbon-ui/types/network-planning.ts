@@ -358,6 +358,13 @@ export type SavedProjectState = {
     carbon_assignment_rows?: AssignmentVm[];
     carbon_resources?: ResourceState;
     carbon_remediation_tracker?: RemediationTracker;
+    remediation_tracker?: Record<string, {
+      status?: string;
+      owner?: string;
+      due_date?: string;
+      dueDate?: string;
+      notes?: string;
+    }>;
     metadata?: Record<string, string>;
   };
 };

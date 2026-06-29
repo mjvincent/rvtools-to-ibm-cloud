@@ -47,7 +47,7 @@ Observed results:
 - Python pytest: 327 passed
 - Terraform strict init validation: passed with network access to Terraform Registry
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 108 passed
+- Carbon Jest: 110 passed
 - Carbon Playwright smoke: passed
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -61,10 +61,11 @@ Priority order:
 
 1. **Remediation Tracker**
    - Initial Carbon workflow exists with generated readiness backlog rows,
-     editable owner/status/due-date/notes fields, CSV export, and project-state
-     persistence.
-   - Remaining: CSV import, full Streamlit finding/category parity, and
-     remediation state in complete export/handoff parity checks.
+     editable owner/status/due-date/notes fields, CSV import/export, and
+     project-state persistence in both Carbon and Streamlit-compatible tracker
+     shapes.
+   - Remaining: full Streamlit finding/category parity and remediation state in
+     complete export/handoff parity checks.
 
 2. **Image Import Planning**
    - Recreate image grouping and import status workflows.

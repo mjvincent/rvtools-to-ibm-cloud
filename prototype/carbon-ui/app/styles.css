@@ -444,10 +444,15 @@ body {
 }
 
 .export-actions {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   padding-top: 1rem;
+}
+
+.remediation-import {
+  max-width: 20rem;
 }
 
 .status-panel {

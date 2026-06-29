@@ -41,7 +41,7 @@ import {
   rowsFromNetworkPlan,
   vmAssignmentsFromRows,
 } from '../utils/planning-state';
-import type { Workflow } from '../types/network-planning';
+import type { RemediationTracker, Workflow } from '../types/network-planning';
 
 import OverviewWorkflow from '../components/workflows/OverviewWorkflow';
 import IntakeWorkflow from '../components/workflows/IntakeWorkflow';
@@ -91,13 +91,37 @@ function waveDecision(row) {
   };
 }
 
+function remediationTrackerToPlanningState(tracker: RemediationTracker) {
+  return Object.fromEntries(
+    Object.entries(tracker).map(([blockerId, entry]) => [blockerId, {
+      status: entry.status,
+      due_date: entry.dueDate,
+      notes: entry.notes,
+      owner: entry.owner,
+    }]),
+  );
+}
+
+function normalizeRemediationTracker(rawTracker): RemediationTracker {
+  if (!rawTracker || typeof rawTracker !== 'object') return {};
+  return Object.fromEntries(
+    Object.entries(rawTracker).map(([blockerId, entry]: [string, any]) => [blockerId, {
+      status: ['Open', 'In Progress', 'Resolved', 'Deferred'].includes(entry?.status) ? entry.status : 'Open',
+      owner: entry?.owner || '',
+      dueDate: entry?.dueDate || entry?.due_date || '',
+      notes: entry?.notes || '',
+    }]),
+  );
+}
+
 function buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, projectName }) {
+  const planningStateTracker = remediationTrackerToPlanningState(remediationTracker);
   return {
     schema_version: 'carbon-prototype-0.3',
     metadata: { project_name: projectName.trim(), source: 'carbon-ui-prototype' },
     vm_decisions: assignmentRows.map(vmDecision),
     wave_planning: assignmentRows.map(waveDecision),
-    remediation_tracker: remediationTracker,
+    remediation_tracker: planningStateTracker,
     carbon_summary: summary,
     carbon_assignment_rows: assignmentRows,
     carbon_resources: resources,
@@ -261,7 +285,9 @@ function WorkbenchShell() {
       if (savedState?.planning_state_json?.carbon_remediation_tracker || savedState?.planning_state_json?.remediation_tracker) {
         dispatch({
           type: 'SET_REMEDIATION_TRACKER',
-          payload: savedState.planning_state_json.carbon_remediation_tracker || savedState.planning_state_json.remediation_tracker,
+          payload: normalizeRemediationTracker(
+            savedState.planning_state_json.carbon_remediation_tracker || savedState.planning_state_json.remediation_tracker,
+          ),
         });
       } else {
         dispatch({ type: 'SET_REMEDIATION_TRACKER', payload: {} });
