@@ -47,7 +47,7 @@ Observed results:
 - Python pytest: 327 passed
 - Terraform strict init validation: passed with network access to Terraform Registry
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 119 passed
+- Carbon Jest: 124 passed
 - Carbon Playwright smoke: passed
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -76,8 +76,11 @@ Priority order:
      ID behavior remains compatible with generated Terraform.
 
 3. **Migration Ops**
-   - Add cutover readiness view and operational checklist state.
-   - Preserve current Streamlit cutover-readiness export behavior.
+   - Initial Carbon workflow exists with VM-level cutover readiness, summaries
+     by wave and cutover group, blockers from planning gaps, readiness signals,
+     unresolved remediation, image import state, and cutover-readiness CSV
+     export.
+   - Remaining: full handoff/export parity against Streamlit package outputs.
 
 4. **Wave Planning Parity**
    - Extend beyond basic wave bucket assignment.

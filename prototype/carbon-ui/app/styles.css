@@ -422,11 +422,13 @@ body {
 }
 
 .image-import-summary,
+.migration-ops-summary,
 .remediation-summary {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .image-import-summary .cds--tile p,
+.migration-ops-summary .cds--tile p,
 .remediation-summary .cds--tile p {
   font-size: 2rem;
   line-height: 1.2;
@@ -434,13 +436,31 @@ body {
 }
 
 .image-import-table-wrap,
+.migration-ops-detail-wrap,
 .remediation-table-wrap {
   margin-top: 1rem;
 }
 
 .image-import-table,
+.migration-ops-detail-table,
 .remediation-table {
   min-width: 86rem;
+}
+
+.migration-ops-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.migration-summary-table h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.migration-ops-summary-table {
+  min-width: 48rem;
 }
 
 .image-import-table .cds--form-item,
@@ -516,6 +536,7 @@ body {
   .assignment-toolbar,
   .diagram-component-grid,
   .diagram-node-grid,
+  .migration-ops-grid,
   .resource-list {
     grid-template-columns: 1fr;
   }

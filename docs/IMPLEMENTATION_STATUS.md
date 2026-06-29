@@ -79,7 +79,7 @@ feature-parity and production-readiness gaps.
 - [x] Remediation CSV import matches by blocker ID or Streamlit fallback signature
 - [x] VM readiness chips are self-describing and route non-ready signals to review workflows
 - [x] Image Import Planning workflow with grouped rows, import status, catalog ID, CSV import/export, and project persistence
-- [ ] Migration Ops
+- [x] Migration Ops cutover readiness dashboard with wave/cutover summaries and CSV export
 - [ ] Wave Planning parity beyond basic bucket assignment
 - [ ] Decision audit and complete handoff parity
 
@@ -98,7 +98,7 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 119 tests passing
+- Jest: 124 tests passing
 - Playwright: 1 browser smoke passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -116,7 +116,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
    - Wave Planning beyond basic wave bucket assignment
    - Remediation Tracker full Streamlit finding/category and handoff parity
    - Image Import Planning full handoff/export parity
-   - Migration Ops
+   - Migration Ops full handoff/export parity
    - Decision audit and full CSV/handoff parity
 
 2. **Production readiness**
@@ -148,7 +148,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [ ] Remediation Tracker full finding/category and handoff parity
 - [x] Image Import Planning initial Carbon workflow
 - [ ] Image Import Planning full handoff/export parity
-- [ ] Migration Ops
+- [x] Migration Ops initial Carbon workflow
+- [ ] Migration Ops full handoff/export parity
 - [ ] Decision audit
 
 ### Phase 5: Complete Handoff Package Parity

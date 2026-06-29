@@ -431,12 +431,38 @@ export type ImageImportRow = {
   notes: string;
 };
 
+export type CutoverStatus = 'Ready' | 'Review' | 'Blocked';
+
+export type CutoverReadinessRow = {
+  vmName: string;
+  wave: string;
+  cutoverGroup: string;
+  owner: string;
+  application: string;
+  cutoverStatus: CutoverStatus;
+  blockerCategory: string;
+  blockerReason: string;
+  recommendedNextAction: string;
+};
+
+export type CutoverSummaryRow = {
+  group: string;
+  vms: number;
+  ready: number;
+  review: number;
+  blocked: number;
+  missingPlanning: number;
+  unresolvedRemediation: number;
+  imagePending: number;
+};
+
 export type Workflow =
   | 'overview'
   | 'intake'
   | 'assignment'
   | 'remediation'
   | 'imageImport'
+  | 'migrationOps'
   | 'network'
   | 'security'
   | 'storage'

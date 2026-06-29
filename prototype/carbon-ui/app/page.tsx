@@ -52,6 +52,7 @@ import StorageWorkflow from '../components/workflows/StorageWorkflow';
 import WavesWorkflow from '../components/workflows/WavesWorkflow';
 import RemediationWorkflow from '../components/workflows/RemediationWorkflow';
 import ImageImportWorkflow from '../components/workflows/ImageImportWorkflow';
+import MigrationOpsWorkflow from '../components/workflows/MigrationOpsWorkflow';
 import ExportWorkflow from '../components/workflows/ExportWorkflow';
 
 const workflows: Array<{ id: Workflow; label: string; icon?: React.ComponentType }> = [
@@ -60,6 +61,7 @@ const workflows: Array<{ id: Workflow; label: string; icon?: React.ComponentType
   { id: 'assignment', label: 'VM Assignment', icon: DeploymentPattern },
   { id: 'remediation', label: 'Remediation Backlog', icon: DeploymentPattern },
   { id: 'imageImport', label: 'Image Import Planning', icon: DeploymentPattern },
+  { id: 'migrationOps', label: 'Migration Ops', icon: DeploymentPattern },
   { id: 'network', label: 'Network Plan', icon: DeploymentPattern },
   { id: 'security', label: 'Security Plan', icon: DeploymentPattern },
   { id: 'storage', label: 'Storage / IOPS Plan', icon: DeploymentPattern },
@@ -370,6 +372,7 @@ function WorkbenchShell() {
       case 'assignment': return <AssignmentWorkflow />;
       case 'remediation': return <RemediationWorkflow />;
       case 'imageImport': return <ImageImportWorkflow />;
+      case 'migrationOps': return <MigrationOpsWorkflow />;
       case 'network': return <NetworkPlanWorkflow />;
       case 'security': return <SecurityWorkflow />;
       case 'storage': return <StorageWorkflow />;
