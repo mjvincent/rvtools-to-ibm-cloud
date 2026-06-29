@@ -27,10 +27,10 @@ export default function VmRow({ vm, selected, onToggle }: VmRowProps) {
         <span>{vm.profile || 'No profile'} | {vm.network || 'No source network'}</span>
       </td>
       <td>
-        <ReadinessTag status={vm.image} />
-        <ReadinessTag status={vm.migration} />
-        <ReadinessTag status={vm.memory} />
-        <ReadinessTag status={vm.networkReadiness} />
+        <ReadinessTag area="Image" status={vm.image} reason={vm.imageReasons} vmName={vm.name} />
+        <ReadinessTag area="Migration" status={vm.migration} reason={vm.migrationReasons} vmName={vm.name} />
+        <ReadinessTag area="Memory" status={vm.memory} reason={vm.memoryReasons} vmName={vm.name} />
+        <ReadinessTag area="Network" status={vm.networkReadiness} reason={vm.networkReasons} vmName={vm.name} />
       </td>
       <td>{vm.subnet || <span className="empty-value">Unassigned</span>}</td>
       <td>{vm.securityGroup || <span className="empty-value">Unassigned</span>}</td>

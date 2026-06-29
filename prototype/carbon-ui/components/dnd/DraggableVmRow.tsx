@@ -12,6 +12,7 @@ type DraggableVmRowProps = {
   onSelect: (rowId: string, checked: boolean) => void;
   onDragStart: (row: AssignmentVm, event: React.DragEvent<HTMLTableRowElement>) => void;
   onUnassign: (rowId: string) => void;
+  onReadinessAction?: (area: 'Image' | 'Migration' | 'Memory' | 'Network', row: AssignmentVm) => void;
 };
 
 export default function DraggableVmRow({
@@ -21,6 +22,7 @@ export default function DraggableVmRow({
   onSelect,
   onDragStart,
   onUnassign,
+  onReadinessAction,
 }: DraggableVmRowProps) {
   return (
     <tr
@@ -44,10 +46,34 @@ export default function DraggableVmRow({
         <span>{row.profile || 'No profile'} | {row.network || 'No source network'}</span>
       </td>
       <td>
-        <ReadinessTag status={row.image} />
-        <ReadinessTag status={row.migration} />
-        <ReadinessTag status={row.memory} />
-        <ReadinessTag status={row.networkReadiness} />
+        <ReadinessTag
+          area="Image"
+          status={row.image}
+          reason={row.imageReasons}
+          vmName={row.name}
+          onAction={onReadinessAction ? () => onReadinessAction('Image', row) : undefined}
+        />
+        <ReadinessTag
+          area="Migration"
+          status={row.migration}
+          reason={row.migrationReasons}
+          vmName={row.name}
+          onAction={onReadinessAction ? () => onReadinessAction('Migration', row) : undefined}
+        />
+        <ReadinessTag
+          area="Memory"
+          status={row.memory}
+          reason={row.memoryReasons}
+          vmName={row.name}
+          onAction={onReadinessAction ? () => onReadinessAction('Memory', row) : undefined}
+        />
+        <ReadinessTag
+          area="Network"
+          status={row.networkReadiness}
+          reason={row.networkReasons}
+          vmName={row.name}
+          onAction={onReadinessAction ? () => onReadinessAction('Network', row) : undefined}
+        />
       </td>
       <td>
         {row.subnet ? <Tag type="cyan">{row.subnet}</Tag> : <span className="empty-value">Unassigned</span>}
@@ -69,4 +95,3 @@ export default function DraggableVmRow({
     </tr>
   );
 }
-

@@ -55,8 +55,8 @@ describe('AssignmentWorkflow', () => {
     // app-01 has migration='Review'
     const tags = screen.getAllByTestId('carbon-tag');
     const tagTexts = tags.map((t) => t.textContent);
-    expect(tagTexts).toContain('Review');
-    expect(tagTexts).toContain('Blocked');
+    expect(tagTexts).toContain('MIG Review');
+    expect(tagTexts).toContain('MIG Blocked');
   });
 
   it('shows 0 selected initially', () => {

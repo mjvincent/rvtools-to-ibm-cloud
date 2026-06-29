@@ -50,6 +50,18 @@ describe('VmRow', () => {
     expect(screen.getByText('prod-app-subnet')).toBeTruthy();
   });
 
+  it('renders self-describing readiness labels', () => {
+    render(
+      <table><tbody>
+        <VmRow vm={mockVm} selected={false} onToggle={() => {}} />
+      </tbody></table>,
+    );
+    expect(screen.getByText('IMG Ready')).toBeTruthy();
+    expect(screen.getByText('MIG Review')).toBeTruthy();
+    expect(screen.getByText('MEM Ready')).toBeTruthy();
+    expect(screen.getByText('NET Ready')).toBeTruthy();
+  });
+
   it('shows Unassigned when securityGroup is empty', () => {
     render(
       <table><tbody>

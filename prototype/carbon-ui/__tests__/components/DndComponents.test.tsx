@@ -41,6 +41,36 @@ describe('DnD components', () => {
     expect(onDragStart).toHaveBeenCalledTimes(1);
   });
 
+  it('calls readiness action for non-ready readiness chips', () => {
+    const onReadinessAction = jest.fn();
+    const row = {
+      ...sampleRows[1],
+      migration: 'Blocked',
+      migrationReasons: 'Resolve source migration finding',
+    };
+    render(
+      <table>
+        <tbody>
+          <DraggableVmRow
+            row={row}
+            selected={false}
+            assignmentMode="network"
+            onSelect={jest.fn()}
+            onDragStart={jest.fn()}
+            onUnassign={jest.fn()}
+            onReadinessAction={onReadinessAction}
+          />
+        </tbody>
+      </table>,
+    );
+
+    fireEvent.click(screen.getByRole('button', {
+      name: 'Migration readiness for db-01: Blocked. Resolve source migration finding. Open review workflow.',
+    }));
+
+    expect(onReadinessAction).toHaveBeenCalledWith('Migration', row);
+  });
+
   it('drops VM ids onto a bucket zone', () => {
     const onDropVmIds = jest.fn();
     const transfer = dataTransfer();
@@ -82,4 +112,3 @@ describe('DnD components', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 });
-

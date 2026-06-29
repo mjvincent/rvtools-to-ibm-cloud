@@ -185,6 +185,22 @@ export default function AssignmentWorkflow() {
     setPendingPlacement(null);
   }
 
+  function openReadinessWorkflow(
+    area: 'Image' | 'Migration' | 'Memory' | 'Network',
+    row: AssignmentVm,
+  ) {
+    dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [row.id] });
+    dispatch({ type: 'SET_SEARCH_VALUE', payload: row.name });
+    if (area === 'Network') {
+      dispatch({ type: 'SET_ASSIGNMENT_MODE', payload: 'network' });
+      dispatch({ type: 'SET_READINESS_FILTER', payload: row.networkReadiness || 'all' });
+      dispatch({ type: 'SET_PROJECT_STATUS', payload: `Review network readiness for ${row.name}.` });
+      return;
+    }
+    dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'remediation' });
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: `Review ${area.toLowerCase()} readiness for ${row.name} in Remediation Backlog.` });
+  }
+
   function openBucketModal(type: AssignmentMode | 'vpc' | 'component') {
     dispatch({ type: 'SET_BUCKET_MODAL', payload: type });
     if (type === 'vpc') {
@@ -411,6 +427,7 @@ export default function AssignmentWorkflow() {
                     onSelect={toggleSelected}
                     onDragStart={dragVm}
                     onUnassign={(rowId) => clearAssignments([rowId])}
+                    onReadinessAction={openReadinessWorkflow}
                   />
                 ))}
               </tbody>

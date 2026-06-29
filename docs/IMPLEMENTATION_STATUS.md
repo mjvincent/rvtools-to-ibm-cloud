@@ -77,6 +77,7 @@ feature-parity and production-readiness gaps.
 - [x] Remediation tracker persists through project-state save/load and autosave
 - [x] Remediation CSV export is available from the Carbon workflow
 - [x] Remediation CSV import matches by blocker ID or Streamlit fallback signature
+- [x] VM readiness chips are self-describing and route non-ready signals to review workflows
 - [ ] Image Import Planning
 - [ ] Migration Ops
 - [ ] Wave Planning parity beyond basic bucket assignment
@@ -97,7 +98,7 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 110 tests passing
+- Jest: 114 tests passing
 - Playwright: 1 browser smoke passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
