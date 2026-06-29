@@ -50,12 +50,14 @@ import NetworkPlanWorkflow from '../components/workflows/NetworkPlanWorkflow';
 import SecurityWorkflow from '../components/workflows/SecurityWorkflow';
 import StorageWorkflow from '../components/workflows/StorageWorkflow';
 import WavesWorkflow from '../components/workflows/WavesWorkflow';
+import RemediationWorkflow from '../components/workflows/RemediationWorkflow';
 import ExportWorkflow from '../components/workflows/ExportWorkflow';
 
 const workflows: Array<{ id: Workflow; label: string; icon?: React.ComponentType }> = [
   { id: 'overview', label: 'Overview', icon: DataTableIcon },
   { id: 'intake', label: 'Workbook Intake', icon: CloudUpload },
   { id: 'assignment', label: 'VM Assignment', icon: DeploymentPattern },
+  { id: 'remediation', label: 'Remediation Backlog', icon: DeploymentPattern },
   { id: 'network', label: 'Network Plan', icon: DeploymentPattern },
   { id: 'security', label: 'Security Plan', icon: DeploymentPattern },
   { id: 'storage', label: 'Storage / IOPS Plan', icon: DeploymentPattern },
@@ -89,13 +91,27 @@ function waveDecision(row) {
   };
 }
 
+function buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, projectName }) {
+  return {
+    schema_version: 'carbon-prototype-0.3',
+    metadata: { project_name: projectName.trim(), source: 'carbon-ui-prototype' },
+    vm_decisions: assignmentRows.map(vmDecision),
+    wave_planning: assignmentRows.map(waveDecision),
+    remediation_tracker: remediationTracker,
+    carbon_summary: summary,
+    carbon_assignment_rows: assignmentRows,
+    carbon_resources: resources,
+    carbon_remediation_tracker: remediationTracker,
+  };
+}
+
 function WorkbenchShell() {
   const { state, dispatch } = useAppState();
   const {
     apiStatus, panelOpen, saveModalOpen, projects, selectedProjectId,
     projectName, projectDescription, projectStatus, projectError, uploadStatus,
     activeWorkflow, assignmentRows, resources, summary, persistenceEnabled,
-    isDirty, autoSaveStatus, autoSaveError,
+    isDirty, autoSaveStatus, autoSaveError, remediationTracker,
   } = state;
   const hasLoadedProject = useRef(false);
 
@@ -116,6 +132,21 @@ function WorkbenchShell() {
     const missingSg = assignmentRows.filter((row) => !row.securityGroup).length;
     return { total, missingSubnet, missingSg };
   }, [assignmentRows]);
+
+  const activeRemediationCount = React.useMemo(() => (
+    assignmentRows.reduce((count, row) => {
+      const readiness = [
+        ['image', row.image],
+        ['migration', row.migration],
+        ['memory', row.memory],
+        ['network', row.networkReadiness],
+      ];
+      return count + readiness.filter(([area, status]) => {
+        const tracker = remediationTracker[`${row.id}::${area}`];
+        return (status === 'Blocked' || status === 'Review') && tracker?.status !== 'Resolved' && tracker?.status !== 'Deferred';
+      }).length;
+    }, 0)
+  ), [assignmentRows, remediationTracker]);
 
   useEffect(() => {
     api.checkApiHealth()
@@ -139,6 +170,11 @@ function WorkbenchShell() {
       dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'Saving planning changes...' });
       dispatch({ type: 'SET_AUTO_SAVE_ERROR', payload: '' });
       try {
+        await api.saveProjectState(
+          selectedProjectId,
+          buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, projectName }),
+          projectName.trim(),
+        );
         await api.saveNetworkPlan(
           selectedProjectId,
           buildNetworkPlanBody({ resources, assignmentRows, projectName, summary }),
@@ -153,7 +189,7 @@ function WorkbenchShell() {
       }
     }, 900);
     return () => window.clearTimeout(timer);
-  }, [assignmentRows, resources, selectedProjectId, persistenceEnabled, isDirty, projectName, summary]);
+  }, [assignmentRows, resources, remediationTracker, selectedProjectId, persistenceEnabled, isDirty, projectName, summary]);
 
   // Push VM placement edits through the narrower assignment endpoint.
   useEffect(() => {
@@ -185,13 +221,7 @@ function WorkbenchShell() {
         await api.updateProject(projectId, projectName, projectDescription);
       }
       await api.saveProjectState(projectId, {
-        schema_version: 'carbon-prototype-0.2',
-        metadata: { project_name: projectName.trim(), source: 'carbon-ui-prototype' },
-        vm_decisions: assignmentRows.map(vmDecision),
-        wave_planning: assignmentRows.map(waveDecision),
-        carbon_summary: summary,
-        carbon_assignment_rows: assignmentRows,
-        carbon_resources: resources,
+        ...buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, projectName }),
       }, projectName.trim());
       await api.saveNetworkPlan(
         projectId,
@@ -228,6 +258,14 @@ function WorkbenchShell() {
       if (savedState?.planning_state_json?.carbon_resources) {
         dispatch({ type: 'SET_RESOURCES', payload: savedState.planning_state_json.carbon_resources });
       }
+      if (savedState?.planning_state_json?.carbon_remediation_tracker || savedState?.planning_state_json?.remediation_tracker) {
+        dispatch({
+          type: 'SET_REMEDIATION_TRACKER',
+          payload: savedState.planning_state_json.carbon_remediation_tracker || savedState.planning_state_json.remediation_tracker,
+        });
+      } else {
+        dispatch({ type: 'SET_REMEDIATION_TRACKER', payload: {} });
+      }
       try {
         const networkPlan = await api.loadNetworkPlan(projectId);
         const nextResources = resourcesFromNetworkPlan(networkPlan);
@@ -263,6 +301,7 @@ function WorkbenchShell() {
     switch (activeWorkflow) {
       case 'intake': return <IntakeWorkflow />;
       case 'assignment': return <AssignmentWorkflow />;
+      case 'remediation': return <RemediationWorkflow />;
       case 'network': return <NetworkPlanWorkflow />;
       case 'security': return <SecurityWorkflow />;
       case 'storage': return <StorageWorkflow />;
@@ -407,9 +446,9 @@ function WorkbenchShell() {
             }} />
           </Column>
           <Column lg={4} md={4} sm={4}>
-            <MetricTileInline label="Readiness blockers" value={computedEstate.blocked} helper="Signals to resolve" onClick={() => {
+            <MetricTileInline label="Remediation items" value={activeRemediationCount} helper="Active blocker tracking" onClick={() => {
               dispatch({ type: 'SET_READINESS_FILTER', payload: 'Blocked' });
-              dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'assignment' });
+              dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'remediation' });
             }} />
           </Column>
           <Column lg={4} md={4} sm={4}>

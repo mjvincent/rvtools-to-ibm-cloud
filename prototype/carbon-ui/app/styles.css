@@ -404,6 +404,45 @@ body {
   padding-top: 1rem;
 }
 
+.remediation-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.remediation-summary .cds--tile p {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin-top: 0.5rem;
+}
+
+.remediation-table-wrap {
+  margin-top: 1rem;
+}
+
+.remediation-table {
+  min-width: 86rem;
+}
+
+.remediation-table .cds--form-item {
+  min-width: 10rem;
+}
+
+.remediation-table textarea {
+  min-height: 4.5rem;
+}
+
+.empty-state {
+  margin-top: 1rem;
+}
+
+.empty-state h3 {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.empty-state p {
+  color: #525252;
+}
+
 .export-actions {
   display: flex;
   flex-wrap: wrap;

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useReducer } from 'react';
 import type {
   AssignmentMode,
   AssignmentVm,
+  RemediationTracker,
   ResourceState,
   SavedProject,
   Workflow,
@@ -259,6 +260,7 @@ export type AppState = {
 
   // assignment state
   assignmentRows: AssignmentVm[];
+  remediationTracker: RemediationTracker;
   selectedVmIds: string[];
   searchValue: string;
   readinessFilter: string;
@@ -296,6 +298,7 @@ const initialState: AppState = {
   projectError: '',
   resources: defaultResources,
   assignmentRows: sampleRows,
+  remediationTracker: {},
   selectedVmIds: [],
   searchValue: '',
   readinessFilter: 'all',
@@ -331,6 +334,7 @@ export type AppAction =
   | { type: 'SET_PROJECT_ERROR'; payload: string }
   | { type: 'SET_RESOURCES'; payload: ResourceState }
   | { type: 'SET_ASSIGNMENT_ROWS'; payload: AssignmentVm[] }
+  | { type: 'SET_REMEDIATION_TRACKER'; payload: RemediationTracker }
   | { type: 'SET_SELECTED_VM_IDS'; payload: string[] }
   | { type: 'SET_SEARCH_VALUE'; payload: string }
   | { type: 'SET_READINESS_FILTER'; payload: string }
@@ -364,6 +368,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_PROJECT_ERROR': return { ...state, projectError: action.payload };
     case 'SET_RESOURCES': return { ...state, resources: action.payload, isDirty: true };
     case 'SET_ASSIGNMENT_ROWS': return { ...state, assignmentRows: action.payload, isDirty: true };
+    case 'SET_REMEDIATION_TRACKER': return { ...state, remediationTracker: action.payload, isDirty: true };
     case 'SET_SELECTED_VM_IDS': return { ...state, selectedVmIds: action.payload };
     case 'SET_SEARCH_VALUE': return { ...state, searchValue: action.payload };
     case 'SET_READINESS_FILTER': return { ...state, readinessFilter: action.payload };

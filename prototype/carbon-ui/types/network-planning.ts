@@ -357,16 +357,41 @@ export type SavedProjectState = {
     carbon_summary?: WorkbookSummary;
     carbon_assignment_rows?: AssignmentVm[];
     carbon_resources?: ResourceState;
+    carbon_remediation_tracker?: RemediationTracker;
     metadata?: Record<string, string>;
   };
 };
 
 export type AssignmentMode = 'network' | 'security' | 'storage' | 'wave';
 
+export type RemediationStatus = 'Open' | 'In Progress' | 'Resolved' | 'Deferred';
+
+export type RemediationTrackerEntry = {
+  status: RemediationStatus;
+  owner: string;
+  dueDate: string;
+  notes: string;
+};
+
+export type RemediationTracker = Record<string, RemediationTrackerEntry>;
+
+export type RemediationBacklogItem = {
+  blockerId: string;
+  vmKey: string;
+  vmName: string;
+  owner: string;
+  blockerType: string;
+  blockerDescription: string;
+  status: RemediationStatus;
+  dueDate: string;
+  notes: string;
+};
+
 export type Workflow =
   | 'overview'
   | 'intake'
   | 'assignment'
+  | 'remediation'
   | 'network'
   | 'security'
   | 'storage'

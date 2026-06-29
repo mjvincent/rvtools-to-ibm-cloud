@@ -5,8 +5,8 @@
 This document tracks the implementation status of the Carbon UI integration with
 the RVTools to IBM Cloud migration tool.
 
-**Last Updated**: 2026-06-26  
-**Current Phase**: Carbon UI Phases 1-3 complete; promotion gate review next  
+**Last Updated**: 2026-06-29  
+**Current Phase**: Carbon UI Phase 4 started with Remediation Tracker parity  
 **Production UI**: Streamlit remains production until Carbon closes the remaining
 feature-parity and production-readiness gaps.
 
@@ -69,6 +69,18 @@ feature-parity and production-readiness gaps.
 - [x] Subnet and wave Carbon `Tag` chips in VM rows
 - [x] DnD updates flow through existing autosave and VM debounce paths
 
+### Carbon UI Phase 4: Streamlit Feature Parity
+
+- [x] Remediation Backlog workflow added to Carbon navigation
+- [x] Remediation rows derive from Carbon VM readiness signals
+- [x] Owner, status, due date, and notes are editable in Carbon state
+- [x] Remediation tracker persists through project-state save/load and autosave
+- [x] Remediation CSV export is available from the Carbon workflow
+- [ ] Image Import Planning
+- [ ] Migration Ops
+- [ ] Wave Planning parity beyond basic bucket assignment
+- [ ] Decision audit and complete handoff parity
+
 ---
 
 ## Verification Status
@@ -84,7 +96,7 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 105 tests passing
+- Jest: 108 tests passing
 - Playwright: 1 browser smoke passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -100,7 +112,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 1. **Feature parity**
    - Wave Planning beyond basic wave bucket assignment
-   - Remediation Tracker
+   - Remediation Tracker export/import parity and full Streamlit finding parity
    - Image Import Planning
    - Migration Ops
    - Decision audit and full CSV/handoff parity
@@ -121,17 +133,17 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 ## Roadmap
 
-### Promotion Gate Review - Next
+### Promotion Gate Review
 - [x] Review against `docs/carbon-react-ui-strategy.md`
 - [ ] Run full repo validation
 - [x] Document gate pass/fail status in
   `docs/carbon-promotion-gate-review.md`
-- [ ] Decide whether Phase 4 starts before or after additional UX/accessibility
-  polish
+- [x] Start Phase 4 before additional UX/accessibility polish
 
 ### Phase 4: Streamlit Feature Parity
+- [x] Remediation Tracker initial Carbon workflow
 - [ ] Wave Planning
-- [ ] Remediation Tracker
+- [ ] Remediation Tracker import and full handoff parity
 - [ ] Image Import Planning
 - [ ] Migration Ops
 - [ ] Decision audit
