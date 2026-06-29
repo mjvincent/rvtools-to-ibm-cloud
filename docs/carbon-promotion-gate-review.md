@@ -47,7 +47,7 @@ Observed results:
 - Python pytest: 327 passed
 - Terraform strict init validation: passed with network access to Terraform Registry
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 124 passed
+- Carbon Jest: 129 passed
 - Carbon Playwright smoke: passed
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -83,8 +83,10 @@ Priority order:
    - Remaining: full handoff/export parity against Streamlit package outputs.
 
 4. **Wave Planning Parity**
-   - Extend beyond basic wave bucket assignment.
-   - Add owner, cutover group, priority, dependencies, and conflict/review logic.
+   - Initial Carbon workflow now supports per-VM wave, cutover group, owner,
+     application, priority, dependency group, CSV import/export, completion
+     metrics, and application/dependency conflict detection.
+   - Remaining: Streamlit bulk-assignment ergonomics and full handoff parity.
 
 5. **Decision Audit and Handoff Parity**
    - Add override/decision audit surfaces.

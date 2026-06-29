@@ -423,13 +423,15 @@ body {
 
 .image-import-summary,
 .migration-ops-summary,
-.remediation-summary {
+.remediation-summary,
+.wave-summary {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .image-import-summary .cds--tile p,
 .migration-ops-summary .cds--tile p,
-.remediation-summary .cds--tile p {
+.remediation-summary .cds--tile p,
+.wave-summary .cds--tile p {
   font-size: 2rem;
   line-height: 1.2;
   margin-top: 0.5rem;
@@ -437,13 +439,15 @@ body {
 
 .image-import-table-wrap,
 .migration-ops-detail-wrap,
-.remediation-table-wrap {
+.remediation-table-wrap,
+.wave-planning-table-wrap {
   margin-top: 1rem;
 }
 
 .image-import-table,
 .migration-ops-detail-table,
-.remediation-table {
+.remediation-table,
+.wave-planning-table {
   min-width: 86rem;
 }
 
@@ -464,7 +468,8 @@ body {
 }
 
 .image-import-table .cds--form-item,
-.remediation-table .cds--form-item {
+.remediation-table .cds--form-item,
+.wave-planning-table .cds--form-item {
   min-width: 10rem;
 }
 
@@ -496,6 +501,12 @@ body {
 
 .remediation-import {
   max-width: 20rem;
+}
+
+.conflict-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
 .status-panel {
