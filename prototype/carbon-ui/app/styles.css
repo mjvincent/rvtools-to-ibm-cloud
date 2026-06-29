@@ -421,28 +421,34 @@ body {
   padding-top: 1rem;
 }
 
+.image-import-summary,
 .remediation-summary {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.image-import-summary .cds--tile p,
 .remediation-summary .cds--tile p {
   font-size: 2rem;
   line-height: 1.2;
   margin-top: 0.5rem;
 }
 
+.image-import-table-wrap,
 .remediation-table-wrap {
   margin-top: 1rem;
 }
 
+.image-import-table,
 .remediation-table {
   min-width: 86rem;
 }
 
+.image-import-table .cds--form-item,
 .remediation-table .cds--form-item {
   min-width: 10rem;
 }
 
+.image-import-table textarea,
 .remediation-table textarea {
   min-height: 4.5rem;
 }

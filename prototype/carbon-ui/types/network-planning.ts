@@ -358,11 +358,21 @@ export type SavedProjectState = {
     carbon_assignment_rows?: AssignmentVm[];
     carbon_resources?: ResourceState;
     carbon_remediation_tracker?: RemediationTracker;
+    carbon_image_import_status?: ImageImportStatus;
     remediation_tracker?: Record<string, {
       status?: string;
       owner?: string;
       due_date?: string;
       dueDate?: string;
+      notes?: string;
+    }>;
+    image_import_status?: Record<string, {
+      target_catalog_id?: string;
+      targetCatalogId?: string;
+      import_status?: string;
+      importStatus?: string;
+      estimated_import_time?: string;
+      estimatedImportTime?: string;
       notes?: string;
     }>;
     metadata?: Record<string, string>;
@@ -394,11 +404,39 @@ export type RemediationBacklogItem = {
   notes: string;
 };
 
+export type ImageImportStatusValue =
+  | ''
+  | 'Pending'
+  | 'Scheduled'
+  | 'Imported'
+  | 'Failed'
+  | 'Review';
+
+export type ImageImportEntry = {
+  targetCatalogId: string;
+  importStatus: ImageImportStatusValue;
+  estimatedImportTime: string;
+  notes: string;
+};
+
+export type ImageImportStatus = Record<string, ImageImportEntry>;
+
+export type ImageImportRow = {
+  sourceImage: string;
+  vmCount: number;
+  owners: string;
+  targetCatalogId: string;
+  importStatus: ImageImportStatusValue;
+  estimatedImportTime: string;
+  notes: string;
+};
+
 export type Workflow =
   | 'overview'
   | 'intake'
   | 'assignment'
   | 'remediation'
+  | 'imageImport'
   | 'network'
   | 'security'
   | 'storage'

@@ -41,7 +41,7 @@ import {
   rowsFromNetworkPlan,
   vmAssignmentsFromRows,
 } from '../utils/planning-state';
-import type { RemediationTracker, Workflow } from '../types/network-planning';
+import type { ImageImportStatus, RemediationTracker, Workflow } from '../types/network-planning';
 
 import OverviewWorkflow from '../components/workflows/OverviewWorkflow';
 import IntakeWorkflow from '../components/workflows/IntakeWorkflow';
@@ -51,6 +51,7 @@ import SecurityWorkflow from '../components/workflows/SecurityWorkflow';
 import StorageWorkflow from '../components/workflows/StorageWorkflow';
 import WavesWorkflow from '../components/workflows/WavesWorkflow';
 import RemediationWorkflow from '../components/workflows/RemediationWorkflow';
+import ImageImportWorkflow from '../components/workflows/ImageImportWorkflow';
 import ExportWorkflow from '../components/workflows/ExportWorkflow';
 
 const workflows: Array<{ id: Workflow; label: string; icon?: React.ComponentType }> = [
@@ -58,6 +59,7 @@ const workflows: Array<{ id: Workflow; label: string; icon?: React.ComponentType
   { id: 'intake', label: 'Workbook Intake', icon: CloudUpload },
   { id: 'assignment', label: 'VM Assignment', icon: DeploymentPattern },
   { id: 'remediation', label: 'Remediation Backlog', icon: DeploymentPattern },
+  { id: 'imageImport', label: 'Image Import Planning', icon: DeploymentPattern },
   { id: 'network', label: 'Network Plan', icon: DeploymentPattern },
   { id: 'security', label: 'Security Plan', icon: DeploymentPattern },
   { id: 'storage', label: 'Storage / IOPS Plan', icon: DeploymentPattern },
@@ -114,18 +116,47 @@ function normalizeRemediationTracker(rawTracker): RemediationTracker {
   );
 }
 
-function buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, projectName }) {
+function imageImportStatusToPlanningState(status: ImageImportStatus) {
+  return Object.fromEntries(
+    Object.entries(status).map(([sourceImage, entry]) => [sourceImage, {
+      target_catalog_id: entry.targetCatalogId,
+      import_status: entry.importStatus,
+      estimated_import_time: entry.estimatedImportTime,
+      notes: entry.notes,
+    }]),
+  );
+}
+
+function normalizeImageImportStatus(rawStatus): ImageImportStatus {
+  if (!rawStatus || typeof rawStatus !== 'object') return {};
+  const validStatuses = ['', 'Pending', 'Scheduled', 'Imported', 'Failed', 'Review'];
+  return Object.fromEntries(
+    Object.entries(rawStatus).map(([sourceImage, entry]: [string, any]) => [sourceImage, {
+      targetCatalogId: entry?.targetCatalogId || entry?.target_catalog_id || '',
+      importStatus: validStatuses.includes(entry?.importStatus || entry?.import_status)
+        ? (entry?.importStatus || entry?.import_status)
+        : '',
+      estimatedImportTime: entry?.estimatedImportTime || entry?.estimated_import_time || '',
+      notes: entry?.notes || '',
+    }]),
+  );
+}
+
+function buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, imageImportStatus, projectName }) {
   const planningStateTracker = remediationTrackerToPlanningState(remediationTracker);
+  const planningImageStatus = imageImportStatusToPlanningState(imageImportStatus);
   return {
     schema_version: 'carbon-prototype-0.3',
     metadata: { project_name: projectName.trim(), source: 'carbon-ui-prototype' },
     vm_decisions: assignmentRows.map(vmDecision),
     wave_planning: assignmentRows.map(waveDecision),
     remediation_tracker: planningStateTracker,
+    image_import_status: planningImageStatus,
     carbon_summary: summary,
     carbon_assignment_rows: assignmentRows,
     carbon_resources: resources,
     carbon_remediation_tracker: remediationTracker,
+    carbon_image_import_status: imageImportStatus,
   };
 }
 
@@ -135,7 +166,7 @@ function WorkbenchShell() {
     apiStatus, panelOpen, saveModalOpen, projects, selectedProjectId,
     projectName, projectDescription, projectStatus, projectError, uploadStatus,
     activeWorkflow, assignmentRows, resources, summary, persistenceEnabled,
-    isDirty, autoSaveStatus, autoSaveError, remediationTracker,
+    isDirty, autoSaveStatus, autoSaveError, remediationTracker, imageImportStatus,
   } = state;
   const hasLoadedProject = useRef(false);
 
@@ -196,7 +227,7 @@ function WorkbenchShell() {
       try {
         await api.saveProjectState(
           selectedProjectId,
-          buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, projectName }),
+          buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, imageImportStatus, projectName }),
           projectName.trim(),
         );
         await api.saveNetworkPlan(
@@ -213,7 +244,7 @@ function WorkbenchShell() {
       }
     }, 900);
     return () => window.clearTimeout(timer);
-  }, [assignmentRows, resources, remediationTracker, selectedProjectId, persistenceEnabled, isDirty, projectName, summary]);
+  }, [assignmentRows, resources, remediationTracker, imageImportStatus, selectedProjectId, persistenceEnabled, isDirty, projectName, summary]);
 
   // Push VM placement edits through the narrower assignment endpoint.
   useEffect(() => {
@@ -245,7 +276,7 @@ function WorkbenchShell() {
         await api.updateProject(projectId, projectName, projectDescription);
       }
       await api.saveProjectState(projectId, {
-        ...buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, projectName }),
+        ...buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, imageImportStatus, projectName }),
       }, projectName.trim());
       await api.saveNetworkPlan(
         projectId,
@@ -292,6 +323,16 @@ function WorkbenchShell() {
       } else {
         dispatch({ type: 'SET_REMEDIATION_TRACKER', payload: {} });
       }
+      if (savedState?.planning_state_json?.carbon_image_import_status || savedState?.planning_state_json?.image_import_status) {
+        dispatch({
+          type: 'SET_IMAGE_IMPORT_STATUS',
+          payload: normalizeImageImportStatus(
+            savedState.planning_state_json.carbon_image_import_status || savedState.planning_state_json.image_import_status,
+          ),
+        });
+      } else {
+        dispatch({ type: 'SET_IMAGE_IMPORT_STATUS', payload: {} });
+      }
       try {
         const networkPlan = await api.loadNetworkPlan(projectId);
         const nextResources = resourcesFromNetworkPlan(networkPlan);
@@ -328,6 +369,7 @@ function WorkbenchShell() {
       case 'intake': return <IntakeWorkflow />;
       case 'assignment': return <AssignmentWorkflow />;
       case 'remediation': return <RemediationWorkflow />;
+      case 'imageImport': return <ImageImportWorkflow />;
       case 'network': return <NetworkPlanWorkflow />;
       case 'security': return <SecurityWorkflow />;
       case 'storage': return <StorageWorkflow />;

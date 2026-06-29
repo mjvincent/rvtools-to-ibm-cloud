@@ -94,4 +94,14 @@ describe('AssignmentWorkflow', () => {
     await userEvent.click(screen.getByText('Assign VMs'));
     expect(screen.getAllByText('prod-app-us-south-1').length).toBeGreaterThan(1);
   });
+
+  it('opens Image Import Planning from non-ready image readiness chip', async () => {
+    renderWithProvider(<AssignmentWorkflow />);
+
+    await userEvent.click(screen.getByRole('button', {
+      name: 'Image readiness for db-01: Review. Confirm image import path. Open review workflow.',
+    }));
+
+    expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('db-01');
+  });
 });

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useReducer } from 'react';
 import type {
   AssignmentMode,
   AssignmentVm,
+  ImageImportStatus,
   RemediationTracker,
   ResourceState,
   SavedProject,
@@ -261,6 +262,7 @@ export type AppState = {
   // assignment state
   assignmentRows: AssignmentVm[];
   remediationTracker: RemediationTracker;
+  imageImportStatus: ImageImportStatus;
   selectedVmIds: string[];
   searchValue: string;
   readinessFilter: string;
@@ -299,6 +301,7 @@ const initialState: AppState = {
   resources: defaultResources,
   assignmentRows: sampleRows,
   remediationTracker: {},
+  imageImportStatus: {},
   selectedVmIds: [],
   searchValue: '',
   readinessFilter: 'all',
@@ -335,6 +338,7 @@ export type AppAction =
   | { type: 'SET_RESOURCES'; payload: ResourceState }
   | { type: 'SET_ASSIGNMENT_ROWS'; payload: AssignmentVm[] }
   | { type: 'SET_REMEDIATION_TRACKER'; payload: RemediationTracker }
+  | { type: 'SET_IMAGE_IMPORT_STATUS'; payload: ImageImportStatus }
   | { type: 'SET_SELECTED_VM_IDS'; payload: string[] }
   | { type: 'SET_SEARCH_VALUE'; payload: string }
   | { type: 'SET_READINESS_FILTER'; payload: string }
@@ -369,6 +373,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_RESOURCES': return { ...state, resources: action.payload, isDirty: true };
     case 'SET_ASSIGNMENT_ROWS': return { ...state, assignmentRows: action.payload, isDirty: true };
     case 'SET_REMEDIATION_TRACKER': return { ...state, remediationTracker: action.payload, isDirty: true };
+    case 'SET_IMAGE_IMPORT_STATUS': return { ...state, imageImportStatus: action.payload, isDirty: true };
     case 'SET_SELECTED_VM_IDS': return { ...state, selectedVmIds: action.payload };
     case 'SET_SEARCH_VALUE': return { ...state, searchValue: action.payload };
     case 'SET_READINESS_FILTER': return { ...state, readinessFilter: action.payload };

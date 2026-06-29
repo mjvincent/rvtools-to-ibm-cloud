@@ -47,7 +47,7 @@ Observed results:
 - Python pytest: 327 passed
 - Terraform strict init validation: passed with network access to Terraform Registry
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 114 passed
+- Carbon Jest: 119 passed
 - Carbon Playwright smoke: passed
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -68,10 +68,12 @@ Priority order:
      complete export/handoff parity checks.
 
 2. **Image Import Planning**
-   - Recreate image grouping and import status workflows.
-   - Preserve existing advisory readiness semantics.
-   - Ensure custom image ID handoff behavior remains compatible with generated
-     Terraform.
+   - Initial Carbon workflow exists with inferred source-image grouping,
+     editable import status, target catalog ID, estimated import time, notes,
+     CSV import/export, project-state persistence, and IMG readiness-chip
+     routing.
+   - Remaining: full handoff/export parity and verification that custom image
+     ID behavior remains compatible with generated Terraform.
 
 3. **Migration Ops**
    - Add cutover readiness view and operational checklist state.

@@ -191,6 +191,11 @@ export default function AssignmentWorkflow() {
   ) {
     dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [row.id] });
     dispatch({ type: 'SET_SEARCH_VALUE', payload: row.name });
+    if (area === 'Image') {
+      dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'imageImport' });
+      dispatch({ type: 'SET_PROJECT_STATUS', payload: `Review image import planning for ${row.name}.` });
+      return;
+    }
     if (area === 'Network') {
       dispatch({ type: 'SET_ASSIGNMENT_MODE', payload: 'network' });
       dispatch({ type: 'SET_READINESS_FILTER', payload: row.networkReadiness || 'all' });
