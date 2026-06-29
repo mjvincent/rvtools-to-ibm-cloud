@@ -71,3 +71,6 @@ Carbon should not replace Streamlit until it can:
 Continue Carbon/React as the enterprise UI candidate, but treat it as a product
 experiment with objective promotion gates. Streamlit remains the production
 application until Carbon provides a complete and demonstrably better workflow.
+
+See [Carbon Promotion Gate Review](carbon-promotion-gate-review.md) for the
+current gate-by-gate pass/partial/fail assessment and Phase 4 backlog.

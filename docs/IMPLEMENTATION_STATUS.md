@@ -122,9 +122,10 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 ## Roadmap
 
 ### Promotion Gate Review - Next
-- [ ] Review against `docs/carbon-react-ui-strategy.md`
+- [x] Review against `docs/carbon-react-ui-strategy.md`
 - [ ] Run full repo validation
-- [ ] Document gate pass/fail status
+- [x] Document gate pass/fail status in
+  `docs/carbon-promotion-gate-review.md`
 - [ ] Decide whether Phase 4 starts before or after additional UX/accessibility
   polish
 
@@ -153,8 +154,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 ## Related Documentation
 
 - [Carbon React UI Strategy](./carbon-react-ui-strategy.md)
+- [Carbon Promotion Gate Review](./carbon-promotion-gate-review.md)
 - [Carbon UI Integration Summary](./carbon-ui-integration-summary.md)
 - [Carbon Network Schema Spec](./carbon-network-schema-spec.md)
 - [Carbon Integration Diagrams](./carbon-integration-diagrams.md)
 - [Terraform Modular Implementation](./TERRAFORM_MODULAR_IMPLEMENTATION.md)
-
