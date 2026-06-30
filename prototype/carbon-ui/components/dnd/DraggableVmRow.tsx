@@ -12,6 +12,7 @@ type DraggableVmRowProps = {
   onSelect: (rowId: string, checked: boolean) => void;
   onDragStart: (row: AssignmentVm, event: React.DragEvent<HTMLTableRowElement>) => void;
   onUnassign: (rowId: string) => void;
+  onOverride?: (row: AssignmentVm) => void;
   onReadinessAction?: (area: 'Image' | 'Migration' | 'Memory' | 'Network', row: AssignmentVm) => void;
 };
 
@@ -22,6 +23,7 @@ export default function DraggableVmRow({
   onSelect,
   onDragStart,
   onUnassign,
+  onOverride,
   onReadinessAction,
 }: DraggableVmRowProps) {
   return (
@@ -90,6 +92,11 @@ export default function DraggableVmRow({
           <button type="button" onClick={() => onUnassign(row.id)}>
             Unassign {assignmentMode}
           </button>
+          {onOverride && (
+            <button type="button" onClick={() => onOverride(row)}>
+              Review overrides
+            </button>
+          )}
         </details>
       </td>
     </tr>

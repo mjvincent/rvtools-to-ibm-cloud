@@ -47,7 +47,7 @@ Observed results:
 - Python pytest: 327 passed
 - Terraform strict init validation: passed with network access to Terraform Registry
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 129 passed
+- Carbon Jest: 133 passed
 - Carbon Playwright smoke: passed
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -89,7 +89,11 @@ Priority order:
    - Remaining: Streamlit bulk-assignment ergonomics and full handoff parity.
 
 5. **Decision Audit and Handoff Parity**
-   - Add override/decision audit surfaces.
+   - Initial VM Overrides workflow exists with profile/storage override values,
+     required reason capture, VM exclusion reasons, Assignment row routing, and
+     decision-audit CSV export using Streamlit-compatible core columns.
+   - Remaining: pricing impact columns and ZIP inclusion through the Carbon
+     Terraform/handoff package.
    - Verify Carbon-generated ZIP contents against Streamlit package contents,
      including CSVs, planning state, runbook, preflight reports, and README.
 

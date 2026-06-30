@@ -32,6 +32,7 @@ export type ApiVmAssignmentPayload = {
   memory_gb?: number;
   ibm_profile?: string | null;
   override_profile?: string | null;
+  override_profile_reason?: string | null;
   boot_disk_gb?: number;
   guest_os?: string | null;
 };
@@ -52,6 +53,16 @@ function findResourceId<T extends { id: string; name: string; label?: string }>(
 
 function normalizeArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? value as T[] : [];
+}
+
+function normalizeBoolean(value: unknown, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    return ['true', 'yes', '1'].includes(value.toLowerCase());
+  }
+  return Boolean(value);
 }
 
 function normalizeResources(plan: Partial<NetworkPlanningState> | Record<string, unknown>): ResourceState {
@@ -77,10 +88,11 @@ export function vmAssignmentsFromRows(
     secondary_nics: [],
     storage_profile_id: findResourceId(resources.storageProfiles, row.storageLabel || row.overrideStorageTier || row.storageTier) || null,
     wave_id: findResourceId(resources.waves, row.wave) || null,
-    excluded: false,
-    exclusion_reason: null,
+    excluded: Boolean(row.excluded),
+    exclusion_reason: row.exclusionReason || null,
     ibm_profile: row.profile || null,
     override_profile: row.overrideProfile || null,
+    override_profile_reason: row.overrideProfileReason || null,
   }));
 }
 
@@ -143,6 +155,13 @@ export function rowsFromNetworkPlan(
     const sgId = String(valueFrom(assignment, 'primarySecurityGroupId', 'primary_security_group_id') || '');
     const storageId = String(valueFrom(assignment, 'storageProfileId', 'storage_profile_id') || '');
     const waveId = String(valueFrom(assignment, 'waveId', 'wave_id') || '');
+    const overrideProfile = String(valueFrom(assignment, 'overrideProfile', 'override_profile') || '');
+    const overrideProfileReason = String(valueFrom(assignment, 'overrideProfileReason', 'override_profile_reason') || '');
+    const excluded = normalizeBoolean(
+      valueFrom(assignment, 'excluded', 'excluded'),
+      Boolean(row.excluded),
+    );
+    const exclusionReason = String(valueFrom(assignment, 'exclusionReason', 'exclusion_reason') || '');
     return {
       ...row,
       subnet: resources.subnets.find((subnet) => subnet.id === subnetId)?.name || subnetId || row.subnet,
@@ -150,7 +169,10 @@ export function rowsFromNetworkPlan(
       storageLabel: resources.storageProfiles.find((storage) => storage.id === storageId)?.label || row.storageLabel,
       overrideStorageTier: resources.storageProfiles.find((storage) => storage.id === storageId)?.tier || row.overrideStorageTier,
       wave: resources.waves.find((wave) => wave.id === waveId)?.name || waveId || row.wave,
+      overrideProfile: overrideProfile || row.overrideProfile,
+      overrideProfileReason: overrideProfileReason || row.overrideProfileReason,
+      excluded,
+      exclusionReason: exclusionReason || row.exclusionReason,
     };
   });
 }
-

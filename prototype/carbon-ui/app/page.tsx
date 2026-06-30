@@ -46,6 +46,7 @@ import type { ImageImportStatus, RemediationTracker, Workflow } from '../types/n
 import OverviewWorkflow from '../components/workflows/OverviewWorkflow';
 import IntakeWorkflow from '../components/workflows/IntakeWorkflow';
 import AssignmentWorkflow from '../components/workflows/AssignmentWorkflow';
+import OverridesWorkflow from '../components/workflows/OverridesWorkflow';
 import NetworkPlanWorkflow from '../components/workflows/NetworkPlanWorkflow';
 import SecurityWorkflow from '../components/workflows/SecurityWorkflow';
 import StorageWorkflow from '../components/workflows/StorageWorkflow';
@@ -59,6 +60,7 @@ const workflows: Array<{ id: Workflow; label: string; icon?: React.ComponentType
   { id: 'overview', label: 'Overview', icon: DataTableIcon },
   { id: 'intake', label: 'Workbook Intake', icon: CloudUpload },
   { id: 'assignment', label: 'VM Assignment', icon: DeploymentPattern },
+  { id: 'overrides', label: 'VM Overrides', icon: DeploymentPattern },
   { id: 'remediation', label: 'Remediation Backlog', icon: DeploymentPattern },
   { id: 'imageImport', label: 'Image Import Planning', icon: DeploymentPattern },
   { id: 'migrationOps', label: 'Migration Ops', icon: DeploymentPattern },
@@ -73,9 +75,12 @@ function vmDecision(row) {
   return {
     'VM Key': row.id,
     'VM Name': row.name,
-    'Exclude?': false,
+    'Exclude?': Boolean(row.excluded),
+    'Exclusion Reason': row.exclusionReason,
     'Override Profile': row.overrideProfile,
+    'Override Profile Reason': row.overrideProfileReason,
     'Override Storage Tier': row.overrideStorageTier,
+    'Override Storage Tier Reason': row.overrideStorageTierReason,
     Network: row.network,
     Subnet: row.subnet,
     'Security Group': row.securityGroup,
@@ -370,6 +375,7 @@ function WorkbenchShell() {
     switch (activeWorkflow) {
       case 'intake': return <IntakeWorkflow />;
       case 'assignment': return <AssignmentWorkflow />;
+      case 'overrides': return <OverridesWorkflow />;
       case 'remediation': return <RemediationWorkflow />;
       case 'imageImport': return <ImageImportWorkflow />;
       case 'migrationOps': return <MigrationOpsWorkflow />;

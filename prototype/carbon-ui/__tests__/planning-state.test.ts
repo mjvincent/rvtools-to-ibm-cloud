@@ -23,6 +23,8 @@ describe('planning-state API adapter', () => {
       vm_name: 'app-01',
       secondary_nics: [],
       excluded: false,
+      exclusion_reason: null,
+      override_profile_reason: null,
     });
     expect(body.metadata.project_name).toBe('Migration assessment');
     expect(body.metadata.rvtools_filename).toBe('rvtools.xlsx');
@@ -50,12 +52,16 @@ describe('planning-state API adapter', () => {
       vm_assignments: [
         {
           vm_key: 'sample-app-01',
-          vm_name: 'app-01',
-          primary_subnet_id: 'subnet-db',
-          primary_security_group_id: 'sg-db',
-          storage_profile_id: 'storage-db',
-          wave_id: 'wave-2',
-        },
+      vm_name: 'app-01',
+      primary_subnet_id: 'subnet-db',
+      primary_security_group_id: 'sg-db',
+      storage_profile_id: 'storage-db',
+      wave_id: 'wave-2',
+      excluded: true,
+      exclusion_reason: 'Out of migration scope',
+      override_profile: 'mx2-16x128',
+      override_profile_reason: 'Database cache needs extra memory',
+    },
       ],
     };
 
@@ -65,7 +71,10 @@ describe('planning-state API adapter', () => {
       securityGroup: 'sg-db-private',
       overrideStorageTier: '10iops-tier',
       wave: 'Wave 2',
+      excluded: true,
+      exclusionReason: 'Out of migration scope',
+      overrideProfile: 'mx2-16x128',
+      overrideProfileReason: 'Database cache needs extra memory',
     });
   });
 });
-

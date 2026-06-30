@@ -55,7 +55,7 @@ Required handoff files:
 | `cutover-readiness.csv` | Yes | Missing | Carbon has Migration Ops CSV export in UI, not ZIP. |
 | `planning-state.json` | Yes | Missing | FastAPI stores Carbon project state; package does not include it. |
 | `migration-manifest.json` | Partial | Missing | Requires Carbon VM-to-handoff normalization. |
-| `decision-audit.csv` | Partial | Missing | Requires profile/storage/network override audit from Carbon rows. |
+| `decision-audit.csv` | Yes | Missing | Carbon has VM Overrides CSV export with profile/storage/exclusion reasons. Remaining: ZIP inclusion and pricing impact columns. |
 | `preflight-report.csv/json` | Partial | Missing | Requires Carbon-side package preflight integration. |
 | `pricing-diagnostics.csv/json` | Partial | Missing | Requires pricing/catalog context for Carbon package. |
 | mapping/readiness CSVs | Partial | Missing | Requires Carbon assignment rows normalized to handoff records. |
@@ -64,9 +64,10 @@ Required handoff files:
 
 ## Recommended Implementation Order
 
-1. Add Carbon package writer helpers for the four state-native CSVs:
+1. Add Carbon package writer helpers for the five state-native CSVs:
    `remediation-backlog.csv`, `image-import-plan.csv`,
-   `cutover-readiness.csv`, and `planning-state.json`.
+   `cutover-readiness.csv`, `decision-audit.csv`, and
+   `planning-state.json`.
 2. Add a test that builds a Carbon package fixture and asserts those files are
    present in the ZIP.
 3. Add Carbon-to-handoff VM normalization so existing `handoff` generators can
@@ -80,4 +81,3 @@ Required handoff files:
 Until this parity is complete, Streamlit remains the production UI for migration
 handoff packages. Carbon can remain a planning prototype and Terraform renderer,
 but it should not be promoted as the supported handoff workflow.
-

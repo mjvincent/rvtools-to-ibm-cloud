@@ -320,8 +320,10 @@ export type AssignmentVm = {
   networkReasons: string;
   profile: string;
   overrideProfile: string;
+  overrideProfileReason?: string;
   storageTier: string;
   overrideStorageTier: string;
+  overrideStorageTierReason?: string;
   network: string;
   subnet: string;
   securityGroup: string;
@@ -332,6 +334,8 @@ export type AssignmentVm = {
   cutoverGroup: string;
   priority: string;
   dependencyGroup: string;
+  excluded?: boolean;
+  exclusionReason?: string;
   storageLabel?: string;
 };
 
@@ -460,6 +464,7 @@ export type Workflow =
   | 'overview'
   | 'intake'
   | 'assignment'
+  | 'overrides'
   | 'remediation'
   | 'imageImport'
   | 'migrationOps'

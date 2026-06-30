@@ -206,6 +206,13 @@ export default function AssignmentWorkflow() {
     dispatch({ type: 'SET_PROJECT_STATUS', payload: `Review ${area.toLowerCase()} readiness for ${row.name} in Remediation Backlog.` });
   }
 
+  function openOverrideWorkflow(row: AssignmentVm) {
+    dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [row.id] });
+    dispatch({ type: 'SET_SEARCH_VALUE', payload: row.name });
+    dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'overrides' });
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: `Review profile, storage, and exclusion overrides for ${row.name}.` });
+  }
+
   function openBucketModal(type: AssignmentMode | 'vpc' | 'component') {
     dispatch({ type: 'SET_BUCKET_MODAL', payload: type });
     if (type === 'vpc') {
@@ -432,6 +439,7 @@ export default function AssignmentWorkflow() {
                     onSelect={toggleSelected}
                     onDragStart={dragVm}
                     onUnassign={(rowId) => clearAssignments([rowId])}
+                    onOverride={openOverrideWorkflow}
                     onReadinessAction={openReadinessWorkflow}
                   />
                 ))}

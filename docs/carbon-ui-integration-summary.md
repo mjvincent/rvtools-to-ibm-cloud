@@ -148,11 +148,12 @@ PlacementModal
 - [x] Download Terraform ZIP
 
 ### Priority 2 Features
-- [ ] Wave Planning (wave, cutover group, owner, priority, dependency)
-- [ ] Remediation Tracker (blocker status, owner, due dates)
-- [ ] Image Import Planning (image grouping, import status)
-- [ ] Migration Ops (cutover readiness view)
-- [ ] Decision Audit (override tracking with pricing impact)
+- [x] Wave Planning initial workflow (wave, cutover group, owner, priority, dependency)
+- [x] Remediation Tracker initial workflow (blocker status, owner, due dates)
+- [x] Image Import Planning initial workflow (image grouping, import status)
+- [x] Migration Ops initial workflow (cutover readiness view)
+- [x] Decision Audit initial workflow (override tracking)
+- [ ] Pricing impact columns and complete handoff parity
 
 ### Network Planning
 - [ ] VPC creation with address prefixes

@@ -5,8 +5,8 @@
 This document tracks the implementation status of the Carbon UI integration with
 the RVTools to IBM Cloud migration tool.
 
-**Last Updated**: 2026-06-29  
-**Current Phase**: Carbon UI Phase 4 started with Remediation Tracker parity  
+**Last Updated**: 2026-06-30  
+**Current Phase**: Carbon UI Phase 4 feature-parity workflows in progress  
 **Production UI**: Streamlit remains production until Carbon closes the remaining
 feature-parity and production-readiness gaps.
 
@@ -81,7 +81,8 @@ feature-parity and production-readiness gaps.
 - [x] Image Import Planning workflow with grouped rows, import status, catalog ID, CSV import/export, and project persistence
 - [x] Migration Ops cutover readiness dashboard with wave/cutover summaries and CSV export
 - [x] Wave Planning per-VM fields, CSV import/export, completion metrics, and conflict detection
-- [ ] Decision audit and complete handoff parity
+- [x] VM Overrides workflow with profile/storage override reasons, exclusion reasons, decision-audit CSV export, project persistence, and Assignment row routing
+- [ ] Complete handoff ZIP parity
 
 ---
 
@@ -98,7 +99,7 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 129 tests passing
+- Jest: 133 tests passing
 - Playwright: 1 browser smoke passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -117,7 +118,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
    - Remediation Tracker full Streamlit finding/category and handoff parity
    - Image Import Planning full handoff/export parity
    - Migration Ops full handoff/export parity
-   - Decision audit and full CSV/handoff parity
+   - Decision audit ZIP inclusion, pricing impact columns, and full CSV/handoff parity
 
 2. **Production readiness**
    - Large-workbook performance benchmark
@@ -151,7 +152,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [ ] Image Import Planning full handoff/export parity
 - [x] Migration Ops initial Carbon workflow
 - [ ] Migration Ops full handoff/export parity
-- [ ] Decision audit
+- [x] Decision audit initial Carbon workflow
+- [ ] Decision audit pricing impact and handoff ZIP parity
 
 ### Phase 5: Complete Handoff Package Parity
 - [ ] All CSV exports

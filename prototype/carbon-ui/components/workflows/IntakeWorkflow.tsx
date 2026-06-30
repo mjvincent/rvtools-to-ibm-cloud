@@ -29,8 +29,10 @@ function rowsFromSummary(summary: WorkbookSummary) {
     networkReasons: textValue(row['Network Readiness Reasons']),
     profile: textValue(row['IBM Profile']),
     overrideProfile: textValue(row['Override Profile']),
+    overrideProfileReason: textValue(row['Override Profile Reason']),
     storageTier: textValue(row['Storage Tier']),
     overrideStorageTier: textValue(row['Override Storage Tier']),
+    overrideStorageTierReason: textValue(row['Override Storage Tier Reason']),
     network: textValue(row['Network']),
     subnet: textValue(row['Subnet']),
     securityGroup: textValue(row['Security Group']),
@@ -41,6 +43,8 @@ function rowsFromSummary(summary: WorkbookSummary) {
     cutoverGroup: textValue(row['Cutover Group']),
     priority: textValue(row['Priority']),
     dependencyGroup: textValue(row['Dependency Group']),
+    excluded: ['true', 'yes', '1'].includes(textValue(row['Exclude?']).toLowerCase()),
+    exclusionReason: textValue(row['Exclusion Reason']),
   }));
 }
 
