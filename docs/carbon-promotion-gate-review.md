@@ -95,6 +95,8 @@ Priority order:
 
 ## Phase 5 Backlog
 
+- Use [Carbon Handoff Parity](carbon-handoff-parity.md) as the package
+  inventory and implementation tracker.
 - Complete CSV export parity.
 - Complete migration manifest parity.
 - Complete preflight parity in Carbon UI.

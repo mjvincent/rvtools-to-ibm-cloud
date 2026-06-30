@@ -172,6 +172,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 - [Carbon React UI Strategy](./carbon-react-ui-strategy.md)
 - [Carbon Promotion Gate Review](./carbon-promotion-gate-review.md)
+- [Carbon Handoff Parity](./carbon-handoff-parity.md)
 - [Carbon UI Integration Summary](./carbon-ui-integration-summary.md)
 - [Carbon Network Schema Spec](./carbon-network-schema-spec.md)
 - [Carbon Integration Diagrams](./carbon-integration-diagrams.md)
