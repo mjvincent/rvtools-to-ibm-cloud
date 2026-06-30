@@ -7,6 +7,8 @@ and updating VM assignments.
 
 import pytest
 import json
+import zipfile
+from io import BytesIO
 from datetime import datetime
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
@@ -60,6 +62,7 @@ def client():
             "test-project-vm-invalid",
             "test-project-secondary-nics",
             "test-project-concurrent",
+            "test-project-terraform",
         ):
             _projects[pid] = {"id": pid, "name": pid, "description": ""}
         # vm-assignments tests expect a pre-existing network plan in state.
@@ -554,6 +557,74 @@ class TestNetworkPlanningEndpoints:
         get_response = client.get(f"/api/projects/{project_id}/network-plan")
         retrieved_plan = get_response.json()
         assert retrieved_plan["vpcs"][0]["name"] == "concurrent-update"
+
+    def test_terraform_package_includes_carbon_decision_audit_csv(
+        self, client, sample_network_plan
+    ):
+        """Test generated Carbon ZIP includes VM override decision audit."""
+        project_id = "test-project-terraform"
+        plan = json.loads(json.dumps(sample_network_plan))
+        plan["storage_profiles"] = [
+            {
+                "id": "storage-db",
+                "name": "database-storage",
+                "tier": "10iops-tier",
+                "iops_intent": "Database latency",
+                "notes": "",
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
+            }
+        ]
+        plan["waves"] = [
+            {
+                "id": "wave-2",
+                "name": "Wave 2",
+                "owner": "DB owner",
+                "target_window": "2026-08-15",
+                "priority": "high",
+                "notes": "",
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
+            }
+        ]
+        plan["vm_assignments"] = [
+            {
+                "vm_key": "vm-1",
+                "vm_name": "db-01",
+                "primary_subnet_id": "subnet-test-1",
+                "primary_security_group_id": "sg-test-1",
+                "secondary_nics": [],
+                "storage_profile_id": "storage-db",
+                "wave_id": "wave-2",
+                "excluded": False,
+                "exclusion_reason": "",
+                "ibm_profile": "bx2-4x16",
+                "override_profile": "mx2-16x128",
+                "override_profile_reason": "Database cache needs extra memory",
+                "storage_tier": "3iops-tier",
+                "override_storage_tier": "10iops-tier",
+                "override_storage_tier_reason": "Production write latency target",
+                "network": "db-net",
+                "owner": "DB owner",
+                "application": "Database",
+            }
+        ]
+
+        save_response = client.post(
+            f"/api/projects/{project_id}/network-plan",
+            json=plan,
+        )
+        assert save_response.status_code == 200
+
+        response = client.post(f"/api/projects/{project_id}/terraform")
+
+        assert response.status_code == 200
+        with zipfile.ZipFile(BytesIO(response.content)) as zf:
+            assert "decision-audit.csv" in zf.namelist()
+            audit_csv = zf.read("decision-audit.csv").decode("utf-8")
+        assert "Original Profile,Chosen Profile,Profile Override Reason" in audit_csv
+        assert "bx2-4x16,mx2-16x128,Database cache needs extra memory" in audit_csv
+        assert "3iops-tier,10iops-tier,Production write latency target" in audit_csv
 
 
 class TestNetworkPlanningDataModels:

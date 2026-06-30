@@ -184,6 +184,12 @@ class VmNetworkAssignmentSchema(BaseModel):
     ibm_profile: Optional[str] = Field(default=None, alias="ibmProfile")
     override_profile: Optional[str] = Field(default=None, alias="overrideProfile")
     override_profile_reason: Optional[str] = Field(default=None, alias="overrideProfileReason")
+    storage_tier: Optional[str] = Field(default=None, alias="storageTier")
+    override_storage_tier: Optional[str] = Field(default=None, alias="overrideStorageTier")
+    override_storage_tier_reason: Optional[str] = Field(default=None, alias="overrideStorageTierReason")
+    network: Optional[str] = None
+    owner: Optional[str] = None
+    application: Optional[str] = None
     # Boot disk specifications
     boot_disk_gb: Optional[float] = Field(default=None, alias="bootDiskGb", ge=10, le=2000)
     # Custom image reference

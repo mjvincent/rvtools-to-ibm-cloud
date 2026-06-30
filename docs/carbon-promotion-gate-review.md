@@ -91,9 +91,11 @@ Priority order:
 5. **Decision Audit and Handoff Parity**
    - Initial VM Overrides workflow exists with profile/storage override values,
      required reason capture, VM exclusion reasons, Assignment row routing, and
-     decision-audit CSV export using Streamlit-compatible core columns.
-   - Remaining: pricing impact columns and ZIP inclusion through the Carbon
-     Terraform/handoff package.
+     decision-audit CSV export.
+   - Carbon Terraform ZIP now includes `decision-audit.csv` with pricing impact
+     columns through the Carbon-to-handoff normalizer.
+   - Remaining: the other Streamlit handoff CSVs, planning state, runbook,
+     preflight reports, and README parity.
    - Verify Carbon-generated ZIP contents against Streamlit package contents,
      including CSVs, planning state, runbook, preflight reports, and README.
 

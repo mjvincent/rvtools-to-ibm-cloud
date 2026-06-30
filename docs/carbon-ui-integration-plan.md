@@ -100,8 +100,10 @@ This document provides a comprehensive architecture overview and integration pla
 - **Remediation Tracker**: No blocker management with status/owner/due dates
 - **Image Import Planning**: No image grouping or import status tracking
 - **Migration Ops**: No cutover readiness view
-- **Decision Audit**: No override tracking with pricing impact
-- **Handoff Package**: No ZIP generation with manifest/CSVs/runbook
+- **Decision Audit**: Initial Carbon override tracking exists; ZIP includes
+  `decision-audit.csv` with pricing impact.
+- **Handoff Package**: Terraform ZIP exists; manifest, remaining CSVs, planning
+  state, and runbook parity are still incomplete.
 - **Preflight Validation**: No safety checks before package build
 - **Planning State Restore**: Limited to Carbon-specific state, not full Streamlit parity
 

@@ -25,6 +25,10 @@ describe('planning-state API adapter', () => {
       excluded: false,
       exclusion_reason: null,
       override_profile_reason: null,
+      storage_tier: '5iops-tier',
+      override_storage_tier_reason: null,
+      network: 'app-net',
+      application: 'App tier',
     });
     expect(body.metadata.project_name).toBe('Migration assessment');
     expect(body.metadata.rvtools_filename).toBe('rvtools.xlsx');
@@ -61,6 +65,11 @@ describe('planning-state API adapter', () => {
       exclusion_reason: 'Out of migration scope',
       override_profile: 'mx2-16x128',
       override_profile_reason: 'Database cache needs extra memory',
+      storage_tier: '5iops-tier',
+      override_storage_tier_reason: 'Database write latency target',
+      owner: 'DB owner',
+      application: 'Database',
+      network: 'db-net',
     },
       ],
     };
@@ -75,6 +84,10 @@ describe('planning-state API adapter', () => {
       exclusionReason: 'Out of migration scope',
       overrideProfile: 'mx2-16x128',
       overrideProfileReason: 'Database cache needs extra memory',
+      overrideStorageTierReason: 'Database write latency target',
+      owner: 'DB owner',
+      application: 'Database',
+      network: 'db-net',
     });
   });
 });

@@ -13,6 +13,7 @@ from the saved Carbon network plan and writes:
 - Terraform module/root files from `terraform_carbon_renderer_modular.py`
 - `README.md`
 - `network-plan.json`
+- `decision-audit.csv`
 
 That means Carbon can generate infrastructure code, but it does not yet produce
 the full migration handoff package.
@@ -55,7 +56,7 @@ Required handoff files:
 | `cutover-readiness.csv` | Yes | Missing | Carbon has Migration Ops CSV export in UI, not ZIP. |
 | `planning-state.json` | Yes | Missing | FastAPI stores Carbon project state; package does not include it. |
 | `migration-manifest.json` | Partial | Missing | Requires Carbon VM-to-handoff normalization. |
-| `decision-audit.csv` | Yes | Missing | Carbon has VM Overrides CSV export with profile/storage/exclusion reasons. Remaining: ZIP inclusion and pricing impact columns. |
+| `decision-audit.csv` | Yes | Included | Carbon ZIP includes profile/storage/exclusion decisions and pricing impact columns via `prototype/api/carbon_handoff.py`. |
 | `preflight-report.csv/json` | Partial | Missing | Requires Carbon-side package preflight integration. |
 | `pricing-diagnostics.csv/json` | Partial | Missing | Requires pricing/catalog context for Carbon package. |
 | mapping/readiness CSVs | Partial | Missing | Requires Carbon assignment rows normalized to handoff records. |
@@ -64,10 +65,9 @@ Required handoff files:
 
 ## Recommended Implementation Order
 
-1. Add Carbon package writer helpers for the five state-native CSVs:
+1. Add Carbon package writer helpers for the remaining state-native files:
    `remediation-backlog.csv`, `image-import-plan.csv`,
-   `cutover-readiness.csv`, `decision-audit.csv`, and
-   `planning-state.json`.
+   `cutover-readiness.csv`, and `planning-state.json`.
 2. Add a test that builds a Carbon package fixture and asserts those files are
    present in the ZIP.
 3. Add Carbon-to-handoff VM normalization so existing `handoff` generators can

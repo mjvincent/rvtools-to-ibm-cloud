@@ -33,6 +33,12 @@ export type ApiVmAssignmentPayload = {
   ibm_profile?: string | null;
   override_profile?: string | null;
   override_profile_reason?: string | null;
+  storage_tier?: string | null;
+  override_storage_tier?: string | null;
+  override_storage_tier_reason?: string | null;
+  network?: string | null;
+  owner?: string | null;
+  application?: string | null;
   boot_disk_gb?: number;
   guest_os?: string | null;
 };
@@ -93,6 +99,12 @@ export function vmAssignmentsFromRows(
     ibm_profile: row.profile || null,
     override_profile: row.overrideProfile || null,
     override_profile_reason: row.overrideProfileReason || null,
+    storage_tier: row.storageTier || null,
+    override_storage_tier: row.overrideStorageTier || null,
+    override_storage_tier_reason: row.overrideStorageTierReason || null,
+    network: row.network || null,
+    owner: row.owner || null,
+    application: row.application || null,
   }));
 }
 
@@ -157,6 +169,11 @@ export function rowsFromNetworkPlan(
     const waveId = String(valueFrom(assignment, 'waveId', 'wave_id') || '');
     const overrideProfile = String(valueFrom(assignment, 'overrideProfile', 'override_profile') || '');
     const overrideProfileReason = String(valueFrom(assignment, 'overrideProfileReason', 'override_profile_reason') || '');
+    const overrideStorageTierReason = String(valueFrom(assignment, 'overrideStorageTierReason', 'override_storage_tier_reason') || '');
+    const storageTier = String(valueFrom(assignment, 'storageTier', 'storage_tier') || '');
+    const owner = String(valueFrom(assignment, 'owner', 'owner') || '');
+    const application = String(valueFrom(assignment, 'application', 'application') || '');
+    const network = String(valueFrom(assignment, 'network', 'network') || '');
     const excluded = normalizeBoolean(
       valueFrom(assignment, 'excluded', 'excluded'),
       Boolean(row.excluded),
@@ -171,6 +188,11 @@ export function rowsFromNetworkPlan(
       wave: resources.waves.find((wave) => wave.id === waveId)?.name || waveId || row.wave,
       overrideProfile: overrideProfile || row.overrideProfile,
       overrideProfileReason: overrideProfileReason || row.overrideProfileReason,
+      overrideStorageTierReason: overrideStorageTierReason || row.overrideStorageTierReason,
+      storageTier: storageTier || row.storageTier,
+      owner: owner || row.owner,
+      application: application || row.application,
+      network: network || row.network,
       excluded,
       exclusionReason: exclusionReason || row.exclusionReason,
     };

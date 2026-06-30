@@ -153,7 +153,8 @@ PlacementModal
 - [x] Image Import Planning initial workflow (image grouping, import status)
 - [x] Migration Ops initial workflow (cutover readiness view)
 - [x] Decision Audit initial workflow (override tracking)
-- [ ] Pricing impact columns and complete handoff parity
+- [x] Decision Audit pricing impact columns in Carbon ZIP
+- [ ] Complete handoff parity for remaining package files
 
 ### Network Planning
 - [ ] VPC creation with address prefixes

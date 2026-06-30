@@ -175,6 +175,12 @@ class VmNetworkAssignment:
     ibm_profile: Optional[str] = None
     override_profile: Optional[str] = None
     override_profile_reason: Optional[str] = None
+    storage_tier: Optional[str] = None
+    override_storage_tier: Optional[str] = None
+    override_storage_tier_reason: Optional[str] = None
+    network: Optional[str] = None
+    owner: Optional[str] = None
+    application: Optional[str] = None
     # Boot disk specifications
     boot_disk_gb: Optional[float] = None
     # Custom image reference
