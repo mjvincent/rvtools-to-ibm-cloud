@@ -49,7 +49,7 @@ def test_carbon_ui_prototype_declares_expected_stack_and_workflows():
     assert "FileUploaderDropContainer" in intake_text
     assert "/api/workbooks/summary" in api_text
     assert "/api/projects" in api_text
-    assert "carbon-prototype-0.2" in page_text
+    assert "carbon-prototype-0.3" in page_text
     assert "Load" in page_text
     assert "Save project" in page_text
     assert "VM Assignment Workbench" in assignment_text
