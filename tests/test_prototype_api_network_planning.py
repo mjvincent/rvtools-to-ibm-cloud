@@ -620,11 +620,18 @@ class TestNetworkPlanningEndpoints:
 
         assert response.status_code == 200
         with zipfile.ZipFile(BytesIO(response.content)) as zf:
-            assert "decision-audit.csv" in zf.namelist()
+            names = zf.namelist()
+            assert "decision-audit.csv" in names
+            assert "remediation-backlog.csv" in names
+            assert "image-import-plan.csv" in names
+            assert "cutover-readiness.csv" in names
+            assert "planning-state.json" in names
             audit_csv = zf.read("decision-audit.csv").decode("utf-8")
+            planning_state = zf.read("planning-state.json").decode("utf-8")
         assert "Original Profile,Chosen Profile,Profile Override Reason" in audit_csv
         assert "bx2-4x16,mx2-16x128,Database cache needs extra memory" in audit_csv
         assert "3iops-tier,10iops-tier,Production write latency target" in audit_csv
+        assert '"schema_version": "1.0"' in planning_state
 
 
 class TestNetworkPlanningDataModels:

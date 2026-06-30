@@ -14,6 +14,10 @@ from the saved Carbon network plan and writes:
 - `README.md`
 - `network-plan.json`
 - `decision-audit.csv`
+- `remediation-backlog.csv`
+- `image-import-plan.csv`
+- `cutover-readiness.csv`
+- `planning-state.json`
 
 That means Carbon can generate infrastructure code, but it does not yet produce
 the full migration handoff package.
@@ -51,10 +55,10 @@ Required handoff files:
 
 | Artifact | Carbon source state exists? | ZIP parity status | Notes |
 | --- | --- | --- | --- |
-| `remediation-backlog.csv` | Yes | Missing | Carbon has Remediation Backlog CSV export in UI, not ZIP. |
-| `image-import-plan.csv` | Yes | Missing | Carbon has Image Import CSV export in UI, not ZIP. |
-| `cutover-readiness.csv` | Yes | Missing | Carbon has Migration Ops CSV export in UI, not ZIP. |
-| `planning-state.json` | Yes | Missing | FastAPI stores Carbon project state; package does not include it. |
+| `remediation-backlog.csv` | Yes | Included | Carbon ZIP normalizes saved remediation tracker state and generated readiness blockers. |
+| `image-import-plan.csv` | Yes | Included | Carbon ZIP normalizes saved image import status. |
+| `cutover-readiness.csv` | Yes | Included | Carbon ZIP derives cutover readiness from planning fields, remediation tracker, and image import status. |
+| `planning-state.json` | Yes | Included | Carbon ZIP includes Streamlit-compatible planning state generated from Carbon rows. |
 | `migration-manifest.json` | Partial | Missing | Requires Carbon VM-to-handoff normalization. |
 | `decision-audit.csv` | Yes | Included | Carbon ZIP includes profile/storage/exclusion decisions and pricing impact columns via `prototype/api/carbon_handoff.py`. |
 | `preflight-report.csv/json` | Partial | Missing | Requires Carbon-side package preflight integration. |
@@ -65,15 +69,10 @@ Required handoff files:
 
 ## Recommended Implementation Order
 
-1. Add Carbon package writer helpers for the remaining state-native files:
-   `remediation-backlog.csv`, `image-import-plan.csv`,
-   `cutover-readiness.csv`, and `planning-state.json`.
-2. Add a test that builds a Carbon package fixture and asserts those files are
-   present in the ZIP.
-3. Add Carbon-to-handoff VM normalization so existing `handoff` generators can
+1. Add Carbon-to-handoff VM normalization so existing `handoff` generators can
    produce manifest, mapping, readiness, image variable, and runbook files.
-4. Integrate Carbon preflight and pricing diagnostics.
-5. Update the Carbon Export workflow to show package contents parity status
+2. Integrate Carbon preflight and pricing diagnostics.
+3. Update the Carbon Export workflow to show package contents parity status
    before download.
 
 ## Promotion Gate Impact

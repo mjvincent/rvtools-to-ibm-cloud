@@ -94,8 +94,11 @@ Priority order:
      decision-audit CSV export.
    - Carbon Terraform ZIP now includes `decision-audit.csv` with pricing impact
      columns through the Carbon-to-handoff normalizer.
-   - Remaining: the other Streamlit handoff CSVs, planning state, runbook,
-     preflight reports, and README parity.
+   - Carbon Terraform ZIP now also includes `remediation-backlog.csv`,
+     `image-import-plan.csv`, `cutover-readiness.csv`, and `planning-state.json`
+     from saved Carbon state.
+   - Remaining: manifest, mapping/readiness CSVs, image import variables,
+     runbook, preflight reports, pricing diagnostics, and README parity.
    - Verify Carbon-generated ZIP contents against Streamlit package contents,
      including CSVs, planning state, runbook, preflight reports, and README.
 
