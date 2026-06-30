@@ -17,6 +17,24 @@ import { Download } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import type { AssignmentVm } from '../../types/network-planning';
 
+export const COMMON_VSI_PROFILES = [
+  'bx2-2x8',
+  'bx2-4x16',
+  'bx2-8x32',
+  'bx2-16x64',
+  'cx2-2x4',
+  'cx2-4x8',
+  'cx2-8x16',
+  'cx2-16x32',
+  'mx2-2x16',
+  'mx2-4x32',
+  'mx2-8x64',
+  'mx2-16x128',
+  'ux2d-2x56',
+  'ux2d-4x112',
+  'ux2d-8x224',
+].sort();
+
 export type DecisionAuditRow = {
   'VM Key': string;
   'VM Name': string;
@@ -58,6 +76,20 @@ function textValue(value: unknown) {
 function csvValue(value: unknown) {
   const text = textValue(value);
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+export function profileSizeLabel(profile: string) {
+  const match = profile.match(/^[a-z0-9]+(?:d)?-(\d+)x(\d+)$/i);
+  if (!match) return profile || 'No profile';
+  const [, vcpu, memory] = match;
+  return `${profile} (${vcpu} vCPU / ${memory} GB)`;
+}
+
+export function buildProfileOptions(rows: AssignmentVm[]) {
+  return [...new Set([
+    ...COMMON_VSI_PROFILES,
+    ...rows.flatMap((row) => [row.profile, row.overrideProfile]).filter(Boolean),
+  ])].sort();
 }
 
 export function buildDecisionAuditRows(rows: AssignmentVm[]): DecisionAuditRow[] {
@@ -116,7 +148,7 @@ export default function OverridesWorkflow() {
   const { state, dispatch } = useAppState();
   const { assignmentRows, resources, searchValue } = state;
   const summary = summarizeOverrides(assignmentRows);
-  const profileOptions = [...new Set(assignmentRows.map((row) => row.profile).filter(Boolean))];
+  const profileOptions = buildProfileOptions(assignmentRows);
 
   const filteredRows = assignmentRows.filter((row) => {
     const query = searchValue.trim().toLowerCase();
@@ -210,14 +242,19 @@ export default function OverridesWorkflow() {
                   <span>{row.application || 'No application'} | {row.owner || 'No owner'}</span>
                 </td>
                 <td>
-                  <TextInput
+                  <Select
                     id={`profile-${row.id}`}
                     labelText={`Override profile for ${row.name}`}
                     value={row.overrideProfile || ''}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                    onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
                       updateRow(row.id, { overrideProfile: event.target.value })
                     }
-                  />
+                  >
+                    <SelectItem text="Use recommended profile" value="" />
+                    {profileOptions.map((profile) => (
+                      <SelectItem key={profile} text={profileSizeLabel(profile)} value={profile} />
+                    ))}
+                  </Select>
                   <TextArea
                     id={`profile-reason-${row.id}`}
                     labelText={`Profile override reason for ${row.name}`}
@@ -226,22 +263,21 @@ export default function OverridesWorkflow() {
                       updateRow(row.id, { overrideProfileReason: event.target.value })
                     }
                   />
-                  <span>Recommended: {row.profile || 'No IBM profile'}</span>
-                  {profileOptions.length > 0 && (
-                    <Select
-                      id={`profile-preset-${row.id}`}
-                      labelText={`Profile preset for ${row.name}`}
-                      value=""
-                      onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-                        updateRow(row.id, { overrideProfile: event.target.value })
-                      }
-                    >
-                      <SelectItem text="Choose profile" value="" />
-                      {profileOptions.map((profile) => (
-                        <SelectItem key={profile} text={profile} value={profile} />
-                      ))}
-                    </Select>
-                  )}
+                  <div className="override-effective">
+                    <span>Recommended: {profileSizeLabel(row.profile)}</span>
+                    <Tag type={row.overrideProfile ? 'blue' : 'gray'}>
+                      Effective: {profileSizeLabel(row.overrideProfile || row.profile)}
+                    </Tag>
+                  </div>
+                  <TextInput
+                    id={`profile-custom-${row.id}`}
+                    labelText={`Custom profile for ${row.name}`}
+                    value={row.overrideProfile || ''}
+                    placeholder="Example: mx2-16x128"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                      updateRow(row.id, { overrideProfile: event.target.value })
+                    }
+                  />
                 </td>
                 <td>
                   <Select

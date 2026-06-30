@@ -2,8 +2,10 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import OverridesWorkflow, {
+  buildProfileOptions,
   buildDecisionAuditRows,
   decisionAuditCsv,
+  profileSizeLabel,
   summarizeOverrides,
 } from '../../components/workflows/OverridesWorkflow';
 import { AppProvider } from '../../store/AppContext';
@@ -78,15 +80,30 @@ describe('OverridesWorkflow', () => {
     });
   });
 
+  it('builds VSI profile options from common sizes and uploaded rows', () => {
+    const options = buildProfileOptions([
+      { ...overrideVm, profile: 'custom-12x48', overrideProfile: 'mx2-16x128' },
+    ]);
+
+    expect(options).toEqual(expect.arrayContaining([
+      'bx2-2x8',
+      'mx2-16x128',
+      'custom-12x48',
+    ]));
+    expect(profileSizeLabel('mx2-16x128')).toBe('mx2-16x128 (16 vCPU / 128 GB)');
+  });
+
   it('renders the override workflow and edits a VM profile override', async () => {
     renderWithProvider(<OverridesWorkflow />);
 
     expect(screen.getByText('VM Overrides')).toBeTruthy();
     expect(screen.getByText('Export decision audit CSV')).toBeTruthy();
+    expect(screen.getAllByText('Effective: bx2-2x8 (2 vCPU / 8 GB)').length).toBeGreaterThan(0);
 
-    const input = screen.getByLabelText('Override profile for app-01') as HTMLInputElement;
-    await userEvent.type(input, 'mx2-16x128');
+    const profileSelect = screen.getByLabelText('Override profile for app-01') as HTMLSelectElement;
+    await userEvent.selectOptions(profileSelect, 'mx2-16x128');
 
-    expect(input.value).toBe('mx2-16x128');
+    expect(profileSelect.value).toBe('mx2-16x128');
+    expect(screen.getByText('Effective: mx2-16x128 (16 vCPU / 128 GB)')).toBeTruthy();
   });
 });
