@@ -11,6 +11,10 @@ function textValue(value: unknown) {
   return value === null || value === undefined ? '' : String(value);
 }
 
+function arrayValue(value: unknown) {
+  return Array.isArray(value) ? value : [];
+}
+
 function rowsFromSummary(summary: WorkbookSummary) {
   const sourceRows = summary?.assignment_rows || summary?.readiness_rows;
   if (!sourceRows || sourceRows.length === 0) {
@@ -37,6 +41,43 @@ function rowsFromSummary(summary: WorkbookSummary) {
     subnet: textValue(row['Subnet']),
     securityGroup: textValue(row['Security Group']),
     power: textValue(row['Power State']),
+    guestOs: textValue(row['Guest OS']),
+    sourceIp: textValue(row['Source IP']),
+    datacenter: textValue(row['Datacenter']),
+    cluster: textValue(row['Cluster']),
+    host: textValue(row['Host']),
+    diskCount: textValue(row['Disk Count']),
+    dataDiskCount: textValue(row['Data Disk Count']),
+    totalStorageGb: textValue(row['Total Storage GB']),
+    firmware: textValue(row['Firmware']),
+    bootDiskGb: textValue(row['Boot Disk GB']),
+    configuredMemoryMib: textValue(row['Configured Memory MiB']),
+    activeMemoryMib: textValue(row['Active Memory MiB']),
+    consumedMemoryMib: textValue(row['Consumed Memory MiB']),
+    balloonedMemoryMib: textValue(row['Ballooned Memory MiB']),
+    swappedMemoryMib: textValue(row['Swapped Memory MiB']),
+    memoryReservationMib: textValue(row['Memory Reservation MiB']),
+    memoryLimitMib: textValue(row['Memory Limit MiB']),
+    memoryHotAdd: textValue(row['Memory Hot Add']),
+    sizingMemoryMib: textValue(row['Sizing Memory MiB']),
+    memorySizingBasis: textValue(row['Memory Sizing Basis']),
+    diskDetails: arrayValue(row['Disk Details']),
+    partitionDetails: arrayValue(row['Partition Details']),
+    partitionCount: textValue(row['Partition Count']),
+    unmatchedPartitionCount: textValue(row['Unmatched Partition Count']),
+    networkDetails: arrayValue(row['Network Details']),
+    readinessFindings: arrayValue(row['Readiness Findings']),
+    networkReadinessFindings: arrayValue(row['Network Readiness Findings']),
+    computeMonthly: textValue(row['Compute (Mo)']),
+    storageMonthly: textValue(row['Storage (Mo)']),
+    monthlyCost: textValue(row['Monthly Cost']),
+    baselineCostMonthly: textValue(row['Baseline Cost (Mo)']),
+    savingsMonthly: textValue(row['Savings (Mo)']),
+    pricingSource: textValue(row['Pricing Source']),
+    pricingConfidence: textValue(row['Pricing Confidence']),
+    pricingLastUpdated: textValue(row['Pricing Last Updated']),
+    pricingStatus: textValue(row['Pricing Status']),
+    profileHourly: textValue(row['Profile Hourly']),
     owner: textValue(row['Owner']),
     application: textValue(row['Application']),
     wave: textValue(row['Wave']),

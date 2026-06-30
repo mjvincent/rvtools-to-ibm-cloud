@@ -49,6 +49,11 @@ def test_workbook_summary_upload_uses_existing_engine():
     assert "Security Group" in assignment_row
     assert "Override Storage Tier" in assignment_row
     assert "Wave" in assignment_row
+    assert "Disk Details" in assignment_row
+    assert "Network Details" in assignment_row
+    assert "Configured Memory MiB" in assignment_row
+    assert isinstance(assignment_row["Disk Details"], list)
+    assert isinstance(assignment_row["Network Details"], list)
 
 
 def test_workbook_summary_rejects_non_xlsx_upload():

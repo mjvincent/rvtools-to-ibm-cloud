@@ -63,16 +63,15 @@ Required handoff files:
 | `decision-audit.csv` | Yes | Included | Carbon ZIP includes profile/storage/exclusion decisions and pricing impact columns via `prototype/api/carbon_handoff.py`. |
 | `preflight-report.csv/json` | Partial | Included | Carbon ZIP runs package preflight against Carbon network-plan resources and normalized rows. |
 | `pricing-diagnostics.csv/json` | Partial | Included | Carbon ZIP includes static-catalog diagnostics; live/cached pricing parity remains future work. |
-| mapping/readiness CSVs | Partial | Included | Carbon ZIP includes VM, disk, partition, NIC, memory, and readiness CSVs from normalized rows; source-tab richness depends on uploaded Carbon row detail. |
+| mapping/readiness CSVs | Partial | Included | Carbon ZIP includes VM, disk, partition, NIC, memory, and readiness CSVs from normalized rows. Carbon intake now preserves hidden workbook detail fields for these exports. |
 | `image-import-variables.tfvars.example` | Yes | Included | Carbon ZIP includes placeholder custom image tfvars. |
 | `migration-runbook.md` | Yes | Included | Carbon ZIP reuses the handoff runbook generator. |
 
 ## Recommended Implementation Order
 
-1. Improve Carbon-to-handoff VM normalization fidelity for workbook-derived
-   source details such as disks, partitions, NICs, memory counters, and source
-   inventory metadata.
-2. Add fixture comparison tests between Streamlit and Carbon package contents.
+1. Add fixture comparison tests between Streamlit and Carbon package contents.
+2. Improve any remaining workbook-derived source metadata gaps found by those
+   fixture comparisons.
 3. Update the Carbon Export workflow to show package contents parity status
    before download.
 

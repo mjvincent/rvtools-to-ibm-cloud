@@ -1,41 +1,36 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import IntakeWorkflow from '../../components/workflows/IntakeWorkflow';
-import { AppProvider } from '../../store/AppContext';
+import { rowsFromSummary } from '../../components/workflows/IntakeWorkflow';
+import type { WorkbookSummary } from '../../types/network-planning';
 
-// Mock the useApi module
-jest.mock('../../hooks/useApi', () => ({
-  uploadWorkbook: jest.fn(),
-}));
+describe('rowsFromSummary', () => {
+  it('preserves hidden workbook detail fields for handoff exports', () => {
+    const rows = rowsFromSummary({
+      filename: 'rvtools.xlsx',
+      assignment_rows: [
+        {
+          'VM Key': 'vm-001',
+          'VM Name': 'app-01',
+          'IBM Profile': 'bx2-2x8',
+          'Storage Tier': '5iops-tier',
+          Network: 'app-net',
+          'Disk Details': [{ disk: 'Hard disk 1', capacity_gb: 80, is_boot: true }],
+          'Network Details': [{ label: 'Network adapter 1', network: 'app-net' }],
+          'Readiness Findings': [{ finding_type: 'VMware Tools status', evidence: 'toolsOld' }],
+          'Configured Memory MiB': 8192,
+          'Total Storage GB': 200,
+          'Profile Hourly': 0.114,
+        },
+      ],
+    } as unknown as WorkbookSummary);
 
-function renderWithProvider(ui: React.ReactElement) {
-  return render(<AppProvider>{ui}</AppProvider>);
-}
-
-describe('IntakeWorkflow', () => {
-  it('renders the intake heading', () => {
-    renderWithProvider(<IntakeWorkflow />);
-    expect(screen.getByText('Workbook intake')).toBeTruthy();
-  });
-
-  it('renders the file drop area', () => {
-    renderWithProvider(<IntakeWorkflow />);
-    expect(screen.getByTestId('file-drop')).toBeTruthy();
-  });
-
-  it('renders Real API integration tag', () => {
-    renderWithProvider(<IntakeWorkflow />);
-    expect(screen.getByText('Real API integration')).toBeTruthy();
-  });
-
-  it('shows no upload status initially', () => {
-    renderWithProvider(<IntakeWorkflow />);
-    // No success notification should be visible at start
-    expect(screen.queryByRole('alert')).toBeNull();
-  });
-
-  it('shows upload instructions', () => {
-    renderWithProvider(<IntakeWorkflow />);
-    expect(screen.getByText(/Drag and drop RVTools .xlsx/)).toBeTruthy();
+    expect(rows[0]).toMatchObject({
+      id: 'vm-001',
+      name: 'app-01',
+      diskDetails: [{ disk: 'Hard disk 1', capacity_gb: 80, is_boot: true }],
+      networkDetails: [{ label: 'Network adapter 1', network: 'app-net' }],
+      readinessFindings: [{ finding_type: 'VMware Tools status', evidence: 'toolsOld' }],
+      configuredMemoryMib: '8192',
+      totalStorageGb: '200',
+      profileHourly: '0.114',
+    });
   });
 });

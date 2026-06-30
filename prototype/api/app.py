@@ -181,6 +181,43 @@ ASSIGNMENT_COLUMNS = [
     "Subnet",
     "Security Group",
     "Power State",
+    "Guest OS",
+    "Source IP",
+    "Datacenter",
+    "Cluster",
+    "Host",
+    "Disk Count",
+    "Data Disk Count",
+    "Total Storage GB",
+    "Firmware",
+    "Boot Disk GB",
+    "Configured Memory MiB",
+    "Active Memory MiB",
+    "Consumed Memory MiB",
+    "Ballooned Memory MiB",
+    "Swapped Memory MiB",
+    "Memory Reservation MiB",
+    "Memory Limit MiB",
+    "Memory Hot Add",
+    "Sizing Memory MiB",
+    "Memory Sizing Basis",
+    "Disk Details",
+    "Partition Details",
+    "Partition Count",
+    "Unmatched Partition Count",
+    "Network Details",
+    "Readiness Findings",
+    "Network Readiness Findings",
+    "Compute (Mo)",
+    "Storage (Mo)",
+    "Monthly Cost",
+    "Baseline Cost (Mo)",
+    "Savings (Mo)",
+    "Pricing Source",
+    "Pricing Confidence",
+    "Pricing Last Updated",
+    "Pricing Status",
+    "Profile Hourly",
     "Owner",
     "Application",
     "Wave",
@@ -203,8 +240,13 @@ def _assignment_rows_payload(df: pd.DataFrame) -> list[dict[str, Any]]:
         ["_blocked_signals", "VM Name"],
         ascending=[False, True],
     )
-    rows = active[ASSIGNMENT_COLUMNS].fillna("").to_dict("records")
+    rows = active[ASSIGNMENT_COLUMNS].to_dict("records")
     for index, row in enumerate(rows):
+        for column, value in list(row.items()):
+            if value is None:
+                row[column] = ""
+            elif not isinstance(value, (list, dict)) and pd.isna(value):
+                row[column] = ""
         if not row.get("VM Key"):
             row["VM Key"] = row.get("VM Name") or f"vm-{index + 1}"
     return rows

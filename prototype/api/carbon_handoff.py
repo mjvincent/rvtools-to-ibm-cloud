@@ -57,6 +57,14 @@ def _row_bool(row: dict[str, Any], *keys: str) -> bool:
     return False
 
 
+def _row_raw(row: dict[str, Any], *keys: str, default: Any = "") -> Any:
+    for key in keys:
+        value = row.get(key)
+        if value not in (None, ""):
+            return value
+    return default
+
+
 def _assignment_attr(assignment: VmNetworkAssignment, name: str) -> Any:
     return getattr(assignment, name, None)
 
@@ -180,9 +188,37 @@ def carbon_decision_audit_records(
             "Cluster": _row_value(row, "cluster", "Cluster"),
             "Host": _row_value(row, "host", "Host"),
             "Disk Count": _row_value(row, "diskCount", "Disk Count") or "0",
+            "Data Disk Count": _row_value(row, "dataDiskCount", "Data Disk Count") or "0",
             "Total Storage GB": _row_value(row, "totalStorageGb", "Total Storage GB"),
             "Firmware": _row_value(row, "firmware", "Firmware"),
             "Boot Disk GB": _row_value(row, "bootDiskGb", "Boot Disk GB") or _clean(assignment.boot_disk_gb),
+            "Configured Memory MiB": _row_value(row, "configuredMemoryMib", "Configured Memory MiB"),
+            "Active Memory MiB": _row_value(row, "activeMemoryMib", "Active Memory MiB"),
+            "Consumed Memory MiB": _row_value(row, "consumedMemoryMib", "Consumed Memory MiB"),
+            "Ballooned Memory MiB": _row_value(row, "balloonedMemoryMib", "Ballooned Memory MiB"),
+            "Swapped Memory MiB": _row_value(row, "swappedMemoryMib", "Swapped Memory MiB"),
+            "Memory Reservation MiB": _row_value(row, "memoryReservationMib", "Memory Reservation MiB"),
+            "Memory Limit MiB": _row_value(row, "memoryLimitMib", "Memory Limit MiB"),
+            "Memory Hot Add": _row_value(row, "memoryHotAdd", "Memory Hot Add"),
+            "Sizing Memory MiB": _row_value(row, "sizingMemoryMib", "Sizing Memory MiB"),
+            "Memory Sizing Basis": _row_value(row, "memorySizingBasis", "Memory Sizing Basis"),
+            "Compute (Mo)": _row_value(row, "computeMonthly", "Compute (Mo)"),
+            "Storage (Mo)": _row_value(row, "storageMonthly", "Storage (Mo)"),
+            "Monthly Cost": _row_value(row, "monthlyCost", "Monthly Cost"),
+            "Baseline Cost (Mo)": _row_value(row, "baselineCostMonthly", "Baseline Cost (Mo)"),
+            "Savings (Mo)": _row_value(row, "savingsMonthly", "Savings (Mo)"),
+            "Pricing Source": _row_value(row, "pricingSource", "Pricing Source"),
+            "Pricing Confidence": _row_value(row, "pricingConfidence", "Pricing Confidence"),
+            "Pricing Last Updated": _row_value(row, "pricingLastUpdated", "Pricing Last Updated"),
+            "Pricing Status": _row_value(row, "pricingStatus", "Pricing Status"),
+            "Profile Hourly": _row_value(row, "profileHourly", "Profile Hourly"),
+            "Disk Details": _row_raw(row, "diskDetails", "Disk Details", default=[]),
+            "Partition Details": _row_raw(row, "partitionDetails", "Partition Details", default=[]),
+            "Partition Count": _row_value(row, "partitionCount", "Partition Count"),
+            "Unmatched Partition Count": _row_value(row, "unmatchedPartitionCount", "Unmatched Partition Count"),
+            "Network Details": _row_raw(row, "networkDetails", "Network Details", default=[]),
+            "Readiness Findings": _row_raw(row, "readinessFindings", "Readiness Findings", default=[]),
+            "Network Readiness Findings": _row_raw(row, "networkReadinessFindings", "Network Readiness Findings", default=[]),
             "Owner": owner,
             "owner": owner,
             "Application": application,
