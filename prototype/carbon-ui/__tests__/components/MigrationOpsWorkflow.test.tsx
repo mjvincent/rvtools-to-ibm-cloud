@@ -17,6 +17,7 @@ const readyVm: AssignmentVm = {
   name: 'app-01',
   image: 'Ready',
   imageReasons: 'rhel-8-template',
+  originalSpecs: 'rhel-9-template',
   migration: 'Ready',
   migrationReasons: '',
   memory: 'Ready',
@@ -42,7 +43,7 @@ const readyVm: AssignmentVm = {
 describe('MigrationOpsWorkflow', () => {
   it('marks VM ready when planning, remediation, readiness, and image import are complete', () => {
     const rows = buildCutoverReadinessRows([readyVm], {}, {
-      'rhel-8-template': {
+      'rhel-9-template': {
         targetCatalogId: 'r001-12345678',
         importStatus: 'Imported',
         estimatedImportTime: '45m',
@@ -80,7 +81,7 @@ describe('MigrationOpsWorkflow', () => {
 
   it('summarizes cutover readiness by wave', () => {
     const rows = buildCutoverReadinessRows([readyVm], {}, {
-      'rhel-8-template': {
+      'rhel-9-template': {
         targetCatalogId: 'r001-12345678',
         importStatus: 'Imported',
         estimatedImportTime: '',

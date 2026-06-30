@@ -173,6 +173,7 @@ ASSIGNMENT_COLUMNS = [
     "Memory Readiness Reasons",
     "Network Readiness",
     "Network Readiness Reasons",
+    "Original Specs",
     "IBM Profile",
     "Override Profile",
     "Storage Tier",

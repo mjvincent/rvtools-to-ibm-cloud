@@ -56,6 +56,7 @@ def _camel_source_row(record):
         "networkReasons": record["Network Readiness Reasons"],
         "memory": record["Memory Readiness"],
         "memoryReasons": record["Memory Readiness Reasons"],
+        "originalSpecs": record["Original Specs"],
         "configuredMemoryMib": str(record["Configured Memory MiB"]),
         "activeMemoryMib": str(record["Active Memory MiB"]),
         "consumedMemoryMib": str(record["Consumed Memory MiB"]),
@@ -371,7 +372,7 @@ def test_carbon_handoff_records_preserve_workbook_detail_fidelity(sample_vm_reco
     assert carbon_record["Disk Details"] == sample_vm_record["Disk Details"]
     assert carbon_record["Network Details"] == sample_vm_record["Network Details"]
     assert carbon_record["Readiness Findings"] == sample_vm_record["Readiness Findings"]
-    assert carbon_record["Configured Memory MiB"] == str(sample_vm_record["Configured Memory MiB"])
+    assert carbon_record["Configured Memory MiB"] == sample_vm_record["Configured Memory MiB"]
 
     streamlit_vm_mapping = _rows(generate_vm_mapping_csv([sample_vm_record]))[0]
     carbon_vm_mapping = _rows(generate_vm_mapping_csv([carbon_record]))[0]

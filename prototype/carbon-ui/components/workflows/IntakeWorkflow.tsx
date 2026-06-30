@@ -25,6 +25,7 @@ function rowsFromSummary(summary: WorkbookSummary) {
     name: textValue(row['VM Name']),
     image: textValue(row['Image Readiness']),
     imageReasons: textValue(row['Readiness Reasons']),
+    originalSpecs: textValue(row['Original Specs']),
     migration: textValue(row['Migration Readiness']),
     migrationReasons: textValue(row['Migration Readiness Reasons']),
     memory: textValue(row['Memory Readiness']),

@@ -15,7 +15,7 @@ import type {
 const resolvedRemediationStatuses = new Set(['resolved', 'closed', 'complete', 'completed']);
 
 function sourceImageForRow(row: AssignmentVm) {
-  return row.imageReasons || row.profile || row.name;
+  return row.originalSpecs || row.imageReasons || row.profile || row.name;
 }
 
 function statusFromCategories(categories: string[]): CutoverStatus {

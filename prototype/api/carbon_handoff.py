@@ -65,6 +65,22 @@ def _row_raw(row: dict[str, Any], *keys: str, default: Any = "") -> Any:
     return default
 
 
+def _row_number(row: dict[str, Any], *keys: str, default: Any = 0) -> Any:
+    value = _row_raw(row, *keys, default=default)
+    if value in (None, ""):
+        return default
+    if isinstance(value, (int, float)):
+        return value
+    text = str(value).strip()
+    try:
+        parsed = float(text)
+    except (TypeError, ValueError):
+        return default
+    if parsed.is_integer() and "." not in text and "e" not in text.lower():
+        return int(parsed)
+    return parsed
+
+
 def _assignment_attr(assignment: VmNetworkAssignment, name: str) -> Any:
     return getattr(assignment, name, None)
 
@@ -107,7 +123,8 @@ def _security_group_name_for(plan: NetworkPlanningState, security_group_id: str 
 
 def _source_image_for_row(row: dict[str, Any], assignment: VmNetworkAssignment) -> str:
     return (
-        _row_value(row, "imageReasons", "Original Specs")
+        _row_value(row, "originalSpecs", "Original Specs")
+        or _row_value(row, "imageReasons")
         or assignment.ibm_profile
         or assignment.vm_name
     )
@@ -187,35 +204,40 @@ def carbon_decision_audit_records(
             "Datacenter": _row_value(row, "datacenter", "Datacenter"),
             "Cluster": _row_value(row, "cluster", "Cluster"),
             "Host": _row_value(row, "host", "Host"),
-            "Disk Count": _row_value(row, "diskCount", "Disk Count") or "0",
-            "Data Disk Count": _row_value(row, "dataDiskCount", "Data Disk Count") or "0",
-            "Total Storage GB": _row_value(row, "totalStorageGb", "Total Storage GB"),
+            "Disk Count": _row_number(row, "diskCount", "Disk Count"),
+            "Data Disk Count": _row_number(row, "dataDiskCount", "Data Disk Count"),
+            "Total Storage GB": _row_number(row, "totalStorageGb", "Total Storage GB", default=""),
             "Firmware": _row_value(row, "firmware", "Firmware"),
-            "Boot Disk GB": _row_value(row, "bootDiskGb", "Boot Disk GB") or _clean(assignment.boot_disk_gb),
-            "Configured Memory MiB": _row_value(row, "configuredMemoryMib", "Configured Memory MiB"),
-            "Active Memory MiB": _row_value(row, "activeMemoryMib", "Active Memory MiB"),
-            "Consumed Memory MiB": _row_value(row, "consumedMemoryMib", "Consumed Memory MiB"),
-            "Ballooned Memory MiB": _row_value(row, "balloonedMemoryMib", "Ballooned Memory MiB"),
-            "Swapped Memory MiB": _row_value(row, "swappedMemoryMib", "Swapped Memory MiB"),
-            "Memory Reservation MiB": _row_value(row, "memoryReservationMib", "Memory Reservation MiB"),
-            "Memory Limit MiB": _row_value(row, "memoryLimitMib", "Memory Limit MiB"),
+            "Boot Disk GB": _row_number(
+                row,
+                "bootDiskGb",
+                "Boot Disk GB",
+                default=assignment.boot_disk_gb or "",
+            ),
+            "Configured Memory MiB": _row_number(row, "configuredMemoryMib", "Configured Memory MiB"),
+            "Active Memory MiB": _row_number(row, "activeMemoryMib", "Active Memory MiB"),
+            "Consumed Memory MiB": _row_number(row, "consumedMemoryMib", "Consumed Memory MiB"),
+            "Ballooned Memory MiB": _row_number(row, "balloonedMemoryMib", "Ballooned Memory MiB"),
+            "Swapped Memory MiB": _row_number(row, "swappedMemoryMib", "Swapped Memory MiB"),
+            "Memory Reservation MiB": _row_number(row, "memoryReservationMib", "Memory Reservation MiB"),
+            "Memory Limit MiB": _row_number(row, "memoryLimitMib", "Memory Limit MiB"),
             "Memory Hot Add": _row_value(row, "memoryHotAdd", "Memory Hot Add"),
-            "Sizing Memory MiB": _row_value(row, "sizingMemoryMib", "Sizing Memory MiB"),
+            "Sizing Memory MiB": _row_number(row, "sizingMemoryMib", "Sizing Memory MiB"),
             "Memory Sizing Basis": _row_value(row, "memorySizingBasis", "Memory Sizing Basis"),
-            "Compute (Mo)": _row_value(row, "computeMonthly", "Compute (Mo)"),
-            "Storage (Mo)": _row_value(row, "storageMonthly", "Storage (Mo)"),
-            "Monthly Cost": _row_value(row, "monthlyCost", "Monthly Cost"),
-            "Baseline Cost (Mo)": _row_value(row, "baselineCostMonthly", "Baseline Cost (Mo)"),
-            "Savings (Mo)": _row_value(row, "savingsMonthly", "Savings (Mo)"),
+            "Compute (Mo)": _row_number(row, "computeMonthly", "Compute (Mo)"),
+            "Storage (Mo)": _row_number(row, "storageMonthly", "Storage (Mo)"),
+            "Monthly Cost": _row_number(row, "monthlyCost", "Monthly Cost"),
+            "Baseline Cost (Mo)": _row_number(row, "baselineCostMonthly", "Baseline Cost (Mo)"),
+            "Savings (Mo)": _row_number(row, "savingsMonthly", "Savings (Mo)"),
             "Pricing Source": _row_value(row, "pricingSource", "Pricing Source"),
             "Pricing Confidence": _row_value(row, "pricingConfidence", "Pricing Confidence"),
             "Pricing Last Updated": _row_value(row, "pricingLastUpdated", "Pricing Last Updated"),
             "Pricing Status": _row_value(row, "pricingStatus", "Pricing Status"),
-            "Profile Hourly": _row_value(row, "profileHourly", "Profile Hourly"),
+            "Profile Hourly": _row_number(row, "profileHourly", "Profile Hourly"),
             "Disk Details": _row_raw(row, "diskDetails", "Disk Details", default=[]),
             "Partition Details": _row_raw(row, "partitionDetails", "Partition Details", default=[]),
-            "Partition Count": _row_value(row, "partitionCount", "Partition Count"),
-            "Unmatched Partition Count": _row_value(row, "unmatchedPartitionCount", "Unmatched Partition Count"),
+            "Partition Count": _row_number(row, "partitionCount", "Partition Count"),
+            "Unmatched Partition Count": _row_number(row, "unmatchedPartitionCount", "Unmatched Partition Count"),
             "Network Details": _row_raw(row, "networkDetails", "Network Details", default=[]),
             "Readiness Findings": _row_raw(row, "readinessFindings", "Readiness Findings", default=[]),
             "Network Readiness Findings": _row_raw(row, "networkReadinessFindings", "Network Readiness Findings", default=[]),

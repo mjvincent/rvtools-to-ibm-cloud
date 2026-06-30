@@ -30,7 +30,7 @@ export const imageImportStatusOptions: ImageImportStatusValue[] = [
 ];
 
 function sourceImageForRow(row: AssignmentVm) {
-  return row.imageReasons || row.profile || row.name;
+  return row.originalSpecs || row.imageReasons || row.profile || row.name;
 }
 
 export function buildImageImportRows(

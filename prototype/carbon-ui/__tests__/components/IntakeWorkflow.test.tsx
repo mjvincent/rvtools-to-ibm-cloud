@@ -11,6 +11,7 @@ describe('rowsFromSummary', () => {
           'VM Name': 'app-01',
           'IBM Profile': 'bx2-2x8',
           'Storage Tier': '5iops-tier',
+          'Original Specs': 'rhel-9-template',
           Network: 'app-net',
           'Disk Details': [{ disk: 'Hard disk 1', capacity_gb: 80, is_boot: true }],
           'Network Details': [{ label: 'Network adapter 1', network: 'app-net' }],
@@ -25,6 +26,7 @@ describe('rowsFromSummary', () => {
     expect(rows[0]).toMatchObject({
       id: 'vm-001',
       name: 'app-01',
+      originalSpecs: 'rhel-9-template',
       diskDetails: [{ disk: 'Hard disk 1', capacity_gb: 80, is_boot: true }],
       networkDetails: [{ label: 'Network adapter 1', network: 'app-net' }],
       readinessFindings: [{ finding_type: 'VMware Tools status', evidence: 'toolsOld' }],

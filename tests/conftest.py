@@ -18,6 +18,7 @@ def sample_vm_record():
         "Source IP": "10.0.1.10",
         "Network": "app-net",
         "Guest OS": "Red Hat Enterprise Linux 9 (64-bit)",
+        "Original Specs": "rhel-9-template",
         "IBM Profile": "bx2-2x8",
         "Override Profile": "",
         "Storage Tier": "5iops-tier",

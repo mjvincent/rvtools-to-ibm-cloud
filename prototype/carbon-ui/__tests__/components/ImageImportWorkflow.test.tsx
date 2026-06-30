@@ -17,6 +17,7 @@ const rows: AssignmentVm[] = [
     name: 'db-01',
     image: 'Review',
     imageReasons: 'rhel-8-template',
+    originalSpecs: 'rhel-9-template',
     migration: 'Ready',
     migrationReasons: '',
     memory: 'Ready',
@@ -43,6 +44,7 @@ const rows: AssignmentVm[] = [
     name: 'db-02',
     image: 'Review',
     imageReasons: 'rhel-8-template',
+    originalSpecs: 'rhel-9-template',
     migration: 'Ready',
     migrationReasons: '',
     memory: 'Ready',
@@ -72,7 +74,7 @@ describe('ImageImportWorkflow', () => {
 
     expect(imageRows).toHaveLength(1);
     expect(imageRows[0]).toMatchObject({
-      sourceImage: 'rhel-8-template',
+      sourceImage: 'rhel-9-template',
       vmCount: 2,
       owners: 'Data team',
     });
@@ -93,6 +95,12 @@ describe('ImageImportWorkflow', () => {
       estimatedImportTime: '45m',
       notes: 'Imported from COS',
     });
+  });
+
+  it('falls back to readiness reasons when original specs are unavailable', () => {
+    const imageRows = buildImageImportRows(rows.map(({ originalSpecs, ...row }) => row), {});
+
+    expect(imageRows[0].sourceImage).toBe('rhel-8-template');
   });
 
   it('renders image import planning rows and allows status edits', () => {

@@ -302,8 +302,8 @@ export type WorkbookSummary = {
   overview_blockers: Record<string, number>;
   readiness_counts: Record<string, Record<string, number>>;
   assessment_quality: Record<string, string | number>;
-  readiness_rows: Array<Record<string, string | number>>;
-  assignment_rows?: Array<Record<string, string | number>>;
+  readiness_rows: Array<Record<string, unknown>>;
+  assignment_rows?: Array<Record<string, unknown>>;
 };
 
 /** UI-level flattened view of a VM row — distinct from VmNetworkAssignment (API shape). */
@@ -312,6 +312,7 @@ export type AssignmentVm = {
   name: string;
   image: string;
   imageReasons: string;
+  originalSpecs?: string;
   migration: string;
   migrationReasons: string;
   memory: string;
