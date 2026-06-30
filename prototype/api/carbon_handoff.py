@@ -4,14 +4,30 @@ from __future__ import annotations
 
 from typing import Any
 
+from assessment_quality import (
+    generate_assessment_quality_csv,
+    generate_assessment_quality_json,
+)
 from handoff import (
     decision_audit_export,
+    generate_disk_mapping_csv,
     generate_cutover_readiness_csv,
+    generate_image_import_tfvars,
+    generate_memory_readiness_csv,
+    generate_migration_manifest,
+    generate_migration_runbook,
+    generate_nic_mapping_csv,
+    generate_partition_mapping_csv,
     generate_planning_state_json,
+    generate_pricing_diagnostics_csv,
+    generate_pricing_diagnostics_json,
+    generate_readiness_findings_csv,
+    generate_vm_mapping_csv,
     image_import_export,
     remediation_tracker_export,
 )
 from models.network_planning import NetworkPlanningState, VmNetworkAssignment
+from preflight import generate_preflight_report_csv, generate_preflight_report_json, run_package_preflight
 
 
 def _clean(value: Any) -> str:
@@ -61,6 +77,24 @@ def _wave_name_for(plan: NetworkPlanningState, wave_id: str | None) -> str:
         if wave.id == wave_id:
             return wave.name
     return wave_id
+
+
+def _subnet_name_for(plan: NetworkPlanningState, subnet_id: str | None) -> str:
+    if not subnet_id:
+        return ""
+    for subnet in plan.subnets:
+        if subnet.id == subnet_id:
+            return subnet.name
+    return subnet_id
+
+
+def _security_group_name_for(plan: NetworkPlanningState, security_group_id: str | None) -> str:
+    if not security_group_id:
+        return ""
+    for group in plan.security_groups:
+        if group.id == security_group_id:
+            return group.name
+    return security_group_id
 
 
 def _source_image_for_row(row: dict[str, Any], assignment: VmNetworkAssignment) -> str:
@@ -139,6 +173,16 @@ def carbon_decision_audit_records(
         records.append({
             "VM Key": assignment.vm_key,
             "VM Name": assignment.vm_name,
+            "Power State": _row_value(row, "power", "Power State"),
+            "Guest OS": _row_value(row, "guestOs", "Guest OS") or _clean(assignment.guest_os),
+            "Source IP": _row_value(row, "sourceIp", "Source IP"),
+            "Datacenter": _row_value(row, "datacenter", "Datacenter"),
+            "Cluster": _row_value(row, "cluster", "Cluster"),
+            "Host": _row_value(row, "host", "Host"),
+            "Disk Count": _row_value(row, "diskCount", "Disk Count") or "0",
+            "Total Storage GB": _row_value(row, "totalStorageGb", "Total Storage GB"),
+            "Firmware": _row_value(row, "firmware", "Firmware"),
+            "Boot Disk GB": _row_value(row, "bootDiskGb", "Boot Disk GB") or _clean(assignment.boot_disk_gb),
             "Owner": owner,
             "owner": owner,
             "Application": application,
@@ -170,9 +214,14 @@ def carbon_decision_audit_records(
                 or _row_value(row, "overrideStorageTierReason", "Override Storage Tier Reason")
             ),
             "Network": _row_value(row, "network", "Network") or _clean(_assignment_attr(assignment, "network")),
+            "Subnet": _row_value(row, "subnet", "Subnet") or _subnet_name_for(plan, assignment.primary_subnet_id),
+            "Security Group": (
+                _row_value(row, "securityGroup", "Security Group")
+                or _security_group_name_for(plan, assignment.primary_security_group_id)
+            ),
             "Exclude?": assignment.excluded or _row_bool(row, "excluded", "Exclude?"),
             "Exclusion Reason": assignment.exclusion_reason or _row_value(row, "exclusionReason", "Exclusion Reason"),
-            "Total Storage GB": _row_value(row, "totalStorageGb", "Total Storage GB"),
+            "Custom Image ID": assignment.custom_image_id or _row_value(row, "customImageId", "Custom Image ID"),
         })
     return records
 
@@ -291,4 +340,108 @@ def carbon_state_native_handoff_files(
             image_import_status=image_status,
             metadata=metadata,
         ),
+    }
+
+
+def carbon_migration_context(
+    plan: NetworkPlanningState,
+    pricing_catalog: dict[str, Any] | None = None,
+    assessment_quality: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build the manifest/runbook context for Carbon handoff files."""
+    pricing_catalog = pricing_catalog or {}
+    metadata = pricing_catalog.get("metadata", {}) if isinstance(pricing_catalog, dict) else {}
+    vpc = plan.vpcs[0] if plan.vpcs else None
+    return {
+        "project_name": plan.metadata.project_name,
+        "target_region": plan.metadata.target_region,
+        "target_zone": plan.metadata.target_zone,
+        "vpc_name": vpc.name if vpc else "migration-vpc",
+        "address_prefix_strategy": vpc.address_prefix_mode if vpc else "manual",
+        "deployment_target": plan.metadata.deployment_target,
+        "generate_security_groups": True,
+        "pricing_mode": metadata.get("mode"),
+        "pricing_source": metadata.get("source"),
+        "pricing_confidence": metadata.get("confidence"),
+        "pricing_status": metadata.get("pricing_status"),
+        "pricing_last_updated": metadata.get("last_updated"),
+        "assessment_quality": assessment_quality or {},
+    }
+
+
+def carbon_preflight_findings(
+    plan: NetworkPlanningState,
+    records: list[dict[str, Any]],
+    pricing_catalog: dict[str, Any] | None,
+) -> list[Any]:
+    """Run package preflight with Carbon network-plan resources."""
+    networks = [
+        {
+            "name": subnet.name,
+            "vlan": subnet.source_network or subnet.purpose or "",
+            "cidr": subnet.cidr,
+        }
+        for subnet in plan.subnets
+    ]
+    custom_cidrs = {
+        subnet.name: subnet.cidr
+        for subnet in plan.subnets
+        if subnet.cidr
+    }
+    profiles = []
+    if isinstance(pricing_catalog, dict):
+        raw_profiles = pricing_catalog.get("profiles", [])
+        profiles = (
+            list(raw_profiles.values())
+            if isinstance(raw_profiles, dict)
+            else list(raw_profiles or [])
+        )
+    return run_package_preflight(
+        records,
+        networks,
+        plan.metadata.target_region,
+        custom_cidrs=custom_cidrs,
+        enable_security_groups=True,
+        catalog_profiles=profiles,
+        ssh_source_cidr="",
+    )
+
+
+def carbon_full_handoff_files(
+    plan: NetworkPlanningState,
+    planning_state_json: dict[str, Any] | None,
+    pricing_catalog: dict[str, Any] | None,
+) -> dict[str, str]:
+    """Generate remaining Streamlit-style handoff artifacts for a Carbon plan."""
+    planning_state_json = planning_state_json or {}
+    records = carbon_decision_audit_records(plan, planning_state_json)
+    normalized_pricing = normalize_pricing_catalog_for_decision_audit(pricing_catalog)
+    remediation_tracker = carbon_remediation_tracker(planning_state_json, records)
+    image_status = carbon_image_import_status(planning_state_json)
+    summary = planning_state_json.get("carbon_summary") or {}
+    assessment_quality = summary.get("assessment_quality") if isinstance(summary, dict) else {}
+    context = carbon_migration_context(plan, pricing_catalog, assessment_quality)
+    preflight_findings = carbon_preflight_findings(plan, records, pricing_catalog)
+    return {
+        "migration-manifest.json": generate_migration_manifest(
+            records,
+            context,
+            image_import_status=image_status,
+            pricing_catalog=normalized_pricing,
+            remediation_tracker=remediation_tracker,
+        ),
+        "assessment-quality.json": generate_assessment_quality_json(assessment_quality or {}),
+        "assessment-quality.csv": generate_assessment_quality_csv(assessment_quality or {}),
+        "preflight-report.json": generate_preflight_report_json(preflight_findings),
+        "preflight-report.csv": generate_preflight_report_csv(preflight_findings),
+        "pricing-diagnostics.json": generate_pricing_diagnostics_json(normalized_pricing, records),
+        "pricing-diagnostics.csv": generate_pricing_diagnostics_csv(normalized_pricing, records),
+        "vm-mapping.csv": generate_vm_mapping_csv(records),
+        "disk-mapping.csv": generate_disk_mapping_csv(records),
+        "partition-mapping.csv": generate_partition_mapping_csv(records),
+        "nic-mapping.csv": generate_nic_mapping_csv(records, True),
+        "memory-readiness.csv": generate_memory_readiness_csv(records),
+        "readiness-findings.csv": generate_readiness_findings_csv(records),
+        "image-import-variables.tfvars.example": generate_image_import_tfvars(records),
+        "migration-runbook.md": generate_migration_runbook(context),
     }

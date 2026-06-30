@@ -97,8 +97,11 @@ Priority order:
    - Carbon Terraform ZIP now also includes `remediation-backlog.csv`,
      `image-import-plan.csv`, `cutover-readiness.csv`, and `planning-state.json`
      from saved Carbon state.
-   - Remaining: manifest, mapping/readiness CSVs, image import variables,
-     runbook, preflight reports, pricing diagnostics, and README parity.
+   - Carbon Terraform ZIP now includes the remaining handoff artifact inventory:
+     manifest, assessment quality, preflight, pricing diagnostics,
+     mapping/readiness CSVs, image import variables, and runbook.
+   - Remaining: improve workbook-detail fidelity in normalized handoff rows and
+     add Streamlit-vs-Carbon package comparison fixtures before promotion.
    - Verify Carbon-generated ZIP contents against Streamlit package contents,
      including CSVs, planning state, runbook, preflight reports, and README.
 

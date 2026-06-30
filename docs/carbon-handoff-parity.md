@@ -20,7 +20,7 @@ from the saved Carbon network plan and writes:
 - `planning-state.json`
 
 That means Carbon can generate infrastructure code, but it does not yet produce
-the full migration handoff package.
+the same workbook-rich migration handoff package as Streamlit.
 
 ## Streamlit Package Contract
 
@@ -59,19 +59,20 @@ Required handoff files:
 | `image-import-plan.csv` | Yes | Included | Carbon ZIP normalizes saved image import status. |
 | `cutover-readiness.csv` | Yes | Included | Carbon ZIP derives cutover readiness from planning fields, remediation tracker, and image import status. |
 | `planning-state.json` | Yes | Included | Carbon ZIP includes Streamlit-compatible planning state generated from Carbon rows. |
-| `migration-manifest.json` | Partial | Missing | Requires Carbon VM-to-handoff normalization. |
+| `migration-manifest.json` | Partial | Included | Carbon ZIP generates manifest from normalized Carbon rows; workbook-derived detail fidelity still needs review. |
 | `decision-audit.csv` | Yes | Included | Carbon ZIP includes profile/storage/exclusion decisions and pricing impact columns via `prototype/api/carbon_handoff.py`. |
-| `preflight-report.csv/json` | Partial | Missing | Requires Carbon-side package preflight integration. |
-| `pricing-diagnostics.csv/json` | Partial | Missing | Requires pricing/catalog context for Carbon package. |
-| mapping/readiness CSVs | Partial | Missing | Requires Carbon assignment rows normalized to handoff records. |
-| `image-import-variables.tfvars.example` | Partial | Missing | Requires custom image placeholder export from Carbon rows. |
-| `migration-runbook.md` | Yes | Missing | Can reuse handoff runbook generator after context mapping. |
+| `preflight-report.csv/json` | Partial | Included | Carbon ZIP runs package preflight against Carbon network-plan resources and normalized rows. |
+| `pricing-diagnostics.csv/json` | Partial | Included | Carbon ZIP includes static-catalog diagnostics; live/cached pricing parity remains future work. |
+| mapping/readiness CSVs | Partial | Included | Carbon ZIP includes VM, disk, partition, NIC, memory, and readiness CSVs from normalized rows; source-tab richness depends on uploaded Carbon row detail. |
+| `image-import-variables.tfvars.example` | Yes | Included | Carbon ZIP includes placeholder custom image tfvars. |
+| `migration-runbook.md` | Yes | Included | Carbon ZIP reuses the handoff runbook generator. |
 
 ## Recommended Implementation Order
 
-1. Add Carbon-to-handoff VM normalization so existing `handoff` generators can
-   produce manifest, mapping, readiness, image variable, and runbook files.
-2. Integrate Carbon preflight and pricing diagnostics.
+1. Improve Carbon-to-handoff VM normalization fidelity for workbook-derived
+   source details such as disks, partitions, NICs, memory counters, and source
+   inventory metadata.
+2. Add fixture comparison tests between Streamlit and Carbon package contents.
 3. Update the Carbon Export workflow to show package contents parity status
    before download.
 

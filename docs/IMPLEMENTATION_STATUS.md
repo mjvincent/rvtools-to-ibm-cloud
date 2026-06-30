@@ -84,7 +84,8 @@ feature-parity and production-readiness gaps.
 - [x] VM Overrides workflow with profile/storage override reasons, exclusion reasons, decision-audit CSV export, project persistence, and Assignment row routing
 - [x] Carbon Terraform ZIP includes `decision-audit.csv` with override reasons and pricing impact columns
 - [x] Carbon Terraform ZIP includes state-native handoff files: `remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`, and `planning-state.json`
-- [ ] Complete handoff ZIP parity
+- [x] Carbon Terraform ZIP includes the remaining handoff artifact inventory: manifest, assessment quality, preflight, pricing diagnostics, mapping/readiness CSVs, image import tfvars, and runbook
+- [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
 
@@ -120,8 +121,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
    - Remediation Tracker full Streamlit finding/category and handoff parity
    - Image Import Planning full handoff/export parity
    - Migration Ops full handoff/export parity
-   - Remaining Streamlit handoff parity for manifest, mapping/readiness CSVs,
-     image import variables, runbook, preflight, and pricing diagnostics
+   - Workbook-detail fidelity for manifest, mapping/readiness CSVs, preflight,
+     and pricing diagnostics
 
 2. **Production readiness**
    - Large-workbook performance benchmark
@@ -158,6 +159,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Decision audit initial Carbon workflow
 - [x] Decision audit pricing impact and handoff ZIP parity
 - [x] State-native Carbon handoff ZIP files
+- [x] Full handoff artifact inventory in Carbon ZIP
+- [ ] Streamlit-vs-Carbon handoff fixture comparison coverage
 
 ### Phase 5: Complete Handoff Package Parity
 - [ ] All CSV exports

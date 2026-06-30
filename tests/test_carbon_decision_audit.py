@@ -14,6 +14,7 @@ from prototype.api.carbon_handoff import (
     carbon_decision_audit_records,
     carbon_image_import_status,
     carbon_remediation_tracker,
+    carbon_full_handoff_files,
     carbon_state_native_handoff_files,
     normalize_pricing_catalog_for_decision_audit,
 )
@@ -184,3 +185,79 @@ def test_carbon_state_native_handoff_files_use_saved_tracker_and_image_state():
     assert '"project_name": "Migration"' in files["planning-state.json"]
     assert carbon_remediation_tracker(planning_state, carbon_decision_audit_records(plan, planning_state))["vm-1::migration"]["due_date"] == "2026-08-01"
     assert carbon_image_import_status(planning_state)["rhel-8-template"]["target_catalog_id"] == "r001-image"
+
+
+def test_carbon_full_handoff_files_cover_remaining_streamlit_artifacts():
+    plan = NetworkPlanningState(
+        vpcs=[VpcPlan(id="vpc-1", name="migration-vpc", region="us-south")],
+        vm_assignments=[
+            VmNetworkAssignment(
+                vm_key="vm-1",
+                vm_name="app-01",
+                primary_subnet_id="subnet-app",
+                primary_security_group_id="sg-app",
+                ibm_profile="bx2-2x8",
+                guest_os="Linux",
+            )
+        ],
+        metadata=PlanningMetadata(
+            project_name="Migration",
+            target_region="us-south",
+            target_zone="us-south-1",
+        ),
+    )
+    planning_state = {
+        "carbon_summary": {
+            "assessment_quality": {
+                "summary": {"confidence": "high"},
+                "worksheets": {},
+            }
+        },
+        "carbon_assignment_rows": [
+            {
+                "id": "vm-1",
+                "name": "app-01",
+                "image": "Ready",
+                "imageReasons": "rhel-8-template",
+                "migration": "Ready",
+                "memory": "Ready",
+                "networkReadiness": "Ready",
+                "profile": "bx2-2x8",
+                "storageTier": "3iops-tier",
+                "owner": "App owner",
+                "application": "Orders",
+                "wave": "Wave 1",
+                "cutoverGroup": "CG-A",
+                "power": "poweredOn",
+            }
+        ],
+    }
+
+    files = carbon_full_handoff_files(plan, planning_state, {
+        "profiles": [{"name": "bx2-2x8", "hourly": 0.114}],
+        "storage_tier_rates": {"3iops-tier": 0.10},
+        "metadata": {"mode": "static", "region": "us-south"},
+    })
+
+    assert sorted(files) == [
+        "assessment-quality.csv",
+        "assessment-quality.json",
+        "disk-mapping.csv",
+        "image-import-variables.tfvars.example",
+        "memory-readiness.csv",
+        "migration-manifest.json",
+        "migration-runbook.md",
+        "nic-mapping.csv",
+        "partition-mapping.csv",
+        "preflight-report.csv",
+        "preflight-report.json",
+        "pricing-diagnostics.csv",
+        "pricing-diagnostics.json",
+        "readiness-findings.csv",
+        "vm-mapping.csv",
+    ]
+    assert '"package_type": "rvtools-to-ibm-cloud-migration-handoff"' in files["migration-manifest.json"]
+    assert "app-01" in files["vm-mapping.csv"]
+    assert "replace-with-imported-image-id" in files["image-import-variables.tfvars.example"]
+    assert "Migration Handoff Runbook" in files["migration-runbook.md"]
+    assert '"summary"' in files["preflight-report.json"]

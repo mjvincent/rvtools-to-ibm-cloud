@@ -30,7 +30,11 @@ from terraform_carbon_renderer_modular import render_modular_terraform_from_carb
 from terraform_readme_generator import generate_modular_terraform_readme
 
 from . import persistence
-from .carbon_handoff import carbon_decision_audit_csv, carbon_state_native_handoff_files
+from .carbon_handoff import (
+    carbon_decision_audit_csv,
+    carbon_full_handoff_files,
+    carbon_state_native_handoff_files,
+)
 
 
 DEFAULT_REGION = "us-south"
@@ -551,17 +555,24 @@ async def generate_terraform_package(project_id: str) -> StreamingResponse:
             "network-plan.json",
             json.dumps(network_plan_data, indent=2)
         )
+        pricing_catalog = get_pricing_catalog("static", region=target_region)
         zip_file.writestr(
             "decision-audit.csv",
             carbon_decision_audit_csv(
                 network_plan,
                 planning_state_json,
-                get_pricing_catalog("static", region=target_region),
+                pricing_catalog,
             ),
         )
         for file_name, content in carbon_state_native_handoff_files(
             network_plan,
             planning_state_json,
+        ).items():
+            zip_file.writestr(file_name, content)
+        for file_name, content in carbon_full_handoff_files(
+            network_plan,
+            planning_state_json,
+            pricing_catalog,
         ).items():
             zip_file.writestr(file_name, content)
 

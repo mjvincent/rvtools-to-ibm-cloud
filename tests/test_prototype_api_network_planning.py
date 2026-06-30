@@ -626,12 +626,29 @@ class TestNetworkPlanningEndpoints:
             assert "image-import-plan.csv" in names
             assert "cutover-readiness.csv" in names
             assert "planning-state.json" in names
+            assert "migration-manifest.json" in names
+            assert "vm-mapping.csv" in names
+            assert "disk-mapping.csv" in names
+            assert "partition-mapping.csv" in names
+            assert "nic-mapping.csv" in names
+            assert "memory-readiness.csv" in names
+            assert "readiness-findings.csv" in names
+            assert "image-import-variables.tfvars.example" in names
+            assert "migration-runbook.md" in names
+            assert "preflight-report.json" in names
+            assert "preflight-report.csv" in names
+            assert "pricing-diagnostics.json" in names
+            assert "pricing-diagnostics.csv" in names
+            assert "assessment-quality.json" in names
+            assert "assessment-quality.csv" in names
             audit_csv = zf.read("decision-audit.csv").decode("utf-8")
             planning_state = zf.read("planning-state.json").decode("utf-8")
+            manifest = zf.read("migration-manifest.json").decode("utf-8")
         assert "Original Profile,Chosen Profile,Profile Override Reason" in audit_csv
         assert "bx2-4x16,mx2-16x128,Database cache needs extra memory" in audit_csv
         assert "3iops-tier,10iops-tier,Production write latency target" in audit_csv
         assert '"schema_version": "1.0"' in planning_state
+        assert '"package_type": "rvtools-to-ibm-cloud-migration-handoff"' in manifest
 
 
 class TestNetworkPlanningDataModels:
