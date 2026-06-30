@@ -48,6 +48,19 @@ describe('ExportWorkflow', () => {
     expect(screen.getByText('Missing subnet assignments')).toBeTruthy();
   });
 
+  it('renders ZIP package parity contents before download', () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    expect(screen.getByText('Package contents')).toBeTruthy();
+    expect(screen.getByText('35 files are included in the generated ZIP.')).toBeTruthy();
+    expect(screen.getByText('Streamlit handoff parity')).toBeTruthy();
+    expect(screen.getByText('Terraform project')).toBeTruthy();
+    expect(screen.getByText('Migration handoff')).toBeTruthy();
+    expect(screen.getByText('Carbon state')).toBeTruthy();
+    expect(screen.getByText('decision-audit.csv')).toBeTruthy();
+    expect(screen.getByText('network-plan.json')).toBeTruthy();
+  });
+
   it('saves the network plan before downloading Terraform ZIP', async () => {
     renderWithProvider(<ExportWorkflow />);
 
@@ -60,4 +73,3 @@ describe('ExportWorkflow', () => {
     expect(payload.metadata.project_name).toBe('Export Project');
   });
 });
-

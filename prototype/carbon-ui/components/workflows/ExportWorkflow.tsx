@@ -7,6 +7,69 @@ import { useAppState } from '../../store/AppContext';
 import { generateTerraform, saveNetworkPlan } from '../../hooks/useApi';
 import { buildNetworkPlanBody } from '../../utils/planning-state';
 
+export const terraformPackageFiles = [
+  'README.md',
+  'main.tf',
+  'variables.tf',
+  'outputs.tf',
+  'terraform.tfvars',
+  'modules/networking/main.tf',
+  'modules/networking/variables.tf',
+  'modules/networking/outputs.tf',
+  'modules/vsi/main.tf',
+  'modules/vsi/variables.tf',
+  'modules/vsi/outputs.tf',
+  'modules/storage/main.tf',
+  'modules/storage/variables.tf',
+  'modules/storage/outputs.tf',
+];
+
+export const handoffPackageFiles = [
+  'migration-manifest.json',
+  'assessment-quality.json',
+  'assessment-quality.csv',
+  'preflight-report.json',
+  'preflight-report.csv',
+  'pricing-diagnostics.json',
+  'pricing-diagnostics.csv',
+  'decision-audit.csv',
+  'remediation-backlog.csv',
+  'image-import-plan.csv',
+  'cutover-readiness.csv',
+  'planning-state.json',
+  'vm-mapping.csv',
+  'disk-mapping.csv',
+  'partition-mapping.csv',
+  'nic-mapping.csv',
+  'memory-readiness.csv',
+  'readiness-findings.csv',
+  'image-import-variables.tfvars.example',
+  'migration-runbook.md',
+];
+
+export const carbonPackageFiles = ['network-plan.json'];
+
+const packageGroups = [
+  {
+    title: 'Terraform project',
+    status: 'Ready',
+    tagType: 'green' as const,
+    files: terraformPackageFiles,
+  },
+  {
+    title: 'Migration handoff',
+    status: 'Parity covered',
+    tagType: 'blue' as const,
+    files: handoffPackageFiles,
+  },
+  {
+    title: 'Carbon state',
+    status: 'Carbon only',
+    tagType: 'purple' as const,
+    files: carbonPackageFiles,
+  },
+];
+
 function terraformLabel(value: string) {
   return value
     .trim()
@@ -54,6 +117,7 @@ export default function ExportWorkflow() {
     ['Labels needing Terraform cleanup', planningCompleteness.invalidLabels],
   ];
   const blockingFindingCount = findings.reduce((total, [, count]) => total + count, 0);
+  const packageFileCount = packageGroups.reduce((total, group) => total + group.files.length, 0);
 
   async function handleDownloadTerraform() {
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
@@ -131,6 +195,31 @@ export default function ExportWorkflow() {
             <p>{count === 0 ? 'Ready' : `${count} item(s) need attention`}</p>
           </Tile>
         ))}
+      </div>
+      <div className="export-package">
+        <div className="section-header compact">
+          <div>
+            <h2>Package contents</h2>
+            <p>{packageFileCount} files are included in the generated ZIP.</p>
+          </div>
+          <Tag type="green">Streamlit handoff parity</Tag>
+        </div>
+        <div className="package-grid">
+          {packageGroups.map((group) => (
+            <Tile key={group.title} className="package-tile">
+              <div className="package-tile__header">
+                <h3>{group.title}</h3>
+                <Tag type={group.tagType}>{group.status}</Tag>
+              </div>
+              <p>{group.files.length} file(s)</p>
+              <ul>
+                {group.files.map((file) => (
+                  <li key={file}>{file}</li>
+                ))}
+              </ul>
+            </Tile>
+          ))}
+        </div>
       </div>
     </Layer>
   );
