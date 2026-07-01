@@ -18,15 +18,36 @@ from the saved Carbon network plan and writes:
 - `image-import-plan.csv`
 - `cutover-readiness.csv`
 - `planning-state.json`
+- `migration-manifest.json`
+- `assessment-quality.json`
+- `assessment-quality.csv`
+- `preflight-report.json`
+- `preflight-report.csv`
+- `pricing-diagnostics.json`
+- `pricing-diagnostics.csv`
+- mapping/readiness CSVs
+- `image-import-variables.tfvars.example`
+- `migration-runbook.md`
 
-That means Carbon can generate infrastructure code, but it does not yet produce
-the same workbook-rich migration handoff package as Streamlit.
+Carbon now generates the same major handoff artifact inventory as Streamlit.
+The remaining parity work is to keep expanding fixture comparisons so workbook
+detail fidelity and operational edge cases are proven before promotion.
 
 ## Streamlit Package Contract
 
 The expected package inventory is now captured in
 `prototype/api/handoff_parity.py` and covered by
 `tests/test_carbon_handoff_parity.py`.
+
+The parity tests now include:
+
+- A synthetic Streamlit-vs-Carbon fixture comparison for exact handoff content
+  across the core package files.
+- A sample-workbook Carbon contract test using
+  `samples/rvtools-small-complete.xlsx` through the FastAPI upload summary path.
+- Field-level assertions for `decision-audit.csv`,
+  `remediation-backlog.csv`, `image-import-plan.csv`,
+  `cutover-readiness.csv`, and `planning-state.json`.
 
 Required handoff files:
 
@@ -69,10 +90,13 @@ Required handoff files:
 
 ## Recommended Implementation Order
 
-1. Add fixture comparison tests between Streamlit and Carbon package contents.
-2. Improve any remaining workbook-derived source metadata gaps found by those
+1. Add full API ZIP inventory comparison tests for sample-workbook Carbon
+   package generation.
+2. Add more Streamlit-vs-Carbon fixture comparisons for multi-VM and edge-case
+   workbooks.
+3. Improve any remaining workbook-derived source metadata gaps found by those
    fixture comparisons.
-3. Update the Carbon Export workflow to show package contents parity status
+4. Update the Carbon Export workflow to show package contents parity status
    before download.
 
 ## Promotion Gate Impact

@@ -88,6 +88,7 @@ feature-parity and production-readiness gaps.
 - [x] Carbon Terraform ZIP includes state-native handoff files: `remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`, and `planning-state.json`
 - [x] Carbon Terraform ZIP includes the remaining handoff artifact inventory: manifest, assessment quality, preflight, pricing diagnostics, mapping/readiness CSVs, image import tfvars, and runbook
 - [x] Carbon intake preserves hidden workbook details for handoff fidelity, including disk, partition, NIC, memory, pricing, and readiness-finding fields
+- [x] Sample-workbook Carbon handoff contract coverage validates decision audit, remediation backlog, image import plan, cutover readiness, and planning-state fields
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
@@ -107,12 +108,18 @@ Results:
 - TypeScript: 0 errors
 - Jest: 133 tests passing
 - Playwright: 1 browser smoke passing
+- Python pytest: 339 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
 drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign
 persistence, drag/drop accessibility labels, autosave reload, and cleanup of
 temporary smoke projects.
+
+The Python parity suite includes `tests/test_carbon_handoff_parity.py`, which
+now covers Streamlit-vs-Carbon fixture parity and sample-workbook Carbon
+handoff contract fields for `decision-audit.csv`, `remediation-backlog.csv`,
+`image-import-plan.csv`, `cutover-readiness.csv`, and `planning-state.json`.
 
 ---
 
@@ -125,7 +132,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
    - Remediation Tracker full Streamlit finding/category and handoff parity
    - Image Import Planning full handoff/export parity
    - Migration Ops full handoff/export parity
-   - Streamlit-vs-Carbon fixture comparison coverage for full handoff packages
+   - Broader Streamlit-vs-Carbon fixture comparison coverage for full handoff
+     packages and edge-case workbooks
 
 2. **Production readiness**
    - Large-workbook performance benchmark
