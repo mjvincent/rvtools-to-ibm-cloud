@@ -120,6 +120,17 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await clickRowCheckbox(page, 0);
   await clickRowCheckbox(page, 1);
 
+  await page.getByLabel('Assignment bucket mode').getByRole('button', { name: 'Network', exact: true }).click();
+  await page
+    .locator('tbody tr')
+    .first()
+    .dragTo(page.locator('.bucket-tile').filter({ hasText: 'prod-db-us-south-1' }));
+  await expect(page.getByRole('dialog', { name: 'Confirm VM placement' })).toBeVisible();
+  await expect(page.getByText('Assign 2 VMs to prod-db-us-south-1?')).toBeVisible();
+  await page.getByRole('button', { name: 'Assign VMs' }).click();
+  await expect(page.getByText('2 VM(s) assigned to prod-db-us-south-1.')).toBeVisible();
+  await expect(page.locator('tbody')).toContainText('prod-db-us-south-1');
+
   await page.getByLabel('Assignment bucket mode').getByRole('button', { name: 'Security', exact: true }).click();
   await page
     .locator('tbody tr')
@@ -164,6 +175,7 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await storageRow.locator('button', { hasText: 'Clear storage override' }).click({ force: true });
   await expect(page.getByText('Planning changes saved.')).toBeVisible();
   await expect(appRow).not.toContainText('prod-app-us-south-1');
+  await expect(appRow).not.toContainText('prod-db-us-south-1');
   await expect(appRow).not.toContainText('sg-db-private');
   await expect(appRow).not.toContainText('Wave 1');
   await expect(storageRow).not.toContainText('10iops-tier');
@@ -180,14 +192,17 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await projectSelect.selectOption({ label: savedOption });
   await page.getByRole('button', { name: 'Load', exact: true }).click();
   await expect(page.getByText(new RegExp(`Loaded ${projectName}`))).toBeVisible();
+  await expect(page.locator('tbody')).toContainText('prod-db-us-south-1');
   await expect(page.locator('tbody')).toContainText('sg-db-private');
   await expect(page.locator('tbody')).toContainText('10iops-tier');
   await expect(page.locator('tbody')).toContainText('Wave 1');
   const reloadedAppRow = page.locator('tbody tr').first();
   await expect(reloadedAppRow).not.toContainText('prod-app-us-south-1');
+  await expect(reloadedAppRow).not.toContainText('prod-db-us-south-1');
   await expect(reloadedAppRow).not.toContainText('sg-db-private');
   await expect(reloadedAppRow).not.toContainText('Wave 1');
   const reloadedStorageRow = page.locator('tbody tr').nth(1);
+  await expect(reloadedStorageRow).toContainText('prod-db-us-south-1');
   await expect(reloadedStorageRow).not.toContainText('10iops-tier');
 
   const selectedProjectId = await projectSelect.inputValue();
