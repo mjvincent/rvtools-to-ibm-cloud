@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const sampleWorkbook =
   '../../samples/rvtools-small-complete.xlsx';
@@ -7,6 +7,12 @@ type SavedProject = {
   id: string;
   name?: string;
 };
+
+async function clickRowCheckbox(page: Page, index: number) {
+  await page.locator('tbody tr').nth(index).locator('input[type="checkbox"]').evaluate((input) => {
+    (input as HTMLInputElement).click();
+  });
+}
 
 test.afterEach(async ({ request }) => {
   const response = await request.get('/api/projects');
@@ -61,7 +67,6 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await page.getByRole('button', { name: 'Assign VMs' }).click();
   await expect(page.locator('tbody')).toContainText('prod-app-us-south-1');
 
-  await page.locator('tbody input[type="checkbox"]').first().check({ force: true });
   await page.getByLabel('Assignment bucket mode').getByRole('button', { name: 'Security', exact: true }).click();
   await page.getByRole('button', { name: 'Create bucket' }).click();
   const bucketDialog = page.getByRole('dialog', { name: 'Create security bucket' });
@@ -112,8 +117,8 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await expect(page.getByText(new RegExp(`Loaded ${projectName}`))).toBeVisible();
   await expect(page.locator('tbody')).toContainText(securityGroupName);
 
-  await page.locator('tbody input[type="checkbox"]').nth(0).check({ force: true });
-  await page.locator('tbody input[type="checkbox"]').nth(1).check({ force: true });
+  await clickRowCheckbox(page, 0);
+  await clickRowCheckbox(page, 1);
 
   await page.getByLabel('Assignment bucket mode').getByRole('button', { name: 'Security', exact: true }).click();
   await page
@@ -149,6 +154,20 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await expect(page.locator('tbody')).toContainText('Wave 1');
   await expect(page.getByText('Planning changes saved.')).toBeVisible();
 
+  const appRow = page.locator('tbody tr').first();
+  await appRow.locator('details').evaluate((details) => details.setAttribute('open', ''));
+  await appRow.locator('button', { hasText: 'Clear subnet' }).click({ force: true });
+  await appRow.locator('button', { hasText: 'Clear security group' }).click({ force: true });
+  await appRow.locator('button', { hasText: 'Clear wave' }).click({ force: true });
+  const storageRow = page.locator('tbody tr').nth(1);
+  await storageRow.locator('details').evaluate((details) => details.setAttribute('open', ''));
+  await storageRow.locator('button', { hasText: 'Clear storage override' }).click({ force: true });
+  await expect(page.getByText('Planning changes saved.')).toBeVisible();
+  await expect(appRow).not.toContainText('prod-app-us-south-1');
+  await expect(appRow).not.toContainText('sg-db-private');
+  await expect(appRow).not.toContainText('Wave 1');
+  await expect(storageRow).not.toContainText('10iops-tier');
+
   await page.reload();
   await expect(page.getByText('RVTools to IBM Cloud VPC')).toBeVisible();
   await expect
@@ -164,6 +183,12 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await expect(page.locator('tbody')).toContainText('sg-db-private');
   await expect(page.locator('tbody')).toContainText('10iops-tier');
   await expect(page.locator('tbody')).toContainText('Wave 1');
+  const reloadedAppRow = page.locator('tbody tr').first();
+  await expect(reloadedAppRow).not.toContainText('prod-app-us-south-1');
+  await expect(reloadedAppRow).not.toContainText('sg-db-private');
+  await expect(reloadedAppRow).not.toContainText('Wave 1');
+  const reloadedStorageRow = page.locator('tbody tr').nth(1);
+  await expect(reloadedStorageRow).not.toContainText('10iops-tier');
 
   const selectedProjectId = await projectSelect.inputValue();
   await page.request.delete(`/api/projects/${selectedProjectId}`);
