@@ -1,6 +1,9 @@
 import io
 import json
+from pathlib import Path
 import zipfile
+
+from fastapi.testclient import TestClient
 
 from models.network_planning import (
     NetworkPlanningState,
@@ -15,6 +18,7 @@ from prototype.api.carbon_handoff import (
     carbon_full_handoff_files,
     carbon_state_native_handoff_files,
 )
+from prototype.api.app import app
 from prototype.api.handoff_parity import (
     CARBON_CURRENT_EXTRA_FILES,
     CARBON_PARITY_BLOCKERS,
@@ -23,6 +27,8 @@ from prototype.api.handoff_parity import (
     STREAMLIT_TERRAFORM_FILES,
 )
 from streamlit_app.package_builder import build_terraform_bundle
+
+SAMPLES_DIR = Path(__file__).resolve().parents[1] / "samples"
 
 
 def _streamlit_package_files(
@@ -123,6 +129,103 @@ def _carbon_package_files(
     }
 
 
+def _carbon_package_files_from_records(
+    records,
+    *,
+    assessment_quality=None,
+    remediation_tracker=None,
+    image_import_status=None,
+):
+    subnets = []
+    security_groups = []
+    assignments = []
+    for index, record in enumerate(records, start=1):
+        subnet_id = f"subnet-{index}"
+        security_group_id = f"sg-{index}"
+        subnets.append(
+            SubnetPlan(
+                id=subnet_id,
+                name=record["Subnet"],
+                vpc_id="vpc-1",
+                zone="us-south-1",
+                cidr=f"10.0.{index}.0/24",
+                source_network=record["Network"],
+            )
+        )
+        security_groups.append(
+            SecurityGroupPlan(
+                id=security_group_id,
+                name=record["Security Group"],
+                vpc_id="vpc-1",
+            )
+        )
+        assignments.append(
+            VmNetworkAssignment(
+                vm_key=record["VM Key"],
+                vm_name=record["VM Name"],
+                primary_subnet_id=subnet_id,
+                primary_security_group_id=security_group_id,
+                ibm_profile=record["IBM Profile"],
+                storage_tier=record["Storage Tier"],
+                guest_os=record["Guest OS"],
+                network=record["Network"],
+                owner=record["Owner"],
+                application=record["Application"],
+                boot_disk_gb=record["Boot Disk GB"],
+            )
+        )
+
+    plan = NetworkPlanningState(
+        vpcs=[VpcPlan(id="vpc-1", name="migration-vpc", region="us-south")],
+        subnets=subnets,
+        security_groups=security_groups,
+        vm_assignments=assignments,
+        metadata=PlanningMetadata(
+            project_name="Migration",
+            target_region="us-south",
+            target_zone="us-south-1",
+            deployment_target="Plain CLI",
+        ),
+    )
+    planning_state = {
+        "carbon_assignment_rows": [_carbon_assignment_row(record) for record in records],
+        "carbon_remediation_tracker": remediation_tracker or {},
+        "carbon_image_import_status": image_import_status or {},
+        "carbon_summary": {"assessment_quality": assessment_quality or {}},
+    }
+    pricing_catalog = {
+        "metadata": {
+            "mode": "static",
+            "source": "static",
+            "confidence": "fallback-static",
+            "pricing_status": "static_fallback",
+            "region": "us-south",
+            "country": "us",
+            "currency": "USD",
+            "last_updated": "2026-05-12T00:00:00+00:00",
+        },
+        "profiles": {
+            record["IBM Profile"]: {"hourly": record["Profile Hourly"]}
+            for record in records
+            if record.get("IBM Profile")
+        },
+        "storage_tiers": {
+            record["Storage Tier"]: {"monthly_per_gb": 0.10}
+            for record in records
+            if record.get("Storage Tier")
+        },
+    }
+    return {
+        "decision-audit.csv": carbon_decision_audit_csv(
+            plan,
+            planning_state,
+            pricing_catalog,
+        ),
+        **carbon_state_native_handoff_files(plan, planning_state),
+        **carbon_full_handoff_files(plan, planning_state, pricing_catalog),
+    }
+
+
 def _carbon_assignment_row(record):
     return {
         "id": record["VM Key"],
@@ -188,6 +291,24 @@ def _operational_planning_state(text):
     state = json.loads(text)
     state.pop("generated_at", None)
     return state
+
+
+def _sample_workbook_summary():
+    client = TestClient(app)
+    sample_path = SAMPLES_DIR / "rvtools-small-complete.xlsx"
+    with sample_path.open("rb") as workbook:
+        response = client.post(
+            "/api/workbooks/summary",
+            files={
+                "workbook": (
+                    sample_path.name,
+                    workbook,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
+        )
+    assert response.status_code == 200
+    return response.json()
 
 
 def test_streamlit_package_parity_inventory_covers_expected_handoff_files():
@@ -338,3 +459,63 @@ def test_carbon_package_handoff_contents_match_streamlit_fixture(sample_vm_recor
         == streamlit_manifest["image_import_summary"]
     )
     assert carbon_manifest["virtual_machines"] == streamlit_manifest["virtual_machines"]
+
+
+def test_carbon_sample_workbook_populates_phase4_handoff_artifacts():
+    summary = _sample_workbook_summary()
+    records = summary["assignment_rows"]
+
+    assert {record["VM Name"] for record in records} == {
+        "sample-db-01",
+        "sample-web-01",
+    }
+
+    carbon_files = _carbon_package_files_from_records(
+        records,
+        assessment_quality=summary["assessment_quality"],
+        remediation_tracker={
+            "sample-db-01::migration": {
+                "vm_key": "sample-db-01",
+                "owner": "db-team",
+                "status": "Open",
+                "due_date": "2026-07-15",
+                "notes": "Validate VMware Tools before cutover.",
+                "blocker_type": "Migration",
+                "blocker_description": "VMware Tools status requires review",
+            }
+        },
+        image_import_status={
+            "4v / 16384M": {
+                "target_catalog_id": "r001-sample-db-image",
+                "import_status": "Pending",
+                "estimated_import_time": "60m",
+                "notes": "Track Windows image import before migration.",
+            }
+        },
+    )
+
+    for file_name in {
+        "decision-audit.csv",
+        "remediation-backlog.csv",
+        "image-import-plan.csv",
+        "cutover-readiness.csv",
+        "planning-state.json",
+    }:
+        assert file_name in carbon_files
+        assert carbon_files[file_name].strip(), file_name
+
+    assert "sample-db-01" in carbon_files["decision-audit.csv"]
+    assert "sample-web-01" in carbon_files["decision-audit.csv"]
+    assert "sample-db-01" in carbon_files["remediation-backlog.csv"]
+    assert "2v / 8192M" in carbon_files["image-import-plan.csv"]
+    assert "4v / 16384M" in carbon_files["image-import-plan.csv"]
+    assert "r001-sample-db-image" in carbon_files["image-import-plan.csv"]
+    assert "sample-db-01" in carbon_files["cutover-readiness.csv"]
+
+    planning_state = json.loads(carbon_files["planning-state.json"])
+    assert planning_state["schema_version"] == "1.0"
+    assert len(planning_state["vm_decisions"]) == 2
+    assert {row["VM Name"] for row in planning_state["vm_decisions"]} == {
+        "sample-db-01",
+        "sample-web-01",
+    }
