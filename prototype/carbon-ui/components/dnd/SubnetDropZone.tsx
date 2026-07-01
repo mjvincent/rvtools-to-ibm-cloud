@@ -8,6 +8,7 @@ type SubnetDropZoneProps = {
   bucket: Record<string, string>;
   assignmentMode: AssignmentMode;
   children: React.ReactNode;
+  selectedCount?: number;
   onAssign: () => void;
   onDropVmIds: (vmIds: string[], bucket: Record<string, string>) => void;
 };
@@ -27,15 +28,28 @@ export default function SubnetDropZone({
   bucket,
   assignmentMode,
   children,
+  selectedCount = 0,
   onAssign,
   onDropVmIds,
 }: SubnetDropZoneProps) {
   const [dragActive, setDragActive] = React.useState(false);
+  const bucketName = bucket.name || 'bucket';
+  const modeLabel = assignmentMode === 'network'
+    ? 'subnet'
+    : assignmentMode === 'security'
+      ? 'security group'
+      : assignmentMode === 'storage'
+        ? 'storage profile'
+        : 'migration wave';
 
   return (
     <Tile
+      aria-describedby={`drop-help-${bucket.id || bucketName}`}
+      aria-label={`Drop VMs on ${bucketName} ${modeLabel}`}
       className={dragActive ? 'bucket-tile bucket-tile--drop-active' : 'bucket-tile'}
       data-drop-mode={assignmentMode}
+      role="region"
+      tabIndex={0}
       onDragEnter={(event: React.DragEvent<HTMLElement>) => {
         event.preventDefault();
         setDragActive(true);
@@ -55,10 +69,16 @@ export default function SubnetDropZone({
       }}
     >
       <div>{children}</div>
-      <Button size="sm" onClick={onAssign}>
+      <p className="sr-only" id={`drop-help-${bucket.id || bucketName}`}>
+        Drop one or more selected VMs here, or use Assign to place {selectedCount} selected VM{selectedCount === 1 ? '' : 's'}.
+      </p>
+      <Button
+        aria-label={`Assign ${selectedCount} selected VM${selectedCount === 1 ? '' : 's'} to ${bucketName}`}
+        size="sm"
+        onClick={onAssign}
+      >
         Assign
       </Button>
     </Tile>
   );
 }
-

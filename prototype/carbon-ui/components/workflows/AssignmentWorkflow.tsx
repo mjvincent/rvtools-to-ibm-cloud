@@ -499,6 +499,7 @@ export default function AssignmentWorkflow() {
                 key={bucket.id}
                 bucket={bucket as any}
                 assignmentMode={assignmentMode}
+                selectedCount={selectedVmIds.length}
                 onAssign={() => assignSelected(assignmentMode, bucket as any)}
                 onDropVmIds={requestDropPlacement}
               >

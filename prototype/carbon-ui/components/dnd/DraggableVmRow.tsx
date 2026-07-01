@@ -36,7 +36,7 @@ export default function DraggableVmRow({
       <td>
         <Checkbox
           id={`select-${row.id}`}
-          labelText=""
+          labelText={`Select ${row.name}`}
           checked={selected}
           onChange={(_: unknown, data: { checked?: boolean }) =>
             onSelect(row.id, Boolean(data.checked))

@@ -195,6 +195,18 @@ body {
   outline-offset: 2px;
 }
 
+.sr-only {
+  clip: rect(0 0 0 0);
+  border: 0;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .vm-row {
   cursor: grab;
 }
@@ -303,13 +315,20 @@ body {
 
 .bucket-tile {
   align-items: start;
+  border: 1px solid transparent;
   display: grid;
   gap: 0.75rem;
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.bucket-tile:focus-visible {
+  outline: 2px solid #0f62fe;
+  outline-offset: 2px;
+}
+
 .bucket-tile--drop-active {
   background: #edf5ff;
+  border-color: #0f62fe;
   outline: 2px solid #0f62fe;
   outline-offset: -2px;
 }

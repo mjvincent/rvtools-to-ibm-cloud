@@ -43,6 +43,7 @@ describe('DnD components', () => {
 
     const row = screen.getByText('app-01').closest('tr');
     expect(row?.getAttribute('draggable')).toBe('true');
+    expect(screen.getByRole('checkbox', { name: 'Select app-01' })).toBeTruthy();
     expect(screen.getByText('prod-app-us-south-1')).toBeTruthy();
     expect(screen.getByText('Wave 1')).toBeTruthy();
     fireEvent.dragStart(row!, { dataTransfer: dataTransfer() });
@@ -97,6 +98,7 @@ describe('DnD components', () => {
       <SubnetDropZone
         bucket={{ id: 'subnet-app', name: 'prod-app-us-south-1' }}
         assignmentMode="network"
+        selectedCount={2}
         onAssign={jest.fn()}
         onDropVmIds={onDropVmIds}
       >
@@ -104,7 +106,10 @@ describe('DnD components', () => {
       </SubnetDropZone>,
     );
 
-    fireEvent.drop(screen.getByTestId('tile'), { dataTransfer: transfer });
+    const dropZone = screen.getByRole('region', { name: 'Drop VMs on prod-app-us-south-1 subnet' });
+    expect(screen.getByRole('button', { name: 'Assign 2 selected VMs to prod-app-us-south-1' })).toBeTruthy();
+
+    fireEvent.drop(dropZone, { dataTransfer: transfer });
     expect(onDropVmIds).toHaveBeenCalledWith(
       ['vm-1', 'vm-2'],
       expect.objectContaining({ name: 'prod-app-us-south-1' }),
