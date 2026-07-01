@@ -117,10 +117,15 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await expect(page.getByText(new RegExp(`Loaded ${projectName}`))).toBeVisible();
   await expect(page.locator('tbody')).toContainText(securityGroupName);
 
+  const firstVmName = (await page.locator('tbody tr').first().locator('strong').innerText()).trim();
+  await expect(page.getByRole('checkbox', { name: `Select ${firstVmName}` })).toBeVisible();
+
   await clickRowCheckbox(page, 0);
   await clickRowCheckbox(page, 1);
 
   await page.getByLabel('Assignment bucket mode').getByRole('button', { name: 'Network', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Drop VMs on prod-db-us-south-1 subnet' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Assign 2 selected VMs to prod-db-us-south-1' })).toBeVisible();
   await page
     .locator('tbody tr')
     .first()
@@ -132,6 +137,8 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await expect(page.locator('tbody')).toContainText('prod-db-us-south-1');
 
   await page.getByLabel('Assignment bucket mode').getByRole('button', { name: 'Security', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Drop VMs on sg-db-private security group' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Assign 2 selected VMs to sg-db-private' })).toBeVisible();
   await page
     .locator('tbody tr')
     .first()
@@ -143,6 +150,8 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await expect(page.locator('tbody')).toContainText('sg-db-private');
 
   await page.getByLabel('Assignment bucket mode').getByRole('button', { name: 'Storage / IOPS', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Drop VMs on Database high IOPS storage profile' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Assign 2 selected VMs to Database high IOPS' })).toBeVisible();
   await page
     .locator('tbody tr')
     .first()
@@ -154,6 +163,8 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await expect(page.locator('tbody')).toContainText('10iops-tier');
 
   await page.getByLabel('Assignment bucket mode').getByRole('button', { name: 'Wave', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Drop VMs on Wave 1 migration wave' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Assign 2 selected VMs to Wave 1' })).toBeVisible();
   await page
     .locator('tbody tr')
     .first()
