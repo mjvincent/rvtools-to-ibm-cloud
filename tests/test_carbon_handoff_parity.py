@@ -1,3 +1,4 @@
+import csv
 import io
 import json
 from pathlib import Path
@@ -293,6 +294,10 @@ def _operational_planning_state(text):
     return state
 
 
+def _csv_rows(text):
+    return list(csv.DictReader(io.StringIO(text)))
+
+
 def _sample_workbook_summary():
     client = TestClient(app)
     sample_path = SAMPLES_DIR / "rvtools-small-complete.xlsx"
@@ -504,18 +509,99 @@ def test_carbon_sample_workbook_populates_phase4_handoff_artifacts():
         assert file_name in carbon_files
         assert carbon_files[file_name].strip(), file_name
 
-    assert "sample-db-01" in carbon_files["decision-audit.csv"]
-    assert "sample-web-01" in carbon_files["decision-audit.csv"]
-    assert "sample-db-01" in carbon_files["remediation-backlog.csv"]
-    assert "2v / 8192M" in carbon_files["image-import-plan.csv"]
-    assert "4v / 16384M" in carbon_files["image-import-plan.csv"]
-    assert "r001-sample-db-image" in carbon_files["image-import-plan.csv"]
-    assert "sample-db-01" in carbon_files["cutover-readiness.csv"]
+    audit_rows = _csv_rows(carbon_files["decision-audit.csv"])
+    audit_by_vm = {
+        row["VM Name"]: row
+        for row in audit_rows
+        if row["VM Name"] and row["VM Name"] != "TOTAL"
+    }
+    assert set(audit_by_vm) == {"sample-db-01", "sample-web-01"}
+    assert audit_rows[0].keys() >= {
+        "VM Key",
+        "VM Name",
+        "Original Profile",
+        "Chosen Profile",
+        "Original Storage Tier",
+        "Chosen Storage Tier",
+        "vCPU Cost Delta",
+        "Storage Cost Delta",
+        "Total Pricing Impact",
+    }
+    assert audit_by_vm["sample-db-01"] | {
+        "VM Key": "sample-db-01",
+        "Original Profile": "mx2-2x16",
+        "Chosen Profile": "mx2-2x16",
+        "Original Storage Tier": "10iops-tier",
+        "Chosen Storage Tier": "10iops-tier",
+        "Include/Exclude": "Include",
+        "Total Pricing Impact": "0.0",
+    } == audit_by_vm["sample-db-01"]
+
+    remediation_rows = _csv_rows(carbon_files["remediation-backlog.csv"])
+    remediation_row = next(row for row in remediation_rows if row["VM Key"] == "sample-db-01")
+    assert remediation_row == {
+        "VM Key": "sample-db-01",
+        "VM Name": "unknown-vm",
+        "Owner": "db-team",
+        "Blocker Type": "Migration",
+        "Blocker Description": "VMware Tools status requires review",
+        "Status": "Open",
+        "Due Date": "2026-07-15",
+        "Notes": "Validate VMware Tools before cutover.",
+    }
+
+    image_rows = _csv_rows(carbon_files["image-import-plan.csv"])
+    image_by_source = {row["Source Image"]: row for row in image_rows}
+    assert image_by_source["2v / 8192M"]["Count of VMs"] == "1"
+    assert image_by_source["4v / 16384M"] | {
+        "Count of VMs": "1",
+        "Target Catalog ID": "r001-sample-db-image",
+        "Import Status": "Pending",
+        "Estimated Import Time": "60m",
+        "Notes": "Track Windows image import before migration.",
+    } == image_by_source["4v / 16384M"]
+    assert image_by_source["TOTAL"]["Count of VMs"] == "2"
+
+    cutover_rows = _csv_rows(carbon_files["cutover-readiness.csv"])
+    db_cutover_rows = [row for row in cutover_rows if row["VM Name"] == "sample-db-01"]
+    assert db_cutover_rows
+    assert any(row["Blocker Category"] == "Missing Planning" for row in db_cutover_rows)
+    assert any(row["Blocker Category"] == "Readiness Review" for row in db_cutover_rows)
+    assert any(
+        row["Blocker Category"] == "Image Import Pending"
+        and row["Blocker Reason"] == "4v / 16384M import status is Pending"
+        for row in db_cutover_rows
+    )
+    assert any(
+        row["Blocker Category"] == "Unresolved Remediation"
+        and row["Blocker Reason"] == "Migration: VMware Tools status requires review (Open)"
+        for row in db_cutover_rows
+    )
 
     planning_state = json.loads(carbon_files["planning-state.json"])
     assert planning_state["schema_version"] == "1.0"
+    assert planning_state["metadata"] == {
+        "project_name": "Migration",
+        "target_region": "us-south",
+        "target_zone": "us-south-1",
+    }
     assert len(planning_state["vm_decisions"]) == 2
     assert {row["VM Name"] for row in planning_state["vm_decisions"]} == {
         "sample-db-01",
         "sample-web-01",
+    }
+    assert planning_state["remediation_tracker"]["sample-db-01::migration"] == {
+        "blocker_description": "VMware Tools status requires review",
+        "blocker_type": "Migration",
+        "due_date": "2026-07-15",
+        "notes": "Validate VMware Tools before cutover.",
+        "owner": "db-team",
+        "status": "Open",
+        "vm_key": "sample-db-01",
+    }
+    assert planning_state["image_import_status"]["4v / 16384M"] == {
+        "estimated_import_time": "60m",
+        "import_status": "Pending",
+        "notes": "Track Windows image import before migration.",
+        "target_catalog_id": "r001-sample-db-image",
     }
