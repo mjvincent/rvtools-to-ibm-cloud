@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AssignmentWorkflow from '../../components/workflows/AssignmentWorkflow';
 import { AppProvider } from '../../store/AppContext';
@@ -93,6 +93,25 @@ describe('AssignmentWorkflow', () => {
     expect(screen.getByText('Assign 1 VM to prod-app-us-south-1?')).toBeTruthy();
     await userEvent.click(screen.getByText('Assign VMs'));
     expect(screen.getAllByText('prod-app-us-south-1').length).toBeGreaterThan(1);
+  });
+
+  it('clears a row subnet assignment without changing other assignments', async () => {
+    renderWithProvider(<AssignmentWorkflow />);
+    const transfer = dataTransfer();
+    const row = screen.getByText('app-01').closest('tr');
+
+    fireEvent.dragStart(row!, { dataTransfer: transfer });
+    fireEvent.drop(screen.getByText('prod-app-us-south-1').closest('[data-testid="tile"]')!, {
+      dataTransfer: transfer,
+    });
+    await userEvent.click(screen.getByText('Assign VMs'));
+    expect(screen.getAllByText('prod-app-us-south-1').length).toBeGreaterThan(1);
+
+    const assignedRow = screen.getByText('app-01').closest('tr')!;
+    await userEvent.click(within(assignedRow).getByLabelText('Placement actions for app-01'));
+    await userEvent.click(within(assignedRow).getByText('Clear subnet'));
+
+    expect(within(assignedRow).getAllByText('Unassigned').length).toBeGreaterThan(0);
   });
 
   it('opens Image Import Planning from non-ready image readiness chip', async () => {

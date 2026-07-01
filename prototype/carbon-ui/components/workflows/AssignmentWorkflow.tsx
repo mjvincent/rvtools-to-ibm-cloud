@@ -142,7 +142,7 @@ export default function AssignmentWorkflow() {
     applyAssignment(type, bucket, selectedVmIds);
   }
 
-  function clearAssignments(vmIds: string[]) {
+  function clearAssignments(vmIds: string[], mode: AssignmentMode = assignmentMode) {
     const targetIds = [...new Set(vmIds)].filter(Boolean);
     if (targetIds.length === 0) {
       dispatch({ type: 'SET_PROJECT_ERROR', payload: 'Select one or more VMs before clearing assignments.' });
@@ -153,14 +153,14 @@ export default function AssignmentWorkflow() {
       type: 'SET_ASSIGNMENT_ROWS',
       payload: assignmentRows.map((row) => {
         if (!targetIds.includes(row.id)) return row;
-        if (assignmentMode === 'network') return { ...row, subnet: '' };
-        if (assignmentMode === 'security') return { ...row, securityGroup: '' };
-        if (assignmentMode === 'storage') return { ...row, overrideStorageTier: '', storageLabel: '' };
+        if (mode === 'network') return { ...row, subnet: '' };
+        if (mode === 'security') return { ...row, securityGroup: '' };
+        if (mode === 'storage') return { ...row, overrideStorageTier: '', storageLabel: '' };
         return { ...row, wave: '', cutoverGroup: '' };
       }),
     });
     dispatch({ type: 'SET_SELECTED_VM_IDS', payload: targetIds });
-    dispatch({ type: 'SET_PROJECT_STATUS', payload: `${targetIds.length} VM assignment(s) cleared.` });
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: `${targetIds.length} VM ${mode} assignment(s) cleared.` });
   }
 
   function clearSelectedAssignment() {
@@ -438,7 +438,7 @@ export default function AssignmentWorkflow() {
                     assignmentMode={assignmentMode}
                     onSelect={toggleSelected}
                     onDragStart={dragVm}
-                    onUnassign={(rowId) => clearAssignments([rowId])}
+                    onUnassign={(rowId, mode) => clearAssignments([rowId], mode)}
                     onOverride={openOverrideWorkflow}
                     onReadinessAction={openReadinessWorkflow}
                   />

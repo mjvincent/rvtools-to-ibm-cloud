@@ -11,7 +11,7 @@ type DraggableVmRowProps = {
   assignmentMode: AssignmentMode;
   onSelect: (rowId: string, checked: boolean) => void;
   onDragStart: (row: AssignmentVm, event: React.DragEvent<HTMLTableRowElement>) => void;
-  onUnassign: (rowId: string) => void;
+  onUnassign: (rowId: string, assignmentMode: AssignmentMode) => void;
   onOverride?: (row: AssignmentVm) => void;
   onReadinessAction?: (area: 'Image' | 'Migration' | 'Memory' | 'Network', row: AssignmentVm) => void;
 };
@@ -89,8 +89,33 @@ export default function DraggableVmRow({
       <td>
         <details className="row-overflow">
           <summary aria-label={`Placement actions for ${row.name}`}>Actions</summary>
-          <button type="button" onClick={() => onUnassign(row.id)}>
-            Unassign {assignmentMode}
+          <button
+            type="button"
+            disabled={!row.subnet}
+            onClick={() => onUnassign(row.id, 'network')}
+          >
+            Clear subnet
+          </button>
+          <button
+            type="button"
+            disabled={!row.securityGroup}
+            onClick={() => onUnassign(row.id, 'security')}
+          >
+            Clear security group
+          </button>
+          <button
+            type="button"
+            disabled={!row.overrideStorageTier && !row.storageLabel}
+            onClick={() => onUnassign(row.id, 'storage')}
+          >
+            Clear storage override
+          </button>
+          <button
+            type="button"
+            disabled={!row.wave && !row.cutoverGroup}
+            onClick={() => onUnassign(row.id, 'wave')}
+          >
+            Clear wave
           </button>
           {onOverride && (
             <button type="button" onClick={() => onOverride(row)}>

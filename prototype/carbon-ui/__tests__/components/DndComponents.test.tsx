@@ -16,18 +16,26 @@ function dataTransfer() {
 }
 
 describe('DnD components', () => {
-  it('marks VM rows draggable and emits drag start', () => {
+  it('marks VM rows draggable, emits drag start, and exposes explicit clear actions', () => {
     const onDragStart = jest.fn();
+    const onUnassign = jest.fn();
     render(
       <table>
         <tbody>
           <DraggableVmRow
-            row={{ ...sampleRows[0], subnet: 'prod-app-us-south-1', wave: 'Wave 1' }}
+            row={{
+              ...sampleRows[0],
+              subnet: 'prod-app-us-south-1',
+              securityGroup: 'sg-app-private',
+              overrideStorageTier: '10iops-tier',
+              storageLabel: 'db_high_iops',
+              wave: 'Wave 1',
+            }}
             selected
             assignmentMode="network"
             onSelect={jest.fn()}
             onDragStart={onDragStart}
-            onUnassign={jest.fn()}
+            onUnassign={onUnassign}
           />
         </tbody>
       </table>,
@@ -39,6 +47,15 @@ describe('DnD components', () => {
     expect(screen.getByText('Wave 1')).toBeTruthy();
     fireEvent.dragStart(row!, { dataTransfer: dataTransfer() });
     expect(onDragStart).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText('Clear subnet'));
+    fireEvent.click(screen.getByText('Clear security group'));
+    fireEvent.click(screen.getByText('Clear storage override'));
+    fireEvent.click(screen.getByText('Clear wave'));
+    expect(onUnassign).toHaveBeenCalledWith('sample-app-01', 'network');
+    expect(onUnassign).toHaveBeenCalledWith('sample-app-01', 'security');
+    expect(onUnassign).toHaveBeenCalledWith('sample-app-01', 'storage');
+    expect(onUnassign).toHaveBeenCalledWith('sample-app-01', 'wave');
   });
 
   it('calls readiness action for non-ready readiness chips', () => {
