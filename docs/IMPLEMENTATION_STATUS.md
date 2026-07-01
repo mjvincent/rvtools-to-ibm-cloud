@@ -5,7 +5,7 @@
 This document tracks the implementation status of the Carbon UI integration with
 the RVTools to IBM Cloud migration tool.
 
-**Last Updated**: 2026-06-30  
+**Last Updated**: 2026-07-01  
 **Current Phase**: Carbon UI Phase 4 feature-parity workflows in progress  
 **Production UI**: Streamlit remains production until Carbon closes the remaining
 feature-parity and production-readiness gaps.
@@ -68,6 +68,8 @@ feature-parity and production-readiness gaps.
 - [x] Row-level unassign action for the active assignment mode
 - [x] Subnet and wave Carbon `Tag` chips in VM rows
 - [x] DnD updates flow through existing autosave and VM debounce paths
+- [x] Drop zones, assignment buttons, and VM row selectors expose descriptive accessible labels
+- [x] Playwright smoke verifies single drag, multi-select drag, unassign persistence, autosave reload, and drag/drop accessibility labels
 
 ### Carbon UI Phase 4: Streamlit Feature Parity
 
@@ -108,8 +110,9 @@ Results:
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
-drag/drop, multi-select security/storage/wave drops, autosave reload, and cleanup
-of temporary smoke projects.
+drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign
+persistence, drag/drop accessibility labels, autosave reload, and cleanup of
+temporary smoke projects.
 
 ---
 

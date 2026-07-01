@@ -28,6 +28,7 @@ This tool does not move VMware workloads by itself. It does not convert VMDK fil
 - [Terraform Output Reference](#terraform-output-reference)
 - [Migration Handoff Files](#migration-handoff-files)
 - [Priority 2 Migration Planning Workflow](#priority-2-migration-planning-workflow)
+- [Experimental Carbon UI Checkpoint](#experimental-carbon-ui-checkpoint)
 - [Recommended Migration Planning Workflow](#recommended-migration-planning-workflow)
 - [Limitations](#limitations)
 - [Troubleshooting](#troubleshooting)
@@ -1017,6 +1018,21 @@ Use it to:
 - Identify missing wave planning fields before scheduling cutover.
 - Identify unresolved remediation and pending image import work.
 - Export cutover-readiness.csv for migration command center tracking.
+
+## Experimental Carbon UI Checkpoint
+The IBM Carbon UI under `prototype/carbon-ui` is an experimental enterprise UI candidate. Streamlit remains the supported production UI until Carbon passes the promotion gates documented in [Carbon/React UI Strategy](carbon-react-ui-strategy.md) and [Carbon Promotion Gate Review](carbon-promotion-gate-review.md).
+
+As of July 1, 2026, Carbon Phase 3 drag-and-drop assignment is implemented and locally verified:
+
+- **Assignment workflow**: VM rows can be selected individually or in groups, then assigned by drag/drop or the explicit `Assign` button.
+- **Assignment targets**: Subnet, security group, storage/IOPS, and migration wave buckets all support placement through the same confirmation flow.
+- **Confirmation modal**: Drag/drop assignment opens a placement modal that confirms the target bucket and selected VM count before applying changes.
+- **Unassign actions**: Row-level actions can clear subnet, security group, storage override, and wave assignments without clearing unrelated fields on other rows.
+- **Override workflow**: Carbon includes a VM Overrides workflow for profile overrides, storage-tier overrides, exclusion reasons, and decision-audit export. Assignment rows route directly to override review for a selected VM.
+- **Persistence expectations**: Saved projects, network plans, VM assignments, override values, and dirty-state autosave use the shared FastAPI/Postgres prototype stack. If the API or database is unavailable, Carbon shows a persistence warning and the work should be treated as temporary until saved successfully.
+- **Accessibility and E2E coverage**: Drag/drop regions and row checkboxes expose descriptive accessible labels. The Playwright smoke test covers workbook upload, project save/load, single and multi-select drag/drop, unassign persistence, autosave reload, and drag/drop accessibility labels.
+
+The remaining Carbon promotion work is larger than Phase 3. Use Streamlit for production work until Carbon parity and production-readiness gaps are closed, especially full Streamlit-vs-Carbon handoff comparison coverage, broader accessibility testing, large-workbook performance validation, and production support documentation.
 
 ## Recommended Migration Planning Workflow
 1. Review `vm-mapping.csv` with infrastructure, application, security, and migration owners.
