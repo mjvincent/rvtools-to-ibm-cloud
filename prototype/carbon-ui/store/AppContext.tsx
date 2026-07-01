@@ -372,8 +372,15 @@ export type AppAction =
   | { type: 'SET_GENERATING_TERRAFORM'; payload: boolean };
 
 function appReducer(state: AppState, action: AppAction): AppState {
+  const markDirty = (nextState: AppState) => ({
+    ...nextState,
+    isDirty: true,
+    autoSaveStatus: 'Unsaved changes queued.',
+    autoSaveError: '',
+  });
+
   switch (action.type) {
-    case 'SET_SUMMARY': return { ...state, summary: action.payload, isDirty: true };
+    case 'SET_SUMMARY': return markDirty({ ...state, summary: action.payload });
     case 'SET_UPLOAD_STATUS': return { ...state, uploadStatus: action.payload };
     case 'SET_UPLOAD_ERROR': return { ...state, uploadError: action.payload };
     case 'SET_PROJECTS': return { ...state, projects: action.payload };
@@ -382,10 +389,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_PROJECT_DESCRIPTION': return { ...state, projectDescription: action.payload };
     case 'SET_PROJECT_STATUS': return { ...state, projectStatus: action.payload };
     case 'SET_PROJECT_ERROR': return { ...state, projectError: action.payload };
-    case 'SET_RESOURCES': return { ...state, resources: action.payload, isDirty: true };
-    case 'SET_ASSIGNMENT_ROWS': return { ...state, assignmentRows: action.payload, isDirty: true };
-    case 'SET_REMEDIATION_TRACKER': return { ...state, remediationTracker: action.payload, isDirty: true };
-    case 'SET_IMAGE_IMPORT_STATUS': return { ...state, imageImportStatus: action.payload, isDirty: true };
+    case 'SET_RESOURCES': return markDirty({ ...state, resources: action.payload });
+    case 'SET_ASSIGNMENT_ROWS': return markDirty({ ...state, assignmentRows: action.payload });
+    case 'SET_REMEDIATION_TRACKER': return markDirty({ ...state, remediationTracker: action.payload });
+    case 'SET_IMAGE_IMPORT_STATUS': return markDirty({ ...state, imageImportStatus: action.payload });
     case 'SET_SELECTED_VM_IDS': return { ...state, selectedVmIds: action.payload };
     case 'SET_SEARCH_VALUE': return { ...state, searchValue: action.payload };
     case 'SET_READINESS_FILTER': return { ...state, readinessFilter: action.payload };

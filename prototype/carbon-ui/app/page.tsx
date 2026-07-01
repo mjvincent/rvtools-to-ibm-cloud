@@ -210,6 +210,49 @@ function WorkbenchShell() {
     }, 0)
   ), [assignmentRows, remediationTracker]);
 
+  const saveState = React.useMemo(() => {
+    if (!persistenceEnabled) {
+      return {
+        tagType: 'gray',
+        label: 'Autosave unavailable',
+        detail: 'Persistence offline',
+      };
+    }
+    if (autoSaveError) {
+      return {
+        tagType: 'red',
+        label: 'Autosave failed',
+        detail: autoSaveError,
+      };
+    }
+    if (!selectedProjectId) {
+      return {
+        tagType: 'warm-gray',
+        label: 'Manual save required',
+        detail: 'Create or load a project',
+      };
+    }
+    if (isDirty) {
+      return {
+        tagType: 'warm-gray',
+        label: 'Autosave queued',
+        detail: 'Changes pending',
+      };
+    }
+    if (autoSaveStatus) {
+      return {
+        tagType: 'green',
+        label: 'Saved',
+        detail: 'Latest plan persisted',
+      };
+    }
+    return {
+      tagType: 'gray',
+      label: 'No changes',
+      detail: 'Ready for edits',
+    };
+  }, [autoSaveError, autoSaveStatus, isDirty, persistenceEnabled, selectedProjectId]);
+
   useEffect(() => {
     api.checkApiHealth()
       .then((payload) => {
@@ -443,6 +486,10 @@ function WorkbenchShell() {
                 <h1>RVTools to IBM Cloud VPC</h1>
               </div>
               <div className="project-controls">
+                <div className="save-state-indicator" aria-label="Project save state">
+                  <Tag type={saveState.tagType}>{saveState.label}</Tag>
+                  <span>{saveState.detail}</span>
+                </div>
                 <Select
                   id="project"
                   labelText="Saved project"
