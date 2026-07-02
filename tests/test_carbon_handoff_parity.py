@@ -3,6 +3,7 @@ import io
 import json
 from pathlib import Path
 import zipfile
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -13,6 +14,7 @@ from models.network_planning import (
     SubnetPlan,
     VmNetworkAssignment,
     VpcPlan,
+    to_dict,
 )
 from prototype.api.carbon_handoff import (
     carbon_decision_audit_csv,
@@ -30,6 +32,46 @@ from prototype.api.handoff_parity import (
 from streamlit_app.package_builder import build_terraform_bundle
 
 SAMPLES_DIR = Path(__file__).resolve().parents[1] / "samples"
+
+CARBON_MODULAR_TERRAFORM_FILES = {
+    "README.md",
+    "main.tf",
+    "variables.tf",
+    "outputs.tf",
+    "provider.tf",
+    "versions.tf",
+    "terraform.tfvars.example",
+    "modules/networking/main.tf",
+    "modules/networking/variables.tf",
+    "modules/networking/outputs.tf",
+    "modules/vsi/main.tf",
+    "modules/vsi/variables.tf",
+    "modules/vsi/outputs.tf",
+    "modules/storage/main.tf",
+    "modules/storage/variables.tf",
+    "modules/storage/outputs.tf",
+}
+
+SAMPLE_REMEDIATION_TRACKER = {
+    "sample-db-01::migration": {
+        "vm_key": "sample-db-01",
+        "owner": "db-team",
+        "status": "Open",
+        "due_date": "2026-07-15",
+        "notes": "Validate VMware Tools before cutover.",
+        "blocker_type": "Migration",
+        "blocker_description": "VMware Tools status requires review",
+    }
+}
+
+SAMPLE_IMAGE_IMPORT_STATUS = {
+    "4v / 16384M": {
+        "target_catalog_id": "r001-sample-db-image",
+        "import_status": "Pending",
+        "estimated_import_time": "60m",
+        "notes": "Track Windows image import before migration.",
+    }
+}
 
 
 def _streamlit_package_files(
@@ -137,6 +179,30 @@ def _carbon_package_files_from_records(
     remediation_tracker=None,
     image_import_status=None,
 ):
+    plan, planning_state, pricing_catalog = _carbon_plan_state_and_pricing_from_records(
+        records,
+        assessment_quality=assessment_quality,
+        remediation_tracker=remediation_tracker,
+        image_import_status=image_import_status,
+    )
+    return {
+        "decision-audit.csv": carbon_decision_audit_csv(
+            plan,
+            planning_state,
+            pricing_catalog,
+        ),
+        **carbon_state_native_handoff_files(plan, planning_state),
+        **carbon_full_handoff_files(plan, planning_state, pricing_catalog),
+    }
+
+
+def _carbon_plan_state_and_pricing_from_records(
+    records,
+    *,
+    assessment_quality=None,
+    remediation_tracker=None,
+    image_import_status=None,
+):
     subnets = []
     security_groups = []
     assignments = []
@@ -216,15 +282,7 @@ def _carbon_package_files_from_records(
             if record.get("Storage Tier")
         },
     }
-    return {
-        "decision-audit.csv": carbon_decision_audit_csv(
-            plan,
-            planning_state,
-            pricing_catalog,
-        ),
-        **carbon_state_native_handoff_files(plan, planning_state),
-        **carbon_full_handoff_files(plan, planning_state, pricing_catalog),
-    }
+    return plan, planning_state, pricing_catalog
 
 
 def _carbon_assignment_row(record):
@@ -478,25 +536,8 @@ def test_carbon_sample_workbook_populates_phase4_handoff_artifacts():
     carbon_files = _carbon_package_files_from_records(
         records,
         assessment_quality=summary["assessment_quality"],
-        remediation_tracker={
-            "sample-db-01::migration": {
-                "vm_key": "sample-db-01",
-                "owner": "db-team",
-                "status": "Open",
-                "due_date": "2026-07-15",
-                "notes": "Validate VMware Tools before cutover.",
-                "blocker_type": "Migration",
-                "blocker_description": "VMware Tools status requires review",
-            }
-        },
-        image_import_status={
-            "4v / 16384M": {
-                "target_catalog_id": "r001-sample-db-image",
-                "import_status": "Pending",
-                "estimated_import_time": "60m",
-                "notes": "Track Windows image import before migration.",
-            }
-        },
+        remediation_tracker=SAMPLE_REMEDIATION_TRACKER,
+        image_import_status=SAMPLE_IMAGE_IMPORT_STATUS,
     )
 
     for file_name in {
@@ -605,3 +646,55 @@ def test_carbon_sample_workbook_populates_phase4_handoff_artifacts():
         "notes": "Track Windows image import before migration.",
         "target_catalog_id": "r001-sample-db-image",
     }
+
+
+def test_carbon_sample_workbook_api_zip_matches_expected_handoff_inventory():
+    summary = _sample_workbook_summary()
+    records = summary["assignment_rows"]
+    plan, planning_state, _pricing_catalog = _carbon_plan_state_and_pricing_from_records(
+        records,
+        assessment_quality=summary["assessment_quality"],
+        remediation_tracker=SAMPLE_REMEDIATION_TRACKER,
+        image_import_status=SAMPLE_IMAGE_IMPORT_STATUS,
+    )
+    planning_state_json = {
+        **planning_state,
+        "carbon_network_plan": to_dict(plan),
+    }
+    project_id = "sample-carbon-parity"
+
+    with (
+        patch("prototype.api.persistence.persistence_enabled", return_value=True),
+        patch(
+            "prototype.api.persistence.get_project",
+            return_value={"id": project_id, "name": "Migration", "description": ""},
+        ),
+        patch(
+            "prototype.api.persistence.get_project_state",
+            return_value={
+                "target_region": "us-south",
+                "target_zone": "us-south-1",
+                "planning_state_json": planning_state_json,
+            },
+        ),
+    ):
+        response = TestClient(app).post(f"/api/projects/{project_id}/terraform")
+
+    assert response.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+        names = set(archive.namelist())
+        planning_state_payload = json.loads(
+            archive.read("planning-state.json").decode("utf-8")
+        )
+        network_plan_payload = json.loads(
+            archive.read("network-plan.json").decode("utf-8")
+        )
+
+    assert STREAMLIT_HANDOFF_FILES.issubset(names)
+    assert CARBON_MODULAR_TERRAFORM_FILES.issubset(names)
+    assert (
+        names - STREAMLIT_HANDOFF_FILES - CARBON_MODULAR_TERRAFORM_FILES
+        == CARBON_CURRENT_EXTRA_FILES
+    )
+    assert planning_state_payload["schema_version"] == "1.0"
+    assert network_plan_payload["metadata"]["project_name"] == "Migration"

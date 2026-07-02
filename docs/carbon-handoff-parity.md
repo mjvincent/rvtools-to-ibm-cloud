@@ -48,6 +48,10 @@ The parity tests now include:
 - Field-level assertions for `decision-audit.csv`,
   `remediation-backlog.csv`, `image-import-plan.csv`,
   `cutover-readiness.csv`, and `planning-state.json`.
+- A sample-workbook API ZIP inventory test that calls
+  `POST /api/projects/{project_id}/terraform`, verifies the full Streamlit
+  handoff inventory is present, verifies the Carbon modular Terraform layout,
+  and confirms `network-plan.json` is the only non-handoff/non-Terraform extra.
 
 Required handoff files:
 
@@ -90,13 +94,11 @@ Required handoff files:
 
 ## Recommended Implementation Order
 
-1. Add full API ZIP inventory comparison tests for sample-workbook Carbon
-   package generation.
-2. Add more Streamlit-vs-Carbon fixture comparisons for multi-VM and edge-case
+1. Add more Streamlit-vs-Carbon fixture comparisons for multi-VM and edge-case
    workbooks.
-3. Improve any remaining workbook-derived source metadata gaps found by those
+2. Improve any remaining workbook-derived source metadata gaps found by those
    fixture comparisons.
-4. Update the Carbon Export workflow to show package contents parity status
+3. Update the Carbon Export workflow to show package contents parity status
    before download.
 
 ## Promotion Gate Impact
