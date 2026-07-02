@@ -93,6 +93,7 @@ feature-parity and production-readiness gaps.
 - [x] First edge-case Streamlit-vs-Carbon fixture comparison covers multi-NIC, disk, partition, memory-readiness, and readiness-finding CSV fidelity
 - [x] Multi-VM Streamlit-vs-Carbon fixture comparison covers mixed waves, profile/storage overrides, exclusions, remediation, image import, cutover readiness, and planning-state parity
 - [x] Workshop real-workbook subset comparison covers unknown-network, low-confidence assessment-quality, missing-vMemory, image-import, and cutover-readiness parity
+- [x] Sample-workbook operational overlay comparison covers real workbook rows with wave/cutover, remediation, image import, profile/storage overrides, and planning-state parity
 - [x] Carbon Export workflow shows package parity status, corrected modular Terraform inventory, and documented Carbon-only ZIP additions before download
 - [x] Carbon Export UI inventory is backed by a shared JSON contract and tested against the backend ZIP inventory constants
 - [x] Workshop large-workbook performance guard covers FastAPI summary parsing and Carbon Terraform ZIP generation
@@ -115,7 +116,7 @@ Results:
 - TypeScript: 0 errors
 - Jest: 133 tests passing
 - Playwright: 1 browser smoke passing
-- Python pytest: 345 tests passing
+- Python pytest: 346 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
@@ -129,6 +130,8 @@ fixture for multi-NIC and disk/partition fidelity, a multi-VM operational
 fixture for overrides, exclusions, remediation, image import, cutover readiness,
 and planning-state parity, a workshop real-workbook subset fixture for
 unknown-network and low-confidence assessment-quality behavior, and
+sample-workbook operational overlays for wave/cutover, remediation, image
+import, profile/storage overrides, and planning-state parity, plus
 sample-workbook Carbon handoff contract fields for `decision-audit.csv`,
 `remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`,
 and `planning-state.json`. It also verifies the sample-workbook API ZIP
@@ -185,6 +188,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] State-native Carbon handoff ZIP files
 - [x] Full handoff artifact inventory in Carbon ZIP
 - [x] Initial Streamlit-vs-Carbon handoff fixture comparison coverage
+- [x] Real workbook operational overlay fixture coverage
 - [x] Workshop large-workbook performance guard
 - [ ] Additional real-workbook edge fixture coverage
 

@@ -1210,6 +1210,208 @@ def test_carbon_workshop_workbook_unknown_network_subset_matches_streamlit_hando
     } == expected_image_fields
 
 
+def test_carbon_sample_workbook_operational_overlays_match_streamlit_handoff():
+    summary = _sample_workbook_summary()
+    records = [dict(row) for row in summary["assignment_rows"]]
+
+    db_record = next(row for row in records if row["VM Name"] == "sample-db-01")
+    db_record.update(
+        {
+            "Owner": "db-team",
+            "Application": "Orders",
+            "Wave": "Wave 1",
+            "Cutover Group": "CG-DB",
+            "Priority": "high",
+            "Dependency Group": "orders-core",
+            "Override Storage Tier": "5iops-tier",
+            "Override Storage Tier Reason": "Archive workload after migration",
+            "Override Storage Tier Monthly Per GB": 0.10,
+        }
+    )
+
+    web_record = next(row for row in records if row["VM Name"] == "sample-web-01")
+    web_record.update(
+        {
+            "Owner": "app-team",
+            "Application": "Orders",
+            "Wave": "Wave 2",
+            "Cutover Group": "CG-Web",
+            "Priority": "medium",
+            "Dependency Group": "orders-web",
+            "Override Profile": "bx2-4x16",
+            "Override Profile Reason": "Add headroom for launch window",
+            "Override Profile Hourly": 0.188,
+            "Custom Image ID": "r001-orders-web-image",
+        }
+    )
+
+    remediation_tracker = {
+        "sample-db-01::migration": {
+            "vm_key": "sample-db-01",
+            "owner": "db-team",
+            "status": "Open",
+            "due_date": "2026-07-21",
+            "notes": "Clear snapshots and update VMware Tools.",
+            "blocker_type": "Migration",
+            "blocker_description": "VMware Tools status requires review",
+        },
+        "sample-web-01::image": {
+            "vm_key": "sample-web-01",
+            "owner": "app-team",
+            "status": "Closed",
+            "due_date": "2026-07-10",
+            "notes": "Ubuntu image import completed.",
+            "blocker_type": "Image",
+            "blocker_description": "Multiple disks detected; map data disks separately",
+        },
+    }
+    image_import_status = {
+        "4v / 16384M": {
+            "target_catalog_id": "r001-sample-db-image",
+            "import_status": "Pending",
+            "estimated_import_time": "60m",
+            "notes": "Track Windows image import before database cutover.",
+        },
+        "2v / 8192M": {
+            "target_catalog_id": "r001-orders-web-image",
+            "import_status": "Imported",
+            "estimated_import_time": "35m",
+            "notes": "Golden Ubuntu image ready for Wave 2.",
+        },
+    }
+    _plan, _planning_state, pricing_catalog = (
+        _carbon_plan_state_and_pricing_from_records(
+            records,
+            assessment_quality=summary["assessment_quality"],
+            remediation_tracker=remediation_tracker,
+            image_import_status=image_import_status,
+        )
+    )
+
+    streamlit_files = _streamlit_package_files(
+        records,
+        pricing_catalog=pricing_catalog,
+        remediation_tracker=remediation_tracker,
+        image_import_status=image_import_status,
+        assessment_quality=summary["assessment_quality"],
+    )
+    carbon_files = _carbon_package_files_from_records(
+        records,
+        assessment_quality=summary["assessment_quality"],
+        remediation_tracker=remediation_tracker,
+        image_import_status=image_import_status,
+    )
+
+    operational_files = {
+        "decision-audit.csv",
+        "remediation-backlog.csv",
+        "image-import-plan.csv",
+        "cutover-readiness.csv",
+    }
+    for file_name in operational_files:
+        assert carbon_files[file_name] == streamlit_files[file_name], file_name
+    assert _operational_planning_state(
+        carbon_files["planning-state.json"]
+    ) == _operational_planning_state(streamlit_files["planning-state.json"])
+
+    def assert_row_fields(row, expected):
+        assert {field: row[field] for field in expected} == expected
+
+    audit_rows = _csv_rows(carbon_files["decision-audit.csv"])
+    audit_by_vm = {
+        row["VM Name"]: row
+        for row in audit_rows
+        if row["VM Name"] and row["VM Name"] != "TOTAL"
+    }
+    assert_row_fields(
+        audit_by_vm["sample-db-01"],
+        {
+            "Original Storage Tier": "10iops-tier",
+            "Chosen Storage Tier": "5iops-tier",
+            "Storage Tier Override Reason": "Archive workload after migration",
+            "Include/Exclude": "Include",
+        },
+    )
+    assert_row_fields(
+        audit_by_vm["sample-web-01"],
+        {
+            "Original Profile": "bx2-2x8",
+            "Chosen Profile": "bx2-4x16",
+            "Profile Override Reason": "Add headroom for launch window",
+            "Include/Exclude": "Include",
+        },
+    )
+
+    remediation_rows = [
+        row
+        for row in _csv_rows(carbon_files["remediation-backlog.csv"])
+        if row["VM Key"]
+    ]
+    assert {row["VM Key"] for row in remediation_rows} == {
+        "sample-db-01",
+        "sample-web-01",
+    }
+    assert_row_fields(
+        next(row for row in remediation_rows if row["VM Key"] == "sample-db-01"),
+        {
+            "Owner": "db-team",
+            "Status": "Open",
+            "Due Date": "2026-07-21",
+        },
+    )
+
+    image_rows = _csv_rows(carbon_files["image-import-plan.csv"])
+    image_by_source = {row["Source Image"]: row for row in image_rows}
+    assert_row_fields(
+        image_by_source["2v / 8192M"],
+        {
+            "Count of VMs": "1",
+            "Owners": "app-team",
+            "Target Catalog ID": "r001-orders-web-image",
+            "Import Status": "Imported",
+        },
+    )
+    assert image_by_source["TOTAL"]["Count of VMs"] == "2"
+
+    cutover_rows = _csv_rows(carbon_files["cutover-readiness.csv"])
+    assert any(
+        row["VM Name"] == "sample-db-01"
+        and row["Wave"] == "Wave 1"
+        and row["Blocker Category"] == "Image Import Pending"
+        for row in cutover_rows
+    )
+    assert any(
+        row["VM Name"] == "sample-web-01"
+        and row["Wave"] == "Wave 2"
+        and row["Blocker Category"] == "Readiness Review"
+        for row in cutover_rows
+    )
+
+    planning_state = json.loads(carbon_files["planning-state.json"])
+    wave_by_vm = {
+        row["VM Name"]: row
+        for row in planning_state["wave_planning"]
+    }
+    assert_row_fields(
+        wave_by_vm["sample-db-01"],
+        {
+            "Wave": "Wave 1",
+            "Cutover Group": "CG-DB",
+            "Owner": "db-team",
+            "Application": "Orders",
+        },
+    )
+    assert_row_fields(
+        wave_by_vm["sample-web-01"],
+        {
+            "Wave": "Wave 2",
+            "Cutover Group": "CG-Web",
+            "Owner": "app-team",
+            "Application": "Orders",
+        },
+    )
+
+
 def test_carbon_sample_workbook_populates_phase4_handoff_artifacts():
     summary = _sample_workbook_summary()
     records = summary["assignment_rows"]
