@@ -239,6 +239,15 @@ def _carbon_plan_state_and_pricing_from_records(
                 owner=record["Owner"],
                 application=record["Application"],
                 boot_disk_gb=record["Boot Disk GB"],
+                excluded=record.get("Exclude?", False),
+                exclusion_reason=record.get("Exclusion Reason") or None,
+                override_profile=record.get("Override Profile") or None,
+                override_profile_reason=record.get("Override Profile Reason") or None,
+                override_storage_tier=record.get("Override Storage Tier") or None,
+                override_storage_tier_reason=(
+                    record.get("Override Storage Tier Reason") or None
+                ),
+                custom_image_id=record.get("Custom Image ID") or None,
             )
         )
 
@@ -271,17 +280,29 @@ def _carbon_plan_state_and_pricing_from_records(
             "currency": "USD",
             "last_updated": "2026-05-12T00:00:00+00:00",
         },
-        "profiles": {
-            record["IBM Profile"]: {"hourly": record["Profile Hourly"]}
-            for record in records
-            if record.get("IBM Profile")
-        },
-        "storage_tiers": {
-            record["Storage Tier"]: {"monthly_per_gb": 0.10}
-            for record in records
-            if record.get("Storage Tier")
-        },
+        "profiles": {},
+        "storage_tiers": {},
     }
+    for record in records:
+        if record.get("IBM Profile"):
+            pricing_catalog["profiles"][record["IBM Profile"]] = {
+                "hourly": record["Profile Hourly"],
+            }
+        if record.get("Override Profile"):
+            pricing_catalog["profiles"][record["Override Profile"]] = {
+                "hourly": record.get("Override Profile Hourly", record["Profile Hourly"]),
+            }
+        if record.get("Storage Tier"):
+            pricing_catalog["storage_tiers"][record["Storage Tier"]] = {
+                "monthly_per_gb": record.get("Storage Tier Monthly Per GB", 0.10),
+            }
+        if record.get("Override Storage Tier"):
+            pricing_catalog["storage_tiers"][record["Override Storage Tier"]] = {
+                "monthly_per_gb": record.get(
+                    "Override Storage Tier Monthly Per GB",
+                    record.get("Storage Tier Monthly Per GB", 0.10),
+                ),
+            }
     return plan, planning_state, pricing_catalog
 
 
@@ -295,6 +316,13 @@ def _carbon_assignment_row(record):
         "network": record["Network"],
         "profile": record["IBM Profile"],
         "storageTier": record["Storage Tier"],
+        "overrideProfile": record.get("Override Profile", ""),
+        "overrideProfileReason": record.get("Override Profile Reason", ""),
+        "overrideStorageTier": record.get("Override Storage Tier", ""),
+        "overrideStorageTierReason": record.get("Override Storage Tier Reason", ""),
+        "excluded": record.get("Exclude?", False),
+        "exclusionReason": record.get("Exclusion Reason", ""),
+        "customImageId": record.get("Custom Image ID", ""),
         "subnet": record["Subnet"],
         "securityGroup": record["Security Group"],
         "image": record["Image Readiness"],
@@ -789,6 +817,271 @@ def test_carbon_edge_fixture_preserves_mapping_and_readiness_fidelity(sample_vm_
         and row["Severity"] == "Blocked"
         for row in finding_rows
     )
+
+
+def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
+    sample_vm_record,
+):
+    records = [
+        {
+            **sample_vm_record,
+            "VM Key": "vm-app-001",
+            "VM Name": "orders-app-01",
+            "Owner": "app-team",
+            "Application": "Orders",
+            "Wave": "Wave 1",
+            "Cutover Group": "CG-App",
+            "Priority": "high",
+            "Dependency Group": "orders-core",
+            "Boot Disk GB": 80,
+            "Network": "app-net",
+            "Subnet": "module.networking.app_net_id",
+            "Security Group": "module.networking.app_net_sg_id",
+            "Image Readiness": "Ready",
+            "Readiness Reasons": "Custom image available",
+            "Migration Readiness": "Ready",
+            "Migration Readiness Reasons": "No migration readiness blockers found",
+            "Override Profile": "bx2-4x16",
+            "Override Profile Reason": "CPU headroom for checkout burst",
+            "Override Profile Hourly": 0.228,
+            "Original Specs": "rhel-9-template",
+            "Custom Image ID": "r001-orders-app-image",
+        },
+        {
+            **sample_vm_record,
+            "VM Key": "vm-db-001",
+            "VM Name": "orders-db-01",
+            "Owner": "db-team",
+            "Application": "Orders",
+            "Wave": "Wave 1",
+            "Cutover Group": "CG-DB",
+            "Priority": "critical",
+            "Dependency Group": "orders-core",
+            "Boot Disk GB": 100,
+            "Network": "db-net",
+            "Subnet": "module.networking.db_net_id",
+            "Security Group": "module.networking.db_net_sg_id",
+            "IBM Profile": "mx2-2x16",
+            "Profile Hourly": 0.20,
+            "Storage Tier": "5iops-tier",
+            "Override Storage Tier": "10iops-tier",
+            "Override Storage Tier Reason": "Production write latency target",
+            "Storage Tier Monthly Per GB": 0.10,
+            "Override Storage Tier Monthly Per GB": 0.13,
+            "Image Readiness": "Review",
+            "Readiness Reasons": "Image import pending",
+            "Migration Readiness": "Review",
+            "Migration Readiness Reasons": "Database quiesce runbook required",
+            "Memory Readiness": "Review",
+            "Memory Readiness Reasons": "Swapped memory detected",
+            "Swapped Memory MiB": 256,
+            "Original Specs": "windows-2019-template",
+        },
+        {
+            **sample_vm_record,
+            "VM Key": "vm-legacy-001",
+            "VM Name": "legacy-batch-01",
+            "Owner": "platform-team",
+            "Application": "Batch",
+            "Wave": "Wave 2",
+            "Cutover Group": "CG-Legacy",
+            "Priority": "medium",
+            "Dependency Group": "legacy",
+            "Boot Disk GB": 60,
+            "Network": "legacy-net",
+            "Subnet": "module.networking.legacy_net_id",
+            "Security Group": "module.networking.legacy_net_sg_id",
+            "Image Readiness": "Blocked",
+            "Readiness Reasons": "Guest OS requires modernization",
+            "Migration Readiness": "Blocked",
+            "Migration Readiness Reasons": "Unsupported legacy agent installed",
+            "Original Specs": "rhel-7-template",
+            "Exclude?": True,
+            "Exclusion Reason": "Retire before migration",
+        },
+    ]
+    remediation_tracker = {
+        "vm-db-001::migration": {
+            "vm_key": "vm-db-001",
+            "owner": "db-team",
+            "status": "Open",
+            "due_date": "2026-07-20",
+            "notes": "Confirm quiesce steps with database owner.",
+            "blocker_type": "Migration",
+            "blocker_description": "Database quiesce runbook required",
+        },
+        "vm-legacy-001::image": {
+            "vm_key": "vm-legacy-001",
+            "owner": "platform-team",
+            "status": "Closed",
+            "due_date": "2026-07-01",
+            "notes": "Retirement approved.",
+            "blocker_type": "Image",
+            "blocker_description": "Guest OS requires modernization",
+        },
+    }
+    image_import_status = {
+        "rhel-9-template": {
+            "target_catalog_id": "r001-orders-app-image",
+            "import_status": "Imported",
+            "estimated_import_time": "45m",
+            "notes": "Ready for Wave 1.",
+        },
+        "windows-2019-template": {
+            "target_catalog_id": "r001-orders-db-image",
+            "import_status": "Pending",
+            "estimated_import_time": "90m",
+            "notes": "Track before database cutover.",
+        },
+        "rhel-7-template": {
+            "target_catalog_id": "",
+            "import_status": "Not Required",
+            "estimated_import_time": "",
+            "notes": "VM excluded from migration.",
+        },
+    }
+    _plan, _planning_state, pricing_catalog = (
+        _carbon_plan_state_and_pricing_from_records(
+            records,
+            remediation_tracker=remediation_tracker,
+            image_import_status=image_import_status,
+        )
+    )
+
+    streamlit_files = _streamlit_package_files(
+        records,
+        pricing_catalog=pricing_catalog,
+        remediation_tracker=remediation_tracker,
+        image_import_status=image_import_status,
+    )
+    carbon_files = _carbon_package_files_from_records(
+        records,
+        remediation_tracker=remediation_tracker,
+        image_import_status=image_import_status,
+    )
+
+    operational_files = {
+        "decision-audit.csv",
+        "remediation-backlog.csv",
+        "image-import-plan.csv",
+        "cutover-readiness.csv",
+    }
+    for file_name in operational_files:
+        assert carbon_files[file_name] == streamlit_files[file_name], file_name
+    assert _operational_planning_state(
+        carbon_files["planning-state.json"]
+    ) == _operational_planning_state(streamlit_files["planning-state.json"])
+
+    def assert_row_fields(row, expected):
+        assert {field: row[field] for field in expected} == expected
+
+    audit_rows = _csv_rows(carbon_files["decision-audit.csv"])
+    audit_by_vm = {
+        row["VM Name"]: row
+        for row in audit_rows
+        if row["VM Name"] and row["VM Name"] != "TOTAL"
+    }
+    assert set(audit_by_vm) == {
+        "orders-app-01",
+        "orders-db-01",
+        "legacy-batch-01",
+    }
+    assert_row_fields(
+        audit_by_vm["orders-app-01"],
+        {
+            "Chosen Profile": "bx2-4x16",
+            "Profile Override Reason": "CPU headroom for checkout burst",
+            "Include/Exclude": "Include",
+            "Total Pricing Impact": "82.08",
+        },
+    )
+    assert_row_fields(
+        audit_by_vm["orders-db-01"],
+        {
+            "Original Storage Tier": "5iops-tier",
+            "Chosen Storage Tier": "10iops-tier",
+            "Storage Tier Override Reason": "Production write latency target",
+            "Storage Cost Delta": "6.0",
+        },
+    )
+    assert_row_fields(
+        audit_by_vm["legacy-batch-01"],
+        {
+            "Include/Exclude": "Exclude",
+            "Exclusion Reason": "Retire before migration",
+        },
+    )
+
+    remediation_rows = [
+        row
+        for row in _csv_rows(carbon_files["remediation-backlog.csv"])
+        if row["VM Key"]
+    ]
+    assert {row["VM Key"] for row in remediation_rows} == {
+        "vm-db-001",
+        "vm-legacy-001",
+    }
+    assert_row_fields(
+        next(row for row in remediation_rows if row["VM Key"] == "vm-db-001"),
+        {
+            "VM Name": "unknown-vm",
+            "Status": "Open",
+            "Blocker Description": "Database quiesce runbook required",
+        },
+    )
+
+    image_rows = _csv_rows(carbon_files["image-import-plan.csv"])
+    image_by_source = {row["Source Image"]: row for row in image_rows}
+    assert_row_fields(
+        image_by_source["windows-2019-template"],
+        {
+            "Count of VMs": "1",
+            "Owners": "db-team",
+            "Import Status": "Pending",
+            "Estimated Import Time": "90m",
+        },
+    )
+    assert image_by_source["TOTAL"]["Count of VMs"] == "3"
+
+    cutover_rows = _csv_rows(carbon_files["cutover-readiness.csv"])
+    assert any(
+        row["VM Name"] == "orders-db-01"
+        and row["Blocker Category"] == "Image Import Pending"
+        and row["Blocker Reason"] == "windows-2019-template import status is Pending"
+        for row in cutover_rows
+    )
+    assert any(
+        row["VM Name"] == "legacy-batch-01"
+        and row["Blocker Category"] == "Readiness Blocker"
+        and row["Cutover Status"] == "Blocked"
+        for row in cutover_rows
+    )
+
+    planning_state = json.loads(carbon_files["planning-state.json"])
+    decisions_by_vm = {
+        row["VM Name"]: row
+        for row in planning_state["vm_decisions"]
+    }
+    assert_row_fields(
+        decisions_by_vm["orders-app-01"],
+        {
+            "Override Profile": "bx2-4x16",
+            "Override Storage Tier": "",
+            "Exclude?": False,
+        },
+    )
+    assert_row_fields(
+        decisions_by_vm["legacy-batch-01"],
+        {
+            "Override Profile": "",
+            "Override Storage Tier": "",
+            "Exclude?": True,
+        },
+    )
+    assert {row["Wave"] for row in planning_state["wave_planning"]} == {
+        "Wave 1",
+        "Wave 2",
+    }
 
 
 def test_carbon_sample_workbook_populates_phase4_handoff_artifacts():

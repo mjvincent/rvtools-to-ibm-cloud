@@ -45,6 +45,9 @@ The parity tests now include:
   across the core package files.
 - An edge-case Streamlit-vs-Carbon fixture comparison for exact VM, disk,
   partition, NIC, memory-readiness, and readiness-finding CSV content.
+- A multi-VM Streamlit-vs-Carbon fixture comparison for exact operational
+  handoff parity across decision audit, remediation backlog, image import,
+  cutover readiness, and planning-state content.
 - A sample-workbook Carbon contract test using
   `samples/rvtools-small-complete.xlsx` through the FastAPI upload summary path.
 - Field-level assertions for `decision-audit.csv`,
@@ -96,8 +99,8 @@ Required handoff files:
 
 ## Recommended Implementation Order
 
-1. Add more Streamlit-vs-Carbon fixture comparisons for multi-VM and additional
-   edge-case workbooks.
+1. Add more Streamlit-vs-Carbon fixture comparisons for additional edge-case
+   workbooks.
 2. Improve any remaining workbook-derived source metadata gaps found by those
    fixture comparisons.
 3. Update the Carbon Export workflow to show package contents parity status

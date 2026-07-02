@@ -91,6 +91,7 @@ feature-parity and production-readiness gaps.
 - [x] Sample-workbook Carbon handoff contract coverage validates decision audit, remediation backlog, image import plan, cutover readiness, and planning-state fields
 - [x] Sample-workbook API ZIP inventory coverage verifies full handoff inventory, Carbon modular Terraform files, and documented Carbon-only `network-plan.json`
 - [x] First edge-case Streamlit-vs-Carbon fixture comparison covers multi-NIC, disk, partition, memory-readiness, and readiness-finding CSV fidelity
+- [x] Multi-VM Streamlit-vs-Carbon fixture comparison covers mixed waves, profile/storage overrides, exclusions, remediation, image import, cutover readiness, and planning-state parity
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
@@ -110,7 +111,7 @@ Results:
 - TypeScript: 0 errors
 - Jest: 133 tests passing
 - Playwright: 1 browser smoke passing
-- Python pytest: 341 tests passing
+- Python pytest: 342 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
@@ -120,11 +121,12 @@ temporary smoke projects.
 
 The Python parity suite includes `tests/test_carbon_handoff_parity.py`, which
 now covers Streamlit-vs-Carbon fixture parity, an edge-case mapping/readiness
-fixture for multi-NIC and disk/partition fidelity, and sample-workbook Carbon
-handoff contract fields for `decision-audit.csv`, `remediation-backlog.csv`,
-`image-import-plan.csv`, `cutover-readiness.csv`, and `planning-state.json`.
-It also verifies the sample-workbook API ZIP inventory from
-`POST /api/projects/{project_id}/terraform`.
+fixture for multi-NIC and disk/partition fidelity, a multi-VM operational
+fixture for overrides, exclusions, remediation, image import, cutover readiness,
+and planning-state parity, and sample-workbook Carbon handoff contract fields
+for `decision-audit.csv`, `remediation-backlog.csv`, `image-import-plan.csv`,
+`cutover-readiness.csv`, and `planning-state.json`. It also verifies the
+sample-workbook API ZIP inventory from `POST /api/projects/{project_id}/terraform`.
 
 ---
 
