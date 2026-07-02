@@ -57,6 +57,9 @@ The parity tests now include:
   `POST /api/projects/{project_id}/terraform`, verifies the full Streamlit
   handoff inventory is present, verifies the Carbon modular Terraform layout,
   and confirms `network-plan.json` is the only non-handoff/non-Terraform extra.
+- A Carbon Export UI inventory drift test that compares the shared UI JSON
+  inventory with backend handoff, modular Terraform, and Carbon-only ZIP
+  constants.
 
 Required handoff files:
 

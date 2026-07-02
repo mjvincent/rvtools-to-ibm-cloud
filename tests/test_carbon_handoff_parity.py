@@ -23,6 +23,7 @@ from prototype.api.carbon_handoff import (
 )
 from prototype.api.app import app
 from prototype.api.handoff_parity import (
+    CARBON_MODULAR_TERRAFORM_FILES,
     CARBON_CURRENT_EXTRA_FILES,
     CARBON_PARITY_BLOCKERS,
     STREAMLIT_HANDOFF_FILES,
@@ -32,25 +33,13 @@ from prototype.api.handoff_parity import (
 from streamlit_app.package_builder import build_terraform_bundle
 
 SAMPLES_DIR = Path(__file__).resolve().parents[1] / "samples"
-
-CARBON_MODULAR_TERRAFORM_FILES = {
-    "README.md",
-    "main.tf",
-    "variables.tf",
-    "outputs.tf",
-    "provider.tf",
-    "versions.tf",
-    "terraform.tfvars.example",
-    "modules/networking/main.tf",
-    "modules/networking/variables.tf",
-    "modules/networking/outputs.tf",
-    "modules/vsi/main.tf",
-    "modules/vsi/variables.tf",
-    "modules/vsi/outputs.tf",
-    "modules/storage/main.tf",
-    "modules/storage/variables.tf",
-    "modules/storage/outputs.tf",
-}
+CARBON_UI_PACKAGE_INVENTORY = (
+    Path(__file__).resolve().parents[1]
+    / "prototype"
+    / "carbon-ui"
+    / "utils"
+    / "package-inventory.json"
+)
 
 SAMPLE_REMEDIATION_TRACKER = {
     "sample-db-01::migration": {
@@ -444,6 +433,14 @@ def test_carbon_parity_blockers_are_subset_of_streamlit_package():
 
 def test_carbon_current_extra_files_are_documented():
     assert CARBON_CURRENT_EXTRA_FILES == {"network-plan.json"}
+
+
+def test_carbon_export_ui_inventory_matches_backend_zip_contract():
+    inventory = json.loads(CARBON_UI_PACKAGE_INVENTORY.read_text())
+
+    assert set(inventory["handoffPackageFiles"]) == STREAMLIT_HANDOFF_FILES
+    assert set(inventory["terraformPackageFiles"]) == CARBON_MODULAR_TERRAFORM_FILES
+    assert set(inventory["carbonPackageFiles"]) == CARBON_CURRENT_EXTRA_FILES
 
 
 def test_carbon_package_handoff_contents_match_streamlit_fixture(sample_vm_record):

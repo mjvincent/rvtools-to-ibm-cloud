@@ -93,6 +93,7 @@ feature-parity and production-readiness gaps.
 - [x] First edge-case Streamlit-vs-Carbon fixture comparison covers multi-NIC, disk, partition, memory-readiness, and readiness-finding CSV fidelity
 - [x] Multi-VM Streamlit-vs-Carbon fixture comparison covers mixed waves, profile/storage overrides, exclusions, remediation, image import, cutover readiness, and planning-state parity
 - [x] Carbon Export workflow shows package parity status, corrected modular Terraform inventory, and documented Carbon-only ZIP additions before download
+- [x] Carbon Export UI inventory is backed by a shared JSON contract and tested against the backend ZIP inventory constants
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
@@ -112,7 +113,7 @@ Results:
 - TypeScript: 0 errors
 - Jest: 133 tests passing
 - Playwright: 1 browser smoke passing
-- Python pytest: 342 tests passing
+- Python pytest: 343 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet

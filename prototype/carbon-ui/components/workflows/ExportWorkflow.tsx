@@ -5,51 +5,13 @@ import { Button, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
 import { Download } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import { generateTerraform, saveNetworkPlan } from '../../hooks/useApi';
+import {
+  carbonPackageFiles,
+  handoffPackageFiles,
+  packageFileCount,
+  terraformPackageFiles,
+} from '../../utils/package-inventory';
 import { buildNetworkPlanBody } from '../../utils/planning-state';
-
-export const terraformPackageFiles = [
-  'README.md',
-  'main.tf',
-  'variables.tf',
-  'outputs.tf',
-  'provider.tf',
-  'versions.tf',
-  'terraform.tfvars.example',
-  'modules/networking/main.tf',
-  'modules/networking/variables.tf',
-  'modules/networking/outputs.tf',
-  'modules/vsi/main.tf',
-  'modules/vsi/variables.tf',
-  'modules/vsi/outputs.tf',
-  'modules/storage/main.tf',
-  'modules/storage/variables.tf',
-  'modules/storage/outputs.tf',
-];
-
-export const handoffPackageFiles = [
-  'migration-manifest.json',
-  'assessment-quality.json',
-  'assessment-quality.csv',
-  'preflight-report.json',
-  'preflight-report.csv',
-  'pricing-diagnostics.json',
-  'pricing-diagnostics.csv',
-  'decision-audit.csv',
-  'remediation-backlog.csv',
-  'image-import-plan.csv',
-  'cutover-readiness.csv',
-  'planning-state.json',
-  'vm-mapping.csv',
-  'disk-mapping.csv',
-  'partition-mapping.csv',
-  'nic-mapping.csv',
-  'memory-readiness.csv',
-  'readiness-findings.csv',
-  'image-import-variables.tfvars.example',
-  'migration-runbook.md',
-];
-
-export const carbonPackageFiles = ['network-plan.json'];
 
 const packageGroups = [
   {
@@ -143,7 +105,6 @@ export default function ExportWorkflow() {
     ['Labels needing Terraform cleanup', planningCompleteness.invalidLabels],
   ];
   const blockingFindingCount = findings.reduce((total, [, count]) => total + count, 0);
-  const packageFileCount = packageGroups.reduce((total, group) => total + group.files.length, 0);
 
   async function handleDownloadTerraform() {
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });

@@ -1,0 +1,45 @@
+{
+  "terraformPackageFiles": [
+    "README.md",
+    "main.tf",
+    "variables.tf",
+    "outputs.tf",
+    "provider.tf",
+    "versions.tf",
+    "terraform.tfvars.example",
+    "modules/networking/main.tf",
+    "modules/networking/variables.tf",
+    "modules/networking/outputs.tf",
+    "modules/vsi/main.tf",
+    "modules/vsi/variables.tf",
+    "modules/vsi/outputs.tf",
+    "modules/storage/main.tf",
+    "modules/storage/variables.tf",
+    "modules/storage/outputs.tf"
+  ],
+  "handoffPackageFiles": [
+    "migration-manifest.json",
+    "assessment-quality.json",
+    "assessment-quality.csv",
+    "preflight-report.json",
+    "preflight-report.csv",
+    "pricing-diagnostics.json",
+    "pricing-diagnostics.csv",
+    "decision-audit.csv",
+    "remediation-backlog.csv",
+    "image-import-plan.csv",
+    "cutover-readiness.csv",
+    "planning-state.json",
+    "vm-mapping.csv",
+    "disk-mapping.csv",
+    "partition-mapping.csv",
+    "nic-mapping.csv",
+    "memory-readiness.csv",
+    "readiness-findings.csv",
+    "image-import-variables.tfvars.example",
+    "migration-runbook.md"
+  ],
+  "carbonPackageFiles": [
+    "network-plan.json"
+  ]
+}
