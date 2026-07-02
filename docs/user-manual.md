@@ -733,6 +733,10 @@ The ZIP bundle contains two categories of output:
 | `modules/vsi/main.tf` | VSI resources, network interfaces, and data volume attachments. |
 | `modules/vsi/variables.tf` | VSI module variables. |
 | `modules/vsi/outputs.tf` | VSI module outputs. |
+| `provider.tf` | Carbon-generated ZIP only: provider configuration separated from root module logic. |
+| `versions.tf` | Carbon-generated ZIP only: Terraform and provider version constraints. |
+| `terraform.tfvars.example` | Carbon-generated ZIP only: example variable values for review before creating an operator-owned tfvars file. |
+| `network-plan.json` | Carbon-generated ZIP only: saved Carbon network planning state used by the FastAPI Terraform renderer. |
 | `migration-manifest.json` | Structured source-to-target migration handoff document. |
 | `vm-mapping.csv` | Spreadsheet-friendly VM-level migration mapping. |
 | `nic-mapping.csv` | Per-NIC source-to-target network mapping with optional switch/port context. |
@@ -1020,19 +1024,24 @@ Use it to:
 - Export cutover-readiness.csv for migration command center tracking.
 
 ## Experimental Carbon UI Checkpoint
-The IBM Carbon UI under `prototype/carbon-ui` is an experimental enterprise UI candidate. Streamlit remains the supported production UI until Carbon passes the promotion gates documented in [Carbon/React UI Strategy](carbon-react-ui-strategy.md) and [Carbon Promotion Gate Review](carbon-promotion-gate-review.md).
+The IBM Carbon UI under `prototype/carbon-ui` is an experimental enterprise UI candidate. Streamlit remains the supported production UI until Carbon passes the promotion gates documented in [Carbon/React UI Strategy](carbon-react-ui-strategy.md), [Carbon Promotion Gate Review](carbon-promotion-gate-review.md), and [Carbon Handoff Parity](carbon-handoff-parity.md).
 
-As of July 1, 2026, Carbon Phase 3 drag-and-drop assignment is implemented and locally verified:
+As of July 2, 2026, Carbon includes the core planning path, Phase 4 workflow surfaces, and package parity checks needed for continued evaluation:
 
+- **Workbook intake and overview**: Carbon uploads RVTools workbooks through the shared FastAPI summary path, then shows estate metrics, readiness counts, project persistence status, and saved-project controls.
 - **Assignment workflow**: VM rows can be selected individually or in groups, then assigned by drag/drop or the explicit `Assign` button.
 - **Assignment targets**: Subnet, security group, storage/IOPS, and migration wave buckets all support placement through the same confirmation flow.
 - **Confirmation modal**: Drag/drop assignment opens a placement modal that confirms the target bucket and selected VM count before applying changes.
 - **Unassign actions**: Row-level actions can clear subnet, security group, storage override, and wave assignments without clearing unrelated fields on other rows.
-- **Override workflow**: Carbon includes a VM Overrides workflow for profile overrides, storage-tier overrides, exclusion reasons, and decision-audit export. Assignment rows route directly to override review for a selected VM.
+- **Readiness routing**: Non-ready image, migration, memory, and network readiness chips include descriptive accessible labels. Clicking a reviewable chip routes the user to the matching Carbon workflow for investigation and remediation planning.
+- **Override workflow**: Carbon includes a VM Overrides workflow for profile overrides, storage-tier overrides, exclusion reasons, override reasons, pricing-impact review, and decision-audit CSV export. Assignment rows route directly to override review for a selected VM.
+- **Wave planning, remediation, image import, and migration ops**: Carbon includes workflow tabs for wave metadata, remediation backlog tracking, image import status, and cutover readiness. These workflows persist through saved project state and contribute to the generated handoff ZIP.
+- **Export parity status**: Carbon Export shows package parity status before download. It identifies the Streamlit handoff file set, the Carbon modular Terraform layout, and the documented Carbon-only `network-plan.json` addition.
+- **Terraform ZIP contents**: Carbon-generated ZIPs include the Streamlit handoff inventory, Carbon modular Terraform files, and `network-plan.json`. The UI inventory is backed by a shared JSON contract and tested against backend ZIP inventory constants to prevent drift.
 - **Persistence expectations**: Saved projects, network plans, VM assignments, override values, and dirty-state autosave use the shared FastAPI/Postgres prototype stack. If the API or database is unavailable, Carbon shows a persistence warning and the work should be treated as temporary until saved successfully.
 - **Accessibility and E2E coverage**: Drag/drop regions and row checkboxes expose descriptive accessible labels. The Playwright smoke test covers workbook upload, project save/load, single and multi-select drag/drop, unassign persistence, autosave reload, and drag/drop accessibility labels.
 
-The remaining Carbon promotion work is larger than Phase 3. Use Streamlit for production work until Carbon parity and production-readiness gaps are closed, especially full Streamlit-vs-Carbon handoff comparison coverage, broader accessibility testing, large-workbook performance validation, and production support documentation.
+Use Carbon for prototype evaluation and parity review, not production migration handoff. Use Streamlit for production work until Carbon parity and production-readiness gaps are closed, especially additional real-workbook parity fixtures, broader accessibility testing, large-workbook performance validation, production support documentation, and a formal go/no-go promotion decision.
 
 ## Recommended Migration Planning Workflow
 1. Review `vm-mapping.csv` with infrastructure, application, security, and migration owners.
