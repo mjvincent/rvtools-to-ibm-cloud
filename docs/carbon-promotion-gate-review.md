@@ -18,8 +18,9 @@ verified.
 Carbon has not crossed the production replacement threshold. The remaining gaps
 are mostly production-hardening and deeper parity evidence: additional
 real-workbook handoff fixture coverage, broader accessibility and browser
-coverage, large-workbook performance, production support posture, and a formal
-Streamlit-to-Carbon cutover plan.
+coverage, broader large-workbook performance coverage beyond the workshop
+sample, production support posture, and a formal Streamlit-to-Carbon cutover
+plan.
 
 ## Gate Matrix
 
@@ -28,8 +29,8 @@ Streamlit-to-Carbon cutover plan.
 | Gate 1: Core Functionality | Pass | Workbook upload calls FastAPI summary; project save/load uses Postgres; drag/drop assigns subnet/security/storage/wave; Terraform ZIP export works from saved Carbon network plans. | Keep maintaining regression coverage as parity work lands. | Maintenance |
 | Gate 2: Feature Parity | Partial | Carbon now has workflow surfaces for wave planning, remediation backlog, image import planning, migration ops, VM overrides, decision audit, handoff ZIP files, and Streamlit-vs-Carbon fixture comparisons. | Add more real-workbook edge fixtures and close remaining Streamlit bulk/edge workflow gaps before promotion. | Phase 4 and Phase 5 |
 | Gate 3: Network Planning | Partial | Carbon supports VPC/subnet/security/storage/wave/network component planning, saved network plans, diagram display, Terraform generation, and package inventory parity status. | Add richer network component editing, clickable/editable diagram nodes, Carbon-side preflight feedback, and Terraform preview. | Phase 5 and Phase 6 |
-| Gate 4: User Experience | Partial | Native drag/drop supports single and multi-select assignment with confirmation modal, drop highlighting, row tags, row-level unassign, readiness-chip routing, and explicit checkbox/drop-zone accessible labels. | Run accessibility audit, keyboard-only DnD review, mobile/tablet review, and large-workbook UX/performance tests. | Phase 6 |
-| Gate 5: Quality and Testing | Partial | Verified: Python compile/full pytest, Carbon TypeScript, Jest, Playwright smoke, handoff parity fixtures, API ZIP inventory guard, and UI/backend ZIP inventory drift guard. | Add broader e2e coverage for failure paths, multiple browsers, large workbooks, accessibility automation, and more real-workbook parity fixtures. | Phase 4-6 |
+| Gate 4: User Experience | Partial | Native drag/drop supports single and multi-select assignment with confirmation modal, drop highlighting, row tags, row-level unassign, readiness-chip routing, and explicit checkbox/drop-zone accessible labels. | Run accessibility audit, keyboard-only DnD review, mobile/tablet review, and large-workbook UX/performance tests beyond the workshop sample. | Phase 6 |
+| Gate 5: Quality and Testing | Partial | Verified: Python compile/full pytest, Carbon TypeScript, Jest, Playwright smoke, handoff parity fixtures, API ZIP inventory guard, UI/backend ZIP inventory drift guard, and workshop large-workbook summary/ZIP performance guard. | Add broader e2e coverage for failure paths, multiple browsers, additional large workbooks, accessibility automation, and more real-workbook parity fixtures. | Phase 4-6 |
 | Gate 6: Production Readiness | Partial | Docker Compose starts Streamlit, API, Carbon UI, and Postgres; Carbon healthcheck reports healthy; persistence warning exists; user manual now documents the Carbon checkpoint and production boundary. | Add operational monitoring/logging review, backup/recovery guidance, promotion/cutover guide, and support posture. | Phase 6 |
 
 ## Validation Evidence
@@ -47,7 +48,7 @@ npm run test:e2e
 
 Observed results:
 - Python compile: passed
-- Python pytest: 344 passed
+- Python pytest: 345 passed
 - Carbon TypeScript: 0 errors
 - Carbon Jest: 133 passed
 - Carbon Playwright smoke: passed
@@ -62,6 +63,8 @@ The Python parity suite now includes Streamlit-vs-Carbon single-VM, edge-case,
 multi-VM, and workshop real-workbook subset comparisons; sample-workbook handoff
 contract assertions; sample-workbook API ZIP inventory verification; and a
 Carbon Export UI inventory drift test against backend ZIP inventory constants.
+The Python suite also guards workshop workbook summary parsing and Carbon
+Terraform ZIP generation performance.
 
 ## Phase 4 Status
 
@@ -118,7 +121,9 @@ Current feature-parity status:
    - Streamlit-vs-Carbon fixture coverage now includes a synthetic fixture,
      multi-NIC/disk/partition/memory/readiness edge fixture, multi-VM
      operational fixture, sample-workbook contract assertions, API ZIP inventory
-     verification, and Export UI/backend inventory drift protection.
+     verification, Export UI/backend inventory drift protection, and workshop
+     workbook performance coverage for summary parsing and Terraform ZIP
+     generation.
    - Remaining: additional real-workbook edge fixtures and promotion-gate
      evidence for large or unusual customer workbooks.
 
@@ -135,7 +140,7 @@ Current feature-parity status:
 ## Phase 6 Backlog
 
 - Accessibility audit, including keyboard-only workflows and DnD alternatives.
-- Performance benchmark for large RVTools workbooks.
+- Broader performance benchmark suite for large RVTools workbooks.
 - Multi-browser e2e coverage.
 - Keep Carbon-specific user documentation current as promotion criteria change.
 - Production support model, monitoring/logging review, and backup/recovery notes.
@@ -152,5 +157,5 @@ real-workbook parity evidence, broader accessibility/browser/performance
 coverage, and production support documentation.
 
 **Next review trigger**: Re-run this gate review after additional real-workbook
-edge fixtures, large-workbook performance validation, and broader accessibility
-coverage are complete.
+edge fixtures, broader large-workbook performance validation, and broader
+accessibility coverage are complete.

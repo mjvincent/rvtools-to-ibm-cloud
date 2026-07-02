@@ -95,6 +95,7 @@ feature-parity and production-readiness gaps.
 - [x] Workshop real-workbook subset comparison covers unknown-network, low-confidence assessment-quality, missing-vMemory, image-import, and cutover-readiness parity
 - [x] Carbon Export workflow shows package parity status, corrected modular Terraform inventory, and documented Carbon-only ZIP additions before download
 - [x] Carbon Export UI inventory is backed by a shared JSON contract and tested against the backend ZIP inventory constants
+- [x] Workshop large-workbook performance guard covers FastAPI summary parsing and Carbon Terraform ZIP generation
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
@@ -114,7 +115,7 @@ Results:
 - TypeScript: 0 errors
 - Jest: 133 tests passing
 - Playwright: 1 browser smoke passing
-- Python pytest: 344 tests passing
+- Python pytest: 345 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
@@ -131,7 +132,8 @@ unknown-network and low-confidence assessment-quality behavior, and
 sample-workbook Carbon handoff contract fields for `decision-audit.csv`,
 `remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`,
 and `planning-state.json`. It also verifies the sample-workbook API ZIP
-inventory from `POST /api/projects/{project_id}/terraform`.
+inventory from `POST /api/projects/{project_id}/terraform` and guards the
+workshop workbook summary/ZIP path against performance regressions.
 
 ---
 
@@ -148,7 +150,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
      packages and edge-case workbooks
 
 2. **Production readiness**
-   - Large-workbook performance benchmark
+   - Broader large-workbook performance benchmark suite beyond the workshop sample
    - Accessibility audit
    - Full browser coverage beyond the smoke path
    - Promotion/cutover guide from Streamlit to Carbon
@@ -183,6 +185,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] State-native Carbon handoff ZIP files
 - [x] Full handoff artifact inventory in Carbon ZIP
 - [x] Initial Streamlit-vs-Carbon handoff fixture comparison coverage
+- [x] Workshop large-workbook performance guard
 - [ ] Additional real-workbook edge fixture coverage
 
 ### Phase 5: Complete Handoff Package Parity
@@ -193,7 +196,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 ### Phase 6: Polish and Promotion
 - [ ] Accessibility audit
-- [ ] Performance benchmark
+- [x] Workshop large-workbook performance guard
+- [ ] Broader performance benchmark suite
 - [x] Carbon checkpoint documented in user manual
 - [ ] Promotion/cutover documentation
 - [ ] User acceptance testing
