@@ -92,6 +92,7 @@ feature-parity and production-readiness gaps.
 - [x] Sample-workbook API ZIP inventory coverage verifies full handoff inventory, Carbon modular Terraform files, and documented Carbon-only `network-plan.json`
 - [x] First edge-case Streamlit-vs-Carbon fixture comparison covers multi-NIC, disk, partition, memory-readiness, and readiness-finding CSV fidelity
 - [x] Multi-VM Streamlit-vs-Carbon fixture comparison covers mixed waves, profile/storage overrides, exclusions, remediation, image import, cutover readiness, and planning-state parity
+- [x] Workshop real-workbook subset comparison covers unknown-network, low-confidence assessment-quality, missing-vMemory, image-import, and cutover-readiness parity
 - [x] Carbon Export workflow shows package parity status, corrected modular Terraform inventory, and documented Carbon-only ZIP additions before download
 - [x] Carbon Export UI inventory is backed by a shared JSON contract and tested against the backend ZIP inventory constants
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
@@ -113,7 +114,7 @@ Results:
 - TypeScript: 0 errors
 - Jest: 133 tests passing
 - Playwright: 1 browser smoke passing
-- Python pytest: 343 tests passing
+- Python pytest: 344 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
@@ -125,10 +126,12 @@ The Python parity suite includes `tests/test_carbon_handoff_parity.py`, which
 now covers Streamlit-vs-Carbon fixture parity, an edge-case mapping/readiness
 fixture for multi-NIC and disk/partition fidelity, a multi-VM operational
 fixture for overrides, exclusions, remediation, image import, cutover readiness,
-and planning-state parity, and sample-workbook Carbon handoff contract fields
-for `decision-audit.csv`, `remediation-backlog.csv`, `image-import-plan.csv`,
-`cutover-readiness.csv`, and `planning-state.json`. It also verifies the
-sample-workbook API ZIP inventory from `POST /api/projects/{project_id}/terraform`.
+and planning-state parity, a workshop real-workbook subset fixture for
+unknown-network and low-confidence assessment-quality behavior, and
+sample-workbook Carbon handoff contract fields for `decision-audit.csv`,
+`remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`,
+and `planning-state.json`. It also verifies the sample-workbook API ZIP
+inventory from `POST /api/projects/{project_id}/terraform`.
 
 ---
 

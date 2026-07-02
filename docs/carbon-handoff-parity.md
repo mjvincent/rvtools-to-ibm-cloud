@@ -48,6 +48,9 @@ The parity tests now include:
 - A multi-VM Streamlit-vs-Carbon fixture comparison for exact operational
   handoff parity across decision audit, remediation backlog, image import,
   cutover readiness, and planning-state content.
+- A workshop real-workbook subset comparison from
+  `samples/SizingWorkshop-RVTools.xlsx` for unknown-network, low assessment
+  confidence, missing-vMemory, image-import, and cutover-readiness parity.
 - A sample-workbook Carbon contract test using
   `samples/rvtools-small-complete.xlsx` through the FastAPI upload summary path.
 - Field-level assertions for `decision-audit.csv`,

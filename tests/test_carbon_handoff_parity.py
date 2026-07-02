@@ -69,6 +69,7 @@ def _streamlit_package_files(
     pricing_catalog,
     remediation_tracker,
     image_import_status,
+    assessment_quality=None,
 ):
     bundle = build_terraform_bundle(
         final_vms,
@@ -83,7 +84,7 @@ def _streamlit_package_files(
         "Migration",
         "",
         pricing_catalog["metadata"],
-        {},
+        assessment_quality or {},
         pricing_catalog,
         [],
         remediation_tracker,
@@ -303,6 +304,10 @@ def _carbon_assignment_row(record):
         "guestOs": record["Guest OS"],
         "sourceIp": record["Source IP"],
         "network": record["Network"],
+        "datacenter": record.get("Datacenter", ""),
+        "cluster": record.get("Cluster", ""),
+        "host": record.get("Host", ""),
+        "firmware": record.get("Firmware", ""),
         "profile": record["IBM Profile"],
         "storageTier": record["Storage Tier"],
         "overrideProfile": record.get("Override Profile", ""),
@@ -376,6 +381,24 @@ def _csv_rows(text):
 def _sample_workbook_summary():
     client = TestClient(app)
     sample_path = SAMPLES_DIR / "rvtools-small-complete.xlsx"
+    with sample_path.open("rb") as workbook:
+        response = client.post(
+            "/api/workbooks/summary",
+            files={
+                "workbook": (
+                    sample_path.name,
+                    workbook,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
+        )
+    assert response.status_code == 200
+    return response.json()
+
+
+def _workshop_workbook_summary():
+    client = TestClient(app)
+    sample_path = SAMPLES_DIR / "SizingWorkshop-RVTools.xlsx"
     with sample_path.open("rb") as workbook:
         response = client.post(
             "/api/workbooks/summary",
@@ -1079,6 +1102,112 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
         "Wave 1",
         "Wave 2",
     }
+
+
+def test_carbon_workshop_workbook_unknown_network_subset_matches_streamlit_handoff():
+    summary = _workshop_workbook_summary()
+    records = [
+        next(
+            row
+            for row in summary["assignment_rows"]
+            if row["VM Name"] == vm_name
+        )
+        for vm_name in ("AKWSVCIDM1-1", "BBWMFG01", "BOWAB10SP1JS02")
+    ]
+    image_import_status = {
+        "1v / 4096M": {
+            "target_catalog_id": "",
+            "import_status": "Pending",
+            "estimated_import_time": "30m",
+            "notes": "Workshop unknown-network validation.",
+        },
+        "8v / 16384M": {
+            "target_catalog_id": "",
+            "import_status": "Pending",
+            "estimated_import_time": "60m",
+            "notes": "Workshop unknown-network validation.",
+        },
+        "8v / 32768M": {
+            "target_catalog_id": "",
+            "import_status": "Pending",
+            "estimated_import_time": "90m",
+            "notes": "Workshop unknown-network validation.",
+        },
+    }
+    _plan, _planning_state, pricing_catalog = (
+        _carbon_plan_state_and_pricing_from_records(
+            records,
+            assessment_quality=summary["assessment_quality"],
+            image_import_status=image_import_status,
+        )
+    )
+
+    streamlit_files = _streamlit_package_files(
+        records,
+        pricing_catalog=pricing_catalog,
+        remediation_tracker={},
+        image_import_status=image_import_status,
+        assessment_quality=summary["assessment_quality"],
+    )
+    carbon_files = _carbon_package_files_from_records(
+        records,
+        assessment_quality=summary["assessment_quality"],
+        remediation_tracker={},
+        image_import_status=image_import_status,
+    )
+
+    exact_handoff_files = {
+        "vm-mapping.csv",
+        "nic-mapping.csv",
+        "memory-readiness.csv",
+        "readiness-findings.csv",
+        "assessment-quality.json",
+        "assessment-quality.csv",
+        "pricing-diagnostics.json",
+        "pricing-diagnostics.csv",
+        "image-import-plan.csv",
+        "cutover-readiness.csv",
+    }
+    for file_name in exact_handoff_files:
+        assert carbon_files[file_name] == streamlit_files[file_name], file_name
+    assert _operational_planning_state(
+        carbon_files["planning-state.json"]
+    ) == _operational_planning_state(streamlit_files["planning-state.json"])
+
+    vm_rows = _csv_rows(carbon_files["vm-mapping.csv"])
+    assert {row["Source Network"] for row in vm_rows} == {"unknown-net"}
+    assert {
+        row["Network Readiness Reasons"]
+        for row in vm_rows
+    } == {
+        "Network adapter 1 is connected but has no usable network name",
+        "Network adapter 2 is connected but has no usable network name",
+        "Network adapter 3 is connected but has no usable network name",
+    }
+
+    memory_rows = _csv_rows(carbon_files["memory-readiness.csv"])
+    assert {row["Memory Sizing Basis"] for row in memory_rows} == {
+        "missing-vmemory-preserve-configured-memory"
+    }
+
+    assessment_quality = json.loads(carbon_files["assessment-quality.json"])
+    assert assessment_quality["overall_confidence"] == "Low"
+    assert assessment_quality["optional_readiness_tabs_present"] == 0
+    assert assessment_quality["optional_network_detail_tabs_present"] == 0
+
+    image_rows = _csv_rows(carbon_files["image-import-plan.csv"])
+    image_row = next(
+        row for row in image_rows if row["Source Image"] == "8v / 32768M"
+    )
+    expected_image_fields = {
+        "Import Status": "Pending",
+        "Estimated Import Time": "90m",
+        "Notes": "Workshop unknown-network validation.",
+    }
+    assert {
+        field: image_row[field]
+        for field in expected_image_fields
+    } == expected_image_fields
 
 
 def test_carbon_sample_workbook_populates_phase4_handoff_artifacts():

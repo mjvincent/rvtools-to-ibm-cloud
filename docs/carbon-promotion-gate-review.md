@@ -47,7 +47,7 @@ npm run test:e2e
 
 Observed results:
 - Python compile: passed
-- Python pytest: 343 passed
+- Python pytest: 344 passed
 - Carbon TypeScript: 0 errors
 - Carbon Jest: 133 passed
 - Carbon Playwright smoke: passed
@@ -59,9 +59,9 @@ autosave reload, drag/drop accessibility labels, row checkbox accessible names,
 and temporary smoke-project cleanup.
 
 The Python parity suite now includes Streamlit-vs-Carbon single-VM, edge-case,
-and multi-VM fixture comparisons; sample-workbook handoff contract assertions;
-sample-workbook API ZIP inventory verification; and a Carbon Export UI inventory
-drift test against backend ZIP inventory constants.
+multi-VM, and workshop real-workbook subset comparisons; sample-workbook handoff
+contract assertions; sample-workbook API ZIP inventory verification; and a
+Carbon Export UI inventory drift test against backend ZIP inventory constants.
 
 ## Phase 4 Status
 
