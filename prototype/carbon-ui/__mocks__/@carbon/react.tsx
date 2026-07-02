@@ -8,13 +8,14 @@ export const Button = ({ children, onClick, disabled, kind, size, renderIcon: Ic
   </button>
 );
 
-export const Checkbox = ({ id, labelText, checked, onChange }: any) => (
+export const Checkbox = ({ id, labelText, checked, onChange, ...rest }: any) => (
   <input
     type="checkbox"
     id={id}
     aria-label={labelText}
     checked={checked}
     onChange={(e) => onChange(e, { checked: e.target.checked })}
+    {...rest}
   />
 );
 

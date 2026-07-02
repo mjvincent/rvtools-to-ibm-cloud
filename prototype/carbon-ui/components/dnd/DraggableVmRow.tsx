@@ -36,6 +36,7 @@ export default function DraggableVmRow({
       <td>
         <Checkbox
           id={`select-${row.id}`}
+          aria-label={`Select ${row.name}`}
           labelText={`Select ${row.name}`}
           checked={selected}
           onChange={(_: unknown, data: { checked?: boolean }) =>
