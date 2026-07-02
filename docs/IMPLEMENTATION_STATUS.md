@@ -148,7 +148,6 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
    - Large-workbook performance benchmark
    - Accessibility audit
    - Full browser coverage beyond the smoke path
-   - User documentation for Carbon-specific workflows
    - Promotion/cutover guide from Streamlit to Carbon
 
 3. **UX polish**
@@ -162,7 +161,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 ### Promotion Gate Review
 - [x] Review against `docs/carbon-react-ui-strategy.md`
-- [ ] Run full repo validation
+- [x] Run current repo validation: Python pytest, Carbon TypeScript, Carbon Jest, and Carbon Playwright smoke
 - [x] Document gate pass/fail status in
   `docs/carbon-promotion-gate-review.md`
 - [x] Start Phase 4 before additional UX/accessibility polish
@@ -180,7 +179,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Decision audit pricing impact and handoff ZIP parity
 - [x] State-native Carbon handoff ZIP files
 - [x] Full handoff artifact inventory in Carbon ZIP
-- [ ] Streamlit-vs-Carbon handoff fixture comparison coverage
+- [x] Initial Streamlit-vs-Carbon handoff fixture comparison coverage
+- [ ] Additional real-workbook edge fixture coverage
 
 ### Phase 5: Complete Handoff Package Parity
 - [ ] All CSV exports
@@ -191,7 +191,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 ### Phase 6: Polish and Promotion
 - [ ] Accessibility audit
 - [ ] Performance benchmark
-- [ ] Documentation
+- [x] Carbon checkpoint documented in user manual
+- [ ] Promotion/cutover documentation
 - [ ] User acceptance testing
 - [ ] Go/no-go promotion decision
 
