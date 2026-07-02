@@ -103,8 +103,8 @@ Required handoff files:
    workbooks.
 2. Improve any remaining workbook-derived source metadata gaps found by those
    fixture comparisons.
-3. Update the Carbon Export workflow to show package contents parity status
-   before download.
+3. Continue tightening Carbon Export workflow feedback as more parity checks
+   move from fixture coverage into promotion gates.
 
 ## Promotion Gate Impact
 

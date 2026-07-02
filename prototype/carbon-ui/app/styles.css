@@ -370,6 +370,44 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.package-parity-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 0.75rem;
+}
+
+.package-parity-tile {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  min-height: 5rem;
+  padding: 1rem;
+}
+
+.package-parity-tile h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.package-parity-tile p {
+  color: #525252;
+  font-size: 0.8125rem;
+}
+
+.package-parity-tile__status {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.package-parity-tile__status strong {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 .package-tile {
   min-height: 16rem;
   padding: 1rem;
@@ -665,6 +703,7 @@ body {
   .diagram-node-grid,
   .migration-ops-grid,
   .package-grid,
+  .package-parity-grid,
   .resource-list {
     grid-template-columns: 1fr;
   }

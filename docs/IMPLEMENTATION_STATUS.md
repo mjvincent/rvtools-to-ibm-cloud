@@ -92,6 +92,7 @@ feature-parity and production-readiness gaps.
 - [x] Sample-workbook API ZIP inventory coverage verifies full handoff inventory, Carbon modular Terraform files, and documented Carbon-only `network-plan.json`
 - [x] First edge-case Streamlit-vs-Carbon fixture comparison covers multi-NIC, disk, partition, memory-readiness, and readiness-finding CSV fidelity
 - [x] Multi-VM Streamlit-vs-Carbon fixture comparison covers mixed waves, profile/storage overrides, exclusions, remediation, image import, cutover readiness, and planning-state parity
+- [x] Carbon Export workflow shows package parity status, corrected modular Terraform inventory, and documented Carbon-only ZIP additions before download
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---

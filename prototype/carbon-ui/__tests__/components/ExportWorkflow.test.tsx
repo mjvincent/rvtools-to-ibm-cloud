@@ -48,15 +48,22 @@ describe('ExportWorkflow', () => {
     expect(screen.getByText('Missing subnet assignments')).toBeTruthy();
   });
 
-  it('renders ZIP package parity contents before download', () => {
+  it('renders ZIP package parity status before download', () => {
     renderWithProvider(<ExportWorkflow />);
 
-    expect(screen.getByText('Package contents')).toBeTruthy();
-    expect(screen.getByText('35 files are included in the generated ZIP.')).toBeTruthy();
-    expect(screen.getByText('Streamlit handoff parity')).toBeTruthy();
+    expect(screen.getByText('Package parity status')).toBeTruthy();
+    expect(screen.getByText('37 files are included in the generated ZIP.')).toBeTruthy();
+    expect(screen.getByText('Streamlit handoff set covered')).toBeTruthy();
+    expect(screen.getByText('Handoff parity')).toBeTruthy();
+    expect(screen.getByText('20/20')).toBeTruthy();
+    expect(screen.getByText('Terraform layout')).toBeTruthy();
+    expect(screen.getByText('16/16')).toBeTruthy();
+    expect(screen.getByText('Carbon additions')).toBeTruthy();
     expect(screen.getByText('Terraform project')).toBeTruthy();
     expect(screen.getByText('Migration handoff')).toBeTruthy();
     expect(screen.getByText('Carbon state')).toBeTruthy();
+    expect(screen.getByText('terraform.tfvars.example')).toBeTruthy();
+    expect(screen.getByText('provider.tf')).toBeTruthy();
     expect(screen.getByText('decision-audit.csv')).toBeTruthy();
     expect(screen.getByText('network-plan.json')).toBeTruthy();
   });

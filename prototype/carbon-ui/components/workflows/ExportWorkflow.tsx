@@ -12,7 +12,9 @@ export const terraformPackageFiles = [
   'main.tf',
   'variables.tf',
   'outputs.tf',
-  'terraform.tfvars',
+  'provider.tf',
+  'versions.tf',
+  'terraform.tfvars.example',
   'modules/networking/main.tf',
   'modules/networking/variables.tf',
   'modules/networking/outputs.tf',
@@ -52,7 +54,7 @@ export const carbonPackageFiles = ['network-plan.json'];
 const packageGroups = [
   {
     title: 'Terraform project',
-    status: 'Ready',
+    status: 'Modular layout',
     tagType: 'green' as const,
     files: terraformPackageFiles,
   },
@@ -67,6 +69,30 @@ const packageGroups = [
     status: 'Carbon only',
     tagType: 'purple' as const,
     files: carbonPackageFiles,
+  },
+];
+
+const packageParitySummary = [
+  {
+    label: 'Handoff parity',
+    value: `${handoffPackageFiles.length}/${handoffPackageFiles.length}`,
+    detail: 'Streamlit handoff files',
+    tag: 'Covered',
+    tagType: 'green' as const,
+  },
+  {
+    label: 'Terraform layout',
+    value: `${terraformPackageFiles.length}/${terraformPackageFiles.length}`,
+    detail: 'Carbon modular files',
+    tag: 'Covered',
+    tagType: 'green' as const,
+  },
+  {
+    label: 'Carbon additions',
+    value: carbonPackageFiles.length.toString(),
+    detail: 'Documented extra file',
+    tag: 'Expected',
+    tagType: 'purple' as const,
   },
 ];
 
@@ -199,10 +225,24 @@ export default function ExportWorkflow() {
       <div className="export-package">
         <div className="section-header compact">
           <div>
-            <h2>Package contents</h2>
+            <h2>Package parity status</h2>
             <p>{packageFileCount} files are included in the generated ZIP.</p>
           </div>
-          <Tag type="green">Streamlit handoff parity</Tag>
+          <Tag type="green">Streamlit handoff set covered</Tag>
+        </div>
+        <div className="package-parity-grid">
+          {packageParitySummary.map((item) => (
+            <Tile key={item.label} className="package-parity-tile">
+              <div>
+                <h3>{item.label}</h3>
+                <p>{item.detail}</p>
+              </div>
+              <div className="package-parity-tile__status">
+                <strong>{item.value}</strong>
+                <Tag type={item.tagType}>{item.tag}</Tag>
+              </div>
+            </Tile>
+          ))}
         </div>
         <div className="package-grid">
           {packageGroups.map((group) => (
