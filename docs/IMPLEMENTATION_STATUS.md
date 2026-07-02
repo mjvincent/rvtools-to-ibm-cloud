@@ -5,7 +5,7 @@
 This document tracks the implementation status of the Carbon UI integration with
 the RVTools to IBM Cloud migration tool.
 
-**Last Updated**: 2026-07-01  
+**Last Updated**: 2026-07-02  
 **Current Phase**: Carbon UI Phase 4 feature-parity workflows in progress  
 **Production UI**: Streamlit remains production until Carbon closes the remaining
 feature-parity and production-readiness gaps.
@@ -90,6 +90,7 @@ feature-parity and production-readiness gaps.
 - [x] Carbon intake preserves hidden workbook details for handoff fidelity, including disk, partition, NIC, memory, pricing, and readiness-finding fields
 - [x] Sample-workbook Carbon handoff contract coverage validates decision audit, remediation backlog, image import plan, cutover readiness, and planning-state fields
 - [x] Sample-workbook API ZIP inventory coverage verifies full handoff inventory, Carbon modular Terraform files, and documented Carbon-only `network-plan.json`
+- [x] First edge-case Streamlit-vs-Carbon fixture comparison covers multi-NIC, disk, partition, memory-readiness, and readiness-finding CSV fidelity
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
@@ -109,7 +110,7 @@ Results:
 - TypeScript: 0 errors
 - Jest: 133 tests passing
 - Playwright: 1 browser smoke passing
-- Python pytest: 340 tests passing
+- Python pytest: 341 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
@@ -118,7 +119,8 @@ persistence, drag/drop accessibility labels, autosave reload, and cleanup of
 temporary smoke projects.
 
 The Python parity suite includes `tests/test_carbon_handoff_parity.py`, which
-now covers Streamlit-vs-Carbon fixture parity and sample-workbook Carbon
+now covers Streamlit-vs-Carbon fixture parity, an edge-case mapping/readiness
+fixture for multi-NIC and disk/partition fidelity, and sample-workbook Carbon
 handoff contract fields for `decision-audit.csv`, `remediation-backlog.csv`,
 `image-import-plan.csv`, `cutover-readiness.csv`, and `planning-state.json`.
 It also verifies the sample-workbook API ZIP inventory from

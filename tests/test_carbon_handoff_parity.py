@@ -524,6 +524,273 @@ def test_carbon_package_handoff_contents_match_streamlit_fixture(sample_vm_recor
     assert carbon_manifest["virtual_machines"] == streamlit_manifest["virtual_machines"]
 
 
+def test_carbon_edge_fixture_preserves_mapping_and_readiness_fidelity(sample_vm_record):
+    record = {
+        **sample_vm_record,
+        "VM Key": "vm-edge-001",
+        "VM Name": "edge-db-01",
+        "Owner": "platform-team",
+        "Application": "Inventory",
+        "Wave": "Wave 2",
+        "Cutover Group": "CG-DB",
+        "Priority": "high",
+        "Dependency Group": "inventory-core",
+        "Boot Disk GB": 80,
+        "Memory Readiness": "Review",
+        "Memory Readiness Reasons": "Ballooned memory detected; memory hot-add enabled",
+        "Ballooned Memory MiB": 512,
+        "Swapped Memory MiB": 128,
+        "Memory Reservation MiB": 2048,
+        "Memory Limit MiB": 12288,
+        "Memory Hot Add": "True",
+        "Sizing Memory MiB": 12288,
+        "Memory Sizing Basis": "active-plus-pressure-headroom",
+        "Disk Count": 2,
+        "Data Disk Count": 1,
+        "Total Storage GB": 200,
+        "Disk Details": [
+            {
+                "disk": "Hard disk 1",
+                "capacity_gb": 80,
+                "capacity_mib": 81920,
+                "is_boot": True,
+                "disk_key": "2000",
+                "unit_number": 0,
+                "partitions": [
+                    {
+                        "disk": "C:\\",
+                        "disk_key": "2000",
+                        "capacity_mib": 61440,
+                        "consumed_mib": 40960,
+                        "free_mib": 20480,
+                        "free_pct": 33.33,
+                        "matched": True,
+                    }
+                ],
+            },
+            {
+                "disk": "Hard disk 2",
+                "capacity_gb": 120,
+                "capacity_mib": 122880,
+                "is_boot": False,
+                "disk_key": "2001",
+                "unit_number": 1,
+                "partitions": [
+                    {
+                        "disk": "D:\\",
+                        "disk_key": "2001",
+                        "capacity_mib": 102400,
+                        "consumed_mib": 51200,
+                        "free_mib": 51200,
+                        "free_pct": 50.0,
+                        "matched": True,
+                    }
+                ],
+            },
+        ],
+        "Partition Details": [
+            {
+                "disk": "E:\\",
+                "disk_key": "",
+                "capacity_mib": 20480,
+                "consumed_mib": 10240,
+                "free_mib": 10240,
+                "free_pct": 50.0,
+                "matched": False,
+            }
+        ],
+        "Partition Count": 3,
+        "Unmatched Partition Count": 1,
+        "Network Details": [
+            {
+                "label": "Network adapter 1",
+                "adapter": "Vmxnet3",
+                "network": "app-net",
+                "switch": "vSwitch0",
+                "connected": True,
+                "starts_connected": True,
+                "mac_address": "00:50:56:aa:00:01",
+                "ipv4": "10.0.1.10",
+                "ipv6": "",
+                "switch_type": "standard",
+                "port_group": "app-net",
+                "vlan": "101",
+                "port_status": "up",
+                "backing_source_tab": "vPort",
+                "match_confidence": "matched",
+            },
+            {
+                "label": "Network adapter 2",
+                "adapter": "Vmxnet3",
+                "network": "db-net",
+                "switch": "dvSwitch-db",
+                "connected": True,
+                "starts_connected": True,
+                "mac_address": "00:50:56:aa:00:02",
+                "ipv4": "10.0.2.10",
+                "ipv6": "",
+                "switch_type": "distributed",
+                "port_group": "db-net",
+                "vlan": "202",
+                "port_key": "77",
+                "port_status": "up",
+                "backing_source_tab": "dvPort",
+                "match_confidence": "matched",
+            },
+            {
+                "label": "Network adapter 3",
+                "adapter": "E1000",
+                "network": "backup-net",
+                "switch": "vSwitch1",
+                "connected": False,
+                "starts_connected": False,
+                "mac_address": "00:50:56:aa:00:03",
+                "ipv4": "",
+                "ipv6": "",
+                "switch_type": "standard",
+                "port_group": "backup-net",
+                "vlan": "303",
+                "port_status": "down",
+                "backing_source_tab": "vPort",
+                "match_confidence": "matched",
+            },
+        ],
+        "Readiness Findings": [
+            {
+                "finding_type": "Snapshot",
+                "severity": "Blocked",
+                "source_tab": "vSnapshot",
+                "evidence": "Active snapshot found",
+                "recommended_action": "Remove snapshots before migration",
+            },
+            {
+                "finding_type": "VMware Tools status",
+                "severity": "Review",
+                "source_tab": "vTools",
+                "evidence": "toolsOld",
+                "recommended_action": "Update VMware Tools",
+            },
+        ],
+        "Network Readiness Findings": [
+            {
+                "finding_type": "Disconnected NIC",
+                "severity": "Review",
+                "source_tab": "vNetwork",
+                "evidence": "Network adapter 3 is disconnected",
+                "recommended_action": "Confirm backup network requirement",
+            }
+        ],
+    }
+    pricing_catalog = {
+        "metadata": {
+            "mode": "static",
+            "source": "static",
+            "confidence": "fallback-static",
+            "pricing_status": "static_fallback",
+            "region": "us-south",
+            "country": "us",
+            "currency": "USD",
+            "last_updated": "2026-05-12T00:00:00+00:00",
+        },
+        "profiles": {
+            record["IBM Profile"]: {"hourly": record["Profile Hourly"]},
+        },
+        "storage_tiers": {
+            record["Storage Tier"]: {"monthly_per_gb": 0.13},
+        },
+    }
+
+    streamlit_files = _streamlit_package_files(
+        [record],
+        pricing_catalog=pricing_catalog,
+        remediation_tracker={},
+        image_import_status={},
+    )
+    carbon_files = _carbon_package_files(
+        record,
+        pricing_catalog=pricing_catalog,
+        remediation_tracker={},
+        image_import_status={},
+    )
+
+    rich_detail_files = {
+        "vm-mapping.csv",
+        "disk-mapping.csv",
+        "partition-mapping.csv",
+        "nic-mapping.csv",
+        "memory-readiness.csv",
+        "readiness-findings.csv",
+    }
+    for file_name in rich_detail_files:
+        assert carbon_files[file_name] == streamlit_files[file_name], file_name
+
+    def assert_row_fields(row, expected):
+        assert {field: row[field] for field in expected} == expected
+
+    disk_rows = _csv_rows(carbon_files["disk-mapping.csv"])
+    assert {row["Disk"] for row in disk_rows} == {"Hard disk 1", "Hard disk 2"}
+    assert_row_fields(
+        next(row for row in disk_rows if row["Disk"] == "Hard disk 2"),
+        {
+            "Partition Labels": "D:\\",
+            "Partition Count": "1",
+            "Partition Capacity MiB": "102400.0",
+        },
+    )
+
+    partition_rows = _csv_rows(carbon_files["partition-mapping.csv"])
+    assert len(partition_rows) == 3
+    assert_row_fields(
+        next(row for row in partition_rows if row["Partition"] == "E:\\"),
+        {
+            "Matched To Disk": "False",
+            "Capacity MiB": "20480",
+        },
+    )
+
+    nic_rows = _csv_rows(carbon_files["nic-mapping.csv"])
+    assert len(nic_rows) == 3
+    assert_row_fields(
+        next(row for row in nic_rows if row["NIC Label"] == "Network adapter 2"),
+        {
+            "Source Network": "db-net",
+            "Switch Type": "distributed",
+            "Port Key": "77",
+            "Role": "secondary",
+            "Planned": "True",
+        },
+    )
+    assert_row_fields(
+        next(row for row in nic_rows if row["NIC Label"] == "Network adapter 3"),
+        {
+            "Connected": "False",
+            "Planned": "False",
+            "Role": "disconnected",
+        },
+    )
+
+    memory_rows = _csv_rows(carbon_files["memory-readiness.csv"])
+    assert_row_fields(
+        memory_rows[0],
+        {
+            "VM Name": "edge-db-01",
+            "Memory Readiness": "Review",
+            "Ballooned Memory MiB": "512",
+            "Swapped Memory MiB": "128",
+            "Sizing Memory MiB": "12288",
+            "Memory Sizing Basis": "active-plus-pressure-headroom",
+        },
+    )
+
+    finding_rows = _csv_rows(carbon_files["readiness-findings.csv"])
+    assert any(
+        row["VM Name"] == "edge-db-01"
+        and row["Finding Type"] == "Snapshot"
+        and row["Severity"] == "Blocked"
+        for row in finding_rows
+    )
+
+
 def test_carbon_sample_workbook_populates_phase4_handoff_artifacts():
     summary = _sample_workbook_summary()
     records = summary["assignment_rows"]
