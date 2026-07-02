@@ -20,10 +20,22 @@ function SeedProject({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function StateProbe() {
+  const { state } = useAppState();
+  return (
+    <div data-testid="state-probe">
+      {state.activeWorkflow}|{state.searchValue}|{state.selectedVmIds.join(',')}|{state.assignmentMode}
+    </div>
+  );
+}
+
 function renderWithProvider(ui: React.ReactElement) {
   return render(
     <AppProvider>
-      <SeedProject>{ui}</SeedProject>
+      <SeedProject>
+        {ui}
+        <StateProbe />
+      </SeedProject>
     </AppProvider>,
   );
 }
@@ -131,6 +143,18 @@ describe('ExportWorkflow', () => {
     expect(screen.getByText('2 warning(s)')).toBeTruthy();
     expect(screen.getByText('sample-db-01')).toBeTruthy();
     expect(screen.getByText('Image readiness is blocked.')).toBeTruthy();
+  });
+
+  it('routes preflight findings to the right review workflow', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Run preflight'));
+    await waitFor(() => expect(screen.getByText('Open remediation')).toBeTruthy());
+    await userEvent.click(screen.getByText('Open remediation'));
+
+    expect(screen.getByTestId('state-probe').textContent).toBe(
+      'remediation|db-01|sample-db-01|network',
+    );
   });
 
   it('downloads the current planning-state JSON', async () => {

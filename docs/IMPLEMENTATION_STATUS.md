@@ -98,6 +98,7 @@ feature-parity and production-readiness gaps.
 - [x] Carbon Export UI inventory is backed by a shared JSON contract and tested against the backend ZIP inventory constants
 - [x] Carbon Export workflow supports planning-state JSON export/import for offline handoff and reload review
 - [x] Carbon Export workflow can save the latest plan, run backend package preflight, and display blocker/warning findings before ZIP download
+- [x] Carbon Export preflight findings route users to the relevant workflow and VM for remediation, image import, network placement, security, storage, or override review
 - [x] Workshop large-workbook performance guard covers FastAPI summary parsing and Carbon Terraform ZIP generation
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
@@ -116,7 +117,7 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 138 tests passing
+- Jest: 139 tests passing
 - Playwright: 1 browser smoke passing
 - Python pytest: 347 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy

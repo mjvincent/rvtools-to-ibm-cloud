@@ -4,6 +4,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { Button, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
 import { CloudUpload, Download, Renew } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
+import type { Workflow } from '../../types/network-planning';
 import {
   generateTerraform,
   runProjectPreflight,
@@ -89,6 +90,13 @@ function readFileText(file: File): Promise<string> {
   });
 }
 
+type PreflightRoute = {
+  workflow: Workflow;
+  assignmentMode?: 'network' | 'security' | 'storage' | 'wave';
+  label: string;
+  status: string;
+};
+
 export default function ExportWorkflow() {
   const { state, dispatch } = useAppState();
   const planningStateInputRef = useRef<HTMLInputElement>(null);
@@ -133,6 +141,97 @@ export default function ExportWorkflow() {
   const blockingFindingCount = findings.reduce((total, [, count]) => total + count, 0);
   const preflightSummary = preflight?.summary;
   const visiblePreflightFindings = preflight?.findings.slice(0, 5) || [];
+
+  function routeForFinding(finding: PreflightResponse['findings'][number]): PreflightRoute {
+    const category = finding.Category;
+    const quickFixType = finding['Quick Fix Type'];
+    const field = finding.Field;
+    const fixLocation = finding['Fix Location'];
+    if (category === 'custom_image' || quickFixType === 'image_placeholder') {
+      return {
+        workflow: 'imageImport',
+        label: 'Open image planning',
+        status: `Review image import planning for ${finding.Subject}.`,
+      };
+    }
+    if (category === 'readiness' || fixLocation.includes('Readiness tab')) {
+      return {
+        workflow: 'remediation',
+        label: 'Open remediation',
+        status: `Review remediation blockers for ${finding.Subject}.`,
+      };
+    }
+    if (category === 'cidr' || category === 'network_mapping') {
+      return {
+        workflow: 'assignment',
+        assignmentMode: 'network',
+        label: 'Open network assignment',
+        status: `Review network placement for ${finding.Subject}.`,
+      };
+    }
+    if (category === 'security_group') {
+      return {
+        workflow: 'security',
+        assignmentMode: 'security',
+        label: 'Open security plan',
+        status: `Review security planning for ${finding.Subject}.`,
+      };
+    }
+    if (category === 'storage' || field === 'Override Storage Tier') {
+      return {
+        workflow: 'overrides',
+        assignmentMode: 'storage',
+        label: 'Open storage override',
+        status: `Review storage override for ${finding.Subject}.`,
+      };
+    }
+    if (category === 'profile' || category === 'profile_region' || field === 'Override Profile') {
+      return {
+        workflow: 'overrides',
+        label: 'Open VM overrides',
+        status: `Review profile override for ${finding.Subject}.`,
+      };
+    }
+    if (quickFixType === 'exclude_vm' || quickFixType === 'include_vm' || field === 'Exclude?') {
+      return {
+        workflow: 'overrides',
+        label: 'Open scope decision',
+        status: `Review include/exclude decision for ${finding.Subject}.`,
+      };
+    }
+    if (category === 'terraform_names' && fixLocation.includes('Networks')) {
+      return {
+        workflow: 'network',
+        assignmentMode: 'network',
+        label: 'Open network plan',
+        status: `Review network naming for ${finding.Subject}.`,
+      };
+    }
+    return {
+      workflow: 'assignment',
+      label: 'Open VM assignment',
+      status: `Review package finding for ${finding.Subject}.`,
+    };
+  }
+
+  function openPreflightFinding(finding: PreflightResponse['findings'][number]) {
+    const route = routeForFinding(finding);
+    const matchingVm = assignmentRows.find((row) =>
+      row.name === finding.Subject || row.id === finding.Subject,
+    );
+    if (matchingVm) {
+      dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [matchingVm.id] });
+      dispatch({ type: 'SET_SEARCH_VALUE', payload: matchingVm.name });
+    } else {
+      dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [] });
+      dispatch({ type: 'SET_SEARCH_VALUE', payload: finding.Subject === 'package' ? '' : finding.Subject });
+    }
+    if (route.assignmentMode) {
+      dispatch({ type: 'SET_ASSIGNMENT_MODE', payload: route.assignmentMode });
+    }
+    dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: route.workflow });
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: route.status });
+  }
 
   async function saveLatestNetworkPlan() {
     if (!selectedProjectId) throw new Error('Save or load a persisted project before exporting Terraform.');
@@ -344,6 +443,13 @@ export default function ExportWorkflow() {
                   </div>
                   <p>{finding.Message}</p>
                   {finding['Fix Category'] && <p>{finding['Fix Category']}</p>}
+                  <Button
+                    kind="tertiary"
+                    size="sm"
+                    onClick={() => openPreflightFinding(finding)}
+                  >
+                    {routeForFinding(finding).label}
+                  </Button>
                 </Tile>
               ))}
             </div>
