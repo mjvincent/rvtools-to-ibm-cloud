@@ -8,6 +8,7 @@ import * as api from '../../hooks/useApi';
 jest.mock('../../hooks/useApi', () => ({
   saveNetworkPlan: jest.fn(),
   generateTerraform: jest.fn(),
+  runProjectPreflight: jest.fn(),
 }));
 
 function SeedProject({ children }: { children: React.ReactNode }) {
@@ -41,6 +42,29 @@ describe('ExportWorkflow', () => {
     jest.clearAllMocks();
     (api.saveNetworkPlan as jest.Mock).mockResolvedValue(undefined);
     (api.generateTerraform as jest.Mock).mockResolvedValue(new Blob(['zip']));
+    (api.runProjectPreflight as jest.Mock).mockResolvedValue({
+      project_id: 'project-1',
+      project_name: 'Export Project',
+      summary: { blockers: 1, warnings: 2, info: 0, total: 3 },
+      findings: [
+        {
+          Severity: 'blocker',
+          Category: 'readiness',
+          'Fix Category': 'Fix source RVTools/vSphere data',
+          Subject: 'sample-db-01',
+          Message: 'Image readiness is blocked.',
+          Remediation: 'Resolve the source finding.',
+          'Fix Location': 'Source',
+          'Suggested Action': 'Review source VM.',
+          'Valid Options': '',
+          'Recommended Option': '',
+          'Quick Fix Type': '',
+          Field: 'Image Readiness',
+          'Current Value': 'Blocked',
+          Constraint: '',
+        },
+      ],
+    });
     Object.defineProperty(window.URL, 'createObjectURL', {
       configurable: true,
       value: jest.fn(() => 'blob:terraform'),
@@ -92,6 +116,21 @@ describe('ExportWorkflow', () => {
     const [, payload] = (api.saveNetworkPlan as jest.Mock).mock.calls[0];
     expect(payload.vm_assignments).toHaveLength(3);
     expect(payload.metadata.project_name).toBe('Export Project');
+  });
+
+  it('saves the network plan before running backend preflight', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Run preflight'));
+
+    await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.runProjectPreflight).toHaveBeenCalledWith('project-1'));
+    expect(screen.getByText('Package preflight')).toBeTruthy();
+    expect(screen.getByText('3 backend finding(s) from the saved Carbon network plan.')).toBeTruthy();
+    expect(screen.getByText('1 blocker(s)')).toBeTruthy();
+    expect(screen.getByText('2 warning(s)')).toBeTruthy();
+    expect(screen.getByText('sample-db-01')).toBeTruthy();
+    expect(screen.getByText('Image readiness is blocked.')).toBeTruthy();
   });
 
   it('downloads the current planning-state JSON', async () => {

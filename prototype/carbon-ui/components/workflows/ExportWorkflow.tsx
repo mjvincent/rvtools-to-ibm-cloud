@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Button, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
-import { CloudUpload, Download } from '@carbon/icons-react';
+import { CloudUpload, Download, Renew } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
-import { generateTerraform, saveNetworkPlan } from '../../hooks/useApi';
+import {
+  generateTerraform,
+  runProjectPreflight,
+  saveNetworkPlan,
+  type PreflightResponse,
+} from '../../hooks/useApi';
 import {
   carbonPackageFiles,
   handoffPackageFiles,
@@ -87,6 +92,8 @@ function readFileText(file: File): Promise<string> {
 export default function ExportWorkflow() {
   const { state, dispatch } = useAppState();
   const planningStateInputRef = useRef<HTMLInputElement>(null);
+  const [preflight, setPreflight] = useState<PreflightResponse | null>(null);
+  const [runningPreflight, setRunningPreflight] = useState(false);
   const {
     assignmentRows,
     resources,
@@ -124,18 +131,48 @@ export default function ExportWorkflow() {
     ['Labels needing Terraform cleanup', planningCompleteness.invalidLabels],
   ];
   const blockingFindingCount = findings.reduce((total, [, count]) => total + count, 0);
+  const preflightSummary = preflight?.summary;
+  const visiblePreflightFindings = preflight?.findings.slice(0, 5) || [];
+
+  async function saveLatestNetworkPlan() {
+    if (!selectedProjectId) throw new Error('Save or load a persisted project before exporting Terraform.');
+    await saveNetworkPlan(
+      selectedProjectId,
+      buildNetworkPlanBody({ resources, assignmentRows, projectName, summary }),
+    );
+  }
+
+  async function handleRunPreflight() {
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
+    dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
+    setRunningPreflight(true);
+    try {
+      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Saving latest network plan before preflight...' });
+      await saveLatestNetworkPlan();
+      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Running package preflight...' });
+      const result = await runProjectPreflight(selectedProjectId);
+      setPreflight(result);
+      dispatch({
+        type: 'SET_TERRAFORM_STATUS',
+        payload: `Preflight complete: ${result.summary.blockers} blocker(s), ${result.summary.warnings} warning(s).`,
+      });
+    } catch (error) {
+      dispatch({
+        type: 'SET_TERRAFORM_ERROR',
+        payload: error instanceof Error ? error.message : 'Preflight check failed.',
+      });
+    } finally {
+      setRunningPreflight(false);
+    }
+  }
 
   async function handleDownloadTerraform() {
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
     dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
     dispatch({ type: 'SET_GENERATING_TERRAFORM', payload: true });
     try {
-      if (!selectedProjectId) throw new Error('Save or load a persisted project before exporting Terraform.');
       dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Saving latest network plan...' });
-      await saveNetworkPlan(
-        selectedProjectId,
-        buildNetworkPlanBody({ resources, assignmentRows, projectName, summary }),
-      );
+      await saveLatestNetworkPlan();
       dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Generating Terraform ZIP...' });
       const blob = await generateTerraform(selectedProjectId);
       const url = window.URL.createObjectURL(blob);
@@ -235,6 +272,15 @@ export default function ExportWorkflow() {
             Export planning JSON
           </Button>
           <Button
+            kind="secondary"
+            size="sm"
+            renderIcon={Renew}
+            onClick={handleRunPreflight}
+            disabled={!selectedProjectId || runningPreflight}
+          >
+            {runningPreflight ? 'Running...' : 'Run preflight'}
+          </Button>
+          <Button
             kind="primary"
             size="sm"
             renderIcon={Download}
@@ -269,6 +315,46 @@ export default function ExportWorkflow() {
           </Tile>
         ))}
       </div>
+      {preflightSummary && (
+        <div className="export-package">
+          <div className="section-header compact">
+            <div>
+              <h2>Package preflight</h2>
+              <p>{preflightSummary.total} backend finding(s) from the saved Carbon network plan.</p>
+            </div>
+            <div className="network-actions">
+              <Tag type={preflightSummary.blockers === 0 ? 'green' : 'red'}>
+                {preflightSummary.blockers} blocker(s)
+              </Tag>
+              <Tag type={preflightSummary.warnings === 0 ? 'green' : 'warm-gray'}>
+                {preflightSummary.warnings} warning(s)
+              </Tag>
+              <Tag type="gray">{preflightSummary.info} info</Tag>
+            </div>
+          </div>
+          {visiblePreflightFindings.length > 0 ? (
+            <div className="resource-list">
+              {visiblePreflightFindings.map((finding, index) => (
+                <Tile key={`${finding.Subject}-${finding.Category}-${index}`} className="resource-tile">
+                  <div className="package-tile__header">
+                    <h3>{finding.Subject || 'Package'}</h3>
+                    <Tag type={finding.Severity === 'blocker' ? 'red' : finding.Severity === 'warning' ? 'warm-gray' : 'gray'}>
+                      {finding.Severity}
+                    </Tag>
+                  </div>
+                  <p>{finding.Message}</p>
+                  {finding['Fix Category'] && <p>{finding['Fix Category']}</p>}
+                </Tile>
+              ))}
+            </div>
+          ) : (
+            <Tile className="resource-tile">
+              <h3>Ready</h3>
+              <p>No package preflight findings returned.</p>
+            </Tile>
+          )}
+        </div>
+      )}
       <div className="export-package">
         <div className="section-header compact">
           <div>

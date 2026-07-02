@@ -181,4 +181,45 @@ export async function generateTerraform(projectId: string): Promise<Blob> {
   return response.blob();
 }
 
+export type PreflightFinding = {
+  Severity: string;
+  Category: string;
+  'Fix Category': string;
+  Subject: string;
+  Message: string;
+  Remediation: string;
+  'Fix Location': string;
+  'Suggested Action': string;
+  'Valid Options': string;
+  'Recommended Option': string;
+  'Quick Fix Type': string;
+  Field: string;
+  'Current Value': string;
+  Constraint: string;
+};
+
+export type PreflightResponse = {
+  project_id: string;
+  project_name: string;
+  summary: {
+    blockers: number;
+    warnings: number;
+    info: number;
+    total: number;
+  };
+  findings: PreflightFinding[];
+};
+
+export async function runProjectPreflight(projectId: string): Promise<PreflightResponse> {
+  const response = await fetch(`/api/projects/${projectId}/preflight`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || 'Preflight check failed.');
+  }
+  return payload;
+}
+
 // Made with Bob

@@ -97,6 +97,7 @@ feature-parity and production-readiness gaps.
 - [x] Carbon Export workflow shows package parity status, corrected modular Terraform inventory, and documented Carbon-only ZIP additions before download
 - [x] Carbon Export UI inventory is backed by a shared JSON contract and tested against the backend ZIP inventory constants
 - [x] Carbon Export workflow supports planning-state JSON export/import for offline handoff and reload review
+- [x] Carbon Export workflow can save the latest plan, run backend package preflight, and display blocker/warning findings before ZIP download
 - [x] Workshop large-workbook performance guard covers FastAPI summary parsing and Carbon Terraform ZIP generation
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
@@ -115,9 +116,9 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 137 tests passing
+- Jest: 138 tests passing
 - Playwright: 1 browser smoke passing
-- Python pytest: 346 tests passing
+- Python pytest: 347 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
@@ -161,7 +162,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 3. **UX polish**
    - Editable network diagram nodes
-   - Richer validation and preflight feedback in Carbon
+   - Richer validation beyond package preflight feedback
    - Terraform preview inside the UI
 
 ---
@@ -196,7 +197,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 ### Phase 5: Complete Handoff Package Parity
 - [ ] All CSV exports
 - [ ] Migration manifest parity
-- [ ] Preflight parity
+- [x] Backend package preflight endpoint and Carbon Export UI feedback
 - [x] Planning-state JSON export/import in Carbon Export workflow
 
 ### Phase 6: Polish and Promotion

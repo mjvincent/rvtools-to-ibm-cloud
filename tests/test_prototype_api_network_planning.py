@@ -650,6 +650,80 @@ class TestNetworkPlanningEndpoints:
         assert '"schema_version": "1.0"' in planning_state
         assert '"package_type": "rvtools-to-ibm-cloud-migration-handoff"' in manifest
 
+    def test_project_preflight_returns_summary_and_findings(
+        self, client, sample_network_plan
+    ):
+        """Test Carbon preflight endpoint returns ZIP-compatible finding payload."""
+        project_id = "test-project-terraform"
+        plan = json.loads(json.dumps(sample_network_plan))
+        plan["vm_assignments"] = [
+            {
+                "vm_key": "vm-1",
+                "vm_name": "blocked-app-01",
+                "primary_subnet_id": "subnet-test-1",
+                "primary_security_group_id": "sg-test-1",
+                "secondary_nics": [],
+                "storage_profile_id": None,
+                "wave_id": None,
+                "excluded": False,
+                "exclusion_reason": "",
+                "ibm_profile": "bx2-2x8",
+                "storage_tier": "3iops-tier",
+                "network": "app-net",
+            }
+        ]
+        planning_rows = [
+            {
+                "id": "vm-1",
+                "name": "blocked-app-01",
+                "profile": "bx2-2x8",
+                "storageTier": "3iops-tier",
+                "image": "Blocked",
+                "imageReasons": "Boot disk exceeds image import limit",
+                "migration": "Ready",
+                "migrationReasons": "",
+                "memory": "Ready",
+                "memoryReasons": "",
+                "networkReadiness": "Ready",
+                "networkReasons": "",
+                "power": "poweredOn",
+                "network": "app-net",
+            }
+        ]
+
+        save_response = client.post(
+            f"/api/projects/{project_id}/network-plan",
+            json=plan,
+        )
+        assert save_response.status_code == 200
+        persisted_plan_response = client.get(f"/api/projects/{project_id}/network-plan")
+        assert persisted_plan_response.status_code == 200
+        persisted_plan = persisted_plan_response.json()
+        state_response = client.put(
+            f"/api/projects/{project_id}/state",
+            json={
+                "planning_state": {
+                    "carbon_network_plan": persisted_plan,
+                    "carbon_assignment_rows": planning_rows,
+                },
+                "project_name": "Preflight Project",
+            },
+        )
+        assert state_response.status_code == 200
+
+        response = client.post(f"/api/projects/{project_id}/preflight")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["summary"]["total"] == len(payload["findings"])
+        assert payload["summary"]["blockers"] >= 1
+        assert any(
+            finding["Severity"] == "blocker"
+            and finding["Category"] == "readiness"
+            and finding["Subject"] == "blocked-app-01"
+            for finding in payload["findings"]
+        )
+
 
 class TestNetworkPlanningDataModels:
     """Test data model conversions and serialization."""

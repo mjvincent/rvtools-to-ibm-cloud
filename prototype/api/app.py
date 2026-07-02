@@ -32,9 +32,12 @@ from terraform_readme_generator import generate_modular_terraform_readme
 from . import persistence
 from .carbon_handoff import (
     carbon_decision_audit_csv,
+    carbon_decision_audit_records,
     carbon_full_handoff_files,
+    carbon_preflight_findings,
     carbon_state_native_handoff_files,
 )
+from preflight import summarize_preflight
 
 
 DEFAULT_REGION = "us-south"
@@ -103,6 +106,45 @@ def _require_persistence() -> None:
             status_code=503,
             detail="Persistence is disabled because DATABASE_URL is not set.",
         )
+
+
+def _load_carbon_project_plan(project_id: str) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], NetworkPlanningState]:
+    _require_persistence()
+
+    project = persistence.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project_state = persistence.get_project_state(project_id)
+    if not project_state:
+        raise HTTPException(
+            status_code=400,
+            detail="Project state not found. Save the project first.",
+        )
+
+    planning_state_json = project_state.get("planning_state_json", {})
+    network_plan_data = planning_state_json.get("carbon_network_plan")
+    if not network_plan_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Network plan not found. Create network plan first.",
+        )
+
+    try:
+        network_plan = from_dict(network_plan_data)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid network plan data: {exc}",
+        ) from exc
+
+    if not network_plan.vpcs:
+        raise HTTPException(
+            status_code=400,
+            detail="Network plan must contain at least one VPC",
+        )
+
+    return project, project_state, planning_state_json, network_plan
 
 
 def _parse_upload(
@@ -514,49 +556,32 @@ async def update_vm_assignments(
 
 
 
+@app.post("/api/projects/{project_id}/preflight")
+async def run_carbon_project_preflight(project_id: str) -> dict[str, Any]:
+    """Run package preflight against saved Carbon network planning state."""
+    project, project_state, planning_state_json, network_plan = (
+        _load_carbon_project_plan(project_id)
+    )
+    target_region = project_state.get("target_region", "us-south")
+    pricing_catalog = get_pricing_catalog("static", region=target_region)
+    records = carbon_decision_audit_records(network_plan, planning_state_json)
+    findings = carbon_preflight_findings(network_plan, records, pricing_catalog)
+    return {
+        "project_id": project_id,
+        "project_name": project.get("name", "carbon-migration"),
+        "summary": summarize_preflight(findings),
+        "findings": [finding.to_record() for finding in findings],
+    }
+
+
 @app.post("/api/projects/{project_id}/terraform")
 async def generate_terraform_package(project_id: str) -> StreamingResponse:
     """Generate Terraform ZIP package from Carbon network planning state."""
-    _require_persistence()
+    project, project_state, planning_state_json, network_plan = (
+        _load_carbon_project_plan(project_id)
+    )
 
-    project = persistence.get_project(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    # Load network plan from project state
-    project_state = persistence.get_project_state(project_id)
-    if not project_state:
-        raise HTTPException(
-            status_code=400,
-            detail="Project state not found. Save the project first."
-        )
-
-    planning_state_json = project_state.get("planning_state_json", {})
     network_plan_data = planning_state_json.get("carbon_network_plan")
-
-    if not network_plan_data:
-        raise HTTPException(
-            status_code=400,
-            detail="Network plan not found. Create network plan first."
-        )
-
-    # Convert to NetworkPlanningState
-    try:
-        network_plan = from_dict(network_plan_data)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid network plan data: {exc}"
-        ) from exc
-
-    # Validate network plan has required data
-    if not network_plan.vpcs:
-        raise HTTPException(
-            status_code=400,
-            detail="Network plan must contain at least one VPC"
-        )
-
-    # Get project metadata
     target_region = project_state.get("target_region", "us-south")
     target_zone = project_state.get("target_zone", "us-south-1")
     project_name = project.get("name", "carbon-migration")
