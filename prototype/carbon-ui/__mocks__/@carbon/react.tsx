@@ -8,7 +8,7 @@ export const Button = ({ children, onClick, disabled, kind, size, renderIcon: Ic
   </button>
 );
 
-export const Checkbox = ({ id, labelText, checked, onChange, ...rest }: any) => (
+export const Checkbox = ({ id, labelText, checked, onChange, hideLabel, ...rest }: any) => (
   <input
     type="checkbox"
     id={id}

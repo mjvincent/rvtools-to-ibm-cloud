@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Button, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
-import { Download } from '@carbon/icons-react';
+import { CloudUpload, Download } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import { generateTerraform, saveNetworkPlan } from '../../hooks/useApi';
 import {
@@ -11,7 +11,13 @@ import {
   packageFileCount,
   terraformPackageFiles,
 } from '../../utils/package-inventory';
-import { buildNetworkPlanBody } from '../../utils/planning-state';
+import {
+  buildNetworkPlanBody,
+  exportNetworkPlanJson,
+  parseNetworkPlanJson,
+  resourcesFromNetworkPlan,
+  rowsFromNetworkPlan,
+} from '../../utils/planning-state';
 
 const packageGroups = [
   {
@@ -66,8 +72,21 @@ function terraformLabel(value: string) {
     .replace(/^_+|_+$/g, '') || 'new_resource';
 }
 
+function readFileText(file: File): Promise<string> {
+  if (typeof file.text === 'function') {
+    return file.text();
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Could not read planning state file.'));
+    reader.readAsText(file);
+  });
+}
+
 export default function ExportWorkflow() {
   const { state, dispatch } = useAppState();
+  const planningStateInputRef = useRef<HTMLInputElement>(null);
   const {
     assignmentRows,
     resources,
@@ -139,6 +158,49 @@ export default function ExportWorkflow() {
     }
   }
 
+  function handleExportPlanningState() {
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
+    dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
+    const json = exportNetworkPlanJson({ resources, assignmentRows, projectName, summary });
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${projectName.replace(/\s+/g, '-')}-planning-state-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Planning state JSON downloaded.' });
+  }
+
+  async function handleImportPlanningState(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
+    dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
+    try {
+      const plan = parseNetworkPlanJson(await readFileText(file));
+      const importedResources = resourcesFromNetworkPlan(plan);
+      dispatch({ type: 'SET_RESOURCES', payload: importedResources });
+      dispatch({
+        type: 'SET_ASSIGNMENT_ROWS',
+        payload: rowsFromNetworkPlan(plan, assignmentRows),
+      });
+      dispatch({
+        type: 'SET_TERRAFORM_STATUS',
+        payload: `Imported planning state from ${file.name}. Review and save the project to persist it.`,
+      });
+    } catch (error) {
+      dispatch({
+        type: 'SET_TERRAFORM_ERROR',
+        payload: error instanceof Error ? error.message : 'Planning state import failed.',
+      });
+    }
+  }
+
   return (
     <Layer className="workbench-section">
       <div className="section-header">
@@ -148,6 +210,30 @@ export default function ExportWorkflow() {
         </div>
         <div className="network-actions">
           <Tag type={blockingFindingCount === 0 ? 'green' : 'warm-gray'}>{blockingFindingCount === 0 ? 'Ready' : 'Needs review'}</Tag>
+          <Button
+            kind="tertiary"
+            size="sm"
+            renderIcon={CloudUpload}
+            onClick={() => planningStateInputRef.current?.click()}
+          >
+            Import planning JSON
+          </Button>
+          <input
+            ref={planningStateInputRef}
+            aria-label="Import planning state JSON"
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            onChange={handleImportPlanningState}
+          />
+          <Button
+            kind="secondary"
+            size="sm"
+            renderIcon={Download}
+            onClick={handleExportPlanningState}
+          >
+            Export planning JSON
+          </Button>
           <Button
             kind="primary"
             size="sm"

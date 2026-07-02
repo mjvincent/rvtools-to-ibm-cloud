@@ -139,6 +139,38 @@ export function buildNetworkPlanBody(params: {
   };
 }
 
+export function exportNetworkPlanJson(params: {
+  resources: ResourceState;
+  assignmentRows: AssignmentVm[];
+  projectName: string;
+  summary?: WorkbookSummary | null;
+}) {
+  return JSON.stringify(buildNetworkPlanBody(params), null, 2);
+}
+
+export function parseNetworkPlanJson(text: string): ApiNetworkPlanBody {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('Planning state file must be valid JSON.');
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Planning state file must contain a network plan object.');
+  }
+  const plan = parsed as Partial<ApiNetworkPlanBody>;
+  if (!Array.isArray(plan.vpcs) || !Array.isArray(plan.subnets)) {
+    throw new Error('Planning state file is missing VPC or subnet resources.');
+  }
+  if (!Array.isArray(plan.security_groups) && !Array.isArray((plan as any).securityGroups)) {
+    throw new Error('Planning state file is missing security group resources.');
+  }
+  if (!Array.isArray(plan.vm_assignments) && !Array.isArray((plan as any).vmAssignments)) {
+    throw new Error('Planning state file is missing VM assignments.');
+  }
+  return parsed as ApiNetworkPlanBody;
+}
+
 export function resourcesFromNetworkPlan(plan: unknown): ResourceState {
   if (!plan || typeof plan !== 'object') {
     return normalizeResources({});

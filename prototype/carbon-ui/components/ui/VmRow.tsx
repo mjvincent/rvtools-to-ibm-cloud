@@ -17,7 +17,9 @@ export default function VmRow({ vm, selected, onToggle }: VmRowProps) {
       <td>
         <Checkbox
           id={`select-${vm.id}`}
-          labelText=""
+          aria-label={`Select ${vm.name}`}
+          hideLabel
+          labelText={`Select ${vm.name}`}
           checked={selected}
           onChange={onToggle}
         />

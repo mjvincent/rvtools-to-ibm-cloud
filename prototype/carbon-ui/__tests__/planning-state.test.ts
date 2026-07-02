@@ -1,6 +1,8 @@
 import { defaultResources, sampleRows } from '../store/AppContext';
 import {
   buildNetworkPlanBody,
+  exportNetworkPlanJson,
+  parseNetworkPlanJson,
   resourcesFromNetworkPlan,
   rowsFromNetworkPlan,
   vmAssignmentsFromRows,
@@ -32,6 +34,25 @@ describe('planning-state API adapter', () => {
     });
     expect(body.metadata.project_name).toBe('Migration assessment');
     expect(body.metadata.rvtools_filename).toBe('rvtools.xlsx');
+  });
+
+  it('exports and parses planning-state JSON', () => {
+    const json = exportNetworkPlanJson({
+      resources: defaultResources,
+      assignmentRows: sampleRows,
+      projectName: 'Migration assessment',
+      summary: { filename: 'rvtools.xlsx' } as any,
+    });
+    const parsed = parseNetworkPlanJson(json);
+
+    expect(parsed.vm_assignments).toHaveLength(3);
+    expect(parsed.metadata.project_name).toBe('Migration assessment');
+    expect(parsed.security_groups).toHaveLength(defaultResources.securityGroups.length);
+  });
+
+  it('rejects invalid planning-state JSON', () => {
+    expect(() => parseNetworkPlanJson('not-json')).toThrow('valid JSON');
+    expect(() => parseNetworkPlanJson('{}')).toThrow('missing VPC or subnet resources');
   });
 
   it('maps UI assignment names to persisted resource IDs', () => {

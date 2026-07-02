@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ExportWorkflow from '../../components/workflows/ExportWorkflow';
-import { AppProvider, useAppState } from '../../store/AppContext';
+import { AppProvider, defaultResources, useAppState } from '../../store/AppContext';
 import * as api from '../../hooks/useApi';
 
 jest.mock('../../hooks/useApi', () => ({
@@ -27,6 +27,15 @@ function renderWithProvider(ui: React.ReactElement) {
   );
 }
 
+function readBlobText(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Could not read blob.'));
+    reader.readAsText(blob);
+  });
+}
+
 describe('ExportWorkflow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -40,6 +49,11 @@ describe('ExportWorkflow', () => {
       configurable: true,
       value: jest.fn(),
     });
+    jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('renders export readiness findings', () => {
@@ -78,5 +92,79 @@ describe('ExportWorkflow', () => {
     const [, payload] = (api.saveNetworkPlan as jest.Mock).mock.calls[0];
     expect(payload.vm_assignments).toHaveLength(3);
     expect(payload.metadata.project_name).toBe('Export Project');
+  });
+
+  it('downloads the current planning-state JSON', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Export planning JSON'));
+
+    await waitFor(() => expect(window.URL.createObjectURL).toHaveBeenCalledTimes(1));
+    const blob = (window.URL.createObjectURL as jest.Mock).mock.calls[0][0] as Blob;
+    const payload = JSON.parse(await readBlobText(blob));
+    expect(payload.vm_assignments).toHaveLength(3);
+    expect(payload.metadata.project_name).toBe('Export Project');
+    expect(screen.getByText('Planning state JSON downloaded.')).toBeTruthy();
+  });
+
+  it('imports planning-state JSON before saving Terraform', async () => {
+    renderWithProvider(<ExportWorkflow />);
+    const importedPlan = {
+      version: '1.0',
+      vpcs: defaultResources.vpcs,
+      subnets: defaultResources.subnets,
+      security_groups: defaultResources.securityGroups,
+      storage_profiles: defaultResources.storageProfiles,
+      waves: defaultResources.waves,
+      network_components: defaultResources.networkComponents,
+      vm_assignments: [
+        {
+          vm_key: 'sample-app-01',
+          vm_name: 'app-01',
+          primary_subnet_id: 'subnet-db',
+          primary_security_group_id: 'sg-db',
+          secondary_nics: [],
+          storage_profile_id: 'storage-db',
+          wave_id: 'wave-2',
+          excluded: false,
+          exclusion_reason: null,
+          override_profile: 'mx2-16x128',
+          override_profile_reason: 'Memory validation complete',
+          storage_tier: '10iops-tier',
+          override_storage_tier_reason: 'Database latency target',
+          owner: 'DB owner',
+          application: 'Database',
+          network: 'db-net',
+        },
+      ],
+      metadata: {
+        project_name: 'Imported Project',
+        target_region: 'us-south',
+        target_zone: 'us-south-1',
+      },
+    };
+    const file = new File([JSON.stringify(importedPlan)], 'planning-state.json', {
+      type: 'application/json',
+    });
+
+    await userEvent.upload(screen.getByLabelText('Import planning state JSON'), file);
+    await waitFor(() =>
+      expect(screen.getByText('Imported planning state from planning-state.json. Review and save the project to persist it.')).toBeTruthy(),
+    );
+    await userEvent.click(screen.getByText('Download Terraform ZIP'));
+
+    await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
+    const [, payload] = (api.saveNetworkPlan as jest.Mock).mock.calls[0];
+    expect(payload.vm_assignments[0]).toMatchObject({
+      primary_subnet_id: 'subnet-db',
+      primary_security_group_id: 'sg-db',
+      storage_profile_id: 'storage-db',
+      wave_id: 'wave-2',
+      override_profile: 'mx2-16x128',
+      override_profile_reason: 'Memory validation complete',
+      owner: 'DB owner',
+      application: 'Database',
+      network: 'db-net',
+    });
   });
 });

@@ -79,7 +79,7 @@ describe('VmRow', () => {
         <VmRow vm={mockVm} selected={false} onToggle={onToggle} />
       </tbody></table>,
     );
-    const checkbox = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox', { name: 'Select web-server-01' });
     await userEvent.click(checkbox);
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
@@ -90,7 +90,7 @@ describe('VmRow', () => {
         <VmRow vm={mockVm} selected={true} onToggle={() => {}} />
       </tbody></table>,
     );
-    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+    const checkbox = screen.getByRole('checkbox', { name: 'Select web-server-01' }) as HTMLInputElement;
     expect(checkbox.checked).toBe(true);
   });
 });

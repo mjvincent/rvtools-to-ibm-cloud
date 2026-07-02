@@ -170,7 +170,7 @@ PlacementModal
 - [ ] All CSV exports (vm-mapping, nic-mapping, disk-mapping, etc.)
 - [ ] Migration runbook
 - [ ] Preflight validation
-- [ ] Planning state JSON
+- [x] Planning state JSON export/import in Carbon Export workflow
 - [ ] Terraform ZIP packaging
 
 ---
@@ -248,7 +248,7 @@ PlacementModal
 - Migration runbook
 - Preflight validation
 - Decision audit export
-- Planning state JSON
+- Planning state JSON export/import
 - ZIP packaging
 
 **Deliverables:**
@@ -294,7 +294,7 @@ Carbon UI must meet these gates before replacing Streamlit:
 - [ ] Image import planning
 - [ ] Migration Ops
 - [ ] Decision audit
-- [ ] Planning state JSON export/import
+- [x] Planning state JSON export/import
 - [ ] All CSV exports match Streamlit
 
 ### Gate 3: Network Planning ✅/❌
