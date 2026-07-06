@@ -28,7 +28,7 @@ plan.
 | --- | --- | --- | --- | --- |
 | Gate 1: Core Functionality | Pass | Workbook upload calls FastAPI summary; project save/load uses Postgres; drag/drop assigns subnet/security/storage/wave; Terraform ZIP export works from saved Carbon network plans. | Keep maintaining regression coverage as parity work lands. | Maintenance |
 | Gate 2: Feature Parity | Partial | Carbon now has workflow surfaces for wave planning, remediation backlog, image import planning, migration ops, VM overrides, decision audit, handoff ZIP files, and Streamlit-vs-Carbon fixture comparisons. | Add more real-workbook edge fixtures and close remaining Streamlit bulk/edge workflow gaps before promotion. | Phase 4 and Phase 5 |
-| Gate 3: Network Planning | Partial | Carbon supports VPC/subnet/security/storage/wave/network component planning, saved network plans, diagram display, Terraform generation, package inventory parity status, backend package preflight feedback, and safe preflight next-step actions in Export. | Add richer network component editing, clickable/editable diagram nodes, richer validation beyond package preflight, and Terraform preview. | Phase 5 and Phase 6 |
+| Gate 3: Network Planning | Partial | Carbon supports VPC/subnet/security/storage/wave/network component planning, saved network plans, diagram display, Terraform generation, package inventory parity status, backend package preflight feedback, safe preflight next-step actions, and Terraform preview in Export. | Add richer network component editing, clickable/editable diagram nodes, richer validation beyond package preflight, and richer Terraform preview navigation. | Phase 5 and Phase 6 |
 | Gate 4: User Experience | Partial | Native drag/drop supports single and multi-select assignment with confirmation modal, drop highlighting, row tags, row-level unassign, readiness-chip routing, and explicit checkbox/drop-zone accessible labels. | Run accessibility audit, keyboard-only DnD review, mobile/tablet review, and large-workbook UX/performance tests beyond the workshop sample. | Phase 6 |
 | Gate 5: Quality and Testing | Partial | Verified: Python compile/full pytest, Carbon TypeScript, Jest, Playwright smoke, handoff parity fixtures, real-workbook operational overlay parity, planning-state JSON import/export, backend preflight endpoint/UI feedback and next-step actions, API ZIP inventory guard, UI/backend ZIP inventory drift guard, and workshop large-workbook summary/ZIP performance guard. | Add broader e2e coverage for failure paths, multiple browsers, additional large workbooks, accessibility automation, and more real-workbook parity fixtures. | Phase 4-6 |
 | Gate 6: Production Readiness | Partial | Docker Compose starts Streamlit, API, Carbon UI, and Postgres; Carbon healthcheck reports healthy; persistence warning exists; user manual now documents the Carbon checkpoint and production boundary. | Add operational monitoring/logging review, backup/recovery guidance, promotion/cutover guide, and support posture. | Phase 6 |
@@ -48,9 +48,9 @@ npm run test:e2e
 
 Observed results:
 - Python compile: passed
-- Python pytest: 347 passed
+- Python pytest: 348 passed
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 140 passed
+- Carbon Jest: 141 passed
 - Carbon Playwright smoke: passed
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -137,7 +137,7 @@ Current feature-parity status:
 - Improve any workbook-derived source metadata gaps found by those fixtures.
 - Extend Carbon-side preflight feedback with optional safe autofill for low-risk findings.
 - Extend planning-state reload coverage through Playwright and user acceptance.
-- Add Terraform preview inside the UI.
+- Extend Terraform preview navigation beyond the selected root files.
 
 ## Phase 6 Backlog
 

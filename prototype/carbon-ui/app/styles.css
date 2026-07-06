@@ -364,6 +364,24 @@ body {
   padding-top: 1rem;
 }
 
+.preview-file-actions {
+  justify-content: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.terraform-preview {
+  background: #161616;
+  color: #f4f4f4;
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 0;
+  max-height: 28rem;
+  overflow: auto;
+  padding: 1rem;
+  white-space: pre;
+}
+
 .package-grid {
   display: grid;
   gap: 0.75rem;

@@ -117,9 +117,9 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 140 tests passing
+- Jest: 141 tests passing
 - Playwright: 1 browser smoke passing
-- Python pytest: 347 tests passing
+- Python pytest: 348 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
@@ -164,7 +164,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 3. **UX polish**
    - Editable network diagram nodes
    - Richer validation beyond package preflight feedback
-   - Terraform preview inside the UI
+   - Richer Terraform preview navigation beyond the selected root files
 
 ---
 
@@ -199,6 +199,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [ ] All CSV exports
 - [ ] Migration manifest parity
 - [x] Backend package preflight endpoint and Carbon Export UI feedback
+- [x] Carbon Export workflow Terraform preview before ZIP download
 - [x] Planning-state JSON export/import in Carbon Export workflow
 
 ### Phase 6: Polish and Promotion

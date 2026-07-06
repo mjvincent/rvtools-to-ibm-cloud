@@ -7,9 +7,11 @@ import { useAppState } from '../../store/AppContext';
 import type { Workflow } from '../../types/network-planning';
 import {
   generateTerraform,
+  previewTerraform,
   runProjectPreflight,
   saveNetworkPlan,
   type PreflightResponse,
+  type TerraformPreviewResponse,
 } from '../../hooks/useApi';
 import {
   carbonPackageFiles,
@@ -103,6 +105,9 @@ export default function ExportWorkflow() {
   const planningStateInputRef = useRef<HTMLInputElement>(null);
   const [preflight, setPreflight] = useState<PreflightResponse | null>(null);
   const [runningPreflight, setRunningPreflight] = useState(false);
+  const [terraformPreview, setTerraformPreview] = useState<TerraformPreviewResponse | null>(null);
+  const [selectedPreviewPath, setSelectedPreviewPath] = useState('');
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const {
     assignmentRows,
     resources,
@@ -142,6 +147,9 @@ export default function ExportWorkflow() {
   const blockingFindingCount = findings.reduce((total, [, count]) => total + count, 0);
   const preflightSummary = preflight?.summary;
   const visiblePreflightFindings = preflight?.findings.slice(0, 5) || [];
+  const selectedPreviewFile = terraformPreview?.files.find((file) =>
+    file.path === selectedPreviewPath,
+  ) || terraformPreview?.files[0];
 
   function routeStatus(finding: PreflightResponse['findings'][number], fallback: string) {
     const action = finding['Suggested Action'];
@@ -299,6 +307,31 @@ export default function ExportWorkflow() {
     }
   }
 
+  async function handlePreviewTerraform() {
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
+    dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
+    setLoadingPreview(true);
+    try {
+      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Saving latest network plan before preview...' });
+      await saveLatestNetworkPlan();
+      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Generating Terraform preview...' });
+      const result = await previewTerraform(selectedProjectId);
+      setTerraformPreview(result);
+      setSelectedPreviewPath(result.files[0]?.path || '');
+      dispatch({
+        type: 'SET_TERRAFORM_STATUS',
+        payload: `Terraform preview generated for ${result.files.length} file(s).`,
+      });
+    } catch (error) {
+      dispatch({
+        type: 'SET_TERRAFORM_ERROR',
+        payload: error instanceof Error ? error.message : 'Terraform preview failed.',
+      });
+    } finally {
+      setLoadingPreview(false);
+    }
+  }
+
   async function handleDownloadTerraform() {
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
     dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
@@ -414,6 +447,15 @@ export default function ExportWorkflow() {
             {runningPreflight ? 'Running...' : 'Run preflight'}
           </Button>
           <Button
+            kind="secondary"
+            size="sm"
+            renderIcon={Download}
+            onClick={handlePreviewTerraform}
+            disabled={!selectedProjectId || loadingPreview}
+          >
+            {loadingPreview ? 'Previewing...' : 'Preview Terraform'}
+          </Button>
+          <Button
             kind="primary"
             size="sm"
             renderIcon={Download}
@@ -498,6 +540,32 @@ export default function ExportWorkflow() {
               <p>No package preflight findings returned.</p>
             </Tile>
           )}
+        </div>
+      )}
+      {terraformPreview && selectedPreviewFile && (
+        <div className="export-package">
+          <div className="section-header compact">
+            <div>
+              <h2>Terraform preview</h2>
+              <p>{terraformPreview.files.length} generated file(s) from the saved Carbon network plan.</p>
+            </div>
+            <Tag type="blue">{selectedPreviewFile.path}</Tag>
+          </div>
+          <div className="network-actions preview-file-actions">
+            {terraformPreview.files.map((file) => (
+              <Button
+                key={file.path}
+                kind={file.path === selectedPreviewFile.path ? 'primary' : 'tertiary'}
+                size="sm"
+                onClick={() => setSelectedPreviewPath(file.path)}
+              >
+                {file.path}
+              </Button>
+            ))}
+          </div>
+          <pre className="terraform-preview" aria-label={`Terraform preview ${selectedPreviewFile.path}`}>
+            <code>{selectedPreviewFile.content}</code>
+          </pre>
         </div>
       )}
       <div className="export-package">

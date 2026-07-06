@@ -147,6 +147,37 @@ def _load_carbon_project_plan(project_id: str) -> tuple[dict[str, Any], dict[str
     return project, project_state, planning_state_json, network_plan
 
 
+def _render_carbon_terraform_files(
+    project: dict[str, Any],
+    project_state: dict[str, Any],
+    network_plan: NetworkPlanningState,
+) -> dict[str, str]:
+    target_region = project_state.get("target_region", "us-south")
+    target_zone = project_state.get("target_zone", "us-south-1")
+    project_name = project.get("name", "carbon-migration")
+    try:
+        terraform_files = render_modular_terraform_from_carbon_plan(
+            network_plan,
+            project_name=project_name,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Terraform generation failed: {exc}",
+        ) from exc
+    terraform_files["README.md"] = generate_modular_terraform_readme(
+        project_name=project_name,
+        target_region=target_region,
+        target_zone=target_zone,
+        vpc_count=len(network_plan.vpcs),
+        subnet_count=len(network_plan.subnets),
+        vm_count=len(network_plan.vm_assignments),
+        has_ssh_key=bool(network_plan.metadata.ssh_public_key),
+        backend_type=network_plan.metadata.backend_type or "local",
+    )
+    return terraform_files
+
+
 def _parse_upload(
     upload: UploadFile,
     target_region: str = DEFAULT_REGION,
@@ -574,6 +605,36 @@ async def run_carbon_project_preflight(project_id: str) -> dict[str, Any]:
     }
 
 
+@app.post("/api/projects/{project_id}/terraform/preview")
+async def preview_terraform_package(project_id: str) -> dict[str, Any]:
+    """Preview selected Terraform package files from Carbon network planning state."""
+    project, project_state, _planning_state_json, network_plan = (
+        _load_carbon_project_plan(project_id)
+    )
+    terraform_files = _render_carbon_terraform_files(
+        project,
+        project_state,
+        network_plan,
+    )
+    preview_names = [
+        "main.tf",
+        "terraform.tfvars.example",
+        "README.md",
+    ]
+    return {
+        "project_id": project_id,
+        "project_name": project.get("name", "carbon-migration"),
+        "files": [
+            {
+                "path": file_name,
+                "content": terraform_files[file_name],
+            }
+            for file_name in preview_names
+            if file_name in terraform_files
+        ],
+    }
+
+
 @app.post("/api/projects/{project_id}/terraform")
 async def generate_terraform_package(project_id: str) -> StreamingResponse:
     """Generate Terraform ZIP package from Carbon network planning state."""
@@ -583,20 +644,13 @@ async def generate_terraform_package(project_id: str) -> StreamingResponse:
 
     network_plan_data = planning_state_json.get("carbon_network_plan")
     target_region = project_state.get("target_region", "us-south")
-    target_zone = project_state.get("target_zone", "us-south-1")
     project_name = project.get("name", "carbon-migration")
 
-    # Generate Terraform files using modular structure
-    try:
-        terraform_files = render_modular_terraform_from_carbon_plan(
-            network_plan,
-            project_name=project_name,
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Terraform generation failed: {exc}"
-        ) from exc
+    terraform_files = _render_carbon_terraform_files(
+        project,
+        project_state,
+        network_plan,
+    )
 
     # Create ZIP in memory
     zip_buffer = io.BytesIO()
@@ -604,19 +658,6 @@ async def generate_terraform_package(project_id: str) -> StreamingResponse:
         # Add Terraform files
         for file_path, content in terraform_files.items():
             zip_file.writestr(file_path, content)
-
-        # Add README (modular structure)
-        readme_content = generate_modular_terraform_readme(
-            project_name=project_name,
-            target_region=target_region,
-            target_zone=target_zone,
-            vpc_count=len(network_plan.vpcs),
-            subnet_count=len(network_plan.subnets),
-            vm_count=len(network_plan.vm_assignments),
-            has_ssh_key=bool(network_plan.metadata.ssh_public_key),
-            backend_type=network_plan.metadata.backend_type or "local",
-        )
-        zip_file.writestr("README.md", readme_content)
 
         # Add network plan JSON for reference
         zip_file.writestr(

@@ -724,6 +724,31 @@ class TestNetworkPlanningEndpoints:
             for finding in payload["findings"]
         )
 
+    def test_terraform_preview_returns_selected_files(
+        self, client, sample_network_plan
+    ):
+        """Test Carbon Terraform preview returns selected generated files."""
+        project_id = "test-project-terraform"
+        save_response = client.post(
+            f"/api/projects/{project_id}/network-plan",
+            json=sample_network_plan,
+        )
+        assert save_response.status_code == 200
+
+        response = client.post(f"/api/projects/{project_id}/terraform/preview")
+
+        assert response.status_code == 200
+        payload = response.json()
+        files = {item["path"]: item["content"] for item in payload["files"]}
+        assert set(files) == {
+            "main.tf",
+            "terraform.tfvars.example",
+            "README.md",
+        }
+        assert 'module "networking"' in files["main.tf"]
+        assert "project_name" in files["terraform.tfvars.example"]
+        assert "Terraform Package" in files["README.md"]
+
 
 class TestNetworkPlanningDataModels:
     """Test data model conversions and serialization."""

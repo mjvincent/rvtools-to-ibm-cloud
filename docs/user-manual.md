@@ -222,7 +222,7 @@ Shows discovered networks, default CIDRs, VM network placement, multi-NIC count,
 Shows total storage, data disk counts, boot/data planning signals, partition coverage, storage tier choices, and image readiness context. Use this to validate data disk volume planning before package generation.
 
 ### Export
-Groups final package work into workflow sections for package settings, subnet CIDRs, package summary metrics, bundle contents preview, build readiness checklist, planning downloads, preflight review, Terraform validation guidance, and Terraform ZIP build/download controls.
+Groups final package work into workflow sections for package settings, subnet CIDRs, package summary metrics, bundle contents preview, build readiness checklist, planning downloads, preflight review, Terraform validation guidance, Terraform preview, and Terraform ZIP build/download controls.
 
 ## Sidebar Settings
 ### Target IBM Region
@@ -695,6 +695,8 @@ Network readiness is advisory. It does not change generated Terraform subnet, se
 On the `Export` tab, click `Build Terraform Project` after reviewing readiness, VM decisions, network placement, storage planning, and Terraform settings.
 
 The `Build Readiness Checklist` is informational. It shows Ready, Review, and Blocked counts, then summarizes readiness blockers, required wave planning fields, image import status, planning-state/session safety, and package preflight signals. It does not block package generation.
+
+Use `Preview Terraform` to save the latest Carbon network plan and inspect selected generated files, including `main.tf`, `terraform.tfvars.example`, and `README.md`, before downloading the ZIP.
 
 Before the ZIP is created, the app runs package preflight validation. Blockers stop package generation; warnings are shown in the UI and exported in the package. Preflight checks cover blocked readiness, empty scope, unresolved custom image placeholders, CIDR syntax and overlap, duplicate Terraform names, missing subnet/security group mappings, unsupported storage tiers, and profile/region support warnings.
 

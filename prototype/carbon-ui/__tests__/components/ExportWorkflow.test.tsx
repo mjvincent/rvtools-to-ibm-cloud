@@ -8,6 +8,7 @@ import * as api from '../../hooks/useApi';
 jest.mock('../../hooks/useApi', () => ({
   saveNetworkPlan: jest.fn(),
   generateTerraform: jest.fn(),
+  previewTerraform: jest.fn(),
   runProjectPreflight: jest.fn(),
 }));
 
@@ -54,6 +55,15 @@ describe('ExportWorkflow', () => {
     jest.clearAllMocks();
     (api.saveNetworkPlan as jest.Mock).mockResolvedValue(undefined);
     (api.generateTerraform as jest.Mock).mockResolvedValue(new Blob(['zip']));
+    (api.previewTerraform as jest.Mock).mockResolvedValue({
+      project_id: 'project-1',
+      project_name: 'Export Project',
+      files: [
+        { path: 'main.tf', content: 'terraform {\n  required_version = ">= 1.0"\n}' },
+        { path: 'terraform.tfvars.example', content: 'project_name = "Export Project"' },
+        { path: 'README.md', content: '# Terraform Package: Export Project' },
+      ],
+    });
     (api.runProjectPreflight as jest.Mock).mockResolvedValue({
       project_id: 'project-1',
       project_name: 'Export Project',
@@ -160,6 +170,21 @@ describe('ExportWorkflow', () => {
     expect(screen.getByText('sample-db-01')).toBeTruthy();
     expect(screen.getByText('Image readiness is blocked.')).toBeTruthy();
     expect(screen.getByText('Review scope decision')).toBeTruthy();
+  });
+
+  it('saves the network plan before rendering Terraform preview', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Preview Terraform'));
+
+    await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.previewTerraform).toHaveBeenCalledWith('project-1'));
+    expect(screen.getByText('Terraform preview')).toBeTruthy();
+    expect(screen.getByText('3 generated file(s) from the saved Carbon network plan.')).toBeTruthy();
+    expect(screen.getByLabelText('Terraform preview main.tf').textContent).toContain('required_version');
+
+    await userEvent.click(screen.getByRole('button', { name: 'README.md' }));
+    expect(screen.getByLabelText('Terraform preview README.md').textContent).toContain('Terraform Package');
   });
 
   it('routes preflight findings to the right review workflow', async () => {

@@ -138,7 +138,46 @@ curl -X GET http://localhost:8000/api/projects/project-123/network-plan
 
 ---
 
-### 3. Update VM Assignments
+### 3. Preview Terraform Package
+
+Generate a review-only Terraform preview for selected root files from the saved
+Carbon network plan. This endpoint does not create or download the ZIP package.
+
+**Endpoint**: `POST /api/projects/{project_id}/terraform/preview`
+
+**Parameters**:
+- `project_id` (path, required): Unique identifier for the project
+
+**Response** (200 OK):
+```json
+{
+  "project_id": "project-123",
+  "project_name": "migration-project",
+  "files": [
+    {
+      "path": "main.tf",
+      "content": "module \"networking\" {\n  ...\n}"
+    },
+    {
+      "path": "terraform.tfvars.example",
+      "content": "project_name = \"migration-project\"\n"
+    },
+    {
+      "path": "README.md",
+      "content": "# Terraform Package\n..."
+    }
+  ]
+}
+```
+
+**Example**:
+```bash
+curl -X POST http://localhost:8000/api/projects/project-123/terraform/preview
+```
+
+---
+
+### 4. Update VM Assignments
 
 Update VM network assignments (subnet, security group, storage, wave).
 

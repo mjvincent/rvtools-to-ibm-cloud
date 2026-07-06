@@ -181,6 +181,29 @@ export async function generateTerraform(projectId: string): Promise<Blob> {
   return response.blob();
 }
 
+export type TerraformPreviewFile = {
+  path: string;
+  content: string;
+};
+
+export type TerraformPreviewResponse = {
+  project_id: string;
+  project_name: string;
+  files: TerraformPreviewFile[];
+};
+
+export async function previewTerraform(projectId: string): Promise<TerraformPreviewResponse> {
+  const response = await fetch(`/api/projects/${projectId}/terraform/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || 'Terraform preview failed.');
+  }
+  return payload;
+}
+
 export type PreflightFinding = {
   Severity: string;
   Category: string;

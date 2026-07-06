@@ -262,7 +262,7 @@ PlacementModal
 - Clickable/editable diagram nodes
 - Detail side panels
 - Validation/preflight for network components
-- Terraform preview in UI
+- Richer Terraform preview navigation beyond selected root files
 - Performance optimization
 - Accessibility audit
 - Complete test suite
@@ -410,8 +410,8 @@ Carbon UI must meet these gates before replacing Streamlit:
 2. **Drag-and-Drop UX**: Should we support drag-from-bucket-to-bucket reassignment, or only drag-from-unassigned-to-bucket?
    - Recommendation: Support both for flexibility
 
-3. **Terraform Preview**: Should Carbon UI show Terraform preview before download, or only after download?
-   - Recommendation: Show preview in UI for validation, similar to Streamlit's package contents preview
+3. **Terraform Preview**: Carbon UI now shows selected Terraform files before ZIP download.
+   - Recommendation: Extend preview navigation as package review needs grow
 
 4. **Migration Path**: How do we migrate existing Streamlit users to Carbon UI?
    - Recommendation: Run both in parallel, provide migration guide, deprecate Streamlit after 3-6 months of Carbon stability
