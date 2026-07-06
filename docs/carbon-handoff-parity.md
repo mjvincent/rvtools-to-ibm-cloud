@@ -50,7 +50,11 @@ The parity tests now include:
   cutover readiness, and planning-state content.
 - A workshop real-workbook subset comparison from
   `samples/SizingWorkshop-RVTools.xlsx` for unknown-network, low assessment
-  confidence, missing-vMemory, image-import, and cutover-readiness parity.
+  confidence, missing-vMemory, disk/partition empty-state, image-import, and
+  cutover-readiness parity.
+- A sample-workbook operational overlay comparison that now includes exact
+  VM, disk, partition, NIC, memory-readiness, and readiness-finding CSV parity
+  alongside decision audit, remediation, image import, and cutover readiness.
 - A sample-workbook Carbon contract test using
   `samples/rvtools-small-complete.xlsx` through the FastAPI upload summary path.
 - Field-level assertions for `decision-audit.csv`,

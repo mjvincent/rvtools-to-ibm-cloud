@@ -132,9 +132,10 @@ now covers Streamlit-vs-Carbon fixture parity, an edge-case mapping/readiness
 fixture for multi-NIC and disk/partition fidelity, a multi-VM operational
 fixture for overrides, exclusions, remediation, image import, cutover readiness,
 and planning-state parity, a workshop real-workbook subset fixture for
-unknown-network and low-confidence assessment-quality behavior, and
-sample-workbook operational overlays for wave/cutover, remediation, image
-import, profile/storage overrides, and planning-state parity, plus
+unknown-network, storage mapping empty-state, and low-confidence
+assessment-quality behavior, and sample-workbook operational overlays for
+wave/cutover, remediation, image import, profile/storage overrides, rich
+disk/partition mapping, and planning-state parity, plus
 sample-workbook Carbon handoff contract fields for `decision-audit.csv`,
 `remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`,
 and `planning-state.json`. It also verifies the sample-workbook API ZIP

@@ -61,9 +61,10 @@ and temporary smoke-project cleanup.
 
 The Python parity suite now includes Streamlit-vs-Carbon single-VM, edge-case,
 multi-VM, workshop real-workbook subset, and sample-workbook operational overlay
-comparisons; sample-workbook handoff contract assertions; sample-workbook API
-ZIP inventory verification; and a Carbon Export UI inventory drift test against
-backend ZIP inventory constants.
+comparisons, including real-workbook disk/partition mapping parity;
+sample-workbook handoff contract assertions; sample-workbook API ZIP inventory
+verification; and a Carbon Export UI inventory drift test against backend ZIP
+inventory constants.
 The Python suite also guards workshop workbook summary parsing and Carbon
 Terraform ZIP generation performance.
 

@@ -1158,6 +1158,8 @@ def test_carbon_workshop_workbook_unknown_network_subset_matches_streamlit_hando
 
     exact_handoff_files = {
         "vm-mapping.csv",
+        "disk-mapping.csv",
+        "partition-mapping.csv",
         "nic-mapping.csv",
         "memory-readiness.csv",
         "readiness-findings.csv",
@@ -1189,6 +1191,11 @@ def test_carbon_workshop_workbook_unknown_network_subset_matches_streamlit_hando
     assert {row["Memory Sizing Basis"] for row in memory_rows} == {
         "missing-vmemory-preserve-configured-memory"
     }
+
+    disk_rows = _csv_rows(carbon_files["disk-mapping.csv"])
+    partition_rows = _csv_rows(carbon_files["partition-mapping.csv"])
+    assert disk_rows == []
+    assert partition_rows == []
 
     assessment_quality = json.loads(carbon_files["assessment-quality.json"])
     assert assessment_quality["overall_confidence"] == "Low"
@@ -1307,6 +1314,12 @@ def test_carbon_sample_workbook_operational_overlays_match_streamlit_handoff():
         "remediation-backlog.csv",
         "image-import-plan.csv",
         "cutover-readiness.csv",
+        "vm-mapping.csv",
+        "disk-mapping.csv",
+        "partition-mapping.csv",
+        "nic-mapping.csv",
+        "memory-readiness.csv",
+        "readiness-findings.csv",
     }
     for file_name in operational_files:
         assert carbon_files[file_name] == streamlit_files[file_name], file_name
@@ -1372,6 +1385,31 @@ def test_carbon_sample_workbook_operational_overlays_match_streamlit_handoff():
         },
     )
     assert image_by_source["TOTAL"]["Count of VMs"] == "2"
+
+    disk_rows = _csv_rows(carbon_files["disk-mapping.csv"])
+    data_disks = [
+        row
+        for row in disk_rows
+        if row["Target Action"] == "create-and-attach-volume"
+    ]
+    assert {
+        (row["VM Name"], row["Disk"], row["Terraform Volume"])
+        for row in data_disks
+    } == {
+        ("sample-db-01", "Hard disk 2", "sample_db_01_hard_disk_2_vol"),
+        ("sample-web-01", "Hard disk 2", "sample_web_01_hard_disk_2_vol"),
+    }
+
+    partition_rows = _csv_rows(carbon_files["partition-mapping.csv"])
+    assert {
+        (row["VM Name"], row["Partition"], row["Matched To Disk"])
+        for row in partition_rows
+    } == {
+        ("sample-db-01", "C:\\", "True"),
+        ("sample-db-01", "D:\\", "True"),
+        ("sample-web-01", "/", "True"),
+        ("sample-web-01", "/var", "True"),
+    }
 
     cutover_rows = _csv_rows(carbon_files["cutover-readiness.csv"])
     assert any(
