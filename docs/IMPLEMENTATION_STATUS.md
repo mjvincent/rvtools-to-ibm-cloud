@@ -164,7 +164,6 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 3. **UX polish**
    - Editable network diagram nodes
    - Richer validation beyond package preflight feedback
-   - Richer Terraform preview navigation beyond the selected root files
 
 ---
 
@@ -199,7 +198,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [ ] All CSV exports
 - [ ] Migration manifest parity
 - [x] Backend package preflight endpoint and Carbon Export UI feedback
-- [x] Carbon Export workflow Terraform preview before ZIP download
+- [x] Carbon Export workflow package browser preview before ZIP download
 - [x] Planning-state JSON export/import in Carbon Export workflow
 
 ### Phase 6: Polish and Promotion

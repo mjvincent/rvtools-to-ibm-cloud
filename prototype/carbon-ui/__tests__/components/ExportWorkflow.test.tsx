@@ -59,9 +59,30 @@ describe('ExportWorkflow', () => {
       project_id: 'project-1',
       project_name: 'Export Project',
       files: [
-        { path: 'main.tf', content: 'terraform {\n  required_version = ">= 1.0"\n}' },
-        { path: 'terraform.tfvars.example', content: 'project_name = "Export Project"' },
-        { path: 'README.md', content: '# Terraform Package: Export Project' },
+        {
+          path: 'README.md',
+          category: 'Terraform',
+          size_bytes: 35,
+          content: '# Terraform Package: Export Project',
+        },
+        {
+          path: 'main.tf',
+          category: 'Terraform',
+          size_bytes: 42,
+          content: 'terraform {\n  required_version = ">= 1.0"\n}',
+        },
+        {
+          path: 'decision-audit.csv',
+          category: 'Migration handoff',
+          size_bytes: 48,
+          content: 'VM Name,Original Profile,Chosen Profile\napp-01,bx2-2x8,bx2-4x16\n',
+        },
+        {
+          path: 'network-plan.json',
+          category: 'Carbon state',
+          size_bytes: 24,
+          content: '{\n  "version": "1.0"\n}',
+        },
       ],
     });
     (api.runProjectPreflight as jest.Mock).mockResolvedValue({
@@ -172,19 +193,28 @@ describe('ExportWorkflow', () => {
     expect(screen.getByText('Review scope decision')).toBeTruthy();
   });
 
-  it('saves the network plan before rendering Terraform preview', async () => {
+  it('saves the network plan before rendering the package preview', async () => {
     renderWithProvider(<ExportWorkflow />);
 
     await userEvent.click(screen.getByText('Preview Terraform'));
 
     await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(api.previewTerraform).toHaveBeenCalledWith('project-1'));
-    expect(screen.getByText('Terraform preview')).toBeTruthy();
-    expect(screen.getByText('3 generated file(s) from the saved Carbon network plan.')).toBeTruthy();
+    expect(screen.getByText('Package preview')).toBeTruthy();
+    expect(screen.getByText('4 generated file(s) from the saved Carbon network plan.')).toBeTruthy();
+    expect(screen.getByLabelText('Terraform preview README.md').textContent).toContain('Terraform Package');
+
+    await userEvent.click(screen.getByRole('button', { name: /main.tf/ }));
     expect(screen.getByLabelText('Terraform preview main.tf').textContent).toContain('required_version');
 
-    await userEvent.click(screen.getByRole('button', { name: 'README.md' }));
-    expect(screen.getByLabelText('Terraform preview README.md').textContent).toContain('Terraform Package');
+    await userEvent.selectOptions(screen.getByLabelText('Package section'), 'Migration handoff');
+    expect(screen.getByRole('button', { name: /decision-audit.csv/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /network-plan.json/ })).toBeNull();
+
+    await userEvent.selectOptions(screen.getByLabelText('Package section'), 'All');
+    await userEvent.type(screen.getByLabelText('Search package files'), 'network');
+    expect(screen.getByRole('button', { name: /network-plan.json/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /decision-audit.csv/ })).toBeNull();
   });
 
   it('routes preflight findings to the right review workflow', async () => {

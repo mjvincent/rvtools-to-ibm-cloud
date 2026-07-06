@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Button, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
+import { Button, InlineNotification, Layer, Search, Select, SelectItem, Tag, Tile } from '@carbon/react';
 import { CloudUpload, Download, Renew } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import type { Workflow } from '../../types/network-planning';
@@ -107,6 +107,8 @@ export default function ExportWorkflow() {
   const [runningPreflight, setRunningPreflight] = useState(false);
   const [terraformPreview, setTerraformPreview] = useState<TerraformPreviewResponse | null>(null);
   const [selectedPreviewPath, setSelectedPreviewPath] = useState('');
+  const [previewSearch, setPreviewSearch] = useState('');
+  const [previewCategory, setPreviewCategory] = useState('All');
   const [loadingPreview, setLoadingPreview] = useState(false);
   const {
     assignmentRows,
@@ -150,6 +152,21 @@ export default function ExportWorkflow() {
   const selectedPreviewFile = terraformPreview?.files.find((file) =>
     file.path === selectedPreviewPath,
   ) || terraformPreview?.files[0];
+  const previewCategories = useMemo(() => {
+    const categories = new Set(terraformPreview?.files.map((file) => file.category) || []);
+    return ['All', ...Array.from(categories)];
+  }, [terraformPreview]);
+  const filteredPreviewFiles = useMemo(() => {
+    const query = previewSearch.trim().toLowerCase();
+    return terraformPreview?.files.filter((file) => {
+      const matchesCategory = previewCategory === 'All' || file.category === previewCategory;
+      const matchesSearch = !query || file.path.toLowerCase().includes(query);
+      return matchesCategory && matchesSearch;
+    }) || [];
+  }, [previewCategory, previewSearch, terraformPreview]);
+  const selectedPreviewSize = selectedPreviewFile
+    ? `${Math.max(1, Math.ceil(selectedPreviewFile.size_bytes / 1024))} KB`
+    : '';
 
   function routeStatus(finding: PreflightResponse['findings'][number], fallback: string) {
     const action = finding['Suggested Action'];
@@ -318,9 +335,11 @@ export default function ExportWorkflow() {
       const result = await previewTerraform(selectedProjectId);
       setTerraformPreview(result);
       setSelectedPreviewPath(result.files[0]?.path || '');
+      setPreviewSearch('');
+      setPreviewCategory('All');
       dispatch({
         type: 'SET_TERRAFORM_STATUS',
-        payload: `Terraform preview generated for ${result.files.length} file(s).`,
+        payload: `Package preview generated for ${result.files.length} file(s).`,
       });
     } catch (error) {
       dispatch({
@@ -546,26 +565,64 @@ export default function ExportWorkflow() {
         <div className="export-package">
           <div className="section-header compact">
             <div>
-              <h2>Terraform preview</h2>
+              <h2>Package preview</h2>
               <p>{terraformPreview.files.length} generated file(s) from the saved Carbon network plan.</p>
             </div>
-            <Tag type="blue">{selectedPreviewFile.path}</Tag>
+            <div className="network-actions">
+              <Tag type="blue">{selectedPreviewFile.category}</Tag>
+              <Tag type="gray">{selectedPreviewSize}</Tag>
+            </div>
           </div>
-          <div className="network-actions preview-file-actions">
-            {terraformPreview.files.map((file) => (
-              <Button
-                key={file.path}
-                kind={file.path === selectedPreviewFile.path ? 'primary' : 'tertiary'}
-                size="sm"
-                onClick={() => setSelectedPreviewPath(file.path)}
+          <div className="preview-browser">
+            <div className="preview-browser__sidebar">
+              <Search
+                id="terraform-preview-search"
+                labelText="Search package files"
+                placeholder="Search file path"
+                value={previewSearch}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setPreviewSearch(event.target.value)
+                }
+              />
+              <Select
+                id="terraform-preview-category"
+                labelText="Package section"
+                value={previewCategory}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+                  setPreviewCategory(event.target.value)
+                }
               >
-                {file.path}
-              </Button>
-            ))}
+                {previewCategories.map((category) => (
+                  <SelectItem key={category} value={category} text={category} />
+                ))}
+              </Select>
+              <div className="preview-file-list" aria-label="Package preview files">
+                {filteredPreviewFiles.map((file) => (
+                  <button
+                    key={file.path}
+                    className={`preview-file-row${file.path === selectedPreviewFile.path ? ' preview-file-row--selected' : ''}`}
+                    type="button"
+                    onClick={() => setSelectedPreviewPath(file.path)}
+                  >
+                    <span>{file.path}</span>
+                    <small>{file.category}</small>
+                  </button>
+                ))}
+                {filteredPreviewFiles.length === 0 && (
+                  <p className="preview-empty">No package files match this filter.</p>
+                )}
+              </div>
+            </div>
+            <div className="preview-browser__content">
+              <div className="preview-file-header">
+                <strong>{selectedPreviewFile.path}</strong>
+                <span>{selectedPreviewSize}</span>
+              </div>
+              <pre className="terraform-preview" aria-label={`Terraform preview ${selectedPreviewFile.path}`}>
+                <code>{selectedPreviewFile.content}</code>
+              </pre>
+            </div>
           </div>
-          <pre className="terraform-preview" aria-label={`Terraform preview ${selectedPreviewFile.path}`}>
-            <code>{selectedPreviewFile.content}</code>
-          </pre>
         </div>
       )}
       <div className="export-package">

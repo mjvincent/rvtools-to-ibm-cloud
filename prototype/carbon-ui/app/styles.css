@@ -364,11 +364,6 @@ body {
   padding-top: 1rem;
 }
 
-.preview-file-actions {
-  justify-content: flex-start;
-  margin-bottom: 0.75rem;
-}
-
 .terraform-preview {
   background: #161616;
   color: #f4f4f4;
@@ -380,6 +375,84 @@ body {
   overflow: auto;
   padding: 1rem;
   white-space: pre;
+}
+
+.preview-browser {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+}
+
+.preview-browser__sidebar {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.preview-file-list {
+  border: 1px solid #e0e0e0;
+  max-height: 28rem;
+  overflow: auto;
+}
+
+.preview-file-row {
+  background: #ffffff;
+  border: 0;
+  border-bottom: 1px solid #e0e0e0;
+  color: #161616;
+  cursor: pointer;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  text-align: left;
+  width: 100%;
+}
+
+.preview-file-row:hover,
+.preview-file-row--selected {
+  background: #edf5ff;
+}
+
+.preview-file-row--selected {
+  border-left: 4px solid #0f62fe;
+  padding-left: 0.5rem;
+}
+
+.preview-file-row span {
+  font-size: 0.875rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.preview-file-row small,
+.preview-empty,
+.preview-file-header span {
+  color: #525252;
+  font-size: 0.8125rem;
+}
+
+.preview-empty {
+  margin: 0;
+  padding: 0.75rem;
+}
+
+.preview-browser__content {
+  min-width: 0;
+}
+
+.preview-file-header {
+  align-items: center;
+  background: #f4f4f4;
+  border: 1px solid #e0e0e0;
+  border-bottom: 0;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+}
+
+.preview-file-header strong {
+  overflow-wrap: anywhere;
 }
 
 .package-grid {
@@ -722,6 +795,7 @@ body {
   .migration-ops-grid,
   .package-grid,
   .package-parity-grid,
+  .preview-browser,
   .resource-list {
     grid-template-columns: 1fr;
   }

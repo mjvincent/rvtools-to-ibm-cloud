@@ -696,7 +696,7 @@ On the `Export` tab, click `Build Terraform Project` after reviewing readiness, 
 
 The `Build Readiness Checklist` is informational. It shows Ready, Review, and Blocked counts, then summarizes readiness blockers, required wave planning fields, image import status, planning-state/session safety, and package preflight signals. It does not block package generation.
 
-Use `Preview Terraform` to save the latest Carbon network plan and inspect selected generated files, including `main.tf`, `terraform.tfvars.example`, and `README.md`, before downloading the ZIP.
+Use `Preview Terraform` to save the latest Carbon network plan and inspect the generated package before downloading the ZIP. The preview includes Terraform files, migration handoff files, and Carbon state files with search and package-section filtering.
 
 Before the ZIP is created, the app runs package preflight validation. Blockers stop package generation; warnings are shown in the UI and exported in the package. Preflight checks cover blocked readiness, empty scope, unresolved custom image placeholders, CIDR syntax and overlap, duplicate Terraform names, missing subnet/security group mappings, unsupported storage tiers, and profile/region support warnings.
 

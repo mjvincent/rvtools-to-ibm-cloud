@@ -178,6 +178,73 @@ def _render_carbon_terraform_files(
     return terraform_files
 
 
+def _build_carbon_package_files(
+    project: dict[str, Any],
+    project_state: dict[str, Any],
+    planning_state_json: dict[str, Any],
+    network_plan: NetworkPlanningState,
+) -> dict[str, str]:
+    """Build the full Carbon Terraform ZIP file inventory."""
+    target_region = project_state.get("target_region", "us-south")
+    package_files = _render_carbon_terraform_files(
+        project,
+        project_state,
+        network_plan,
+    )
+    package_files["network-plan.json"] = json.dumps(
+        planning_state_json.get("carbon_network_plan"),
+        indent=2,
+    )
+    pricing_catalog = get_pricing_catalog("static", region=target_region)
+    package_files["decision-audit.csv"] = carbon_decision_audit_csv(
+        network_plan,
+        planning_state_json,
+        pricing_catalog,
+    )
+    package_files.update(
+        carbon_state_native_handoff_files(
+            network_plan,
+            planning_state_json,
+        )
+    )
+    package_files.update(
+        carbon_full_handoff_files(
+            network_plan,
+            planning_state_json,
+            pricing_catalog,
+        )
+    )
+    return package_files
+
+
+TERRAFORM_PACKAGE_PREVIEW_FILES = {
+    "README.md",
+    "main.tf",
+    "variables.tf",
+    "outputs.tf",
+    "provider.tf",
+    "versions.tf",
+    "terraform.tfvars.example",
+    "modules/networking/main.tf",
+    "modules/networking/variables.tf",
+    "modules/networking/outputs.tf",
+    "modules/vsi/main.tf",
+    "modules/vsi/variables.tf",
+    "modules/vsi/outputs.tf",
+    "modules/storage/main.tf",
+    "modules/storage/variables.tf",
+    "modules/storage/outputs.tf",
+}
+
+
+def _package_preview_category(path: str) -> str:
+    if path in TERRAFORM_PACKAGE_PREVIEW_FILES:
+        return "Terraform"
+    if path == "network-plan.json":
+        return "Carbon state"
+    return "Migration handoff"
+
+
 def _parse_upload(
     upload: UploadFile,
     target_region: str = DEFAULT_REGION,
@@ -607,30 +674,70 @@ async def run_carbon_project_preflight(project_id: str) -> dict[str, Any]:
 
 @app.post("/api/projects/{project_id}/terraform/preview")
 async def preview_terraform_package(project_id: str) -> dict[str, Any]:
-    """Preview selected Terraform package files from Carbon network planning state."""
-    project, project_state, _planning_state_json, network_plan = (
+    """Preview the full Terraform package inventory from Carbon planning state."""
+    project, project_state, planning_state_json, network_plan = (
         _load_carbon_project_plan(project_id)
     )
-    terraform_files = _render_carbon_terraform_files(
+    package_files = _build_carbon_package_files(
         project,
         project_state,
+        planning_state_json,
         network_plan,
     )
-    preview_names = [
-        "main.tf",
-        "terraform.tfvars.example",
+    preview_order = [
         "README.md",
+        "main.tf",
+        "variables.tf",
+        "outputs.tf",
+        "provider.tf",
+        "versions.tf",
+        "terraform.tfvars.example",
+        "modules/networking/main.tf",
+        "modules/networking/variables.tf",
+        "modules/networking/outputs.tf",
+        "modules/vsi/main.tf",
+        "modules/vsi/variables.tf",
+        "modules/vsi/outputs.tf",
+        "modules/storage/main.tf",
+        "modules/storage/variables.tf",
+        "modules/storage/outputs.tf",
+        "migration-manifest.json",
+        "assessment-quality.json",
+        "assessment-quality.csv",
+        "preflight-report.json",
+        "preflight-report.csv",
+        "pricing-diagnostics.json",
+        "pricing-diagnostics.csv",
+        "decision-audit.csv",
+        "remediation-backlog.csv",
+        "image-import-plan.csv",
+        "cutover-readiness.csv",
+        "planning-state.json",
+        "vm-mapping.csv",
+        "disk-mapping.csv",
+        "partition-mapping.csv",
+        "nic-mapping.csv",
+        "memory-readiness.csv",
+        "readiness-findings.csv",
+        "image-import-variables.tfvars.example",
+        "migration-runbook.md",
+        "network-plan.json",
+    ]
+    ordered_paths = [
+        *[path for path in preview_order if path in package_files],
+        *sorted(path for path in package_files if path not in preview_order),
     ]
     return {
         "project_id": project_id,
         "project_name": project.get("name", "carbon-migration"),
         "files": [
             {
-                "path": file_name,
-                "content": terraform_files[file_name],
+                "path": path,
+                "category": _package_preview_category(path),
+                "size_bytes": len(package_files[path].encode("utf-8")),
+                "content": package_files[path],
             }
-            for file_name in preview_names
-            if file_name in terraform_files
+            for path in ordered_paths
         ],
     }
 
@@ -642,48 +749,20 @@ async def generate_terraform_package(project_id: str) -> StreamingResponse:
         _load_carbon_project_plan(project_id)
     )
 
-    network_plan_data = planning_state_json.get("carbon_network_plan")
-    target_region = project_state.get("target_region", "us-south")
     project_name = project.get("name", "carbon-migration")
 
-    terraform_files = _render_carbon_terraform_files(
+    package_files = _build_carbon_package_files(
         project,
         project_state,
+        planning_state_json,
         network_plan,
     )
 
     # Create ZIP in memory
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        # Add Terraform files
-        for file_path, content in terraform_files.items():
+        for file_path, content in package_files.items():
             zip_file.writestr(file_path, content)
-
-        # Add network plan JSON for reference
-        zip_file.writestr(
-            "network-plan.json",
-            json.dumps(network_plan_data, indent=2)
-        )
-        pricing_catalog = get_pricing_catalog("static", region=target_region)
-        zip_file.writestr(
-            "decision-audit.csv",
-            carbon_decision_audit_csv(
-                network_plan,
-                planning_state_json,
-                pricing_catalog,
-            ),
-        )
-        for file_name, content in carbon_state_native_handoff_files(
-            network_plan,
-            planning_state_json,
-        ).items():
-            zip_file.writestr(file_name, content)
-        for file_name, content in carbon_full_handoff_files(
-            network_plan,
-            planning_state_json,
-            pricing_catalog,
-        ).items():
-            zip_file.writestr(file_name, content)
 
     zip_buffer.seek(0)
 

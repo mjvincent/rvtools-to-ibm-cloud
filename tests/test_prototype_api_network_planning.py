@@ -724,10 +724,10 @@ class TestNetworkPlanningEndpoints:
             for finding in payload["findings"]
         )
 
-    def test_terraform_preview_returns_selected_files(
+    def test_terraform_preview_returns_package_browser_files(
         self, client, sample_network_plan
     ):
-        """Test Carbon Terraform preview returns selected generated files."""
+        """Test Carbon Terraform preview returns the package browser inventory."""
         project_id = "test-project-terraform"
         save_response = client.post(
             f"/api/projects/{project_id}/network-plan",
@@ -740,14 +740,21 @@ class TestNetworkPlanningEndpoints:
         assert response.status_code == 200
         payload = response.json()
         files = {item["path"]: item["content"] for item in payload["files"]}
-        assert set(files) == {
-            "main.tf",
-            "terraform.tfvars.example",
-            "README.md",
-        }
+        categories = {item["path"]: item["category"] for item in payload["files"]}
+        sizes = {item["path"]: item["size_bytes"] for item in payload["files"]}
+        assert len(files) == 37
         assert 'module "networking"' in files["main.tf"]
         assert "project_name" in files["terraform.tfvars.example"]
         assert "Terraform Package" in files["README.md"]
+        assert "package_type" in files["migration-manifest.json"]
+        assert "VM Name" in files["decision-audit.csv"]
+        assert '"version":' in files["network-plan.json"]
+        assert categories["README.md"] == "Terraform"
+        assert categories["main.tf"] == "Terraform"
+        assert categories["decision-audit.csv"] == "Migration handoff"
+        assert categories["image-import-variables.tfvars.example"] == "Migration handoff"
+        assert categories["network-plan.json"] == "Carbon state"
+        assert sizes["main.tf"] > 0
 
 
 class TestNetworkPlanningDataModels:

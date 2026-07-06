@@ -183,6 +183,8 @@ export async function generateTerraform(projectId: string): Promise<Blob> {
 
 export type TerraformPreviewFile = {
   path: string;
+  category: string;
+  size_bytes: number;
   content: string;
 };
 

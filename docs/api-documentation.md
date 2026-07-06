@@ -140,8 +140,9 @@ curl -X GET http://localhost:8000/api/projects/project-123/network-plan
 
 ### 3. Preview Terraform Package
 
-Generate a review-only Terraform preview for selected root files from the saved
-Carbon network plan. This endpoint does not create or download the ZIP package.
+Generate a review-only package browser payload for the full Carbon Terraform
+ZIP inventory from the saved Carbon network plan. This endpoint does not create
+or download the ZIP package.
 
 **Endpoint**: `POST /api/projects/{project_id}/terraform/preview`
 
@@ -156,15 +157,21 @@ Carbon network plan. This endpoint does not create or download the ZIP package.
   "files": [
     {
       "path": "main.tf",
+      "category": "Terraform",
+      "size_bytes": 2500,
       "content": "module \"networking\" {\n  ...\n}"
     },
     {
-      "path": "terraform.tfvars.example",
-      "content": "project_name = \"migration-project\"\n"
+      "path": "decision-audit.csv",
+      "category": "Migration handoff",
+      "size_bytes": 900,
+      "content": "VM Name,Original Profile,Chosen Profile\n..."
     },
     {
-      "path": "README.md",
-      "content": "# Terraform Package\n..."
+      "path": "network-plan.json",
+      "category": "Carbon state",
+      "size_bytes": 1400,
+      "content": "{\n  \"version\": \"1.0\"\n}"
     }
   ]
 }
