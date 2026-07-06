@@ -196,7 +196,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 ### Phase 5: Complete Handoff Package Parity
 - [ ] All CSV exports
-- [ ] Migration manifest parity
+- [x] Migration manifest references full operational handoff files
 - [x] Backend package preflight endpoint and Carbon Export UI feedback
 - [x] Carbon Export workflow package browser preview before ZIP download
 - [x] Planning-state JSON export/import in Carbon Export workflow

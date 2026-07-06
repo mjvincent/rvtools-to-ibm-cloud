@@ -247,6 +247,9 @@ def test_manifest_references_planning_state_file():
     manifest = json.loads(generate_migration_manifest([_vm()], {}))
 
     assert manifest["handoff_files"]["planning_state_json"] == "planning-state.json"
+    assert manifest["handoff_files"]["decision_audit_csv"] == "decision-audit.csv"
+    assert manifest["handoff_files"]["remediation_backlog_csv"] == "remediation-backlog.csv"
+    assert manifest["handoff_files"]["image_import_plan_csv"] == "image-import-plan.csv"
 
 
 def test_terraform_bundle_includes_planning_state_json():

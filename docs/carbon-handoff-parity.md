@@ -95,7 +95,7 @@ Required handoff files:
 | `image-import-plan.csv` | Yes | Included | Carbon ZIP normalizes saved image import status. |
 | `cutover-readiness.csv` | Yes | Included | Carbon ZIP derives cutover readiness from planning fields, remediation tracker, and image import status. |
 | `planning-state.json` | Yes | Included | Carbon ZIP includes Streamlit-compatible planning state generated from Carbon rows. |
-| `migration-manifest.json` | Partial | Included | Carbon ZIP generates manifest from normalized Carbon rows; workbook-derived detail fidelity still needs review. |
+| `migration-manifest.json` | Yes | Included | Carbon ZIP generates manifest from normalized Carbon rows and references the operational handoff CSVs; additional workbook fixture coverage remains useful for edge fidelity. |
 | `decision-audit.csv` | Yes | Included | Carbon ZIP includes profile/storage/exclusion decisions and pricing impact columns via `prototype/api/carbon_handoff.py`. |
 | `preflight-report.csv/json` | Yes | Included | Carbon ZIP runs package preflight against Carbon network-plan resources and normalized rows; Export can run the same backend preflight before download. |
 | `pricing-diagnostics.csv/json` | Partial | Included | Carbon ZIP includes static-catalog diagnostics; live/cached pricing parity remains future work. |

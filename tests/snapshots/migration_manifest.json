@@ -9,7 +9,9 @@
     "assessment_quality_csv": "assessment-quality.csv",
     "assessment_quality_json": "assessment-quality.json",
     "cutover_readiness_csv": "cutover-readiness.csv",
+    "decision_audit_csv": "decision-audit.csv",
     "disk_mapping_csv": "disk-mapping.csv",
+    "image_import_plan_csv": "image-import-plan.csv",
     "image_import_tfvars_example": "image-import-variables.tfvars.example",
     "memory_readiness_csv": "memory-readiness.csv",
     "nic_mapping_csv": "nic-mapping.csv",
@@ -20,6 +22,7 @@
     "pricing_diagnostics_csv": "pricing-diagnostics.csv",
     "pricing_diagnostics_json": "pricing-diagnostics.json",
     "readiness_findings_csv": "readiness-findings.csv",
+    "remediation_backlog_csv": "remediation-backlog.csv",
     "runbook": "migration-runbook.md",
     "vm_mapping_csv": "vm-mapping.csv"
   },

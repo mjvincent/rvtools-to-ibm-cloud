@@ -166,7 +166,7 @@ PlacementModal
 - [x] Terraform generation from network plan
 
 ### Handoff Package
-- [ ] Migration manifest JSON
+- [x] Migration manifest JSON with operational handoff file references
 - [ ] All CSV exports (vm-mapping, nic-mapping, disk-mapping, etc.)
 - [ ] Migration runbook
 - [x] Preflight validation endpoint, Export UI feedback, and safe next-step actions

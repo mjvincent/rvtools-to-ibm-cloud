@@ -19,6 +19,8 @@ A tool-neutral JSON document containing project-level target settings and per-VM
 
 Use this file when integrating with scripts, RackWare-style workflows, migration factory tooling, or future adapters.
 
+The `handoff_files` section references the supporting CSV, JSON, tfvars, and runbook files in the ZIP, including decision audit, remediation backlog, image import plan, cutover readiness, planning state, mapping, readiness, preflight, pricing diagnostics, and assessment quality artifacts.
+
 Each VM now includes an `image_readiness` object with readiness status, reason text, firmware, boot disk size, expected guest customization, required image format, and Cloud Object Storage staging expectation.
 
 Each VM also includes a `migration_readiness` object with readiness status, reason text, snapshot count and size, VMware Tools status, mounted media, USB device count, health warning count, and detailed findings when available.
