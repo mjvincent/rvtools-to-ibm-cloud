@@ -217,6 +217,24 @@ describe('ExportWorkflow', () => {
     expect(screen.queryByRole('button', { name: /decision-audit.csv/ })).toBeNull();
   });
 
+  it('downloads the selected package preview file', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Preview Terraform'));
+    await waitFor(() => expect(api.previewTerraform).toHaveBeenCalledWith('project-1'));
+
+    await userEvent.click(screen.getByText('Show handoff CSVs'));
+    expect(screen.getByRole('button', { name: /decision-audit.csv/ })).toBeTruthy();
+    expect(screen.getByLabelText('Terraform preview decision-audit.csv').textContent).toContain('Original Profile');
+
+    await userEvent.click(screen.getByText('Download selected'));
+
+    await waitFor(() => expect(window.URL.createObjectURL).toHaveBeenCalledTimes(1));
+    const blob = (window.URL.createObjectURL as jest.Mock).mock.calls[0][0] as Blob;
+    await expect(readBlobText(blob)).resolves.toContain('VM Name,Original Profile,Chosen Profile');
+    expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:terraform');
+  });
+
   it('routes preflight findings to the right review workflow', async () => {
     renderWithProvider(<ExportWorkflow />);
 

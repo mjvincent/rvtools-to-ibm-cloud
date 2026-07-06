@@ -167,6 +167,9 @@ export default function ExportWorkflow() {
   const selectedPreviewSize = selectedPreviewFile
     ? `${Math.max(1, Math.ceil(selectedPreviewFile.size_bytes / 1024))} KB`
     : '';
+  const handoffCsvCount = terraformPreview?.files.filter((file) =>
+    file.category === 'Migration handoff' && file.path.endsWith('.csv'),
+  ).length || 0;
 
   function routeStatus(finding: PreflightResponse['findings'][number], fallback: string) {
     const action = finding['Suggested Action'];
@@ -380,6 +383,30 @@ export default function ExportWorkflow() {
     }
   }
 
+  function downloadPreviewFile(file: TerraformPreviewResponse['files'][number]) {
+    const blob = new Blob([file.content], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.path.replace(/\//g, '__');
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: `Downloaded ${file.path}.` });
+  }
+
+  function showHandoffCsvs() {
+    setPreviewCategory('Migration handoff');
+    setPreviewSearch('.csv');
+    const firstCsv = terraformPreview?.files.find((file) =>
+      file.category === 'Migration handoff' && file.path.endsWith('.csv'),
+    );
+    if (firstCsv) {
+      setSelectedPreviewPath(firstCsv.path);
+    }
+  }
+
   function handleExportPlanningState() {
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
     dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
@@ -571,6 +598,22 @@ export default function ExportWorkflow() {
             <div className="network-actions">
               <Tag type="blue">{selectedPreviewFile.category}</Tag>
               <Tag type="gray">{selectedPreviewSize}</Tag>
+              <Button
+                kind="tertiary"
+                size="sm"
+                renderIcon={Download}
+                onClick={showHandoffCsvs}
+              >
+                Show handoff CSVs
+              </Button>
+              <Button
+                kind="secondary"
+                size="sm"
+                renderIcon={Download}
+                onClick={() => downloadPreviewFile(selectedPreviewFile)}
+              >
+                Download selected
+              </Button>
             </div>
           </div>
           <div className="preview-browser">
@@ -615,8 +658,11 @@ export default function ExportWorkflow() {
             </div>
             <div className="preview-browser__content">
               <div className="preview-file-header">
-                <strong>{selectedPreviewFile.path}</strong>
-                <span>{selectedPreviewSize}</span>
+                <div>
+                  <strong>{selectedPreviewFile.path}</strong>
+                  <span>{selectedPreviewSize}</span>
+                </div>
+                <Tag type="blue">{handoffCsvCount} handoff CSVs</Tag>
               </div>
               <pre className="terraform-preview" aria-label={`Terraform preview ${selectedPreviewFile.path}`}>
                 <code>{selectedPreviewFile.content}</code>

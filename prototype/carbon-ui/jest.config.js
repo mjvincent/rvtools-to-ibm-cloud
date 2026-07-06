@@ -7,6 +7,7 @@ module.exports = {
   testEnvironment: 'jsdom',
   roots: ['<rootDir>'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
+  modulePathIgnorePatterns: ['<rootDir>/.next/'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   setupFilesAfterEnv: ['@testing-library/jest-dom'],
   moduleNameMapper: {
