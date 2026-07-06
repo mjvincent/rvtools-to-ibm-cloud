@@ -56,8 +56,8 @@ Observed results:
 
 The Playwright smoke covers workbook upload, project save/load, subnet
 drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign,
-autosave reload, drag/drop accessibility labels, row checkbox accessible names,
-and temporary smoke-project cleanup.
+autosave reload, package preview handoff CSV download, drag/drop accessibility
+labels, row checkbox accessible names, and temporary smoke-project cleanup.
 
 The Python parity suite now includes Streamlit-vs-Carbon single-VM, edge-case,
 multi-VM, workshop real-workbook subset, and sample-workbook operational overlay

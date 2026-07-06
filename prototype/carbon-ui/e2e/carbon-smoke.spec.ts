@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 const sampleWorkbook =
   '../../samples/rvtools-small-complete.xlsx';
@@ -215,6 +216,24 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   const reloadedStorageRow = page.locator('tbody tr').nth(1);
   await expect(reloadedStorageRow).toContainText('prod-db-us-south-1');
   await expect(reloadedStorageRow).not.toContainText('10iops-tier');
+
+  await page.getByRole('link', { name: 'Export Readiness' }).click();
+  await expect(page.getByRole('heading', { name: 'Export readiness' })).toBeVisible();
+  await page.getByRole('button', { name: 'Preview Terraform' }).click();
+  await expect(page.getByRole('heading', { name: 'Package preview' })).toBeVisible();
+  await expect(page.getByText(/37 generated file\(s\)/)).toBeVisible();
+  await page.getByRole('button', { name: 'Show handoff CSVs' }).click();
+  await page.getByRole('button', { name: /decision-audit.csv/ }).click();
+  await expect(page.getByLabel('Terraform preview decision-audit.csv')).toContainText('VM Name');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download selected' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('decision-audit.csv');
+  const downloadPath = await download.path();
+  expect(downloadPath).toBeTruthy();
+  const content = await readFile(downloadPath as string, 'utf8');
+  expect(content).toContain('VM Key,VM Name,Owner,Application,Wave,Original Profile,Chosen Profile');
 
   const selectedProjectId = await projectSelect.inputValue();
   await page.request.delete(`/api/projects/${selectedProjectId}`);

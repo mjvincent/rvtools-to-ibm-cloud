@@ -124,8 +124,8 @@ Results:
 
 The Playwright smoke covers workbook upload, project save/load, subnet
 drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign
-persistence, drag/drop accessibility labels, autosave reload, and cleanup of
-temporary smoke projects.
+persistence, drag/drop accessibility labels, autosave reload, package preview
+handoff CSV download, and cleanup of temporary smoke projects.
 
 The Python parity suite includes `tests/test_carbon_handoff_parity.py`, which
 now covers Streamlit-vs-Carbon fixture parity, an edge-case mapping/readiness
