@@ -70,10 +70,26 @@ describe('ExportWorkflow', () => {
           'Suggested Action': 'Review source VM.',
           'Valid Options': '',
           'Recommended Option': '',
-          'Quick Fix Type': '',
+          'Quick Fix Type': 'exclude_vm',
           Field: 'Image Readiness',
           'Current Value': 'Blocked',
           Constraint: '',
+        },
+        {
+          Severity: 'warning',
+          Category: 'network_mapping',
+          'Fix Category': 'Fix app planning',
+          Subject: 'sample-web-01',
+          Message: 'VM subnet mapping is blank.',
+          Remediation: 'Review target subnet mapping before applying Terraform.',
+          'Fix Location': 'VM Review tab > Subnet',
+          'Suggested Action': 'Select a target subnet for this VM.',
+          'Valid Options': '',
+          'Recommended Option': '',
+          'Quick Fix Type': '',
+          Field: 'Subnet',
+          'Current Value': '',
+          Constraint: 'Expected module.networking.<network>_id output.',
         },
       ],
     });
@@ -143,6 +159,7 @@ describe('ExportWorkflow', () => {
     expect(screen.getByText('2 warning(s)')).toBeTruthy();
     expect(screen.getByText('sample-db-01')).toBeTruthy();
     expect(screen.getByText('Image readiness is blocked.')).toBeTruthy();
+    expect(screen.getByText('Review scope decision')).toBeTruthy();
   });
 
   it('routes preflight findings to the right review workflow', async () => {
@@ -154,6 +171,18 @@ describe('ExportWorkflow', () => {
 
     expect(screen.getByTestId('state-probe').textContent).toBe(
       'remediation|db-01|sample-db-01|network',
+    );
+  });
+
+  it('routes network preflight findings to assignment mode with the affected VM selected', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Run preflight'));
+    await waitFor(() => expect(screen.getByText('Open network assignment')).toBeTruthy());
+    await userEvent.click(screen.getByText('Open network assignment'));
+
+    expect(screen.getByTestId('state-probe').textContent).toBe(
+      'assignment|web-01|sample-web-01|network',
     );
   });
 

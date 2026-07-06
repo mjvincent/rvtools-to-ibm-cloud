@@ -169,7 +169,7 @@ PlacementModal
 - [ ] Migration manifest JSON
 - [ ] All CSV exports (vm-mapping, nic-mapping, disk-mapping, etc.)
 - [ ] Migration runbook
-- [x] Preflight validation endpoint, Export UI feedback, and workflow routing
+- [x] Preflight validation endpoint, Export UI feedback, and safe next-step actions
 - [x] Planning state JSON export/import in Carbon Export workflow
 - [ ] Terraform ZIP packaging
 
@@ -246,7 +246,7 @@ PlacementModal
 - Migration manifest generation
 - All CSV exports
 - Migration runbook
-- Preflight validation endpoint, Export UI feedback, and workflow routing
+- Preflight validation endpoint, Export UI feedback, and safe next-step actions
 - Decision audit export
 - Planning state JSON export/import
 - ZIP packaging

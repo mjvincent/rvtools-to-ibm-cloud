@@ -95,6 +95,7 @@ type PreflightRoute = {
   assignmentMode?: 'network' | 'security' | 'storage' | 'wave';
   label: string;
   status: string;
+  readinessFilter?: string;
 };
 
 export default function ExportWorkflow() {
@@ -142,7 +143,12 @@ export default function ExportWorkflow() {
   const preflightSummary = preflight?.summary;
   const visiblePreflightFindings = preflight?.findings.slice(0, 5) || [];
 
-  function routeForFinding(finding: PreflightResponse['findings'][number]): PreflightRoute {
+  function routeStatus(finding: PreflightResponse['findings'][number], fallback: string) {
+    const action = finding['Suggested Action'];
+    return action ? `${fallback} ${action}` : fallback;
+  }
+
+  function primaryRouteForFinding(finding: PreflightResponse['findings'][number]): PreflightRoute {
     const category = finding.Category;
     const quickFixType = finding['Quick Fix Type'];
     const field = finding.Field;
@@ -151,22 +157,31 @@ export default function ExportWorkflow() {
       return {
         workflow: 'imageImport',
         label: 'Open image planning',
-        status: `Review image import planning for ${finding.Subject}.`,
+        status: routeStatus(finding, `Review image import planning for ${finding.Subject}.`),
       };
     }
     if (category === 'readiness' || fixLocation.includes('Readiness tab')) {
       return {
         workflow: 'remediation',
         label: 'Open remediation',
-        status: `Review remediation blockers for ${finding.Subject}.`,
+        readinessFilter: 'Blocked',
+        status: routeStatus(finding, `Review remediation blockers for ${finding.Subject}.`),
       };
     }
-    if (category === 'cidr' || category === 'network_mapping') {
+    if (category === 'cidr') {
+      return {
+        workflow: 'network',
+        assignmentMode: 'network',
+        label: 'Open subnet CIDRs',
+        status: routeStatus(finding, `Review subnet CIDR planning for ${finding.Subject}.`),
+      };
+    }
+    if (category === 'network_mapping') {
       return {
         workflow: 'assignment',
         assignmentMode: 'network',
         label: 'Open network assignment',
-        status: `Review network placement for ${finding.Subject}.`,
+        status: routeStatus(finding, `Review network placement for ${finding.Subject}.`),
       };
     }
     if (category === 'security_group') {
@@ -174,7 +189,7 @@ export default function ExportWorkflow() {
         workflow: 'security',
         assignmentMode: 'security',
         label: 'Open security plan',
-        status: `Review security planning for ${finding.Subject}.`,
+        status: routeStatus(finding, `Review security planning for ${finding.Subject}.`),
       };
     }
     if (category === 'storage' || field === 'Override Storage Tier') {
@@ -182,21 +197,21 @@ export default function ExportWorkflow() {
         workflow: 'overrides',
         assignmentMode: 'storage',
         label: 'Open storage override',
-        status: `Review storage override for ${finding.Subject}.`,
+        status: routeStatus(finding, `Review storage override for ${finding.Subject}.`),
       };
     }
     if (category === 'profile' || category === 'profile_region' || field === 'Override Profile') {
       return {
         workflow: 'overrides',
         label: 'Open VM overrides',
-        status: `Review profile override for ${finding.Subject}.`,
+        status: routeStatus(finding, `Review profile override for ${finding.Subject}.`),
       };
     }
     if (quickFixType === 'exclude_vm' || quickFixType === 'include_vm' || field === 'Exclude?') {
       return {
         workflow: 'overrides',
         label: 'Open scope decision',
-        status: `Review include/exclude decision for ${finding.Subject}.`,
+        status: routeStatus(finding, `Review include/exclude decision for ${finding.Subject}.`),
       };
     }
     if (category === 'terraform_names' && fixLocation.includes('Networks')) {
@@ -204,18 +219,34 @@ export default function ExportWorkflow() {
         workflow: 'network',
         assignmentMode: 'network',
         label: 'Open network plan',
-        status: `Review network naming for ${finding.Subject}.`,
+        status: routeStatus(finding, `Review network naming for ${finding.Subject}.`),
       };
     }
     return {
       workflow: 'assignment',
       label: 'Open VM assignment',
-      status: `Review package finding for ${finding.Subject}.`,
+      status: routeStatus(finding, `Review package finding for ${finding.Subject}.`),
     };
   }
 
-  function openPreflightFinding(finding: PreflightResponse['findings'][number]) {
-    const route = routeForFinding(finding);
+  function routesForFinding(finding: PreflightResponse['findings'][number]): PreflightRoute[] {
+    const routes = [primaryRouteForFinding(finding)];
+    const quickFixType = finding['Quick Fix Type'];
+    const hasScopeRoute = routes.some((route) => route.label === 'Open scope decision');
+    if ((quickFixType === 'exclude_vm' || quickFixType === 'include_vm') && !hasScopeRoute) {
+      routes.push({
+        workflow: 'overrides',
+        label: 'Review scope decision',
+        status: routeStatus(finding, `Review include/exclude decision for ${finding.Subject}.`),
+      });
+    }
+    return routes;
+  }
+
+  function openPreflightFinding(
+    finding: PreflightResponse['findings'][number],
+    route: PreflightRoute,
+  ) {
     const matchingVm = assignmentRows.find((row) =>
       row.name === finding.Subject || row.id === finding.Subject,
     );
@@ -228,6 +259,9 @@ export default function ExportWorkflow() {
     }
     if (route.assignmentMode) {
       dispatch({ type: 'SET_ASSIGNMENT_MODE', payload: route.assignmentMode });
+    }
+    if (route.readinessFilter) {
+      dispatch({ type: 'SET_READINESS_FILTER', payload: route.readinessFilter });
     }
     dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: route.workflow });
     dispatch({ type: 'SET_PROJECT_STATUS', payload: route.status });
@@ -443,13 +477,18 @@ export default function ExportWorkflow() {
                   </div>
                   <p>{finding.Message}</p>
                   {finding['Fix Category'] && <p>{finding['Fix Category']}</p>}
-                  <Button
-                    kind="tertiary"
-                    size="sm"
-                    onClick={() => openPreflightFinding(finding)}
-                  >
-                    {routeForFinding(finding).label}
-                  </Button>
+                  <div className="network-actions">
+                    {routesForFinding(finding).map((route) => (
+                      <Button
+                        key={route.label}
+                        kind="tertiary"
+                        size="sm"
+                        onClick={() => openPreflightFinding(finding, route)}
+                      >
+                        {route.label}
+                      </Button>
+                    ))}
+                  </div>
                 </Tile>
               ))}
             </div>
