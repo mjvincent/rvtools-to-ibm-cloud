@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import WavesWorkflow, {
+  applyWaveBulkAssignment,
   detectApplicationCutoverConflicts,
   detectDependencyWaveConflicts,
   importWavePlanningCsv,
@@ -69,6 +70,58 @@ describe('WavesWorkflow', () => {
     });
   });
 
+  it('applies bulk wave fields to incomplete rows without clearing existing values', () => {
+    const rows = [
+      { ...sampleRows[0], wave: '', cutoverGroup: '', owner: '', application: '', priority: '', dependencyGroup: '' },
+      { ...sampleRows[1], wave: 'Wave 2', cutoverGroup: 'CG-B', owner: 'DB', application: 'Database', priority: 'Low', dependencyGroup: 'db' },
+    ];
+
+    const result = applyWaveBulkAssignment(rows, {
+      Wave: 'Wave 1',
+      'Cutover Group': 'CG-A',
+      Owner: 'App owner',
+      Application: 'Orders',
+      Priority: 'High',
+      'Dependency Group': '',
+    }, 'incomplete');
+
+    expect(result.applied).toBe(1);
+    expect(result.rows[0]).toMatchObject({
+      wave: 'Wave 1',
+      cutoverGroup: 'CG-A',
+      owner: 'App owner',
+      application: 'Orders',
+      priority: 'High',
+      dependencyGroup: '',
+    });
+    expect(result.rows[1]).toMatchObject({
+      wave: 'Wave 2',
+      cutoverGroup: 'CG-B',
+      owner: 'DB',
+      application: 'Database',
+      priority: 'Low',
+      dependencyGroup: 'db',
+    });
+  });
+
+  it('applies bulk wave fields to selected rows only', () => {
+    const result = applyWaveBulkAssignment(sampleRows, {
+      Wave: 'Wave 3',
+      'Cutover Group': 'CG-C',
+      Owner: '',
+      Application: '',
+      Priority: '',
+      'Dependency Group': '',
+    }, 'selected', [sampleRows[1].id]);
+
+    expect(result.applied).toBe(1);
+    expect(result.rows[0].wave).toBe(sampleRows[0].wave);
+    expect(result.rows[1]).toMatchObject({
+      wave: 'Wave 3',
+      cutoverGroup: 'CG-C',
+    });
+  });
+
   it('reports unmatched wave planning CSV rows during import', () => {
     const csv = [
       'VM Key,VM Name,Wave,Cutover Group,Owner,Application,Priority,Dependency Group',
@@ -95,11 +148,29 @@ describe('WavesWorkflow', () => {
 
     expect(screen.getByText('Wave Planning')).toBeTruthy();
     expect(screen.getByText('Export wave planning CSV')).toBeTruthy();
+    expect(screen.getByText('Apply bulk wave fields')).toBeTruthy();
 
-    const waveInput = screen.getAllByLabelText('Wave')[0] as HTMLInputElement;
+    const waveInput = screen.getAllByLabelText('Wave')[1] as HTMLInputElement;
     fireEvent.change(waveInput, { target: { value: 'Pilot' } });
 
     expect(waveInput.value).toBe('Pilot');
+  });
+
+  it('applies bulk wave fields from the rendered workflow', () => {
+    renderWithProvider(<WavesWorkflow />);
+
+    fireEvent.change(screen.getAllByLabelText('Wave')[0], { target: { value: 'Wave 1' } });
+    fireEvent.change(screen.getAllByLabelText('Cutover Group')[0], { target: { value: 'CG-A' } });
+    fireEvent.change(screen.getAllByLabelText('Owner')[0], { target: { value: 'Migration owner' } });
+    fireEvent.change(screen.getAllByLabelText('Application')[0], { target: { value: 'Orders' } });
+    fireEvent.change(screen.getAllByLabelText('Priority')[0], { target: { value: 'High' } });
+    fireEvent.change(screen.getAllByLabelText('Dependency Group')[0], { target: { value: 'orders-core' } });
+    fireEvent.click(screen.getByText('Apply bulk wave fields'));
+
+    expect(screen.getByText(/3\s+of\s+3\s+complete/)).toBeTruthy();
+    expect(screen.getByText('Applied bulk wave planning to 3 VM(s).')).toBeTruthy();
+    expect((screen.getAllByLabelText('Wave')[1] as HTMLInputElement).value).toBe('Wave 1');
+    expect((screen.getAllByLabelText('Priority')[1] as HTMLSelectElement).value).toBe('High');
   });
 
   it('edits all wave planning fields and surfaces conflicts', () => {
@@ -107,12 +178,12 @@ describe('WavesWorkflow', () => {
 
     expect(screen.getByText(/0\s+of\s+3\s+complete/)).toBeTruthy();
 
-    const waveInputs = screen.getAllByLabelText('Wave') as HTMLInputElement[];
-    const cutoverInputs = screen.getAllByLabelText('Cutover Group') as HTMLInputElement[];
-    const ownerInputs = screen.getAllByLabelText('Owner') as HTMLInputElement[];
-    const applicationInputs = screen.getAllByLabelText('Application') as HTMLInputElement[];
-    const prioritySelects = screen.getAllByLabelText('Priority') as HTMLSelectElement[];
-    const dependencyInputs = screen.getAllByLabelText('Dependency Group') as HTMLInputElement[];
+    const waveInputs = screen.getAllByLabelText('Wave').slice(1) as HTMLInputElement[];
+    const cutoverInputs = screen.getAllByLabelText('Cutover Group').slice(1) as HTMLInputElement[];
+    const ownerInputs = screen.getAllByLabelText('Owner').slice(1) as HTMLInputElement[];
+    const applicationInputs = screen.getAllByLabelText('Application').slice(1) as HTMLInputElement[];
+    const prioritySelects = screen.getAllByLabelText('Priority').slice(1) as HTMLSelectElement[];
+    const dependencyInputs = screen.getAllByLabelText('Dependency Group').slice(1) as HTMLInputElement[];
 
     fireEvent.change(waveInputs[0], { target: { value: 'Wave 1' } });
     fireEvent.change(cutoverInputs[0], { target: { value: 'CG-A' } });

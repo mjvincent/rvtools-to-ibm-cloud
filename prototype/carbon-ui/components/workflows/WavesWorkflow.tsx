@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import {
+  Button,
   FileUploaderDropContainer,
   InlineNotification,
   Layer,
@@ -26,6 +27,10 @@ const waveColumns = [
 type WaveColumn = typeof waveColumns[number];
 
 const priorityOptions = ['', 'High', 'Medium', 'Low'];
+const bulkScopes = ['incomplete', 'selected', 'all'] as const;
+
+type BulkScope = typeof bulkScopes[number];
+type WaveBulkDraft = Record<WaveColumn, string>;
 
 function csvEscape(value: string) {
   return `"${value.replace(/"/g, '""')}"`;
@@ -153,11 +158,58 @@ export function waveCompletion(rows: AssignmentVm[]) {
   };
 }
 
+export function applyWaveBulkAssignment(
+  rows: AssignmentVm[],
+  draft: WaveBulkDraft,
+  scope: BulkScope,
+  selectedVmIds: string[] = [],
+) {
+  const selected = new Set(selectedVmIds);
+  const patch = Object.fromEntries(
+    waveColumns
+      .map((column) => [column, draft[column]?.trim() || ''])
+      .filter(([, value]) => value),
+  ) as Partial<WaveBulkDraft>;
+  if (Object.keys(patch).length === 0) {
+    return { rows, applied: 0 };
+  }
+
+  let applied = 0;
+  const nextRows = rows.map((row) => {
+    const inScope =
+      scope === 'all'
+      || (scope === 'selected' && selected.has(row.id))
+      || (scope === 'incomplete' && (!row.wave || !row.cutoverGroup || !row.owner || !row.application));
+    if (!inScope) return row;
+    applied += 1;
+    return {
+      ...row,
+      wave: patch.Wave ?? row.wave,
+      cutoverGroup: patch['Cutover Group'] ?? row.cutoverGroup,
+      owner: patch.Owner ?? row.owner,
+      application: patch.Application ?? row.application,
+      priority: patch.Priority ?? row.priority,
+      dependencyGroup: patch['Dependency Group'] ?? row.dependencyGroup,
+    };
+  });
+
+  return { rows: nextRows, applied };
+}
+
 export default function WavesWorkflow() {
   const { state, dispatch } = useAppState();
-  const { assignmentRows } = state;
+  const { assignmentRows, selectedVmIds } = state;
   const [importStatus, setImportStatus] = React.useState('');
   const [importError, setImportError] = React.useState('');
+  const [bulkScope, setBulkScope] = React.useState<BulkScope>('incomplete');
+  const [bulkDraft, setBulkDraft] = React.useState<WaveBulkDraft>({
+    Wave: '',
+    'Cutover Group': '',
+    Owner: '',
+    Application: '',
+    Priority: '',
+    'Dependency Group': '',
+  });
 
   const completion = useMemo(() => waveCompletion(assignmentRows), [assignmentRows]);
   const appConflicts = useMemo(() => detectApplicationCutoverConflicts(assignmentRows), [assignmentRows]);
@@ -169,6 +221,17 @@ export default function WavesWorkflow() {
       type: 'SET_ASSIGNMENT_ROWS',
       payload: assignmentRows.map((row) => (row.id === rowId ? { ...row, ...patch } : row)),
     });
+  }
+
+  function updateBulkDraft(column: WaveColumn, value: string) {
+    setBulkDraft((current) => ({ ...current, [column]: value }));
+  }
+
+  function applyBulkFields() {
+    const result = applyWaveBulkAssignment(assignmentRows, bulkDraft, bulkScope, selectedVmIds);
+    dispatch({ type: 'SET_ASSIGNMENT_ROWS', payload: result.rows });
+    setImportStatus(`Applied bulk wave planning to ${result.applied} VM(s).`);
+    setImportError('');
   }
 
   async function importCsvFile(_event: unknown, content: { addedFiles?: File[] }) {
@@ -253,6 +316,53 @@ export default function WavesWorkflow() {
         >
           Export wave planning CSV
         </a>
+      </div>
+
+      <div className="bulk-wave-panel">
+        <div className="bulk-wave-controls">
+          <Select
+            id="bulk-wave-scope"
+            labelText="Bulk scope"
+            value={bulkScope}
+            onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+              setBulkScope(event.target.value as BulkScope)
+            }
+          >
+            <SelectItem value="incomplete" text="Incomplete rows" />
+            <SelectItem value="selected" text={`Selected rows (${selectedVmIds.length})`} />
+            <SelectItem value="all" text="All rows" />
+          </Select>
+          {waveColumns.map((column) => (
+            column === 'Priority' ? (
+              <Select
+                key={column}
+                id={`bulk-${column}`}
+                labelText={column}
+                value={bulkDraft[column]}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+                  updateBulkDraft(column, event.target.value)
+                }
+              >
+                {priorityOptions.map((priority) => (
+                  <SelectItem key={priority || 'blank'} value={priority} text={priority || 'Unset'} />
+                ))}
+              </Select>
+            ) : (
+              <TextInput
+                key={column}
+                id={`bulk-${column}`}
+                labelText={column}
+                value={bulkDraft[column]}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  updateBulkDraft(column, event.target.value)
+                }
+              />
+            )
+          ))}
+          <Button kind="primary" size="sm" onClick={applyBulkFields}>
+            Apply bulk wave fields
+          </Button>
+        </div>
       </div>
 
       {importStatus && (
