@@ -430,6 +430,14 @@ export type RemediationTrackerEntry = {
   owner: string;
   dueDate: string;
   notes: string;
+  vmKey?: string;
+  vm_key?: string;
+  blockerType?: string;
+  blocker_type?: string;
+  blockerDescription?: string;
+  blocker_description?: string;
+  description?: string;
+  type?: string;
 };
 
 export type RemediationTracker = Record<string, RemediationTrackerEntry>;

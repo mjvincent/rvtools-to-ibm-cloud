@@ -50,7 +50,7 @@ Observed results:
 - Python compile: passed
 - Python pytest: 348 passed
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 150 passed
+- Carbon Jest: 153 passed
 - Carbon Playwright smoke: passed
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -100,11 +100,12 @@ Current feature-parity status:
 3. **Migration Ops**
    - Carbon workflow exists with VM-level cutover readiness, summaries
      by wave and cutover group, blockers from planning gaps, readiness signals,
-     unresolved remediation, image import state, and cutover-readiness CSV
-     export.
+     unresolved remediation, Streamlit-compatible remediation metadata, image
+     import state, and cutover-readiness CSV export.
    - Handoff ZIP includes `cutover-readiness.csv`; multi-VM parity fixtures
-     cover mixed waves, remediation, image import, and blocked readiness.
-   - Remaining: more real-workbook cutover edge coverage.
+     cover mixed waves, remediation descriptions, image import, blocked
+     readiness, and resolved-remediation filtering.
+   - Remaining: broader real-workbook cutover edge coverage.
 
 4. **Wave Planning Parity**
    - Carbon workflow supports per-VM wave, cutover group, owner,

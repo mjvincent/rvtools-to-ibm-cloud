@@ -1196,12 +1196,27 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
     assert '"legacy-batch-01" = "replace-with-imported-image-id"' in image_tfvars
 
     cutover_rows = _csv_rows(carbon_files["cutover-readiness.csv"])
+    cutover_by_vm_category = {
+        (row["VM Name"], row["Blocker Category"]): row
+        for row in cutover_rows
+    }
     assert any(
         row["VM Name"] == "orders-db-01"
         and row["Blocker Category"] == "Image Import Pending"
         and row["Blocker Reason"] == "windows-2019-template import status is Pending"
         for row in cutover_rows
     )
+    assert cutover_by_vm_category[("orders-db-01", "Unresolved Remediation")] == {
+        "VM Name": "orders-db-01",
+        "Wave": "Wave 1",
+        "Cutover Group": "CG-DB",
+        "Owner": "db-team",
+        "Application": "Orders",
+        "Cutover Status": "Blocked",
+        "Blocker Category": "Unresolved Remediation",
+        "Blocker Reason": "Migration: Database quiesce runbook required (Open)",
+        "Recommended Next Action": "Resolve or formally defer the remediation backlog item.",
+    }
     assert not any(
         row["VM Name"] == "orders-app-01"
         and row["Blocker Category"] == "Image Import Pending"

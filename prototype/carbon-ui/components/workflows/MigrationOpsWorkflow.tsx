@@ -24,9 +24,15 @@ function statusFromCategories(categories: string[]): CutoverStatus {
   return 'Review';
 }
 
+function clean(value: unknown, fallback = '') {
+  if (value === undefined || value === null) return fallback;
+  const text = String(value).trim();
+  return text || fallback;
+}
+
 function remediationRowsForVm(vmId: string, remediationTracker: RemediationTracker) {
   return Object.entries(remediationTracker).filter(([blockerId, entry]) => {
-    const idVm = blockerId.split('::', 1)[0].split(':', 1)[0];
+    const idVm = clean(entry.vmKey || entry.vm_key) || blockerId.split('::', 1)[0].split(':', 1)[0];
     return idVm === vmId && !resolvedRemediationStatuses.has(entry.status.toLowerCase());
   });
 }
@@ -59,18 +65,27 @@ export function buildCutoverReadinessRows(
       ['Memory Readiness', row.memory, row.memoryReasons, 'Resolve memory readiness blockers.'],
       ['Network Readiness', row.networkReadiness, row.networkReasons, 'Resolve network readiness blockers.'],
     ].forEach(([field, status, reason, action]) => {
-      if (status === 'Blocked') {
+      const normalizedStatus = clean(status).toLowerCase();
+      if (normalizedStatus === 'blocked') {
         blockers.push(['Readiness Blocker', `${field}: ${reason || 'Blocked'}`, action]);
-      } else if (status === 'Review') {
+      } else if (normalizedStatus === 'review') {
         blockers.push(['Readiness Review', `${field}: ${reason || 'Needs review'}`, `Review ${field.toLowerCase()} before cutover.`]);
       }
     });
 
     remediationRowsForVm(row.id, remediationTracker).forEach(([blockerId, entry]) => {
-      const blockerType = blockerId.split('::')[1] || 'Remediation item';
+      const blockerType = clean(
+        entry.blockerType || entry.blocker_type || entry.type,
+        blockerId.split('::')[1] || 'Remediation item',
+      );
+      const description = clean(
+        entry.blockerDescription || entry.blocker_description || entry.description || entry.notes,
+        blockerId,
+      );
+      const status = clean(entry.status, 'Open');
       blockers.push([
         'Unresolved Remediation',
-        `${blockerType}: ${entry.notes || blockerId} (${entry.status})`,
+        `${blockerType}: ${description} (${status})`,
         'Resolve or formally defer the remediation backlog item.',
       ]);
     });

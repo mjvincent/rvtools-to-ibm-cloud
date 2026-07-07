@@ -79,6 +79,63 @@ describe('MigrationOpsWorkflow', () => {
     expect(rows.every((row) => row.cutoverStatus === 'Blocked')).toBe(true);
   });
 
+  it('uses Streamlit-compatible remediation metadata and tracker VM keys', () => {
+    const rows = buildCutoverReadinessRows([readyVm], {
+      'external-id::legacy': {
+        vm_key: 'vm-1',
+        status: 'Open',
+        owner: 'App owner',
+        dueDate: '2026-07-15',
+        notes: 'Fallback notes',
+        blocker_type: 'Migration',
+        blocker_description: 'VMware Tools status requires review',
+      },
+      'vm-1::closed': {
+        status: 'Closed' as any,
+        owner: 'App owner',
+        dueDate: '2026-07-01',
+        notes: 'Already resolved',
+      },
+    }, {
+      'rhel-9-template': {
+        targetCatalogId: 'r001-12345678',
+        importStatus: 'Imported',
+        estimatedImportTime: '',
+        notes: '',
+      },
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      blockerCategory: 'Unresolved Remediation',
+      blockerReason: 'Migration: VMware Tools status requires review (Open)',
+      cutoverStatus: 'Blocked',
+    });
+  });
+
+  it('normalizes lowercase readiness statuses like the handoff builder', () => {
+    const rows = buildCutoverReadinessRows([{
+      ...readyVm,
+      image: 'blocked' as any,
+      imageReasons: '',
+      migration: 'review' as any,
+      migrationReasons: '',
+    }], {}, {
+      'rhel-9-template': {
+        targetCatalogId: 'r001-12345678',
+        importStatus: 'Imported',
+        estimatedImportTime: '',
+        notes: '',
+      },
+    });
+
+    expect(rows.map((row) => row.blockerReason)).toEqual(expect.arrayContaining([
+      'Image Readiness: Blocked',
+      'Migration Readiness: Needs review',
+    ]));
+    expect(rows.every((row) => row.cutoverStatus === 'Blocked')).toBe(true);
+  });
+
   it('summarizes cutover readiness by wave', () => {
     const rows = buildCutoverReadinessRows([readyVm], {}, {
       'rhel-9-template': {
@@ -97,6 +154,45 @@ describe('MigrationOpsWorkflow', () => {
       blocked: 0,
       missingPlanning: 0,
       unresolvedRemediation: 0,
+      imagePending: 0,
+    }]);
+  });
+
+  it('summarizes duplicate blocker rows once per VM status', () => {
+    const rows = buildCutoverReadinessRows([
+      readyVm,
+      {
+        ...readyVm,
+        id: 'vm-2',
+        name: 'db-01',
+        image: 'Review',
+        imageReasons: 'Image import pending',
+        cutoverGroup: 'CG-B',
+      },
+    ], {
+      'vm-2::migration': {
+        status: 'Open',
+        owner: 'Db owner',
+        dueDate: '2026-07-15',
+        notes: 'Database runbook required',
+      },
+    }, {
+      'rhel-9-template': {
+        targetCatalogId: 'r001-12345678',
+        importStatus: 'Imported',
+        estimatedImportTime: '',
+        notes: '',
+      },
+    });
+
+    expect(summarizeCutoverReadiness(rows, 'wave')).toEqual([{
+      group: 'Wave 1',
+      vms: 2,
+      ready: 1,
+      review: 0,
+      blocked: 1,
+      missingPlanning: 0,
+      unresolvedRemediation: 1,
       imagePending: 0,
     }]);
   });
