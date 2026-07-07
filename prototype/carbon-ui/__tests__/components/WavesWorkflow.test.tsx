@@ -69,6 +69,27 @@ describe('WavesWorkflow', () => {
     });
   });
 
+  it('reports unmatched wave planning CSV rows during import', () => {
+    const csv = [
+      'VM Key,VM Name,Wave,Cutover Group,Owner,Application,Priority,Dependency Group',
+      '"missing-vm","missing","Wave 9","CG-X","Owner","App","Low","dep-x"',
+      `"${sampleRows[0].id}","${sampleRows[0].name}","Wave 1","CG-A","Owner","App","High","dep-a"`,
+    ].join('\n');
+
+    const result = importWavePlanningCsv(csv, sampleRows);
+
+    expect(result.applied).toBe(1);
+    expect(result.skipped).toBe(1);
+    expect(result.rows[0]).toMatchObject({
+      wave: 'Wave 1',
+      cutoverGroup: 'CG-A',
+      owner: 'Owner',
+      application: 'App',
+      priority: 'High',
+      dependencyGroup: 'dep-a',
+    });
+  });
+
   it('renders editable wave planning rows', () => {
     renderWithProvider(<WavesWorkflow />);
 
@@ -79,5 +100,38 @@ describe('WavesWorkflow', () => {
     fireEvent.change(waveInput, { target: { value: 'Pilot' } });
 
     expect(waveInput.value).toBe('Pilot');
+  });
+
+  it('edits all wave planning fields and surfaces conflicts', () => {
+    renderWithProvider(<WavesWorkflow />);
+
+    expect(screen.getByText(/0\s+of\s+3\s+complete/)).toBeTruthy();
+
+    const waveInputs = screen.getAllByLabelText('Wave') as HTMLInputElement[];
+    const cutoverInputs = screen.getAllByLabelText('Cutover Group') as HTMLInputElement[];
+    const ownerInputs = screen.getAllByLabelText('Owner') as HTMLInputElement[];
+    const applicationInputs = screen.getAllByLabelText('Application') as HTMLInputElement[];
+    const prioritySelects = screen.getAllByLabelText('Priority') as HTMLSelectElement[];
+    const dependencyInputs = screen.getAllByLabelText('Dependency Group') as HTMLInputElement[];
+
+    fireEvent.change(waveInputs[0], { target: { value: 'Wave 1' } });
+    fireEvent.change(cutoverInputs[0], { target: { value: 'CG-A' } });
+    fireEvent.change(ownerInputs[0], { target: { value: 'app-team' } });
+    fireEvent.change(applicationInputs[0], { target: { value: 'Orders' } });
+    fireEvent.change(prioritySelects[0], { target: { value: 'High' } });
+    fireEvent.change(dependencyInputs[0], { target: { value: 'orders-core' } });
+
+    fireEvent.change(waveInputs[1], { target: { value: 'Wave 2' } });
+    fireEvent.change(cutoverInputs[1], { target: { value: 'CG-B' } });
+    fireEvent.change(ownerInputs[1], { target: { value: 'db-team' } });
+    fireEvent.change(applicationInputs[1], { target: { value: 'Orders' } });
+    fireEvent.change(prioritySelects[1], { target: { value: 'Medium' } });
+    fireEvent.change(dependencyInputs[1], { target: { value: 'orders-core' } });
+
+    expect(screen.getByText(/2\s+of\s+3\s+complete/)).toBeTruthy();
+    expect(screen.getByText('Application Orders spans multiple cutover groups')).toBeTruthy();
+    expect(screen.getByText('Dependency group orders-core spans multiple waves')).toBeTruthy();
+    expect(prioritySelects[0].value).toBe('High');
+    expect(prioritySelects[1].value).toBe('Medium');
   });
 });

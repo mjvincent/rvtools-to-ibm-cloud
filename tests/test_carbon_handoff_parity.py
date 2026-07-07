@@ -1547,6 +1547,8 @@ def test_carbon_sample_workbook_operational_overlays_match_streamlit_handoff():
             "Cutover Group": "CG-DB",
             "Owner": "db-team",
             "Application": "Orders",
+            "Priority": "high",
+            "Dependency Group": "orders-core",
         },
     )
     assert_row_fields(
@@ -1556,6 +1558,8 @@ def test_carbon_sample_workbook_operational_overlays_match_streamlit_handoff():
             "Cutover Group": "CG-Web",
             "Owner": "app-team",
             "Application": "Orders",
+            "Priority": "medium",
+            "Dependency Group": "orders-web",
         },
     )
 

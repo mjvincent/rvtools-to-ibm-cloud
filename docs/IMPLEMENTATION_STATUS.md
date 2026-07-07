@@ -82,7 +82,7 @@ feature-parity and production-readiness gaps.
 - [x] VM readiness chips are self-describing and route non-ready signals to review workflows
 - [x] Image Import Planning workflow with grouped rows, import status, catalog ID, CSV import/export, and project persistence
 - [x] Migration Ops cutover readiness dashboard with wave/cutover summaries and CSV export
-- [x] Wave Planning per-VM fields, CSV import/export, completion metrics, and conflict detection
+- [x] Wave Planning per-VM fields, CSV import/export including unmatched-row skips, completion metrics, conflict detection, and dedicated edit coverage for wave/cutover/owner/application/priority/dependency fields
 - [x] VM Overrides workflow with profile/storage override reasons, exclusion reasons, decision-audit CSV export, project persistence, and Assignment row routing
 - [x] Carbon Terraform ZIP includes `decision-audit.csv` with override reasons and pricing impact columns
 - [x] Carbon Terraform ZIP includes state-native handoff files: `remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`, and `planning-state.json`
@@ -117,7 +117,7 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 142 tests passing
+- Jest: 144 tests passing
 - Playwright: 1 browser smoke passing
 - Python focused handoff parity: 13 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy

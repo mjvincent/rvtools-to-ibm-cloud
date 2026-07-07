@@ -50,7 +50,7 @@ Observed results:
 - Python compile: passed
 - Python pytest: 348 passed
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 141 passed
+- Carbon Jest: 144 passed
 - Carbon Playwright smoke: passed
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -106,6 +106,8 @@ Current feature-parity status:
    - Carbon workflow supports per-VM wave, cutover group, owner,
      application, priority, dependency group, CSV import/export, completion
      metrics, and application/dependency conflict detection.
+   - Component coverage verifies all editable wave fields, unmatched CSV import
+     rows, completion status, and application/dependency conflict warnings.
    - Handoff parity fixtures cover mixed wave and cutover-group output.
    - Remaining: Streamlit bulk-assignment ergonomics and more real-workbook
      wave/cutover edge coverage.
