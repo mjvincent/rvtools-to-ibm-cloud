@@ -396,6 +396,29 @@ def _sample_workbook_summary():
     return response.json()
 
 
+def _sample_carbon_project_fixture():
+    summary = _sample_workbook_summary()
+    records = summary["assignment_rows"]
+    plan, planning_state, _pricing_catalog = _carbon_plan_state_and_pricing_from_records(
+        records,
+        assessment_quality=summary["assessment_quality"],
+        remediation_tracker=SAMPLE_REMEDIATION_TRACKER,
+        image_import_status=SAMPLE_IMAGE_IMPORT_STATUS,
+    )
+    project_id = "sample-carbon-parity"
+    planning_state_json = {
+        **planning_state,
+        "carbon_network_plan": to_dict(plan),
+    }
+    project = {"id": project_id, "name": "Migration", "description": ""}
+    project_state = {
+        "target_region": "us-south",
+        "target_zone": "us-south-1",
+        "planning_state_json": planning_state_json,
+    }
+    return project_id, project, project_state
+
+
 def _workshop_workbook_summary():
     client = TestClient(app)
     sample_path = SAMPLES_DIR / "SizingWorkshop-RVTools.xlsx"
@@ -1662,33 +1685,17 @@ def test_carbon_sample_workbook_populates_phase4_handoff_artifacts():
 
 
 def test_carbon_sample_workbook_api_zip_matches_expected_handoff_inventory():
-    summary = _sample_workbook_summary()
-    records = summary["assignment_rows"]
-    plan, planning_state, _pricing_catalog = _carbon_plan_state_and_pricing_from_records(
-        records,
-        assessment_quality=summary["assessment_quality"],
-        remediation_tracker=SAMPLE_REMEDIATION_TRACKER,
-        image_import_status=SAMPLE_IMAGE_IMPORT_STATUS,
-    )
-    planning_state_json = {
-        **planning_state,
-        "carbon_network_plan": to_dict(plan),
-    }
-    project_id = "sample-carbon-parity"
+    project_id, project, project_state = _sample_carbon_project_fixture()
 
     with (
         patch("prototype.api.persistence.persistence_enabled", return_value=True),
         patch(
             "prototype.api.persistence.get_project",
-            return_value={"id": project_id, "name": "Migration", "description": ""},
+            return_value=project,
         ),
         patch(
             "prototype.api.persistence.get_project_state",
-            return_value={
-                "target_region": "us-south",
-                "target_zone": "us-south-1",
-                "planning_state_json": planning_state_json,
-            },
+            return_value=project_state,
         ),
     ):
         response = TestClient(app).post(f"/api/projects/{project_id}/terraform")
@@ -1747,3 +1754,50 @@ def test_carbon_sample_workbook_api_zip_matches_expected_handoff_inventory():
     )
     assert planning_state_payload["schema_version"] == "1.0"
     assert network_plan_payload["metadata"]["project_name"] == "Migration"
+
+
+def test_carbon_package_preview_matches_api_zip_contents():
+    project_id, project, project_state = _sample_carbon_project_fixture()
+
+    with (
+        patch("prototype.api.persistence.persistence_enabled", return_value=True),
+        patch("prototype.api.persistence.get_project", return_value=project),
+        patch("prototype.api.persistence.get_project_state", return_value=project_state),
+    ):
+        client = TestClient(app)
+        preview_response = client.post(f"/api/projects/{project_id}/terraform/preview")
+        zip_response = client.post(f"/api/projects/{project_id}/terraform")
+
+    assert preview_response.status_code == 200
+    assert zip_response.status_code == 200
+
+    preview_payload = preview_response.json()
+    preview_files = {
+        file["path"]: file
+        for file in preview_payload["files"]
+    }
+    with zipfile.ZipFile(io.BytesIO(zip_response.content)) as archive:
+        zip_files = {
+            name: archive.read(name).decode("utf-8")
+            for name in archive.namelist()
+        }
+
+    assert set(preview_files) == set(zip_files)
+    assert preview_payload["project_id"] == project_id
+    assert preview_payload["project_name"] == "Migration"
+
+    for file_name in {
+        "migration-manifest.json",
+        "decision-audit.csv",
+        "remediation-backlog.csv",
+        "image-import-plan.csv",
+        "network-plan.json",
+    }:
+        assert preview_files[file_name]["content"] == zip_files[file_name]
+        assert preview_files[file_name]["size_bytes"] == len(
+            zip_files[file_name].encode("utf-8")
+        )
+
+    assert preview_files["migration-manifest.json"]["category"] == "Migration handoff"
+    assert preview_files["decision-audit.csv"]["category"] == "Migration handoff"
+    assert preview_files["network-plan.json"]["category"] == "Carbon state"

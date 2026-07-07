@@ -117,9 +117,9 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 141 tests passing
+- Jest: 142 tests passing
 - Playwright: 1 browser smoke passing
-- Python pytest: 348 tests passing
+- Python focused handoff parity: 13 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
@@ -140,7 +140,9 @@ sample-workbook Carbon handoff contract fields for `decision-audit.csv`,
 `remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`,
 and `planning-state.json`. It also verifies the sample-workbook API ZIP
 inventory and key handoff CSV payloads from
-`POST /api/projects/{project_id}/terraform` and guards the
+`POST /api/projects/{project_id}/terraform`, verifies
+`POST /api/projects/{project_id}/terraform/preview` matches the generated ZIP
+file paths and representative file contents, and guards the
 workshop workbook summary/ZIP path against performance regressions.
 
 ---

@@ -66,6 +66,10 @@ The parity tests now include:
   confirms `network-plan.json` is the only non-handoff/non-Terraform extra,
   and checks representative decision-audit, remediation, and image-import CSV
   payloads from the generated ZIP.
+- A sample-workbook API preview parity test that compares
+  `POST /api/projects/{project_id}/terraform/preview` with the downloaded ZIP
+  inventory and representative file contents for manifest, handoff CSV, and
+  Carbon state files.
 - A Carbon Export UI inventory drift test that compares the shared UI JSON
   inventory with backend handoff, modular Terraform, and Carbon-only ZIP
   constants.

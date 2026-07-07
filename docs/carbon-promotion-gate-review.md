@@ -64,7 +64,8 @@ multi-VM, workshop real-workbook subset, and sample-workbook operational overlay
 comparisons, including real-workbook disk/partition mapping parity;
 manifest handoff references; sample-workbook handoff contract assertions;
 sample-workbook API ZIP inventory and handoff CSV payload
-verification; and a Carbon Export UI inventory drift test against backend ZIP
+verification; API preview-vs-ZIP file/content parity; and a Carbon Export UI
+inventory drift test against backend ZIP
 inventory constants.
 The Python suite also guards workshop workbook summary parsing and Carbon
 Terraform ZIP generation performance.
