@@ -51,6 +51,42 @@ describe('RemediationWorkflow', () => {
     });
   });
 
+  it('builds all readiness blocker categories with saved tracker fields', () => {
+    const row = {
+      ...baseRow,
+      image: 'Review',
+      imageReasons: 'Image import path needs review',
+      migration: 'Blocked',
+      migrationReasons: 'Snapshot must be removed',
+      memory: 'Review',
+      memoryReasons: 'Memory pressure needs validation',
+      networkReadiness: 'Blocked',
+      networkReasons: 'Disconnected NIC requires routing decision',
+    };
+    const backlog = buildRemediationBacklog([row], {
+      'vm-1::network': {
+        status: 'In Progress',
+        owner: 'net-team',
+        dueDate: '2026-07-31',
+        notes: 'Waiting on firewall review.',
+      },
+    });
+
+    expect(backlog.map((item) => item.blockerType)).toEqual([
+      'Image',
+      'Migration',
+      'Memory',
+      'Network',
+    ]);
+    expect(backlog.find((item) => item.blockerId === 'vm-1::network')).toMatchObject({
+      blockerDescription: 'Disconnected NIC requires routing decision',
+      status: 'In Progress',
+      owner: 'net-team',
+      dueDate: '2026-07-31',
+      notes: 'Waiting on firewall review.',
+    });
+  });
+
   it('renders remediation rows and allows status edits', () => {
     renderWithProvider(<RemediationWorkflow />);
 
@@ -61,6 +97,24 @@ describe('RemediationWorkflow', () => {
     fireEvent.change(statusControls[0], { target: { value: 'In Progress' } });
 
     expect((statusControls[0] as HTMLSelectElement).value).toBe('In Progress');
+  });
+
+  it('edits remediation owner, due date, and notes fields', () => {
+    renderWithProvider(<RemediationWorkflow />);
+
+    expect(screen.getByText('5 active')).toBeTruthy();
+
+    const ownerControls = screen.getAllByLabelText('Owner') as HTMLInputElement[];
+    const dueDateControls = screen.getAllByLabelText('Due date') as HTMLInputElement[];
+    const notesControls = screen.getAllByLabelText('Notes') as HTMLTextAreaElement[];
+
+    fireEvent.change(ownerControls[0], { target: { value: 'migration-lead' } });
+    fireEvent.change(dueDateControls[0], { target: { value: '2026-08-15' } });
+    fireEvent.change(notesControls[0], { target: { value: 'Assigned during wave review.' } });
+
+    expect(ownerControls[0].value).toBe('migration-lead');
+    expect(dueDateControls[0].value).toBe('2026-08-15');
+    expect(notesControls[0].value).toBe('Assigned during wave review.');
   });
 
   it('offers CSV export when backlog items exist', () => {
@@ -104,6 +158,26 @@ describe('RemediationWorkflow', () => {
       status: 'Resolved',
       owner: 'Blair',
       dueDate: '2026-07-20',
+    });
+  });
+
+  it('skips unmatched remediation CSV rows and normalizes unknown statuses', () => {
+    const backlog = buildRemediationBacklog([baseRow], {});
+    const csv = [
+      'blocker_id,VM Key,VM Name,Owner,Blocker Type,Blocker Description,Status,Due Date,Notes',
+      'missing::image,missing,missing,Alex,Image,Missing blocker,Deferred,2026-07-15,Skip me',
+      'vm-1::migration,vm-1,app-01,Casey,Migration,Resolve source migration finding,Waiting,2026-07-22,Needs triage',
+    ].join('\n');
+
+    const result = importRemediationCsv(csv, backlog, {});
+
+    expect(result.applied).toBe(1);
+    expect(result.skipped).toBe(1);
+    expect(result.tracker['vm-1::migration']).toEqual({
+      status: 'Open',
+      owner: 'Casey',
+      dueDate: '2026-07-22',
+      notes: 'Needs triage',
     });
   });
 });

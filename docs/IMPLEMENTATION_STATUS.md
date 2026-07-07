@@ -78,7 +78,8 @@ feature-parity and production-readiness gaps.
 - [x] Owner, status, due date, and notes are editable in Carbon state
 - [x] Remediation tracker persists through project-state save/load and autosave
 - [x] Remediation CSV export is available from the Carbon workflow
-- [x] Remediation CSV import matches by blocker ID or Streamlit fallback signature
+- [x] Remediation backlog coverage includes image, migration, memory, and network blocker categories
+- [x] Remediation CSV import matches by blocker ID or Streamlit fallback signature, skips unmatched rows, and normalizes unknown statuses
 - [x] VM readiness chips are self-describing and route non-ready signals to review workflows
 - [x] Image Import Planning workflow with grouped rows, import status, catalog ID, CSV import/export, and project persistence
 - [x] Migration Ops cutover readiness dashboard with wave/cutover summaries and CSV export
@@ -88,7 +89,7 @@ feature-parity and production-readiness gaps.
 - [x] Carbon Terraform ZIP includes state-native handoff files: `remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`, and `planning-state.json`
 - [x] Carbon Terraform ZIP includes the remaining handoff artifact inventory: manifest, assessment quality, preflight, pricing diagnostics, mapping/readiness CSVs, image import tfvars, and runbook
 - [x] Carbon intake preserves hidden workbook details for handoff fidelity, including disk, partition, NIC, memory, pricing, and readiness-finding fields
-- [x] Sample-workbook Carbon handoff contract coverage validates decision audit, remediation backlog, image import plan, cutover readiness, and planning-state fields
+- [x] Sample-workbook Carbon handoff contract coverage validates decision audit, remediation backlog, image import plan, cutover readiness, planning-state fields, and remediation summary behavior
 - [x] Sample-workbook API ZIP inventory coverage verifies full handoff inventory, Carbon modular Terraform files, and documented Carbon-only `network-plan.json`
 - [x] First edge-case Streamlit-vs-Carbon fixture comparison covers multi-NIC, disk, partition, memory-readiness, and readiness-finding CSV fidelity
 - [x] Multi-VM Streamlit-vs-Carbon fixture comparison covers mixed waves, profile/storage overrides, exclusions, remediation, image import, cutover readiness, and planning-state parity
@@ -117,7 +118,7 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 144 tests passing
+- Jest: 147 tests passing
 - Playwright: 1 browser smoke passing
 - Python focused handoff parity: 13 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy

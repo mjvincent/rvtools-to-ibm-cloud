@@ -47,7 +47,8 @@ The parity tests now include:
   partition, NIC, memory-readiness, and readiness-finding CSV content.
 - A multi-VM Streamlit-vs-Carbon fixture comparison for exact operational
   handoff parity across decision audit, remediation backlog, image import,
-  cutover readiness, manifest references, and planning-state content.
+  cutover readiness, manifest references, remediation summary behavior, and
+  planning-state content.
 - A workshop real-workbook subset comparison from
   `samples/SizingWorkshop-RVTools.xlsx` for unknown-network, low assessment
   confidence, missing-vMemory, disk/partition empty-state, image-import, and
@@ -59,7 +60,8 @@ The parity tests now include:
   `samples/rvtools-small-complete.xlsx` through the FastAPI upload summary path.
 - Field-level assertions for `decision-audit.csv`,
   `remediation-backlog.csv`, `image-import-plan.csv`,
-  `cutover-readiness.csv`, and `planning-state.json`.
+  `cutover-readiness.csv`, and `planning-state.json`, including open vs.
+  closed remediation behavior in cutover readiness.
 - A sample-workbook API ZIP inventory test that calls
   `POST /api/projects/{project_id}/terraform`, verifies the full Streamlit
   handoff inventory is present, verifies the Carbon modular Terraform layout,

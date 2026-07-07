@@ -1061,6 +1061,14 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
             "image_import_status": "Not Required",
         },
     }
+    assert manifest["remediation_tracker_summary"] == {
+        "blocker_counts_by_status": {
+            "Closed": 1,
+            "Open": 1,
+        },
+        "overdue_count": 0,
+        "total_blockers": 2,
+    }
 
     operational_files = {
         "decision-audit.csv",
@@ -1184,6 +1192,11 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
         row["VM Name"] == "legacy-batch-01"
         and row["Blocker Category"] == "Readiness Blocker"
         and row["Cutover Status"] == "Blocked"
+        for row in cutover_rows
+    )
+    assert not any(
+        row["VM Name"] == "legacy-batch-01"
+        and row["Blocker Category"] == "Unresolved Remediation"
         for row in cutover_rows
     )
 

@@ -239,7 +239,13 @@ def _calculate_remediation_tracker_summary(remediation_tracker=None):
         if due_date_str:
             try:
                 due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
-                if due_date < today and status != 'closed':
+                if due_date < today and status.strip().lower() not in {
+                    'closed',
+                    'complete',
+                    'completed',
+                    'deferred',
+                    'resolved',
+                }:
                     overdue_count += 1
             except (ValueError, TypeError):
                 pass
