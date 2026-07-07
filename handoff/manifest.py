@@ -263,33 +263,25 @@ def _calculate_image_import_summary(final_vms, image_import_status=None):
     Summarizes image readiness and import status distribution.
     """
     image_import_status = image_import_status or {}
-    total_images = 0
     total_vms_pending_import = 0
     import_status_breakdown = {}
-    
-    seen_images = set()
+    images = {}
     
     for vm in final_vms:
-        # Get source image
         source_image = _clean_value(vm.get('Original Specs')) or _safe_vm_key(vm.get('VM Name'))
-        
-        # Count unique images
-        if source_image not in seen_images:
-            seen_images.add(source_image)
-            total_images += 1
-        
-        # Get import status
-        image_status_entry = image_import_status.get(source_image, {})
-        status = image_status_entry.get('import_status', 'pending')
-        
-        if status == 'pending':
-            total_vms_pending_import += 1
-        
-        # Count by status
+        image_entry = images.setdefault(source_image, {"vm_count": 0, "status": "pending"})
+        image_entry["vm_count"] += 1
+        status_entry = image_import_status.get(source_image, {})
+        image_entry["status"] = _clean_value(status_entry.get('import_status'), 'pending')
+
+    for image_entry in images.values():
+        status = image_entry["status"]
+        if status.lower() == 'pending':
+            total_vms_pending_import += image_entry["vm_count"]
         import_status_breakdown[status] = import_status_breakdown.get(status, 0) + 1
     
     return {
-        "total_images": total_images,
+        "total_images": len(images),
         "total_vms_pending_import": total_vms_pending_import,
         "import_status_breakdown": import_status_breakdown,
     }

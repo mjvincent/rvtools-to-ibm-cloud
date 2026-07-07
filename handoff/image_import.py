@@ -8,6 +8,7 @@ from .utils import _clean_value, _normalize_vms, _safe_vm_key
 
 def generate_image_import_tfvars(final_vms):
     """Create an example tfvars map for imported IBM Cloud custom images."""
+    raw_vms = list(final_vms)
     final_vms = _normalize_vms(final_vms)
     lines = [
         "# Populate these values after VMware images are converted, uploaded,",
@@ -16,9 +17,15 @@ def generate_image_import_tfvars(final_vms):
         "# with -var-file when provisioning VSIs from the imported images.",
         "custom_image_ids = {",
     ]
-    for vm in final_vms:
+    for raw_vm, vm in zip(raw_vms, final_vms):
         vm_name = _safe_vm_key(vm.get('VM Name'))
-        lines.append(f'  "{vm_name}" = "replace-with-imported-image-id"')
+        raw_custom_image_id = raw_vm.get('Custom Image ID') if isinstance(raw_vm, dict) else ""
+        custom_image_id = (
+            _clean_value(raw_custom_image_id)
+            or _clean_value(vm.get('Custom Image ID'))
+            or "replace-with-imported-image-id"
+        )
+        lines.append(f'  "{vm_name}" = "{custom_image_id}"')
     lines.append("}")
     return "\n".join(lines) + "\n"
 
@@ -106,5 +113,3 @@ def image_import_export(vms: list[MigrationVm], image_import_status: dict = None
     })
 
     return output.getvalue()
-
-

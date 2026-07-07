@@ -105,6 +105,7 @@ Required handoff files:
 | --- | --- | --- | --- |
 | `remediation-backlog.csv` | Yes | Included | Carbon ZIP normalizes saved remediation tracker state and generated readiness blockers. |
 | `image-import-plan.csv` | Yes | Included | Carbon ZIP normalizes saved image import status. |
+| `image-import-variables.tfvars.example` | Yes | Included | Carbon ZIP preserves known custom image IDs and leaves placeholders for images that still need import IDs. |
 | `cutover-readiness.csv` | Yes | Included | Carbon ZIP derives cutover readiness from planning fields, remediation tracker, and image import status. |
 | `planning-state.json` | Yes | Included | Carbon ZIP includes Streamlit-compatible planning state generated from Carbon rows. |
 | `migration-manifest.json` | Yes | Included | Carbon ZIP generates manifest from normalized Carbon rows and references the operational handoff CSVs; additional workbook fixture coverage remains useful for edge fidelity. |

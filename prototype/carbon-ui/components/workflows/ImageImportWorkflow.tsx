@@ -133,14 +133,16 @@ function normalizeImportStatus(value: string): ImageImportStatusValue {
 export function importImageImportCsv(
   csvText: string,
   currentStatus: ImageImportStatus,
+  knownSourceImages?: string[],
 ): { status: ImageImportStatus; applied: number; skipped: number } {
   const nextStatus = { ...currentStatus };
+  const knownSources = knownSourceImages ? new Set(knownSourceImages) : null;
   let applied = 0;
   let skipped = 0;
 
   parseCsv(csvText).forEach((row) => {
     const sourceImage = row['Source Image'];
-    if (!sourceImage || sourceImage === 'TOTAL') {
+    if (!sourceImage || sourceImage === 'TOTAL' || (knownSources && !knownSources.has(sourceImage))) {
       skipped += 1;
       return;
     }
@@ -204,7 +206,11 @@ export default function ImageImportWorkflow() {
     setImportStatus('');
     setImportError('');
     try {
-      const result = importImageImportCsv(await file.text(), imageImportStatus);
+      const result = importImageImportCsv(
+        await file.text(),
+        imageImportStatus,
+        imageRows.map((row) => row.sourceImage),
+      );
       dispatch({ type: 'SET_IMAGE_IMPORT_STATUS', payload: result.status });
       setImportStatus(`Imported ${result.applied} image row(s)${result.skipped ? `; skipped ${result.skipped} row(s).` : '.'}`);
     } catch (error) {

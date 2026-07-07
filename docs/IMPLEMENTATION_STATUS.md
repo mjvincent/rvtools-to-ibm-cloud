@@ -81,7 +81,7 @@ feature-parity and production-readiness gaps.
 - [x] Remediation backlog coverage includes image, migration, memory, and network blocker categories
 - [x] Remediation CSV import matches by blocker ID or Streamlit fallback signature, skips unmatched rows, and normalizes unknown statuses
 - [x] VM readiness chips are self-describing and route non-ready signals to review workflows
-- [x] Image Import Planning workflow with grouped rows, import status, catalog ID, CSV import/export, and project persistence
+- [x] Image Import Planning workflow with grouped rows, owner rollups, import status, catalog ID, estimated time, notes, guarded CSV import/export, and project persistence
 - [x] Migration Ops cutover readiness dashboard with wave/cutover summaries and CSV export
 - [x] Wave Planning per-VM fields, CSV import/export including unmatched-row skips, completion metrics, conflict detection, and dedicated edit coverage for wave/cutover/owner/application/priority/dependency fields
 - [x] VM Overrides workflow with profile/storage override reasons, exclusion reasons, decision-audit CSV export, project persistence, and Assignment row routing
@@ -92,7 +92,7 @@ feature-parity and production-readiness gaps.
 - [x] Sample-workbook Carbon handoff contract coverage validates decision audit, remediation backlog, image import plan, cutover readiness, planning-state fields, and remediation summary behavior
 - [x] Sample-workbook API ZIP inventory coverage verifies full handoff inventory, Carbon modular Terraform files, and documented Carbon-only `network-plan.json`
 - [x] First edge-case Streamlit-vs-Carbon fixture comparison covers multi-NIC, disk, partition, memory-readiness, and readiness-finding CSV fidelity
-- [x] Multi-VM Streamlit-vs-Carbon fixture comparison covers mixed waves, profile/storage overrides, exclusions, remediation, image import, cutover readiness, and planning-state parity
+- [x] Multi-VM Streamlit-vs-Carbon fixture comparison covers mixed waves, profile/storage overrides, exclusions, remediation, image import summaries, custom image tfvars, cutover readiness, and planning-state parity
 - [x] Workshop real-workbook subset comparison covers unknown-network, low-confidence assessment-quality, missing-vMemory, image-import, and cutover-readiness parity
 - [x] Sample-workbook operational overlay comparison covers real workbook rows with wave/cutover, remediation, image import, profile/storage overrides, and planning-state parity
 - [x] Carbon Export workflow shows package parity status, corrected modular Terraform inventory, and documented Carbon-only ZIP additions before download
@@ -118,7 +118,7 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 147 tests passing
+- Jest: 150 tests passing
 - Playwright: 1 browser smoke passing
 - Python focused handoff parity: 13 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
@@ -155,7 +155,6 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 1. **Feature parity**
    - Wave Planning full Streamlit bulk-assignment and handoff parity
    - Remediation Tracker full Streamlit finding/category and handoff parity
-   - Image Import Planning full handoff/export parity
    - Migration Ops full handoff/export parity
    - Broader Streamlit-vs-Carbon fixture comparison coverage for full handoff
      packages and edge-case workbooks
@@ -187,7 +186,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [ ] Wave Planning bulk-assignment and handoff parity
 - [ ] Remediation Tracker full finding/category and handoff parity
 - [x] Image Import Planning initial Carbon workflow
-- [ ] Image Import Planning full handoff/export parity
+- [x] Image Import Planning full handoff/export parity
 - [x] Migration Ops initial Carbon workflow
 - [ ] Migration Ops full handoff/export parity
 - [x] Decision audit initial Carbon workflow

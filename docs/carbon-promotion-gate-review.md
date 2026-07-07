@@ -50,7 +50,7 @@ Observed results:
 - Python compile: passed
 - Python pytest: 348 passed
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 147 passed
+- Carbon Jest: 150 passed
 - Carbon Playwright smoke: passed
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -89,13 +89,13 @@ Current feature-parity status:
 
 2. **Image Import Planning**
    - Carbon workflow exists with inferred source-image grouping,
-     editable import status, target catalog ID, estimated import time, notes,
-     CSV import/export, project-state persistence, and IMG readiness-chip
-     routing.
-   - Handoff ZIP includes `image-import-plan.csv`; multi-VM parity fixtures
-     cover mixed import states.
-   - Remaining: more real-workbook image grouping and custom-image ID edge
-     coverage.
+     owner rollups, editable import status, target catalog ID, estimated import
+     time, notes, guarded CSV import/export, project-state persistence, and IMG
+     readiness-chip routing.
+   - Handoff ZIP includes `image-import-plan.csv` and
+     `image-import-variables.tfvars.example`; parity fixtures cover mixed
+     import states, manifest summaries, custom image IDs, and cutover impact.
+   - Remaining: broader real-workbook image grouping edge coverage.
 
 3. **Migration Ops**
    - Carbon workflow exists with VM-level cutover readiness, summaries

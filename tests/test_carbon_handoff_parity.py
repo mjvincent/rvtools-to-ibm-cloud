@@ -1069,6 +1069,15 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
         "overdue_count": 0,
         "total_blockers": 2,
     }
+    assert manifest["image_import_summary"] == {
+        "import_status_breakdown": {
+            "Imported": 1,
+            "Not Required": 1,
+            "Pending": 1,
+        },
+        "total_images": 3,
+        "total_vms_pending_import": 1,
+    }
 
     operational_files = {
         "decision-audit.csv",
@@ -1181,11 +1190,21 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
     )
     assert image_by_source["TOTAL"]["Count of VMs"] == "3"
 
+    image_tfvars = carbon_files["image-import-variables.tfvars.example"]
+    assert '"orders-app-01" = "r001-orders-app-image"' in image_tfvars
+    assert '"orders-db-01" = "replace-with-imported-image-id"' in image_tfvars
+    assert '"legacy-batch-01" = "replace-with-imported-image-id"' in image_tfvars
+
     cutover_rows = _csv_rows(carbon_files["cutover-readiness.csv"])
     assert any(
         row["VM Name"] == "orders-db-01"
         and row["Blocker Category"] == "Image Import Pending"
         and row["Blocker Reason"] == "windows-2019-template import status is Pending"
+        for row in cutover_rows
+    )
+    assert not any(
+        row["VM Name"] == "orders-app-01"
+        and row["Blocker Category"] == "Image Import Pending"
         for row in cutover_rows
     )
     assert any(
