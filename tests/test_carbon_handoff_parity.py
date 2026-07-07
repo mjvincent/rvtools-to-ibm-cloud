@@ -1466,23 +1466,26 @@ def test_carbon_sample_workbook_operational_overlays_match_streamlit_handoff():
         image_import_status=image_import_status,
     )
 
-    operational_files = {
-        "decision-audit.csv",
-        "remediation-backlog.csv",
-        "image-import-plan.csv",
-        "cutover-readiness.csv",
-        "vm-mapping.csv",
-        "disk-mapping.csv",
-        "partition-mapping.csv",
-        "nic-mapping.csv",
-        "memory-readiness.csv",
-        "readiness-findings.csv",
+    exact_handoff_files = STREAMLIT_HANDOFF_FILES - {
+        "planning-state.json",
+        "preflight-report.csv",
+        "preflight-report.json",
     }
-    for file_name in operational_files:
+    for file_name in exact_handoff_files:
         assert carbon_files[file_name] == streamlit_files[file_name], file_name
     assert _operational_planning_state(
         carbon_files["planning-state.json"]
     ) == _operational_planning_state(streamlit_files["planning-state.json"])
+    carbon_preflight = json.loads(carbon_files["preflight-report.json"])
+    streamlit_preflight = json.loads(streamlit_files["preflight-report.json"])
+    assert carbon_preflight["summary"]["total"] >= streamlit_preflight["summary"]["total"]
+    assert {
+        finding["Category"]
+        for finding in carbon_preflight["findings"]
+    } >= {
+        finding["Category"]
+        for finding in streamlit_preflight["findings"]
+    }
 
     def assert_row_fields(row, expected):
         assert {field: row[field] for field in expected} == expected

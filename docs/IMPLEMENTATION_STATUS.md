@@ -94,7 +94,7 @@ feature-parity and production-readiness gaps.
 - [x] First edge-case Streamlit-vs-Carbon fixture comparison covers multi-NIC, disk, partition, memory-readiness, and readiness-finding CSV fidelity
 - [x] Multi-VM Streamlit-vs-Carbon fixture comparison covers mixed waves, profile/storage overrides, exclusions, remediation, image import summaries, custom image tfvars, cutover readiness, and planning-state parity
 - [x] Workshop real-workbook subset comparison covers unknown-network, low-confidence assessment-quality, missing-vMemory, image-import, and cutover-readiness parity
-- [x] Sample-workbook operational overlay comparison covers real workbook rows with wave/cutover, remediation, image import, profile/storage overrides, and planning-state parity
+- [x] Sample-workbook operational overlay comparison covers real workbook rows with wave/cutover, remediation, image import, profile/storage overrides, planning-state parity, and exact non-preflight handoff file parity
 - [x] Carbon Export workflow shows package parity status, corrected modular Terraform inventory, and documented Carbon-only ZIP additions before download
 - [x] Carbon Export UI inventory is backed by a shared JSON contract and tested against the backend ZIP inventory constants
 - [x] Carbon Export workflow supports planning-state JSON export/import for offline handoff and reload review
@@ -136,7 +136,8 @@ manifest handoff references, and planning-state parity, a workshop real-workbook
 unknown-network, storage mapping empty-state, and low-confidence
 assessment-quality behavior, and sample-workbook operational overlays for
 wave/cutover, remediation, image import, profile/storage overrides, rich
-disk/partition mapping, and planning-state parity, plus
+disk/partition mapping, exact non-preflight handoff files, Carbon preflight
+superset checks, and planning-state parity, plus
 sample-workbook Carbon handoff contract fields for `decision-audit.csv`,
 `remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`,
 and `planning-state.json`. It also verifies the sample-workbook API ZIP

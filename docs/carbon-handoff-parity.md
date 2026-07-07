@@ -54,8 +54,8 @@ The parity tests now include:
   confidence, missing-vMemory, disk/partition empty-state, image-import, and
   cutover-readiness parity.
 - A sample-workbook operational overlay comparison that now includes exact
-  VM, disk, partition, NIC, memory-readiness, and readiness-finding CSV parity
-  alongside decision audit, remediation, image import, and cutover readiness.
+  non-preflight handoff file parity, timestamp-normalized planning-state
+  parity, and Carbon preflight superset checks for network-plan validation.
 - A sample-workbook Carbon contract test using
   `samples/rvtools-small-complete.xlsx` through the FastAPI upload summary path.
 - Field-level assertions for `decision-audit.csv`,
