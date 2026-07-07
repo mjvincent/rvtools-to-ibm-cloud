@@ -107,6 +107,9 @@ function remediationTrackerToPlanningState(tracker: RemediationTracker) {
       due_date: entry.dueDate,
       notes: entry.notes,
       owner: entry.owner,
+      vm_key: entry.vm_key || entry.vmKey || blockerId.split('::', 1)[0].split(':', 1)[0],
+      blocker_type: entry.blocker_type || entry.blockerType || entry.type || '',
+      blocker_description: entry.blocker_description || entry.blockerDescription || entry.description || '',
     }]),
   );
 }
@@ -119,6 +122,12 @@ function normalizeRemediationTracker(rawTracker): RemediationTracker {
       owner: entry?.owner || '',
       dueDate: entry?.dueDate || entry?.due_date || '',
       notes: entry?.notes || '',
+      vmKey: entry?.vmKey || entry?.vm_key || String(blockerId).split('::', 1)[0].split(':', 1)[0],
+      vm_key: entry?.vm_key || entry?.vmKey || String(blockerId).split('::', 1)[0].split(':', 1)[0],
+      blockerType: entry?.blockerType || entry?.blocker_type || entry?.type || '',
+      blocker_type: entry?.blocker_type || entry?.blockerType || entry?.type || '',
+      blockerDescription: entry?.blockerDescription || entry?.blocker_description || entry?.description || '',
+      blocker_description: entry?.blocker_description || entry?.blockerDescription || entry?.description || '',
     }]),
   );
 }

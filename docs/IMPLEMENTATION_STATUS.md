@@ -76,10 +76,10 @@ feature-parity and production-readiness gaps.
 - [x] Remediation Backlog workflow added to Carbon navigation
 - [x] Remediation rows derive from Carbon VM readiness signals
 - [x] Owner, status, due date, and notes are editable in Carbon state
-- [x] Remediation tracker persists through project-state save/load and autosave
+- [x] Remediation tracker persists through project-state save/load and autosave, including Streamlit-compatible blocker metadata
 - [x] Remediation CSV export is available from the Carbon workflow
 - [x] Remediation backlog coverage includes image, migration, memory, and network blocker categories
-- [x] Remediation CSV import matches by blocker ID or Streamlit fallback signature, skips unmatched rows, and normalizes unknown statuses
+- [x] Remediation CSV import matches by blocker ID or Streamlit fallback signature, preserves blocker metadata, skips unmatched rows, and normalizes unknown statuses
 - [x] VM readiness chips are self-describing and route non-ready signals to review workflows
 - [x] Image Import Planning workflow with grouped rows, owner rollups, import status, catalog ID, estimated time, notes, guarded CSV import/export, and project persistence
 - [x] Migration Ops cutover readiness dashboard with wave/cutover summaries, Streamlit-compatible remediation metadata, and CSV export
@@ -118,7 +118,7 @@ npm run test:e2e
 
 Results:
 - TypeScript: 0 errors
-- Jest: 153 tests passing
+- Jest: 155 tests passing
 - Playwright: 1 browser smoke passing
 - Python focused handoff parity: 13 tests passing
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
@@ -154,7 +154,6 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 1. **Feature parity**
    - Wave Planning full Streamlit bulk-assignment and handoff parity
-   - Remediation Tracker full Streamlit finding/category and handoff parity
    - Broader Streamlit-vs-Carbon fixture comparison coverage for full handoff
      packages and edge-case workbooks
 
@@ -183,7 +182,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Remediation Tracker initial Carbon workflow
 - [x] Wave Planning initial parity workflow
 - [ ] Wave Planning bulk-assignment and handoff parity
-- [ ] Remediation Tracker full finding/category and handoff parity
+- [x] Remediation Tracker full finding/category and handoff parity
 - [x] Image Import Planning initial Carbon workflow
 - [x] Image Import Planning full handoff/export parity
 - [x] Migration Ops initial Carbon workflow

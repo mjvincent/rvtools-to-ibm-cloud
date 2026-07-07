@@ -50,7 +50,7 @@ Observed results:
 - Python compile: passed
 - Python pytest: 348 passed
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 153 passed
+- Carbon Jest: 155 passed
 - Carbon Playwright smoke: passed
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -80,12 +80,13 @@ Current feature-parity status:
      project-state persistence in both Carbon and Streamlit-compatible tracker
      shapes.
    - Component coverage verifies image, migration, memory, and network blocker
-     categories, field edits, unmatched CSV import rows, fallback signature
-     imports, and unknown status normalization.
+     categories, saved blocker metadata, lowercase readiness states, field
+     edits, unmatched CSV import rows, fallback signature imports, and unknown
+     status normalization.
    - Handoff ZIP includes `remediation-backlog.csv`; multi-VM parity fixtures
      compare operational handoff behavior, manifest remediation summaries, and
      closed/resolved remediation filtering for cutover readiness.
-   - Remaining: more real-workbook finding/category edge coverage.
+   - Remaining: broader real-workbook finding/category edge coverage.
 
 2. **Image Import Planning**
    - Carbon workflow exists with inferred source-image grouping,

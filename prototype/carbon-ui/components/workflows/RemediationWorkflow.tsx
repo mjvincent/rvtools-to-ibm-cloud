@@ -21,6 +21,9 @@ import type {
 } from '../../types/network-planning';
 
 const statusOptions: RemediationStatus[] = ['Open', 'In Progress', 'Resolved', 'Deferred'];
+const normalizedStatusOptions = new Map(
+  statusOptions.map((status) => [status.toLowerCase(), status]),
+);
 
 type ImportResult = {
   tracker: RemediationTracker;
@@ -50,7 +53,15 @@ function readinessFindings(row: AssignmentVm) {
       status: row.networkReadiness,
       description: row.networkReasons || 'Validate target network design.',
     },
-  ].filter((finding) => finding.status === 'Blocked' || finding.status === 'Review');
+  ].filter((finding) => ['blocked', 'review'].includes(String(finding.status).toLowerCase()));
+}
+
+function trackerBlockerType(entry: RemediationTracker[string] | undefined, fallback: string) {
+  return entry?.blockerType || entry?.blocker_type || entry?.type || fallback;
+}
+
+function trackerBlockerDescription(entry: RemediationTracker[string] | undefined, fallback: string) {
+  return entry?.blockerDescription || entry?.blocker_description || entry?.description || fallback;
 }
 
 export function buildRemediationBacklog(
@@ -61,13 +72,15 @@ export function buildRemediationBacklog(
     readinessFindings(row).map((finding) => {
       const blockerId = `${row.id}::${finding.type.toLowerCase()}`;
       const saved = tracker[blockerId];
+      const blockerType = trackerBlockerType(saved, finding.type);
+      const blockerDescription = trackerBlockerDescription(saved, finding.description);
       return {
         blockerId,
-        vmKey: row.id,
+        vmKey: saved?.vmKey || saved?.vm_key || row.id,
         vmName: row.name,
         owner: saved?.owner ?? row.owner ?? '',
-        blockerType: finding.type,
-        blockerDescription: finding.description,
+        blockerType,
+        blockerDescription,
         status: saved?.status ?? 'Open',
         dueDate: saved?.dueDate ?? '',
         notes: saved?.notes ?? '',
@@ -145,7 +158,7 @@ function parseCsv(text: string): Record<string, string>[] {
 }
 
 function normalizeStatus(value: string): RemediationStatus {
-  return statusOptions.includes(value as RemediationStatus) ? value as RemediationStatus : 'Open';
+  return normalizedStatusOptions.get(String(value || '').trim().toLowerCase()) || 'Open';
 }
 
 export function importRemediationCsv(
@@ -174,11 +187,20 @@ export function importRemediationCsv(
       return;
     }
     const existing = backlog.find((item) => item.blockerId === blockerId);
+    const blockerType = row['Blocker Type'] || existing?.blockerType || '';
+    const blockerDescription = row['Blocker Description'] || existing?.blockerDescription || '';
+    const vmKey = row['VM Key'] || existing?.vmKey || blockerId.split('::', 1)[0].split(':', 1)[0];
     nextTracker[blockerId] = {
       status: normalizeStatus(row.Status || existing?.status || 'Open'),
       owner: row.Owner || existing?.owner || '',
       dueDate: row['Due Date'] || row.due_date || '',
       notes: row.Notes || '',
+      vmKey,
+      vm_key: vmKey,
+      blockerType,
+      blocker_type: blockerType,
+      blockerDescription,
+      blocker_description: blockerDescription,
     };
     applied += 1;
   });
@@ -214,6 +236,12 @@ export default function RemediationWorkflow() {
       owner: currentItem.owner,
       dueDate: currentItem.dueDate,
       notes: currentItem.notes,
+      vmKey: currentItem.vmKey,
+      vm_key: currentItem.vmKey,
+      blockerType: currentItem.blockerType,
+      blocker_type: currentItem.blockerType,
+      blockerDescription: currentItem.blockerDescription,
+      blocker_description: currentItem.blockerDescription,
     };
     dispatch({
       type: 'SET_REMEDIATION_TRACKER',
@@ -224,6 +252,12 @@ export default function RemediationWorkflow() {
           owner: patch.owner ?? current.owner,
           dueDate: patch.dueDate ?? current.dueDate,
           notes: patch.notes ?? current.notes,
+          vmKey: current.vmKey || current.vm_key || currentItem.vmKey,
+          vm_key: current.vm_key || current.vmKey || currentItem.vmKey,
+          blockerType: current.blockerType || current.blocker_type || currentItem.blockerType,
+          blocker_type: current.blocker_type || current.blockerType || currentItem.blockerType,
+          blockerDescription: current.blockerDescription || current.blocker_description || currentItem.blockerDescription,
+          blocker_description: current.blocker_description || current.blockerDescription || currentItem.blockerDescription,
         },
       },
     });

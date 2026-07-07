@@ -87,6 +87,38 @@ describe('RemediationWorkflow', () => {
     });
   });
 
+  it('uses saved Streamlit-compatible blocker metadata when present', () => {
+    const backlog = buildRemediationBacklog([baseRow], {
+      'vm-1::migration': {
+        status: 'Open',
+        owner: 'migration-team',
+        dueDate: '2026-07-31',
+        notes: 'Imported from Streamlit handoff.',
+        vm_key: 'vm-1',
+        blocker_type: 'Migration',
+        blocker_description: 'VMware Tools status requires review',
+      },
+    });
+
+    expect(backlog.find((item) => item.blockerId === 'vm-1::migration')).toMatchObject({
+      vmKey: 'vm-1',
+      blockerType: 'Migration',
+      blockerDescription: 'VMware Tools status requires review',
+      owner: 'migration-team',
+      notes: 'Imported from Streamlit handoff.',
+    });
+  });
+
+  it('normalizes lowercase readiness statuses into backlog rows', () => {
+    const backlog = buildRemediationBacklog([{
+      ...baseRow,
+      migration: 'blocked' as any,
+      memory: 'review' as any,
+    }], {});
+
+    expect(backlog.map((item) => item.blockerType)).toEqual(['Migration', 'Memory']);
+  });
+
   it('renders remediation rows and allows status edits', () => {
     renderWithProvider(<RemediationWorkflow />);
 
@@ -136,11 +168,14 @@ describe('RemediationWorkflow', () => {
 
     expect(result.applied).toBe(1);
     expect(result.skipped).toBe(0);
-    expect(result.tracker['vm-1::migration']).toEqual({
+    expect(result.tracker['vm-1::migration']).toMatchObject({
       status: 'In Progress',
       owner: 'Alex',
       dueDate: '2026-07-15',
       notes: 'Working it',
+      vm_key: 'vm-1',
+      blocker_type: 'Migration',
+      blocker_description: 'Resolve source migration finding',
     });
   });
 
@@ -173,11 +208,13 @@ describe('RemediationWorkflow', () => {
 
     expect(result.applied).toBe(1);
     expect(result.skipped).toBe(1);
-    expect(result.tracker['vm-1::migration']).toEqual({
+    expect(result.tracker['vm-1::migration']).toMatchObject({
       status: 'Open',
       owner: 'Casey',
       dueDate: '2026-07-22',
       notes: 'Needs triage',
+      blocker_type: 'Migration',
+      blocker_description: 'Resolve source migration finding',
     });
   });
 });
