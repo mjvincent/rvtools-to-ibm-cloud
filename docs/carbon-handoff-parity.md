@@ -47,7 +47,7 @@ The parity tests now include:
   partition, NIC, memory-readiness, and readiness-finding CSV content.
 - A multi-VM Streamlit-vs-Carbon fixture comparison for exact operational
   handoff parity across decision audit, remediation backlog, image import,
-  cutover readiness, and planning-state content.
+  cutover readiness, manifest references, and planning-state content.
 - A workshop real-workbook subset comparison from
   `samples/SizingWorkshop-RVTools.xlsx` for unknown-network, low assessment
   confidence, missing-vMemory, disk/partition empty-state, image-import, and
@@ -63,7 +63,9 @@ The parity tests now include:
 - A sample-workbook API ZIP inventory test that calls
   `POST /api/projects/{project_id}/terraform`, verifies the full Streamlit
   handoff inventory is present, verifies the Carbon modular Terraform layout,
-  and confirms `network-plan.json` is the only non-handoff/non-Terraform extra.
+  confirms `network-plan.json` is the only non-handoff/non-Terraform extra,
+  and checks representative decision-audit, remediation, and image-import CSV
+  payloads from the generated ZIP.
 - A Carbon Export UI inventory drift test that compares the shared UI JSON
   inventory with backend handoff, modular Terraform, and Carbon-only ZIP
   constants.

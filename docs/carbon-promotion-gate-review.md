@@ -56,13 +56,14 @@ Observed results:
 
 The Playwright smoke covers workbook upload, project save/load, subnet
 drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign,
-autosave reload, package preview handoff CSV download, drag/drop accessibility
+autosave reload, package preview handoff CSV switching/download, drag/drop accessibility
 labels, row checkbox accessible names, and temporary smoke-project cleanup.
 
 The Python parity suite now includes Streamlit-vs-Carbon single-VM, edge-case,
 multi-VM, workshop real-workbook subset, and sample-workbook operational overlay
 comparisons, including real-workbook disk/partition mapping parity;
-sample-workbook handoff contract assertions; sample-workbook API ZIP inventory
+manifest handoff references; sample-workbook handoff contract assertions;
+sample-workbook API ZIP inventory and handoff CSV payload
 verification; and a Carbon Export UI inventory drift test against backend ZIP
 inventory constants.
 The Python suite also guards workshop workbook summary parsing and Carbon

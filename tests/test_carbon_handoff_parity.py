@@ -980,6 +980,65 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
         image_import_status=image_import_status,
     )
 
+    expected_package_files = (
+        STREAMLIT_HANDOFF_FILES
+        | CARBON_MODULAR_TERRAFORM_FILES
+        | CARBON_CURRENT_EXTRA_FILES
+    )
+    assert set(carbon_files) == STREAMLIT_HANDOFF_FILES
+    assert STREAMLIT_HANDOFF_FILES.issubset(expected_package_files)
+
+    manifest = json.loads(carbon_files["migration-manifest.json"])
+    assert manifest["handoff_files"] == {
+        "assessment_quality_csv": "assessment-quality.csv",
+        "assessment_quality_json": "assessment-quality.json",
+        "cutover_readiness_csv": "cutover-readiness.csv",
+        "decision_audit_csv": "decision-audit.csv",
+        "disk_mapping_csv": "disk-mapping.csv",
+        "image_import_plan_csv": "image-import-plan.csv",
+        "image_import_tfvars_example": "image-import-variables.tfvars.example",
+        "memory_readiness_csv": "memory-readiness.csv",
+        "nic_mapping_csv": "nic-mapping.csv",
+        "partition_mapping_csv": "partition-mapping.csv",
+        "planning_state_json": "planning-state.json",
+        "preflight_report_csv": "preflight-report.csv",
+        "preflight_report_json": "preflight-report.json",
+        "pricing_diagnostics_csv": "pricing-diagnostics.csv",
+        "pricing_diagnostics_json": "pricing-diagnostics.json",
+        "readiness_findings_csv": "readiness-findings.csv",
+        "remediation_backlog_csv": "remediation-backlog.csv",
+        "runbook": "migration-runbook.md",
+        "vm_mapping_csv": "vm-mapping.csv",
+    }
+    assert {
+        vm["vm_name"]: {
+            "wave": vm["migration"]["wave"],
+            "effective_profile": vm["target"]["effective_profile"],
+            "effective_storage_tier": vm["target"]["effective_storage_tier"],
+            "image_import_status": vm["target"]["image_import_status"],
+        }
+        for vm in manifest["virtual_machines"]
+    } == {
+        "orders-app-01": {
+            "wave": "Wave 1",
+            "effective_profile": "bx2-4x16",
+            "effective_storage_tier": "5iops-tier",
+            "image_import_status": "Imported",
+        },
+        "orders-db-01": {
+            "wave": "Wave 1",
+            "effective_profile": "mx2-2x16",
+            "effective_storage_tier": "10iops-tier",
+            "image_import_status": "Pending",
+        },
+        "legacy-batch-01": {
+            "wave": "Wave 2",
+            "effective_profile": "bx2-2x8",
+            "effective_storage_tier": "5iops-tier",
+            "image_import_status": "Not Required",
+        },
+    }
+
     operational_files = {
         "decision-audit.csv",
         "remediation-backlog.csv",
@@ -1045,13 +1104,32 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
         next(row for row in remediation_rows if row["VM Key"] == "vm-db-001"),
         {
             "VM Name": "unknown-vm",
+            "Owner": "db-team",
             "Status": "Open",
+            "Due Date": "2026-07-20",
             "Blocker Description": "Database quiesce runbook required",
+        },
+    )
+    assert_row_fields(
+        next(row for row in remediation_rows if row["VM Key"] == "vm-legacy-001"),
+        {
+            "Owner": "platform-team",
+            "Status": "Closed",
+            "Notes": "Retirement approved.",
         },
     )
 
     image_rows = _csv_rows(carbon_files["image-import-plan.csv"])
     image_by_source = {row["Source Image"]: row for row in image_rows}
+    assert_row_fields(
+        image_by_source["rhel-9-template"],
+        {
+            "Count of VMs": "1",
+            "Owners": "app-team",
+            "Target Catalog ID": "r001-orders-app-image",
+            "Import Status": "Imported",
+        },
+    )
     assert_row_fields(
         image_by_source["windows-2019-template"],
         {
@@ -1059,6 +1137,15 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
             "Owners": "db-team",
             "Import Status": "Pending",
             "Estimated Import Time": "90m",
+        },
+    )
+    assert_row_fields(
+        image_by_source["rhel-7-template"],
+        {
+            "Count of VMs": "1",
+            "Owners": "platform-team",
+            "Import Status": "Not Required",
+            "Notes": "VM excluded from migration.",
         },
     )
     assert image_by_source["TOTAL"]["Count of VMs"] == "3"
@@ -1609,6 +1696,18 @@ def test_carbon_sample_workbook_api_zip_matches_expected_handoff_inventory():
     assert response.status_code == 200
     with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
         names = set(archive.namelist())
+        manifest_payload = json.loads(
+            archive.read("migration-manifest.json").decode("utf-8")
+        )
+        decision_audit_rows = _csv_rows(
+            archive.read("decision-audit.csv").decode("utf-8")
+        )
+        remediation_rows = _csv_rows(
+            archive.read("remediation-backlog.csv").decode("utf-8")
+        )
+        image_rows = _csv_rows(
+            archive.read("image-import-plan.csv").decode("utf-8")
+        )
         planning_state_payload = json.loads(
             archive.read("planning-state.json").decode("utf-8")
         )
@@ -1621,6 +1720,30 @@ def test_carbon_sample_workbook_api_zip_matches_expected_handoff_inventory():
     assert (
         names - STREAMLIT_HANDOFF_FILES - CARBON_MODULAR_TERRAFORM_FILES
         == CARBON_CURRENT_EXTRA_FILES
+    )
+    assert set(manifest_payload["handoff_files"].values()).issubset(names)
+    assert {
+        "decision-audit.csv",
+        "remediation-backlog.csv",
+        "image-import-plan.csv",
+        "planning-state.json",
+    }.issubset(set(manifest_payload["handoff_files"].values()))
+    assert any(
+        row["VM Name"] == "sample-db-01"
+        and row["Original Storage Tier"] == "10iops-tier"
+        for row in decision_audit_rows
+    )
+    assert any(
+        row["VM Key"] == "sample-db-01"
+        and row["Owner"] == "db-team"
+        and row["Status"] == "Open"
+        for row in remediation_rows
+    )
+    assert any(
+        row["Source Image"] == "4v / 16384M"
+        and row["Import Status"] == "Pending"
+        and row["Target Catalog ID"] == "r001-sample-db-image"
+        for row in image_rows
     )
     assert planning_state_payload["schema_version"] == "1.0"
     assert network_plan_payload["metadata"]["project_name"] == "Migration"

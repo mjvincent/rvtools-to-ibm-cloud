@@ -125,13 +125,13 @@ Results:
 The Playwright smoke covers workbook upload, project save/load, subnet
 drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign
 persistence, drag/drop accessibility labels, autosave reload, package preview
-handoff CSV download, and cleanup of temporary smoke projects.
+handoff CSV switching/download, and cleanup of temporary smoke projects.
 
 The Python parity suite includes `tests/test_carbon_handoff_parity.py`, which
 now covers Streamlit-vs-Carbon fixture parity, an edge-case mapping/readiness
 fixture for multi-NIC and disk/partition fidelity, a multi-VM operational
 fixture for overrides, exclusions, remediation, image import, cutover readiness,
-and planning-state parity, a workshop real-workbook subset fixture for
+manifest handoff references, and planning-state parity, a workshop real-workbook subset fixture for
 unknown-network, storage mapping empty-state, and low-confidence
 assessment-quality behavior, and sample-workbook operational overlays for
 wave/cutover, remediation, image import, profile/storage overrides, rich
@@ -139,7 +139,8 @@ disk/partition mapping, and planning-state parity, plus
 sample-workbook Carbon handoff contract fields for `decision-audit.csv`,
 `remediation-backlog.csv`, `image-import-plan.csv`, `cutover-readiness.csv`,
 and `planning-state.json`. It also verifies the sample-workbook API ZIP
-inventory from `POST /api/projects/{project_id}/terraform` and guards the
+inventory and key handoff CSV payloads from
+`POST /api/projects/{project_id}/terraform` and guards the
 workshop workbook summary/ZIP path against performance regressions.
 
 ---

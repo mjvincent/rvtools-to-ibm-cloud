@@ -225,6 +225,11 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await page.getByRole('button', { name: 'Show handoff CSVs' }).click();
   await page.getByRole('button', { name: /decision-audit.csv/ }).click();
   await expect(page.getByLabel('Terraform preview decision-audit.csv')).toContainText('VM Name');
+  await page.getByRole('button', { name: /remediation-backlog.csv/ }).click();
+  await expect(page.getByLabel('Terraform preview remediation-backlog.csv')).toContainText('Blocker Type');
+  await page.getByRole('button', { name: /image-import-plan.csv/ }).click();
+  await expect(page.getByLabel('Terraform preview image-import-plan.csv')).toContainText('Source Image');
+  await page.getByRole('button', { name: /decision-audit.csv/ }).click();
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download selected' }).click();
