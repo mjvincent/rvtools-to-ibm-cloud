@@ -29,8 +29,8 @@ plan.
 | Gate 1: Core Functionality | Pass | Workbook upload calls FastAPI summary; project save/load uses Postgres; drag/drop assigns subnet/security/storage/wave; Terraform ZIP export works from saved Carbon network plans. | Keep maintaining regression coverage as parity work lands. | Maintenance |
 | Gate 2: Feature Parity | Partial | Carbon now has workflow surfaces for wave planning, remediation backlog, image import planning, migration ops, VM overrides, decision audit, handoff ZIP files, and Streamlit-vs-Carbon fixture comparisons. | Add more real-workbook edge fixtures and close remaining Streamlit bulk/edge workflow gaps before promotion. | Phase 4 and Phase 5 |
 | Gate 3: Network Planning | Partial | Carbon supports VPC/subnet/security/storage/wave/network component planning, saved network plans, diagram display, Terraform generation, package inventory parity status, backend package preflight feedback, safe preflight next-step actions, and a full package browser preview in Export. | Add richer network component editing, clickable/editable diagram nodes, and richer validation beyond package preflight. | Phase 5 and Phase 6 |
-| Gate 4: User Experience | Partial | Native drag/drop supports single and multi-select assignment with confirmation modal, drop highlighting, row tags, row-level unassign, readiness-chip routing, explicit checkbox/drop-zone accessible labels, keyboard-operable assignment buttons, and Playwright coverage for keyboard navigation and review-chip routing. | Run broader screen-reader/manual accessibility review, mobile/tablet review, and large-workbook UX/performance tests beyond the workshop sample. | Phase 6 |
-| Gate 5: Quality and Testing | Partial | Verified: Python compile/full pytest, Carbon TypeScript, Jest, Playwright smoke, handoff parity fixtures, real-workbook operational overlay parity, planning-state JSON import/export, backend preflight endpoint/UI feedback and next-step actions, API ZIP inventory guard, UI/backend ZIP inventory drift guard, and workshop large-workbook summary/ZIP performance guard. | Add broader e2e coverage for failure paths, multiple browsers, additional large workbooks, accessibility automation, and more real-workbook parity fixtures. | Phase 4-6 |
+| Gate 4: User Experience | Partial | Native drag/drop supports single and multi-select assignment with confirmation modal, drop highlighting, row tags, row-level unassign, readiness-chip routing, explicit checkbox/drop-zone accessible labels, keyboard-operable assignment buttons, and Playwright coverage for keyboard navigation and review-chip routing across Chromium, Firefox, and WebKit. | Run broader screen-reader/manual accessibility review, mobile/tablet review, and large-workbook UX/performance tests beyond the workshop sample. | Phase 6 |
+| Gate 5: Quality and Testing | Partial | Verified: Python compile/full pytest, Carbon TypeScript, Jest, multi-browser Playwright smoke, handoff parity fixtures, real-workbook operational overlay parity, planning-state JSON import/export, backend preflight endpoint/UI feedback and next-step actions, API ZIP inventory guard, UI/backend ZIP inventory drift guard, and workshop large-workbook summary/ZIP performance guard. | Add broader e2e coverage for failure paths, additional large workbooks, accessibility automation, and more real-workbook parity fixtures. | Phase 4-6 |
 | Gate 6: Production Readiness | Partial | Docker Compose starts Streamlit, API, Carbon UI, and Postgres; local health/log checks are documented; Carbon healthcheck reports healthy; persistence warning exists; user manual now documents the Carbon checkpoint and production boundary; promotion/cutover guide now documents staged rollout and rollback; operations runbook documents backup/recovery, monitoring/logging, incident response, support ownership matrix, rollback authority, a successful local restore drill, and local monitoring evidence. | Wire hosted-runtime alerts/log sinks and fill in named production support owners before promotion. | Phase 6 |
 
 ## Validation Evidence
@@ -51,7 +51,8 @@ Observed results:
 - Python pytest: 348 passed
 - Carbon TypeScript: 0 errors
 - Carbon Jest: 158 passed
-- Carbon Playwright smoke and keyboard accessibility route: passed
+- Carbon Playwright smoke and keyboard accessibility route: passed in Chromium,
+  Firefox, and WebKit
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright coverage includes workbook upload, project save/load, subnet
@@ -59,7 +60,9 @@ drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign,
 autosave reload, package preview handoff CSV switching/download, keyboard
 navigation, keyboard assignment through explicit Assign buttons,
 readiness-chip review routing, drag/drop accessibility labels, row checkbox
-accessible names, and temporary smoke-project cleanup.
+accessible names, and temporary smoke-project cleanup across Chromium, Firefox,
+and WebKit. The suite runs with one worker because the smoke tests share the
+same FastAPI/Postgres backend during project save/load and cleanup.
 
 The Python parity suite now includes Streamlit-vs-Carbon single-VM, edge-case,
 multi-VM, workshop real-workbook subset, and sample-workbook operational overlay

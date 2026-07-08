@@ -15,6 +15,18 @@ async function clickRowCheckbox(page: Page, index: number) {
   });
 }
 
+async function clickRowAction(page: Page, rowIndex: number, actionText: string) {
+  await page.locator('tbody tr').nth(rowIndex).evaluate((row, text) => {
+    const button = Array.from(row.querySelectorAll('button')).find((candidate) =>
+      candidate.textContent?.trim() === text,
+    );
+    if (!button) {
+      throw new Error(`Could not find row action: ${text}`);
+    }
+    (button as HTMLButtonElement).click();
+  }, actionText);
+}
+
 test.afterEach(async ({ request }) => {
   const response = await request.get('/api/projects');
   if (!response.ok()) return;
@@ -236,12 +248,12 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
 
   const appRow = page.locator('tbody tr').first();
   await appRow.locator('details').evaluate((details) => details.setAttribute('open', ''));
-  await appRow.locator('button', { hasText: 'Clear subnet' }).click({ force: true });
-  await appRow.locator('button', { hasText: 'Clear security group' }).click({ force: true });
-  await appRow.locator('button', { hasText: 'Clear wave' }).click({ force: true });
+  await clickRowAction(page, 0, 'Clear subnet');
+  await clickRowAction(page, 0, 'Clear security group');
+  await clickRowAction(page, 0, 'Clear wave');
   const storageRow = page.locator('tbody tr').nth(1);
   await storageRow.locator('details').evaluate((details) => details.setAttribute('open', ''));
-  await storageRow.locator('button', { hasText: 'Clear storage override' }).click({ force: true });
+  await clickRowAction(page, 1, 'Clear storage override');
   await expect(page.getByText('Planning changes saved.')).toBeVisible();
   await expect(appRow).not.toContainText('prod-app-us-south-1');
   await expect(appRow).not.toContainText('prod-db-us-south-1');
