@@ -58,8 +58,9 @@ Observed results:
 The Playwright coverage includes workbook upload, project save/load, subnet
 drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign,
 autosave reload, persistence outage warning display, Export preflight blocker
-routing to remediation review, package preview handoff CSV switching/download,
-keyboard navigation, keyboard assignment through explicit Assign buttons,
+routing to remediation review, Export preview/download/save-before-export
+failure handling, package preview handoff CSV switching/download, keyboard
+navigation, keyboard assignment through explicit Assign buttons,
 readiness-chip review routing, drag/drop accessibility labels, row checkbox
 accessible names, and temporary smoke-project cleanup across Chromium, Firefox,
 and WebKit. The suite runs with one worker because the smoke tests share the
@@ -159,7 +160,7 @@ Current feature-parity status:
 - Add additional real-workbook Streamlit-vs-Carbon fixture comparisons.
 - Improve any workbook-derived source metadata gaps found by those fixtures.
 - Extend Carbon-side preflight feedback with optional safe autofill for low-risk findings.
-- Extend failure-path browser coverage beyond persistence outage and remediation-route preflight blockers.
+- Extend failure-path browser coverage beyond persistence outage, remediation-route preflight blockers, and Export preview/download/save-before-export failures.
 - Extend planning-state reload coverage through Playwright and user acceptance.
 
 ## Phase 6 Backlog

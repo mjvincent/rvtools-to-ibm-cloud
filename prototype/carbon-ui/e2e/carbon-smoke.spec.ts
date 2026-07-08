@@ -27,6 +27,84 @@ async function clickRowAction(page: Page, rowIndex: number, actionText: string) 
   }, actionText);
 }
 
+async function mockHealthyProjectApi(
+  page: Page,
+  projectId: string,
+  projectName: string,
+  options: {
+    networkPlan?: (route: Parameters<Parameters<Page['route']>[1]>[0]) => Promise<void>;
+    preview?: (route: Parameters<Parameters<Page['route']>[1]>[0]) => Promise<void>;
+    terraform?: (route: Parameters<Parameters<Page['route']>[1]>[0]) => Promise<void>;
+    preflight?: (route: Parameters<Parameters<Page['route']>[1]>[0]) => Promise<void>;
+  } = {},
+) {
+  await page.route('**/health', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'ok', persistence_enabled: true }),
+    });
+  });
+  await page.route('**/api/projects', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ projects: [] }),
+      });
+      return;
+    }
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ project: { id: projectId, name: projectName, description: '' } }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  await page.route(`**/api/projects/${projectId}/state`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'saved' }),
+    });
+  });
+  await page.route(`**/api/projects/${projectId}/network-plan`, async (route) => {
+    if (options.networkPlan) {
+      await options.networkPlan(route);
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'saved' }),
+    });
+  });
+  if (options.preview) {
+    await page.route(`**/api/projects/${projectId}/terraform/preview`, options.preview);
+  }
+  if (options.terraform) {
+    await page.route(`**/api/projects/${projectId}/terraform`, options.terraform);
+  }
+  if (options.preflight) {
+    await page.route(`**/api/projects/${projectId}/preflight`, options.preflight);
+  }
+}
+
+async function uploadAndSaveMockedProject(page: Page, projectName: string) {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Workbook Intake' }).click();
+  await page.locator('input[type="file"]').first().setInputFiles(sampleWorkbook);
+  await expect(page.getByText(/Loaded rvtools-small-complete.xlsx/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Save project' }).click();
+  await page.getByLabel('Project name').fill(projectName);
+  await page.getByRole('button', { name: /Create project|Update project/ }).click();
+  await expect(page.getByText('Project saved to Postgres.')).toBeVisible();
+}
+
 test.afterEach(async ({ request }) => {
   const response = await request.get('/api/projects');
   if (!response.ok()) return;
@@ -121,85 +199,38 @@ test('routes preflight blockers to remediation review', async ({ page }) => {
   const projectName = `Carbon smoke preflight ${Date.now()}`;
   const projectId = 'carbon-smoke-preflight-project';
 
-  await page.route('**/health', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ status: 'ok', persistence_enabled: true }),
-    });
-  });
-  await page.route('**/api/projects', async (route) => {
-    if (route.request().method() === 'GET') {
+  await mockHealthyProjectApi(page, projectId, projectName, {
+    preflight: async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ projects: [] }),
+        body: JSON.stringify({
+          project_id: projectId,
+          project_name: projectName,
+          summary: { blockers: 1, warnings: 0, info: 0, total: 1 },
+          findings: [
+            {
+              Severity: 'blocker',
+              Category: 'readiness',
+              'Fix Category': 'Readiness',
+              Subject: 'app-01',
+              Message: 'Image readiness must be resolved before export.',
+              Remediation: 'Review image import and blocker tracking.',
+              'Fix Location': 'Readiness tab',
+              'Suggested Action': 'Assign an owner and resolve the blocker.',
+              'Valid Options': '',
+              'Recommended Option': '',
+              'Quick Fix Type': '',
+              Field: 'Image',
+              'Current Value': 'Blocked',
+              Constraint: 'Must be Ready or explicitly remediated',
+            },
+          ],
+        }),
       });
-      return;
-    }
-    if (route.request().method() === 'POST') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ project: { id: projectId, name: projectName, description: '' } }),
-      });
-      return;
-    }
-    await route.continue();
+    },
   });
-  await page.route(`**/api/projects/${projectId}/state`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ status: 'saved' }),
-    });
-  });
-  await page.route(`**/api/projects/${projectId}/network-plan`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ status: 'saved' }),
-    });
-  });
-  await page.route(`**/api/projects/${projectId}/preflight`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        project_id: projectId,
-        project_name: projectName,
-        summary: { blockers: 1, warnings: 0, info: 0, total: 1 },
-        findings: [
-          {
-            Severity: 'blocker',
-            Category: 'readiness',
-            'Fix Category': 'Readiness',
-            Subject: 'app-01',
-            Message: 'Image readiness must be resolved before export.',
-            Remediation: 'Review image import and blocker tracking.',
-            'Fix Location': 'Readiness tab',
-            'Suggested Action': 'Assign an owner and resolve the blocker.',
-            'Valid Options': '',
-            'Recommended Option': '',
-            'Quick Fix Type': '',
-            Field: 'Image',
-            'Current Value': 'Blocked',
-            Constraint: 'Must be Ready or explicitly remediated',
-          },
-        ],
-      }),
-    });
-  });
-
-  await page.goto('/');
-  await page.getByRole('link', { name: 'Workbook Intake' }).click();
-  await page.locator('input[type="file"]').first().setInputFiles(sampleWorkbook);
-  await expect(page.getByText(/Loaded rvtools-small-complete.xlsx/)).toBeVisible();
-
-  await page.getByRole('button', { name: 'Save project' }).click();
-  await page.getByLabel('Project name').fill(projectName);
-  await page.getByRole('button', { name: /Create project|Update project/ }).click();
-  await expect(page.getByText('Project saved to Postgres.')).toBeVisible();
+  await uploadAndSaveMockedProject(page, projectName);
 
   await page.getByRole('link', { name: 'Export Readiness' }).click();
   await page.getByRole('button', { name: 'Run preflight' }).click();
@@ -210,6 +241,118 @@ test('routes preflight blockers to remediation review', async ({ page }) => {
   await page.getByRole('button', { name: 'Open remediation' }).click();
   await expect(page.getByRole('heading', { name: 'Remediation backlog' })).toBeVisible();
   await expect(page.getByText(/Review remediation blockers for app-01/)).toBeVisible();
+});
+
+test('reports Terraform preview failure and allows retry', async ({ page }) => {
+  const projectName = `Carbon smoke preview ${Date.now()}`;
+  const projectId = 'carbon-smoke-preview-project';
+  let previewAttempts = 0;
+
+  await mockHealthyProjectApi(page, projectId, projectName, {
+    preview: async (route) => {
+      previewAttempts += 1;
+      if (previewAttempts === 1) {
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ detail: 'Preview renderer unavailable during smoke test.' }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          project_id: projectId,
+          project_name: projectName,
+          files: [
+            {
+              path: 'README.md',
+              category: 'Operator guide',
+              size_bytes: 42,
+              content: '# Smoke preview',
+            },
+          ],
+        }),
+      });
+    },
+  });
+  await uploadAndSaveMockedProject(page, projectName);
+
+  await page.getByRole('link', { name: 'Export Readiness' }).click();
+  await page.getByRole('button', { name: 'Preview Terraform' }).click();
+  await expect(page.getByText('Export failed')).toBeVisible();
+  await expect(page.getByText('Preview renderer unavailable during smoke test.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Preview Terraform' })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Preview Terraform' }).click();
+  await expect(page.getByRole('heading', { name: 'Package preview' })).toBeVisible();
+  await expect(page.getByText('Package preview generated for 1 file(s).')).toBeVisible();
+  await expect(page.getByLabel('Terraform preview README.md')).toContainText('Smoke preview');
+});
+
+test('reports Terraform ZIP download failure and resets generation state', async ({ page }) => {
+  const projectName = `Carbon smoke zip ${Date.now()}`;
+  const projectId = 'carbon-smoke-zip-project';
+
+  await mockHealthyProjectApi(page, projectId, projectName, {
+    terraform: async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: 'ZIP renderer unavailable during smoke test.' }),
+      });
+    },
+  });
+  await uploadAndSaveMockedProject(page, projectName);
+
+  await page.getByRole('link', { name: 'Export Readiness' }).click();
+  await page.getByRole('button', { name: 'Download Terraform ZIP' }).click();
+  await expect(page.getByText('Export failed')).toBeVisible();
+  await expect(page.getByText('ZIP renderer unavailable during smoke test.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download Terraform ZIP' })).toBeEnabled();
+});
+
+test('reports save-before-export failure before preview generation', async ({ page }) => {
+  const projectName = `Carbon smoke save failure ${Date.now()}`;
+  const projectId = 'carbon-smoke-save-failure-project';
+  let networkPlanSaves = 0;
+  let previewCalls = 0;
+
+  await mockHealthyProjectApi(page, projectId, projectName, {
+    networkPlan: async (route) => {
+      networkPlanSaves += 1;
+      if (networkPlanSaves > 1) {
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ detail: 'Network plan save unavailable before export.' }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ status: 'saved' }),
+      });
+    },
+    preview: async (route) => {
+      previewCalls += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ project_id: projectId, project_name: projectName, files: [] }),
+      });
+    },
+  });
+  await uploadAndSaveMockedProject(page, projectName);
+
+  await page.getByRole('link', { name: 'Export Readiness' }).click();
+  await page.getByRole('button', { name: 'Preview Terraform' }).click();
+  await expect(page.getByText('Export failed')).toBeVisible();
+  await expect(page.getByText('Network plan save unavailable before export.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Preview Terraform' })).toBeEnabled();
+  expect(previewCalls).toBe(0);
 });
 
 test('uploads workbook and round-trips saved project state', async ({ page }) => {
