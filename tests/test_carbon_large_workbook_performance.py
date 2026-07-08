@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from models.network_planning import (
@@ -27,7 +28,12 @@ from prototype.api.handoff_parity import (
 
 
 SAMPLES_DIR = Path(__file__).resolve().parents[1] / "samples"
+SMALL_WORKBOOK = SAMPLES_DIR / "rvtools-small-complete.xlsx"
 WORKSHOP_WORKBOOK = SAMPLES_DIR / "SizingWorkshop-RVTools.xlsx"
+SAMPLE_WORKBOOKS = (
+    pytest.param("small-complete", SMALL_WORKBOOK, 2, id="small-complete"),
+    pytest.param("workshop", WORKSHOP_WORKBOOK, 763, id="workshop"),
+)
 
 
 def _max_seconds(env_var: str, default: float) -> float:
@@ -37,6 +43,20 @@ def _max_seconds(env_var: str, default: float) -> float:
 def _terraform_label(value: str) -> str:
     label = re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
     return label or "unknown"
+
+
+def _upload_workbook_summary(client: TestClient, workbook_path: Path):
+    with workbook_path.open("rb") as workbook:
+        return client.post(
+            "/api/workbooks/summary",
+            files={
+                "workbook": (
+                    workbook_path.name,
+                    workbook,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
+        )
 
 
 def _network_plan_for_rows(rows: list[dict]) -> NetworkPlanningState:
@@ -128,7 +148,7 @@ def _mock_large_project(project_id: str, planning_state_json: dict):
             "prototype.api.persistence.get_project",
             return_value={
                 "id": project_id,
-                "name": "Workshop performance",
+                "name": "Sample performance",
                 "description": "",
             },
         ),
@@ -144,28 +164,31 @@ def _mock_large_project(project_id: str, planning_state_json: dict):
         yield
 
 
-def test_workshop_workbook_summary_and_carbon_zip_performance_guard():
+@pytest.mark.parametrize(("sample_name", "workbook_path", "expected_rows"), SAMPLE_WORKBOOKS)
+def test_sample_workbook_summary_performance_guard(sample_name, workbook_path, expected_rows):
     client = TestClient(app)
 
     summary_start = time.perf_counter()
-    with WORKSHOP_WORKBOOK.open("rb") as workbook:
-        summary_response = client.post(
-            "/api/workbooks/summary",
-            files={
-                "workbook": (
-                    WORKSHOP_WORKBOOK.name,
-                    workbook,
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
-            },
-        )
+    summary_response = _upload_workbook_summary(client, workbook_path)
     summary_elapsed = time.perf_counter() - summary_start
 
     assert summary_response.status_code == 200
     summary = summary_response.json()
+    assert len(summary["assignment_rows"]) == expected_rows
+    assert summary_elapsed < _max_seconds(
+        f"CARBON_PERF_{sample_name.upper().replace('-', '_')}_SUMMARY_MAX_SECONDS",
+        15.0,
+    )
+
+
+def test_workshop_workbook_carbon_zip_performance_guard():
+    client = TestClient(app)
+
+    summary_response = _upload_workbook_summary(client, WORKSHOP_WORKBOOK)
+    assert summary_response.status_code == 200
+    summary = summary_response.json()
     rows = summary["assignment_rows"]
     assert len(rows) == 763
-    assert summary_elapsed < _max_seconds("CARBON_PERF_SUMMARY_MAX_SECONDS", 15.0)
 
     project_id = "workshop-performance"
     planning_state_json = _planning_state_json(rows, summary)
@@ -189,17 +212,7 @@ def test_workshop_workbook_summary_and_carbon_zip_performance_guard():
 
 def test_workshop_carbon_preview_performance_guard():
     client = TestClient(app)
-    with WORKSHOP_WORKBOOK.open("rb") as workbook:
-        summary_response = client.post(
-            "/api/workbooks/summary",
-            files={
-                "workbook": (
-                    WORKSHOP_WORKBOOK.name,
-                    workbook,
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
-            },
-        )
+    summary_response = _upload_workbook_summary(client, WORKSHOP_WORKBOOK)
     assert summary_response.status_code == 200
     summary = summary_response.json()
     rows = summary["assignment_rows"]
@@ -224,17 +237,7 @@ def test_workshop_carbon_preview_performance_guard():
 
 def test_large_carbon_project_state_save_load_update_performance_guard():
     client = TestClient(app)
-    with WORKSHOP_WORKBOOK.open("rb") as workbook:
-        summary_response = client.post(
-            "/api/workbooks/summary",
-            files={
-                "workbook": (
-                    WORKSHOP_WORKBOOK.name,
-                    workbook,
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
-            },
-        )
+    summary_response = _upload_workbook_summary(client, WORKSHOP_WORKBOOK)
     assert summary_response.status_code == 200
     summary = summary_response.json()
     rows = summary["assignment_rows"]

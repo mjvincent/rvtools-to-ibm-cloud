@@ -30,7 +30,7 @@ plan.
 | Gate 2: Feature Parity | Partial | Carbon now has workflow surfaces for wave planning, remediation backlog, image import planning, migration ops, VM overrides, decision audit, handoff ZIP files, and Streamlit-vs-Carbon fixture comparisons. | Add more real-workbook edge fixtures and close remaining Streamlit bulk/edge workflow gaps before promotion. | Phase 4 and Phase 5 |
 | Gate 3: Network Planning | Partial | Carbon supports VPC/subnet/security/storage/wave/network component planning, saved network plans, diagram display, Terraform generation, package inventory parity status, backend package preflight feedback, safe preflight next-step actions, and a full package browser preview in Export. | Add richer network component editing, clickable/editable diagram nodes, and richer validation beyond package preflight. | Phase 5 and Phase 6 |
 | Gate 4: User Experience | Partial | Native drag/drop supports single and multi-select assignment with confirmation modal, drop highlighting, row tags, row-level unassign, readiness-chip routing, explicit checkbox/drop-zone accessible labels, keyboard-operable assignment buttons, and Playwright coverage for keyboard navigation and review-chip routing across Chromium, Firefox, and WebKit. | Run broader screen-reader/manual accessibility review, mobile/tablet review, and large-workbook UX/performance tests beyond the workshop sample. | Phase 6 |
-| Gate 5: Quality and Testing | Partial | Verified: Python compile/full pytest, Carbon TypeScript, Jest, multi-browser Playwright smoke, handoff parity fixtures, real-workbook operational overlay parity, planning-state JSON import/export, backend preflight endpoint/UI feedback and next-step actions, API ZIP inventory guard, UI/backend ZIP inventory drift guard, and workshop large-workbook summary/state/assignment/preview/ZIP performance guards. | Add broader e2e coverage for failure paths, additional customer-scale workbooks, accessibility automation, and more real-workbook parity fixtures. | Phase 4-6 |
+| Gate 5: Quality and Testing | Partial | Verified: Python compile/full pytest, Carbon TypeScript, Jest, multi-browser Playwright smoke, handoff parity fixtures, real-workbook operational overlay parity, planning-state JSON import/export, backend preflight endpoint/UI feedback and next-step actions, API ZIP inventory guard, UI/backend ZIP inventory drift guard, sample-workbook summary performance guards, and workshop state/assignment/preview/ZIP performance guards. | Add broader e2e coverage for failure paths, additional customer-scale workbooks, accessibility automation, and more real-workbook parity fixtures. | Phase 4-6 |
 | Gate 6: Production Readiness | Partial | Docker Compose starts Streamlit, API, Carbon UI, and Postgres; local health/log checks are documented; Carbon healthcheck reports healthy; persistence warning exists; user manual now documents the Carbon checkpoint and production boundary; promotion/cutover guide now documents staged rollout and rollback; operations runbook documents backup/recovery, monitoring/logging, incident response, support ownership matrix, rollback authority, a successful local restore drill, and local monitoring evidence. | Wire hosted-runtime alerts/log sinks and fill in named production support owners before promotion. | Phase 6 |
 
 ## Validation Evidence
@@ -73,9 +73,9 @@ sample-workbook API ZIP inventory and handoff CSV payload
 verification; API preview-vs-ZIP file/content parity; and a Carbon Export UI
 inventory drift test against backend ZIP
 inventory constants.
-The Python suite also guards workshop workbook summary parsing, project state
-save/load, VM assignment update, Carbon Terraform preview, and ZIP generation
-performance.
+The Python suite also guards summary parsing across both checked-in real sample
+workbooks, plus workshop project state save/load, VM assignment update, Carbon
+Terraform preview, and ZIP generation performance.
 
 ## Phase 4 Status
 
@@ -144,9 +144,9 @@ Current feature-parity status:
      sample-workbook operational overlay fixture with exact non-preflight
      handoff file parity, sample-workbook contract assertions, API ZIP
      inventory verification, Export UI/backend inventory
-     drift protection, and workshop workbook performance coverage for summary
-     parsing, project state save/load, VM assignment update, Terraform preview,
-     and Terraform ZIP generation.
+     drift protection, and performance coverage for sample-workbook summary
+     parsing plus workshop project state save/load, VM assignment update,
+     Terraform preview, and Terraform ZIP generation.
    - Remaining: additional real-workbook edge fixtures and promotion-gate
      evidence for large or unusual customer workbooks.
 
