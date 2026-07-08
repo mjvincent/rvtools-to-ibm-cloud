@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import { Button, InlineNotification, Layer, Search, Select, SelectItem, Tag, Tile } from '@carbon/react';
-import { CloudUpload, Download, Renew } from '@carbon/icons-react';
+import { Close, CloudUpload, Download, Renew, View } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import type { Workflow } from '../../types/network-planning';
 import {
@@ -495,7 +495,7 @@ export default function ExportWorkflow() {
           <Button
             kind="secondary"
             size="sm"
-            renderIcon={Download}
+            renderIcon={View}
             onClick={handlePreviewTerraform}
             disabled={!selectedProjectId || loadingPreview}
           >
@@ -613,6 +613,19 @@ export default function ExportWorkflow() {
                 onClick={() => downloadPreviewFile(selectedPreviewFile)}
               >
                 Download selected
+              </Button>
+              <Button
+                kind="tertiary"
+                size="sm"
+                renderIcon={Close}
+                onClick={() => {
+                  setTerraformPreview(null);
+                  setSelectedPreviewPath('');
+                  setPreviewSearch('');
+                  setPreviewCategory('All');
+                }}
+              >
+                Close preview
               </Button>
             </div>
           </div>

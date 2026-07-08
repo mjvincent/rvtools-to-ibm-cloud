@@ -215,6 +215,10 @@ describe('ExportWorkflow', () => {
     await userEvent.type(screen.getByLabelText('Search package files'), 'network');
     expect(screen.getByRole('button', { name: /network-plan.json/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /decision-audit.csv/ })).toBeNull();
+
+    await userEvent.click(screen.getByText('Close preview'));
+    expect(screen.queryByText('Package preview')).toBeNull();
+    expect(screen.queryByLabelText('Terraform preview README.md')).toBeNull();
   });
 
   it('downloads the selected package preview file', async () => {
