@@ -3,7 +3,6 @@
 import React, { useMemo } from 'react';
 import {
   Button,
-  Checkbox,
   Layer,
   Modal,
   Search,
@@ -402,14 +401,14 @@ export default function AssignmentWorkflow() {
               <thead>
                 <tr>
                   <th>
-                    <Checkbox
-                      id="select-all-filtered"
-                      labelText=""
-                      checked={allFilteredSelected}
-                      onChange={(_: unknown, data: { checked?: boolean }) =>
-                        toggleAllFiltered(Boolean(data.checked))
-                      }
-                    />
+                    <label className="row-select-label">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all filtered VMs"
+                        checked={allFilteredSelected}
+                        onChange={(event) => toggleAllFiltered(event.target.checked)}
+                      />
+                    </label>
                   </th>
                   {[
                     ['name', 'VM'],

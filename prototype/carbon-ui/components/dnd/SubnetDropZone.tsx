@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, Tile } from '@carbon/react';
+import { Button } from '@carbon/react';
 import type { AssignmentMode } from '../../types/network-planning';
 
 type SubnetDropZoneProps = {
@@ -43,7 +43,7 @@ export default function SubnetDropZone({
         : 'migration wave';
 
   return (
-    <Tile
+    <div
       aria-describedby={`drop-help-${bucket.id || bucketName}`}
       aria-label={`Drop VMs on ${bucketName} ${modeLabel}`}
       className={dragActive ? 'bucket-tile bucket-tile--drop-active' : 'bucket-tile'}
@@ -73,12 +73,14 @@ export default function SubnetDropZone({
         Drop one or more selected VMs here, or use Assign to place {selectedCount} selected VM{selectedCount === 1 ? '' : 's'}.
       </p>
       <Button
-        aria-label={`Assign ${selectedCount} selected VM${selectedCount === 1 ? '' : 's'} to ${bucketName}`}
         size="sm"
         onClick={onAssign}
       >
         Assign
+        <span className="sr-only">
+          {' '}{selectedCount} selected VM{selectedCount === 1 ? '' : 's'} to {bucketName}
+        </span>
       </Button>
-    </Tile>
+    </div>
   );
 }

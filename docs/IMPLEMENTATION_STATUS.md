@@ -159,7 +159,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 2. **Production readiness**
    - Broader large-workbook performance benchmark suite beyond the workshop sample
-   - Accessibility audit
+   - Broader screen-reader/manual accessibility audit
    - Full browser coverage beyond the smoke path
    - Hosted-runtime alerting/log sink configuration
    - Hosted-runtime restore drill validation
@@ -207,7 +207,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Planning-state JSON export/import in Carbon Export workflow
 
 ### Phase 6: Polish and Promotion
-- [ ] Accessibility audit
+- [x] Initial keyboard/accessibility E2E audit for Carbon assignment flow
+- [ ] Broader screen-reader/manual accessibility audit
 - [x] Workshop large-workbook performance guard
 - [ ] Broader performance benchmark suite
 - [x] Carbon checkpoint documented in user manual

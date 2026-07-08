@@ -219,6 +219,20 @@ body {
   background: #edf5ff;
 }
 
+.row-select-label {
+  align-items: center;
+  display: inline-flex;
+  min-height: 1.5rem;
+  min-width: 1.5rem;
+}
+
+.row-select-label input {
+  cursor: pointer;
+  height: 1rem;
+  margin: 0;
+  width: 1rem;
+}
+
 .row-overflow {
   position: relative;
 }

@@ -86,7 +86,7 @@ describe('AssignmentWorkflow', () => {
 
     await userEvent.click(screen.getByText('Network'));
     fireEvent.dragStart(row!, { dataTransfer: transfer });
-    fireEvent.drop(screen.getByText('prod-app-us-south-1').closest('[data-testid="tile"]')!, {
+    fireEvent.drop(screen.getByRole('region', { name: 'Drop VMs on prod-app-us-south-1 subnet' }), {
       dataTransfer: transfer,
     });
 
@@ -101,7 +101,7 @@ describe('AssignmentWorkflow', () => {
     const row = screen.getByText('app-01').closest('tr');
 
     fireEvent.dragStart(row!, { dataTransfer: transfer });
-    fireEvent.drop(screen.getByText('prod-app-us-south-1').closest('[data-testid="tile"]')!, {
+    fireEvent.drop(screen.getByRole('region', { name: 'Drop VMs on prod-app-us-south-1 subnet' }), {
       dataTransfer: transfer,
     });
     await userEvent.click(screen.getByText('Assign VMs'));

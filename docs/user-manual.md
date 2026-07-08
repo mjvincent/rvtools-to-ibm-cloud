@@ -1028,11 +1028,11 @@ Use it to:
 ## Experimental Carbon UI Checkpoint
 The IBM Carbon UI under `prototype/carbon-ui` is an experimental enterprise UI candidate. Streamlit remains the supported production UI until Carbon passes the promotion gates documented in [Carbon/React UI Strategy](carbon-react-ui-strategy.md), [Carbon Promotion Gate Review](carbon-promotion-gate-review.md), [Carbon Handoff Parity](carbon-handoff-parity.md), and [Carbon Operations Runbook](carbon-operations-runbook.md).
 
-As of July 2, 2026, Carbon includes the core planning path, Phase 4 workflow surfaces, and package parity checks needed for continued evaluation:
+As of July 8, 2026, Carbon includes the core planning path, Phase 4 workflow surfaces, package parity checks, and initial keyboard accessibility coverage needed for continued evaluation:
 
 - **Workbook intake and overview**: Carbon uploads RVTools workbooks through the shared FastAPI summary path, then shows estate metrics, readiness counts, project persistence status, and saved-project controls.
 - **Assignment workflow**: VM rows can be selected individually or in groups, then assigned by drag/drop or the explicit `Assign` button.
-- **Assignment targets**: Subnet, security group, storage/IOPS, and migration wave buckets all support placement through the same confirmation flow.
+- **Assignment targets**: Subnet, security group, storage/IOPS, and migration wave buckets all support placement through the same confirmation flow. Assignment bucket regions and explicit `Assign` buttons expose target-specific accessible names for keyboard and assistive-technology review.
 - **Confirmation modal**: Drag/drop assignment opens a placement modal that confirms the target bucket and selected VM count before applying changes.
 - **Unassign actions**: Row-level actions can clear subnet, security group, storage override, and wave assignments without clearing unrelated fields on other rows.
 - **Readiness routing**: Non-ready image, migration, memory, and network readiness chips include descriptive accessible labels. Clicking a reviewable chip routes the user to the matching Carbon workflow for investigation and remediation planning.
@@ -1041,9 +1041,9 @@ As of July 2, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 - **Export parity status**: Carbon Export shows package parity status before download. It identifies the Streamlit handoff file set, the Carbon modular Terraform layout, and the documented Carbon-only `network-plan.json` addition.
 - **Terraform ZIP contents**: Carbon-generated ZIPs include the Streamlit handoff inventory, Carbon modular Terraform files, and `network-plan.json`. The UI inventory is backed by a shared JSON contract and tested against backend ZIP inventory constants to prevent drift.
 - **Persistence expectations**: Saved projects, network plans, VM assignments, override values, and dirty-state autosave use the shared FastAPI/Postgres prototype stack. If the API or database is unavailable, Carbon shows a persistence warning and the work should be treated as temporary until saved successfully.
-- **Accessibility and E2E coverage**: Drag/drop regions and row checkboxes expose descriptive accessible labels. The Playwright smoke test covers workbook upload, project save/load, single and multi-select drag/drop, unassign persistence, autosave reload, and drag/drop accessibility labels.
+- **Accessibility and E2E coverage**: Drag/drop regions, assignment buttons, row checkboxes, and reviewable readiness chips expose descriptive accessible names. Playwright coverage includes workbook upload, project save/load, keyboard navigation, keyboard assignment, review-chip routing, single and multi-select drag/drop, unassign persistence, autosave reload, and drag/drop accessibility labels.
 
-Use Carbon for prototype evaluation and parity review, not production migration handoff. Use Streamlit for production work until Carbon parity and production-readiness gaps are closed, especially additional real-workbook parity fixtures, broader accessibility testing, large-workbook performance validation, production support documentation, and a formal go/no-go promotion decision.
+Use Carbon for prototype evaluation and parity review, not production migration handoff. Use Streamlit for production work until Carbon parity and production-readiness gaps are closed, especially additional real-workbook parity fixtures, broader screen-reader/manual accessibility testing, large-workbook performance validation, hosted-runtime operations validation, and a formal go/no-go promotion decision.
 
 ## Recommended Migration Planning Workflow
 1. Review `vm-mapping.csv` with infrastructure, application, security, and migration owners.

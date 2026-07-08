@@ -27,6 +27,63 @@ test.afterEach(async ({ request }) => {
   );
 });
 
+test('supports keyboard navigation and accessible review routing', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page.getByRole('banner', { name: 'RVTools to IBM Cloud' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Workbench navigation' })).toBeVisible();
+  await expect(page.locator('main')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'API status' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'API status' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('API status panel')).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('API status panel')).toBeHidden();
+
+  await page.getByRole('link', { name: 'Workbook Intake' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Workbook intake' })).toBeVisible();
+
+  await page.locator('input[type="file"]').first().setInputFiles(sampleWorkbook);
+  await expect(page.getByText(/Loaded rvtools-small-complete.xlsx/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'VM Assignment Workbench' })).toBeVisible();
+
+  await expect(page.getByRole('table', { name: 'VM assignment rows' })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Assignment bucket mode' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Drop VMs on prod-app-us-south-1 subnet' })).toBeVisible();
+
+  const firstVmName = (await page.locator('tbody tr').first().locator('strong').innerText()).trim();
+  await page.getByRole('checkbox', { name: `Select ${firstVmName}` }).focus();
+  await page.keyboard.press('Space');
+  await expect(page.getByRole('button', { name: 'Assign 1 selected VM to prod-app-us-south-1' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Assign 1 selected VM to prod-app-us-south-1' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('1 VM(s) assigned to prod-app-us-south-1.')).toBeVisible();
+  await expect(page.locator('tbody')).toContainText('prod-app-us-south-1');
+
+  const imageReview = page.getByRole('button', {
+    name: /Image readiness .*Open review workflow\./,
+  }).first();
+  await expect(imageReview).toBeVisible();
+  await imageReview.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Image import planning' })).toBeVisible();
+
+  await page.getByRole('link', { name: 'VM Assignment' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'VM Assignment Workbench' })).toBeVisible();
+
+  const migrationReview = page.getByRole('button', {
+    name: /Migration readiness .*Open review workflow\./,
+  }).first();
+  await expect(migrationReview).toBeVisible();
+  await migrationReview.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Remediation backlog' })).toBeVisible();
+});
+
 test('uploads workbook and round-trips saved project state', async ({ page }) => {
   const projectName = `Carbon smoke ${Date.now()}`;
   const vpcName = `smoke-vpc-${Date.now()}`;

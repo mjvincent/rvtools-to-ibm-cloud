@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Checkbox, Tag } from '@carbon/react';
+import { Tag } from '@carbon/react';
 import type { AssignmentMode, AssignmentVm } from '../../types/network-planning';
 import ReadinessTag from '../ui/ReadinessTag';
 
@@ -34,15 +34,14 @@ export default function DraggableVmRow({
       onDragStart={(event) => onDragStart(row, event)}
     >
       <td>
-        <Checkbox
-          id={`select-${row.id}`}
-          aria-label={`Select ${row.name}`}
-          labelText={`Select ${row.name}`}
-          checked={selected}
-          onChange={(_: unknown, data: { checked?: boolean }) =>
-            onSelect(row.id, Boolean(data.checked))
-          }
-        />
+        <label className="row-select-label">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(event) => onSelect(row.id, event.target.checked)}
+          />
+          <span className="sr-only">Select {row.name}</span>
+        </label>
       </td>
       <td>
         <strong>{row.name}</strong>
