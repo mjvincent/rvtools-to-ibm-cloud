@@ -74,3 +74,8 @@ application until Carbon provides a complete and demonstrably better workflow.
 
 See [Carbon Promotion Gate Review](carbon-promotion-gate-review.md) for the
 current gate-by-gate pass/partial/fail assessment and Phase 4 backlog.
+See [Carbon Promotion and Cutover Guide](carbon-promotion-cutover-guide.md) for
+the staged rollout, rollback, and support checklist.
+See [Target Platform Roadmap](target-platform-roadmap.md) for why IBM Cloud VPC
+remains the current target and how future OpenShift Virtualization work should
+be scoped.

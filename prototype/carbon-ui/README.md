@@ -52,3 +52,5 @@ reloads it from Postgres, and deletes temporary smoke projects.
 - Use feature branches and pull requests for Carbon milestones.
 - Do not remove or freeze Streamlit while this prototype is being evaluated.
 - See `docs/carbon-react-ui-strategy.md` for promotion gates.
+- See `docs/carbon-promotion-cutover-guide.md` before promoting Carbon as the
+  default UI.

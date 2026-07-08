@@ -209,7 +209,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Workshop large-workbook performance guard
 - [ ] Broader performance benchmark suite
 - [x] Carbon checkpoint documented in user manual
-- [ ] Promotion/cutover documentation
+- [x] Promotion/cutover documentation
 - [ ] User acceptance testing
 - [ ] Go/no-go promotion decision
 
@@ -219,7 +219,9 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 - [Carbon React UI Strategy](./carbon-react-ui-strategy.md)
 - [Carbon Promotion Gate Review](./carbon-promotion-gate-review.md)
+- [Carbon Promotion and Cutover Guide](./carbon-promotion-cutover-guide.md)
 - [Carbon Handoff Parity](./carbon-handoff-parity.md)
+- [Target Platform Roadmap](./target-platform-roadmap.md)
 - [Carbon UI Integration Summary](./carbon-ui-integration-summary.md)
 - [Carbon Network Schema Spec](./carbon-network-schema-spec.md)
 - [Carbon Integration Diagrams](./carbon-integration-diagrams.md)

@@ -243,6 +243,8 @@ gates in [Carbon/React UI Strategy](carbon-react-ui-strategy.md).
 See [Carbon/React UI Strategy](carbon-react-ui-strategy.md) for the branch,
 prototype directory, and promotion-gate rules that keep Streamlit production
 ready while Carbon is evaluated.
+See [Carbon Promotion and Cutover Guide](carbon-promotion-cutover-guide.md)
+before changing production defaults from Streamlit to Carbon.
 
 ## Deployment Files
 - `Dockerfile` builds the Streamlit container and starts `app.py`.
