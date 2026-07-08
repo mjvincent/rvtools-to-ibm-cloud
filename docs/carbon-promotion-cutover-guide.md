@@ -33,7 +33,7 @@ Carbon is eligible for production promotion only when these gates are green:
 | Real-workbook parity | Representative RVTools workbooks compare cleanly for handoff artifacts, with documented exceptions for Carbon-specific preflight checks. |
 | Runtime readiness | Docker Compose and the intended hosted runtime start API, Carbon UI, Streamlit, and Postgres reliably. |
 | Accessibility and browser coverage | Keyboard, screen-reader, and multi-browser checks pass for the primary workflow. |
-| Operations | Backup/restore, rollback, logging, monitoring, data retention, and support ownership are documented. |
+| Operations | Backup/restore, rollback, logging, monitoring, data retention, and support ownership are documented in the [Carbon Operations Runbook](carbon-operations-runbook.md). |
 | User acceptance | Migration users complete at least one realistic assessment through Carbon and approve the workflow. |
 
 ## Pre-Cutover Checklist
@@ -67,7 +67,9 @@ Before promotion:
    - `cutover-readiness.csv`
    - mapping/readiness CSVs
 7. Confirm Streamlit can still generate a package from the same workbook.
-8. Back up Postgres or the deployment platform's persistent volume.
+8. Back up Postgres and the artifact volume using the
+   [Carbon Operations Runbook](carbon-operations-runbook.md), or use the
+   deployment platform's native backup mechanism.
 9. Capture the current production image/tag/commit for rollback.
 10. Confirm the support owner, incident contact, and rollback decision maker.
 
@@ -119,7 +121,7 @@ Before Carbon production use:
 - use HTTPS
 - restrict access to approved migration users
 - define retention for uploaded workbooks and generated artifacts
-- document database backup and restore
+- document and test database and artifact backup/restore
 - avoid storing IBM Cloud API keys in project state or generated packages
 - keep Terraform state files out of the repository
 
@@ -134,6 +136,10 @@ Track:
 - package parity regressions
 - user-reported accessibility or browser issues
 - Postgres storage growth
+
+Use [Carbon Operations Runbook](carbon-operations-runbook.md) for the service
+names, health endpoints, log commands, backup commands, restore checklist, and
+incident response flow.
 
 ## Go / No-Go Review
 

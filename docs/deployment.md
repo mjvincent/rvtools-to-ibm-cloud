@@ -240,6 +240,11 @@ and Terraform ZIP export use the shared FastAPI/Postgres prototype stack.
 Streamlit remains the supported production UI until Carbon passes the promotion
 gates in [Carbon/React UI Strategy](carbon-react-ui-strategy.md).
 
+For Carbon shadow, pilot, or promotion testing, use the
+[Carbon Operations Runbook](carbon-operations-runbook.md) for service health
+checks, logs, backup/restore, monitoring signals, data retention, and incident
+response.
+
 See [Carbon/React UI Strategy](carbon-react-ui-strategy.md) for the branch,
 prototype directory, and promotion-gate rules that keep Streamlit production
 ready while Carbon is evaluated.

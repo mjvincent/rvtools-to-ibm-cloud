@@ -1026,7 +1026,7 @@ Use it to:
 - Export cutover-readiness.csv for migration command center tracking.
 
 ## Experimental Carbon UI Checkpoint
-The IBM Carbon UI under `prototype/carbon-ui` is an experimental enterprise UI candidate. Streamlit remains the supported production UI until Carbon passes the promotion gates documented in [Carbon/React UI Strategy](carbon-react-ui-strategy.md), [Carbon Promotion Gate Review](carbon-promotion-gate-review.md), and [Carbon Handoff Parity](carbon-handoff-parity.md).
+The IBM Carbon UI under `prototype/carbon-ui` is an experimental enterprise UI candidate. Streamlit remains the supported production UI until Carbon passes the promotion gates documented in [Carbon/React UI Strategy](carbon-react-ui-strategy.md), [Carbon Promotion Gate Review](carbon-promotion-gate-review.md), [Carbon Handoff Parity](carbon-handoff-parity.md), and [Carbon Operations Runbook](carbon-operations-runbook.md).
 
 As of July 2, 2026, Carbon includes the core planning path, Phase 4 workflow surfaces, and package parity checks needed for continued evaluation:
 
@@ -1207,5 +1207,6 @@ VMware virtual disk file format.
 - [Network Readiness Assessment](network-readiness-assessment.md)
 - [IBM Catalog Pricing](ibm-catalog-pricing.md)
 - [Terraform Overrides Reference](terraform-overrides.md)
+- [Carbon Operations Runbook](carbon-operations-runbook.md)
 - [Right-Sizing Logic](../RIGHT_SIZING_LOGIC.md)
 - [Development Log](../DEVELOPMENT_LOG.md)
