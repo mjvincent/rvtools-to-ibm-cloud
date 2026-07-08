@@ -300,7 +300,13 @@ test('reports Terraform ZIP download failure and resets generation state', async
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
-        body: JSON.stringify({ detail: 'ZIP renderer unavailable during smoke test.' }),
+        body: JSON.stringify({
+          detail: {
+            reason: 'ZIP renderer unavailable during smoke test.',
+            missing_subnets: ['app-01', 'db-01'],
+            missing_security_groups: ['app-01'],
+          },
+        }),
       });
     },
   });
@@ -309,7 +315,10 @@ test('reports Terraform ZIP download failure and resets generation state', async
   await page.getByRole('link', { name: 'Export Readiness' }).click();
   await page.getByRole('button', { name: 'Download Terraform ZIP' }).click();
   await expect(page.getByText('Export failed')).toBeVisible();
-  await expect(page.getByText('ZIP renderer unavailable during smoke test.')).toBeVisible();
+  await expect(page.getByText(/ZIP renderer unavailable during smoke test\./)).toBeVisible();
+  await expect(page.getByText(/Missing Subnets: app-01; db-01/)).toBeVisible();
+  await expect(page.getByText(/Missing Security Groups: app-01/)).toBeVisible();
+  await expect(page.getByText('[object Object]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Download Terraform ZIP' })).toBeEnabled();
 });
 

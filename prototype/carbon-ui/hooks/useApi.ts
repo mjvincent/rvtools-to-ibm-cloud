@@ -8,6 +8,61 @@ import type {
 } from '../types/network-planning';
 import type { ApiVmAssignmentPayload } from '../utils/planning-state';
 
+type ApiErrorPayload = {
+  detail?: unknown;
+};
+
+function humanizeKey(key: string): string {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+export function formatApiErrorDetail(detail: unknown, fallback: string): string {
+  if (typeof detail === 'string') {
+    return detail.trim() || fallback;
+  }
+  if (typeof detail === 'number' || typeof detail === 'boolean') {
+    return String(detail);
+  }
+  if (Array.isArray(detail)) {
+    const formattedItems = detail
+      .map((item) => formatApiErrorDetail(item, ''))
+      .filter(Boolean);
+    return formattedItems.length > 0 ? formattedItems.join('; ') : fallback;
+  }
+  if (detail && typeof detail === 'object') {
+    const record = detail as Record<string, unknown>;
+    if (typeof record.msg === 'string') {
+      const loc = Array.isArray(record.loc) ? record.loc.join('.') : '';
+      return loc ? `${loc}: ${record.msg}` : record.msg;
+    }
+    for (const key of ['message', 'error', 'detail']) {
+      if (key in record) {
+        const formatted = formatApiErrorDetail(record[key], '');
+        if (formatted) return formatted;
+      }
+    }
+    const entries = Object.entries(record)
+      .map(([key, value]) => {
+        const formatted = formatApiErrorDetail(value, '');
+        return formatted ? `${humanizeKey(key)}: ${formatted}` : '';
+      })
+      .filter(Boolean);
+    return entries.length > 0 ? entries.join('; ') : fallback;
+  }
+  return fallback;
+}
+
+async function readApiError(response: Response, fallback: string): Promise<string> {
+  try {
+    const payload = (await response.json()) as ApiErrorPayload;
+    return formatApiErrorDetail(payload.detail ?? payload, fallback);
+  } catch {
+    return fallback;
+  }
+}
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 export type HealthResponse = {
@@ -34,7 +89,7 @@ export async function uploadWorkbook(file: File): Promise<WorkbookSummary> {
   });
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.detail || 'Workbook upload failed.');
+    throw new Error(formatApiErrorDetail(payload.detail, 'Workbook upload failed.'));
   }
   return payload;
 }
@@ -45,7 +100,7 @@ export async function listProjects(): Promise<SavedProject[]> {
   const response = await fetch('/api/projects');
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.detail || 'Could not load saved projects.');
+    throw new Error(formatApiErrorDetail(payload.detail, 'Could not load saved projects.'));
   }
   return payload.projects || [];
 }
@@ -58,7 +113,7 @@ export async function createProject(name: string, description: string): Promise<
   });
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.detail || 'Could not create project.');
+    throw new Error(formatApiErrorDetail(payload.detail, 'Could not create project.'));
   }
   return payload.project;
 }
@@ -71,15 +126,14 @@ export async function updateProject(projectId: string, name: string, description
   });
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.detail || 'Could not update project.');
+    throw new Error(formatApiErrorDetail(payload.detail, 'Could not update project.'));
   }
 }
 
 export async function deleteProject(projectId: string): Promise<void> {
   const response = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' });
   if (!response.ok) {
-    const payload = await response.json();
-    throw new Error(payload.detail || 'Could not delete project.');
+    throw new Error(await readApiError(response, 'Could not delete project.'));
   }
 }
 
@@ -89,7 +143,7 @@ export async function loadProject(
   const response = await fetch(`/api/projects/${projectId}`);
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.detail || 'Could not load project.');
+    throw new Error(formatApiErrorDetail(payload.detail, 'Could not load project.'));
   }
   return { project: payload.project, state: payload.state ?? null };
 }
@@ -111,7 +165,7 @@ export async function saveProjectState(
   });
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.detail || 'Could not save project state.');
+    throw new Error(formatApiErrorDetail(payload.detail, 'Could not save project state.'));
   }
 }
 
@@ -136,8 +190,7 @@ export async function saveNetworkPlan(projectId: string, plan: NetworkPlanBody):
     body: JSON.stringify(plan),
   });
   if (!response.ok) {
-    const payload = await response.json();
-    throw new Error(payload.detail || 'Failed to save network plan.');
+    throw new Error(await readApiError(response, 'Failed to save network plan.'));
   }
 }
 
@@ -145,7 +198,7 @@ export async function loadNetworkPlan(projectId: string): Promise<NetworkPlannin
   const response = await fetch(`/api/projects/${projectId}/network-plan`);
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.detail || 'Could not load network plan.');
+    throw new Error(formatApiErrorDetail(payload.detail, 'Could not load network plan.'));
   }
   return payload;
 }
@@ -162,8 +215,7 @@ export async function updateVmAssignments(
     body: JSON.stringify(assignments),
   });
   if (!response.ok) {
-    const payload = await response.json();
-    throw new Error(payload.detail || 'Could not update VM assignments.');
+    throw new Error(await readApiError(response, 'Could not update VM assignments.'));
   }
 }
 
@@ -175,8 +227,7 @@ export async function generateTerraform(projectId: string): Promise<Blob> {
     headers: { 'Content-Type': 'application/json' },
   });
   if (!response.ok) {
-    const payload = await response.json();
-    throw new Error(payload.detail || 'Terraform generation failed.');
+    throw new Error(await readApiError(response, 'Terraform generation failed.'));
   }
   return response.blob();
 }
@@ -201,7 +252,7 @@ export async function previewTerraform(projectId: string): Promise<TerraformPrev
   });
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.detail || 'Terraform preview failed.');
+    throw new Error(formatApiErrorDetail(payload.detail, 'Terraform preview failed.'));
   }
   return payload;
 }
@@ -242,7 +293,7 @@ export async function runProjectPreflight(projectId: string): Promise<PreflightR
   });
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.detail || 'Preflight check failed.');
+    throw new Error(formatApiErrorDetail(payload.detail, 'Preflight check failed.'));
   }
   return payload;
 }
