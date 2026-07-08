@@ -126,8 +126,9 @@ Results:
 
 The Playwright smoke covers workbook upload, project save/load, subnet
 drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign
-persistence, drag/drop accessibility labels, autosave reload, package preview
-handoff CSV switching/download, and cleanup of temporary smoke projects.
+persistence, drag/drop accessibility labels, autosave reload, persistence outage
+warning display, Export preflight blocker routing to remediation review, package
+preview handoff CSV switching/download, and cleanup of temporary smoke projects.
 
 The Python parity suite includes `tests/test_carbon_handoff_parity.py`, which
 now covers Streamlit-vs-Carbon fixture parity, an edge-case mapping/readiness
@@ -215,6 +216,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Initial keyboard/accessibility E2E audit for Carbon assignment flow
 - [ ] Broader screen-reader/manual accessibility audit
 - [x] Multi-browser Playwright smoke coverage for Chromium, Firefox, and WebKit
+- [x] Browser failure-path coverage for persistence outage warning and Export preflight blocker routing
 - [x] Sample-workbook summary plus workshop state/assignment/preview/ZIP performance guard
 - [ ] Additional customer-scale performance benchmark fixtures
 - [x] Carbon checkpoint documented in user manual

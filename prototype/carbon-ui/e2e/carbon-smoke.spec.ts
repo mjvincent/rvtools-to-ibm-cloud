@@ -96,6 +96,122 @@ test('supports keyboard navigation and accessible review routing', async ({ page
   await expect(page.getByRole('heading', { name: 'Remediation backlog' })).toBeVisible();
 });
 
+test('warns clearly when persistence is unavailable', async ({ page }) => {
+  await page.route('**/health', async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ detail: 'API unavailable during smoke test' }),
+    });
+  });
+
+  await page.goto('/');
+
+  await expect(page.getByRole('button', { name: 'API status' })).toBeVisible();
+  await expect(page.getByText('Persistence unavailable')).toBeVisible();
+  await expect(page.getByText(/Save, load, autosave, assignment sync, and Terraform ZIP export need/)).toBeVisible();
+  await expect(page.getByLabel('Project save state')).toContainText('Autosave unavailable');
+  await expect(page.getByLabel('Project save state')).toContainText('Persistence offline');
+
+  await page.getByRole('button', { name: 'API status' }).click();
+  await expect(page.getByLabel('API status panel')).toContainText('API unavailable');
+});
+
+test('routes preflight blockers to remediation review', async ({ page }) => {
+  const projectName = `Carbon smoke preflight ${Date.now()}`;
+  const projectId = 'carbon-smoke-preflight-project';
+
+  await page.route('**/health', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'ok', persistence_enabled: true }),
+    });
+  });
+  await page.route('**/api/projects', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ projects: [] }),
+      });
+      return;
+    }
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ project: { id: projectId, name: projectName, description: '' } }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  await page.route(`**/api/projects/${projectId}/state`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'saved' }),
+    });
+  });
+  await page.route(`**/api/projects/${projectId}/network-plan`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'saved' }),
+    });
+  });
+  await page.route(`**/api/projects/${projectId}/preflight`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        project_id: projectId,
+        project_name: projectName,
+        summary: { blockers: 1, warnings: 0, info: 0, total: 1 },
+        findings: [
+          {
+            Severity: 'blocker',
+            Category: 'readiness',
+            'Fix Category': 'Readiness',
+            Subject: 'app-01',
+            Message: 'Image readiness must be resolved before export.',
+            Remediation: 'Review image import and blocker tracking.',
+            'Fix Location': 'Readiness tab',
+            'Suggested Action': 'Assign an owner and resolve the blocker.',
+            'Valid Options': '',
+            'Recommended Option': '',
+            'Quick Fix Type': '',
+            Field: 'Image',
+            'Current Value': 'Blocked',
+            Constraint: 'Must be Ready or explicitly remediated',
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Workbook Intake' }).click();
+  await page.locator('input[type="file"]').first().setInputFiles(sampleWorkbook);
+  await expect(page.getByText(/Loaded rvtools-small-complete.xlsx/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Save project' }).click();
+  await page.getByLabel('Project name').fill(projectName);
+  await page.getByRole('button', { name: /Create project|Update project/ }).click();
+  await expect(page.getByText('Project saved to Postgres.')).toBeVisible();
+
+  await page.getByRole('link', { name: 'Export Readiness' }).click();
+  await page.getByRole('button', { name: 'Run preflight' }).click();
+  await expect(page.getByRole('heading', { name: 'Package preflight' })).toBeVisible();
+  await expect(page.getByText('1 blocker(s)', { exact: true })).toBeVisible();
+  await expect(page.getByText('Image readiness must be resolved before export.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Open remediation' }).click();
+  await expect(page.getByRole('heading', { name: 'Remediation backlog' })).toBeVisible();
+  await expect(page.getByText(/Review remediation blockers for app-01/)).toBeVisible();
+});
+
 test('uploads workbook and round-trips saved project state', async ({ page }) => {
   const projectName = `Carbon smoke ${Date.now()}`;
   const vpcName = `smoke-vpc-${Date.now()}`;
