@@ -17,6 +17,7 @@ playwright-report/
 my-ibm-migration/
 *.zip
 demo-output/
+backups/
 
 # Local test data
 *.xlsx

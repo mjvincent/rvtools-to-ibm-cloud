@@ -243,3 +243,32 @@ For Gate 6, record evidence that:
 - logs can be collected for upload, save/load, autosave, and ZIP export failures
 - support ownership and rollback authority are assigned
 - Streamlit remains available until the Carbon go/no-go review is approved
+
+## Restore Drill Evidence
+
+Latest local restore drill: July 8, 2026.
+
+Environment:
+
+- Docker Compose services `app`, `api`, `carbon-ui`, and `postgres` were running
+  healthy.
+- Live database: `rvtools`.
+- Temporary restore database: `restore_drill_20260708`.
+- Local backup files were written under ignored `backups/`.
+
+Results:
+
+| Check | Result |
+| --- | --- |
+| Postgres dump created | Passed; dump file was about 1.5 MB. |
+| Dump restored into temporary database | Passed. |
+| Restored public table count | Passed; 4 public tables. |
+| Restored row counts | Passed; `project_artifacts` 0, `project_events` 76, `project_state` 73, `projects` 74. |
+| Live database left untouched | Passed; restore used only `restore_drill_20260708`. |
+| Temporary restore database removed | Passed. |
+| Artifact volume archive created | Passed; archive was readable. |
+| Artifact volume contents | Empty except archive root directory in this local stack. |
+
+Remaining production-readiness work is to repeat the drill against the intended
+hosted runtime or platform-managed backup system, define log retention, and name
+the production support owner and rollback decision maker.
