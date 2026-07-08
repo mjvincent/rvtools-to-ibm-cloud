@@ -184,6 +184,46 @@ Minimum promotion expectation:
 - restore has been tested at least once in a non-production environment
 - Streamlit rollback remains available during the stabilization window
 
+## Monitoring and Log Retention Plan
+
+For the local Docker Compose stack, the support owner should use Docker health
+checks and Compose logs as the operational baseline:
+
+| Need | Local command | Hosted-runtime equivalent |
+| --- | --- | --- |
+| Service health | `docker compose ps` | Platform service health, readiness, or route status dashboard. |
+| API health | `docker compose exec -T api python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/health').read().decode())"` | Synthetic check for `/health` with alerting. |
+| Streamlit health | `docker compose exec -T app curl --fail http://localhost:8501/_stcore/health` | Synthetic check for `/_stcore/health` with alerting. |
+| Carbon health | `docker compose exec -T carbon-ui node -e "fetch('http://localhost:3000').then((r)=>process.exit(r.ok ? 0 : 1))"` | Synthetic check for the Carbon route with alerting. |
+| Postgres health | `docker compose exec -T postgres pg_isready -U rvtools -d rvtools` | Managed database health, connection count, and storage metrics. |
+| Recent logs | `docker compose logs --tail=100 <service>` | Centralized runtime logs filtered by service. |
+| Incident log bundle | `docker compose logs --since=2h api carbon-ui app postgres` | Exported log bundle from the incident time window. |
+
+Minimum hosted-runtime monitoring before Carbon production promotion:
+
+- alert when Carbon UI, FastAPI, Streamlit, or Postgres health checks fail
+- alert when API 5xx responses or persistence failures increase
+- alert when Terraform ZIP generation fails
+- alert when Postgres storage or artifact storage crosses the agreed threshold
+- retain service logs long enough to support migration incident review
+- restrict log access because RVTools filenames, project names, and generated
+  package details can disclose infrastructure context
+- define who receives alerts during the Carbon pilot and stabilization window
+
+Recommended retention:
+
+| Log or artifact | Minimum retention | Notes |
+| --- | --- | --- |
+| Runtime service logs | 30 days | Enough for pilot feedback and regression review. |
+| Security/access logs | 90 days or the hosting standard | Follow the stricter enterprise policy. |
+| Postgres backups | 7 daily copies plus one monthly copy during pilot | Store encrypted in an approved location. |
+| Artifact backups | Match RVTools data-retention policy | Treat workbooks and generated ZIPs as sensitive. |
+| Incident bundles | Until the regression is closed | Attach only to approved private issue trackers. |
+
+Hosted deployment decisions still need to be filled in for the selected
+platform: log sink, alert channel, storage thresholds, retention policy, support
+owner, and rollback decision maker.
+
 ## Incident Response
 
 If Carbon is unavailable:
@@ -272,3 +312,24 @@ Results:
 Remaining production-readiness work is to repeat the drill against the intended
 hosted runtime or platform-managed backup system, define log retention, and name
 the production support owner and rollback decision maker.
+
+## Monitoring Evidence
+
+Latest local monitoring check: July 8, 2026.
+
+Results:
+
+| Check | Result |
+| --- | --- |
+| Compose service health | Passed; `app`, `api`, `carbon-ui`, and `postgres` were healthy. |
+| FastAPI health | Passed; `/health` returned `status=ok` and `persistence_enabled=true` from inside the `api` container. |
+| Streamlit health | Passed; `/_stcore/health` returned `ok` from inside the `app` container. |
+| Carbon route health | Passed; the Carbon container received HTTP 200 from `http://localhost:3000`. |
+| Postgres health | Passed; `pg_isready` reported accepting connections. |
+| API logs | Passed; recent `/health` entries were visible with `docker compose logs api`. |
+| Carbon logs | Passed; startup and ready logs were visible with `docker compose logs carbon-ui`. |
+| Streamlit logs | Passed; startup URLs were visible with `docker compose logs app`. |
+
+Direct host `localhost` curl checks were not reachable from the current Codex
+sandbox, so the evidence uses the same in-container health checks configured in
+Docker Compose.

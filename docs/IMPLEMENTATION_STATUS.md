@@ -161,7 +161,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
    - Broader large-workbook performance benchmark suite beyond the workshop sample
    - Accessibility audit
    - Full browser coverage beyond the smoke path
-   - Hosted-runtime monitoring/log retention validation
+   - Hosted-runtime alerting/log sink configuration
    - Hosted-runtime restore drill validation
 
 3. **UX polish**
@@ -213,6 +213,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Promotion/cutover documentation
 - [x] Backup/recovery and monitoring/logging runbook
 - [x] Local Postgres restore drill and artifact archive verification
+- [x] Local health/log access verification
 - [ ] User acceptance testing
 - [ ] Go/no-go promotion decision
 
