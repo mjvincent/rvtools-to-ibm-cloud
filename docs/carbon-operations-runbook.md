@@ -224,6 +224,54 @@ Hosted deployment decisions still need to be filled in for the selected
 platform: log sink, alert channel, storage thresholds, retention policy, support
 owner, and rollback decision maker.
 
+## Support Ownership and Rollback Authority
+
+Carbon must not become the default production UI until the support roles below
+are assigned for the pilot and stabilization window.
+
+| Role | Named owner | Responsibility |
+| --- | --- | --- |
+| Product owner | TBD | Approves pilot scope, user acceptance, and go/no-go decision. |
+| Technical owner | TBD | Owns Carbon, API, shared engine, and Terraform package regressions. |
+| Operations owner | TBD | Owns runtime health, logs, backups, restore drills, and platform incidents. |
+| Security/data owner | TBD | Approves access model, log retention, backup location, and RVTools data handling. |
+| Rollback decision maker | TBD | Has authority to move users back to Streamlit during the stabilization window. |
+| Primary support contact | TBD | First contact for pilot users and issue triage. |
+| Secondary support contact | TBD | Backup contact when the primary contact is unavailable. |
+
+Escalate to the technical owner when:
+
+- Carbon and Streamlit generate different handoff artifacts for the same workbook
+- Terraform ZIP generation fails or omits expected files
+- project save/load/autosave succeeds in the UI but data does not persist
+- readiness, sizing, pricing, or override behavior differs from Streamlit
+
+Escalate to the operations owner when:
+
+- `carbon-ui`, `api`, `app`, or `postgres` health checks fail
+- Postgres or artifact storage approaches the agreed threshold
+- backups, restore drills, log access, or alert delivery fail
+- users cannot access the hosted route
+
+Escalate to the security/data owner when:
+
+- logs, backups, workbooks, generated ZIPs, or issue attachments may contain
+  sensitive infrastructure data
+- access control or HTTPS is missing from a shared deployment
+- IBM Cloud API keys or other secrets appear in logs, project state, or commits
+
+Rollback authority:
+
+- Rollback means Streamlit becomes the active supported UI again while Carbon
+  remains available only for debugging or internal validation.
+- The rollback decision maker can trigger rollback without waiting for a full
+  go/no-go review when users are blocked, data integrity is uncertain, or
+  generated packages are unreliable.
+- Rollback should preserve Carbon project state, logs, workbook name, project
+  ID, commit SHA, and generated ZIPs for regression analysis.
+- Shared engine changes should not be reverted unless the issue is proven to
+  affect Streamlit too.
+
 ## Incident Response
 
 If Carbon is unavailable:
@@ -281,7 +329,7 @@ For Gate 6, record evidence that:
 - a Postgres backup is created and restorable
 - the artifact volume backup is created and restorable
 - logs can be collected for upload, save/load, autosave, and ZIP export failures
-- support ownership and rollback authority are assigned
+- support ownership and rollback authority are assigned using the owner matrix
 - Streamlit remains available until the Carbon go/no-go review is approved
 
 ## Restore Drill Evidence

@@ -71,7 +71,8 @@ Before promotion:
    [Carbon Operations Runbook](carbon-operations-runbook.md), or use the
    deployment platform's native backup mechanism.
 9. Capture the current production image/tag/commit for rollback.
-10. Confirm the support owner, incident contact, and rollback decision maker.
+10. Fill in the support ownership and rollback authority matrix in the
+    [Carbon Operations Runbook](carbon-operations-runbook.md).
 
 ## Cutover Pattern
 
@@ -139,7 +140,8 @@ Track:
 
 Use [Carbon Operations Runbook](carbon-operations-runbook.md) for the service
 names, health endpoints, log commands, backup commands, restore checklist, and
-incident response flow.
+incident response flow. The same runbook defines the support owner matrix and
+rollback authority required before promotion.
 
 ## Go / No-Go Review
 

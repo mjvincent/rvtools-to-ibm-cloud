@@ -31,7 +31,7 @@ plan.
 | Gate 3: Network Planning | Partial | Carbon supports VPC/subnet/security/storage/wave/network component planning, saved network plans, diagram display, Terraform generation, package inventory parity status, backend package preflight feedback, safe preflight next-step actions, and a full package browser preview in Export. | Add richer network component editing, clickable/editable diagram nodes, and richer validation beyond package preflight. | Phase 5 and Phase 6 |
 | Gate 4: User Experience | Partial | Native drag/drop supports single and multi-select assignment with confirmation modal, drop highlighting, row tags, row-level unassign, readiness-chip routing, and explicit checkbox/drop-zone accessible labels. | Run accessibility audit, keyboard-only DnD review, mobile/tablet review, and large-workbook UX/performance tests beyond the workshop sample. | Phase 6 |
 | Gate 5: Quality and Testing | Partial | Verified: Python compile/full pytest, Carbon TypeScript, Jest, Playwright smoke, handoff parity fixtures, real-workbook operational overlay parity, planning-state JSON import/export, backend preflight endpoint/UI feedback and next-step actions, API ZIP inventory guard, UI/backend ZIP inventory drift guard, and workshop large-workbook summary/ZIP performance guard. | Add broader e2e coverage for failure paths, multiple browsers, additional large workbooks, accessibility automation, and more real-workbook parity fixtures. | Phase 4-6 |
-| Gate 6: Production Readiness | Partial | Docker Compose starts Streamlit, API, Carbon UI, and Postgres; local health/log checks are documented; Carbon healthcheck reports healthy; persistence warning exists; user manual now documents the Carbon checkpoint and production boundary; promotion/cutover guide now documents staged rollout and rollback; operations runbook documents backup/recovery, monitoring/logging, incident response, support ownership expectations, a successful local restore drill, and local monitoring evidence. | Wire hosted-runtime alerts/log sinks and assign named production support owners before promotion. | Phase 6 |
+| Gate 6: Production Readiness | Partial | Docker Compose starts Streamlit, API, Carbon UI, and Postgres; local health/log checks are documented; Carbon healthcheck reports healthy; persistence warning exists; user manual now documents the Carbon checkpoint and production boundary; promotion/cutover guide now documents staged rollout and rollback; operations runbook documents backup/recovery, monitoring/logging, incident response, support ownership matrix, rollback authority, a successful local restore drill, and local monitoring evidence. | Wire hosted-runtime alerts/log sinks and fill in named production support owners before promotion. | Phase 6 |
 
 ## Validation Evidence
 
@@ -163,7 +163,8 @@ Current feature-parity status:
   hosted runtime or platform-managed backup system.
 - Wire hosted-runtime alerts, log sinks, and retention policy for the chosen
   platform.
-- Assign named production support owners and rollback authority.
+- Fill in named production support owners and rollback authority in the
+  operations runbook.
 - Keep [Carbon Promotion and Cutover Guide](carbon-promotion-cutover-guide.md)
   current as deployment decisions change.
 
