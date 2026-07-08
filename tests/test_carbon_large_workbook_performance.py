@@ -3,6 +3,7 @@ import os
 import re
 import time
 import zipfile
+from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
@@ -100,6 +101,49 @@ def _network_plan_for_rows(rows: list[dict]) -> NetworkPlanningState:
     )
 
 
+def _planning_state_json(rows: list[dict], summary: dict) -> dict:
+    network_plan = _network_plan_for_rows(rows)
+    return {
+        "carbon_assignment_rows": rows,
+        "carbon_summary": {"assessment_quality": summary["assessment_quality"]},
+        "carbon_network_plan": to_dict(network_plan),
+    }
+
+
+def _endpoint_assignment_payload(planning_state_json: dict) -> list[dict]:
+    assignments = []
+    for assignment in planning_state_json["carbon_network_plan"]["vm_assignments"]:
+        payload = dict(assignment)
+        if payload.get("boot_disk_gb") is not None and payload["boot_disk_gb"] < 10:
+            payload.pop("boot_disk_gb")
+        assignments.append(payload)
+    return assignments
+
+
+@contextmanager
+def _mock_large_project(project_id: str, planning_state_json: dict):
+    with (
+        patch("prototype.api.persistence.persistence_enabled", return_value=True),
+        patch(
+            "prototype.api.persistence.get_project",
+            return_value={
+                "id": project_id,
+                "name": "Workshop performance",
+                "description": "",
+            },
+        ),
+        patch(
+            "prototype.api.persistence.get_project_state",
+            return_value={
+                "target_region": "us-south",
+                "target_zone": "us-south-1",
+                "planning_state_json": planning_state_json,
+            },
+        ),
+    ):
+        yield
+
+
 def test_workshop_workbook_summary_and_carbon_zip_performance_guard():
     client = TestClient(app)
 
@@ -123,34 +167,11 @@ def test_workshop_workbook_summary_and_carbon_zip_performance_guard():
     assert len(rows) == 763
     assert summary_elapsed < _max_seconds("CARBON_PERF_SUMMARY_MAX_SECONDS", 15.0)
 
-    network_plan = _network_plan_for_rows(rows)
     project_id = "workshop-performance"
-    planning_state_json = {
-        "carbon_assignment_rows": rows,
-        "carbon_summary": {"assessment_quality": summary["assessment_quality"]},
-        "carbon_network_plan": to_dict(network_plan),
-    }
+    planning_state_json = _planning_state_json(rows, summary)
 
     zip_start = time.perf_counter()
-    with (
-        patch("prototype.api.persistence.persistence_enabled", return_value=True),
-        patch(
-            "prototype.api.persistence.get_project",
-            return_value={
-                "id": project_id,
-                "name": "Workshop performance",
-                "description": "",
-            },
-        ),
-        patch(
-            "prototype.api.persistence.get_project_state",
-            return_value={
-                "target_region": "us-south",
-                "target_zone": "us-south-1",
-                "planning_state_json": planning_state_json,
-            },
-        ),
-    ):
+    with _mock_large_project(project_id, planning_state_json):
         zip_response = client.post(f"/api/projects/{project_id}/terraform")
     zip_elapsed = time.perf_counter() - zip_start
 
@@ -164,3 +185,124 @@ def test_workshop_workbook_summary_and_carbon_zip_performance_guard():
     assert STREAMLIT_HANDOFF_FILES.issubset(names)
     assert CARBON_MODULAR_TERRAFORM_FILES.issubset(names)
     assert CARBON_CURRENT_EXTRA_FILES.issubset(names)
+
+
+def test_workshop_carbon_preview_performance_guard():
+    client = TestClient(app)
+    with WORKSHOP_WORKBOOK.open("rb") as workbook:
+        summary_response = client.post(
+            "/api/workbooks/summary",
+            files={
+                "workbook": (
+                    WORKSHOP_WORKBOOK.name,
+                    workbook,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
+        )
+    assert summary_response.status_code == 200
+    summary = summary_response.json()
+    rows = summary["assignment_rows"]
+    project_id = "workshop-preview-performance"
+    planning_state_json = _planning_state_json(rows, summary)
+
+    preview_start = time.perf_counter()
+    with _mock_large_project(project_id, planning_state_json):
+        preview_response = client.post(f"/api/projects/{project_id}/terraform/preview")
+    preview_elapsed = time.perf_counter() - preview_start
+
+    assert preview_response.status_code == 200
+    assert preview_elapsed < _max_seconds("CARBON_PERF_PREVIEW_MAX_SECONDS", 30.0)
+    payload = preview_response.json()
+    assert payload["project_id"] == project_id
+    assert len(payload["files"]) >= len(STREAMLIT_HANDOFF_FILES)
+    preview_names = {file["path"] for file in payload["files"]}
+    assert STREAMLIT_HANDOFF_FILES.issubset(preview_names)
+    assert CARBON_MODULAR_TERRAFORM_FILES.issubset(preview_names)
+    assert CARBON_CURRENT_EXTRA_FILES.issubset(preview_names)
+
+
+def test_large_carbon_project_state_save_load_update_performance_guard():
+    client = TestClient(app)
+    with WORKSHOP_WORKBOOK.open("rb") as workbook:
+        summary_response = client.post(
+            "/api/workbooks/summary",
+            files={
+                "workbook": (
+                    WORKSHOP_WORKBOOK.name,
+                    workbook,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
+        )
+    assert summary_response.status_code == 200
+    summary = summary_response.json()
+    rows = summary["assignment_rows"]
+    project_id = "workshop-state-performance"
+    project = {"id": project_id, "name": "Workshop performance", "description": ""}
+    persisted_state: dict = {}
+
+    def save_project_state(project_id_arg, planning_state, **kwargs):
+        assert project_id_arg == project_id
+        persisted_state.update(
+            {
+                "planning_state_json": planning_state,
+                "target_region": kwargs.get("target_region"),
+                "target_zone": kwargs.get("target_zone"),
+                "project_name": kwargs.get("project_name"),
+            }
+        )
+        return persisted_state
+
+    def get_project_state(project_id_arg):
+        assert project_id_arg == project_id
+        return persisted_state or None
+
+    def update_project_state(project_id_arg, planning_state_json):
+        assert project_id_arg == project_id
+        persisted_state["planning_state_json"] = planning_state_json
+        return persisted_state
+
+    planning_state_json = _planning_state_json(rows, summary)
+
+    with (
+        patch("prototype.api.persistence.persistence_enabled", return_value=True),
+        patch("prototype.api.persistence.get_project", return_value=project),
+        patch("prototype.api.persistence.save_project_state", side_effect=save_project_state),
+        patch("prototype.api.persistence.get_project_state", side_effect=get_project_state),
+        patch("prototype.api.persistence.update_project_state", side_effect=update_project_state),
+        patch("prototype.api.persistence.list_artifacts", return_value=[]),
+    ):
+        save_start = time.perf_counter()
+        save_response = client.put(
+            f"/api/projects/{project_id}/state",
+            json={
+                "planning_state": planning_state_json,
+                "target_region": "us-south",
+                "target_zone": "us-south-1",
+                "project_name": "Workshop performance",
+            },
+        )
+        save_elapsed = time.perf_counter() - save_start
+
+        load_start = time.perf_counter()
+        load_response = client.get(f"/api/projects/{project_id}")
+        load_elapsed = time.perf_counter() - load_start
+
+        update_start = time.perf_counter()
+        update_response = client.put(
+            f"/api/projects/{project_id}/vm-assignments",
+            json=_endpoint_assignment_payload(planning_state_json),
+        )
+        update_elapsed = time.perf_counter() - update_start
+
+    assert save_response.status_code == 200
+    assert load_response.status_code == 200
+    assert update_response.status_code == 200
+    assert save_elapsed < _max_seconds("CARBON_PERF_STATE_SAVE_MAX_SECONDS", 5.0)
+    assert load_elapsed < _max_seconds("CARBON_PERF_STATE_LOAD_MAX_SECONDS", 5.0)
+    assert update_elapsed < _max_seconds("CARBON_PERF_ASSIGNMENT_UPDATE_MAX_SECONDS", 5.0)
+    loaded_state = load_response.json()["state"]["planning_state_json"]
+    assert len(loaded_state["carbon_assignment_rows"]) == 763
+    assert len(loaded_state["carbon_network_plan"]["vm_assignments"]) == 763
+    assert update_response.json()["message"] == "Updated 763 VM assignments"

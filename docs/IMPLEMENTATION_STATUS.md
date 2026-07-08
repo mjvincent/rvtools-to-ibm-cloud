@@ -100,7 +100,7 @@ feature-parity and production-readiness gaps.
 - [x] Carbon Export workflow supports planning-state JSON export/import for offline handoff and reload review
 - [x] Carbon Export workflow can save the latest plan, run backend package preflight, and display blocker/warning findings before ZIP download
 - [x] Carbon Export preflight findings provide safe next-step actions that route users to the relevant workflow and VM for remediation, scope, image import, network placement, security, storage, or override review
-- [x] Workshop large-workbook performance guard covers FastAPI summary parsing and Carbon Terraform ZIP generation
+- [x] Workshop large-workbook performance guard covers FastAPI summary parsing, project state save/load, VM assignment updates, Terraform preview, and ZIP generation
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
@@ -145,7 +145,8 @@ inventory and key handoff CSV payloads from
 `POST /api/projects/{project_id}/terraform`, verifies
 `POST /api/projects/{project_id}/terraform/preview` matches the generated ZIP
 file paths and representative file contents, and guards the
-workshop workbook summary/ZIP path against performance regressions.
+workshop workbook summary, project state save/load, VM assignment update,
+Terraform preview, and ZIP paths against performance regressions.
 
 ---
 
@@ -158,7 +159,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
      packages and edge-case workbooks
 
 2. **Production readiness**
-   - Broader large-workbook performance benchmark suite beyond the workshop sample
+   - Additional customer-scale large-workbook performance fixtures beyond the workshop sample
    - Broader screen-reader/manual accessibility audit
    - Browser-specific coverage beyond the smoke path
    - Hosted-runtime alerting/log sink configuration
@@ -195,7 +196,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Full handoff artifact inventory in Carbon ZIP
 - [x] Initial Streamlit-vs-Carbon handoff fixture comparison coverage
 - [x] Real workbook operational overlay fixture coverage
-- [x] Workshop large-workbook performance guard
+- [x] Workshop large-workbook summary/state/assignment/preview/ZIP performance guard
 - [ ] Additional real-workbook edge fixture coverage
 
 ### Phase 5: Complete Handoff Package Parity
@@ -210,8 +211,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Initial keyboard/accessibility E2E audit for Carbon assignment flow
 - [ ] Broader screen-reader/manual accessibility audit
 - [x] Multi-browser Playwright smoke coverage for Chromium, Firefox, and WebKit
-- [x] Workshop large-workbook performance guard
-- [ ] Broader performance benchmark suite
+- [x] Workshop large-workbook summary/state/assignment/preview/ZIP performance guard
+- [ ] Additional customer-scale performance benchmark fixtures
 - [x] Carbon checkpoint documented in user manual
 - [x] Promotion/cutover documentation
 - [x] Backup/recovery and monitoring/logging runbook
