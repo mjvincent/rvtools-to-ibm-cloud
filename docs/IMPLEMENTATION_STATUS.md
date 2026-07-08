@@ -101,6 +101,7 @@ feature-parity and production-readiness gaps.
 - [x] Carbon Export workflow can save the latest plan, run backend package preflight, and display blocker/warning findings before ZIP download
 - [x] Carbon Export preflight findings provide safe next-step actions that route users to the relevant workflow and VM for remediation, scope, image import, network placement, security, storage, or override review
 - [x] Sample-workbook performance guard covers FastAPI summary parsing across both checked-in real samples, plus workshop project state save/load, VM assignment updates, Terraform preview, and ZIP generation
+- [x] Optional private customer-workbook summary performance fixture hook is documented and skipped unless `CARBON_PERF_CUSTOMER_WORKBOOKS` is set
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
@@ -145,9 +146,11 @@ inventory and key handoff CSV payloads from
 `POST /api/projects/{project_id}/terraform`, verifies
 `POST /api/projects/{project_id}/terraform/preview` matches the generated ZIP
 file paths and representative file contents, and guards the
-sample-workbook summary parsing across both checked-in real samples, plus
-workshop project state save/load, VM assignment update, Terraform preview, and
-ZIP paths against performance regressions.
+sample-workbook summary parsing across both checked-in real samples, supports
+optional private customer-workbook summary guards via
+`CARBON_PERF_CUSTOMER_WORKBOOKS`, and guards workshop project state save/load,
+VM assignment update, Terraform preview, and ZIP paths against performance
+regressions.
 
 ---
 
@@ -160,7 +163,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
      packages and edge-case workbooks
 
 2. **Production readiness**
-   - Additional customer-scale large-workbook performance fixtures beyond the workshop sample
+   - Captured customer-scale large-workbook performance evidence from private fixtures
    - Broader screen-reader/manual accessibility audit
    - Browser-specific coverage beyond the smoke path
    - Hosted-runtime alerting/log sink configuration

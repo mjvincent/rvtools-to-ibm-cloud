@@ -131,6 +131,13 @@ terraform fmt -check -recursive .
 
 Run `terraform validate` only after `terraform init` has been intentionally performed for that temporary extraction. Do not initialize providers during lightweight browser validation unless provider download/network access is expected for the environment.
 
+## Carbon Private Performance Fixtures
+
+Carbon includes checked-in performance guards for the sanitized sample workbooks.
+For customer-scale RVTools exports, use private local fixtures instead of adding
+workbooks to git. See [Carbon Performance Fixtures](carbon-performance-fixtures.md)
+for the environment-variable workflow and sanitized evidence template.
+
 ## Container Validation
 Run this checklist after changing deployment assets, dependencies, or Streamlit launch configuration. GitHub Actions also runs a container smoke job that builds the Docker image, starts Streamlit on a test host port, and checks `/_stcore/health`.
 

@@ -34,10 +34,16 @@ SAMPLE_WORKBOOKS = (
     pytest.param("small-complete", SMALL_WORKBOOK, 2, id="small-complete"),
     pytest.param("workshop", WORKSHOP_WORKBOOK, 763, id="workshop"),
 )
+CUSTOMER_WORKBOOKS_ENV = "CARBON_PERF_CUSTOMER_WORKBOOKS"
 
 
 def _max_seconds(env_var: str, default: float) -> float:
     return float(os.environ.get(env_var, default))
+
+
+def _customer_workbook_paths() -> list[Path]:
+    raw_paths = os.environ.get(CUSTOMER_WORKBOOKS_ENV, "")
+    return [Path(path).expanduser() for path in raw_paths.split(os.pathsep) if path.strip()]
 
 
 def _terraform_label(value: str) -> str:
@@ -179,6 +185,28 @@ def test_sample_workbook_summary_performance_guard(sample_name, workbook_path, e
         f"CARBON_PERF_{sample_name.upper().replace('-', '_')}_SUMMARY_MAX_SECONDS",
         15.0,
     )
+
+
+def test_private_customer_workbook_summary_performance_guard():
+    workbook_paths = _customer_workbook_paths()
+    if not workbook_paths:
+        pytest.skip(f"Set {CUSTOMER_WORKBOOKS_ENV} to run private workbook performance fixtures")
+
+    client = TestClient(app)
+    max_seconds = _max_seconds("CARBON_PERF_CUSTOMER_SUMMARY_MAX_SECONDS", 30.0)
+
+    for workbook_path in workbook_paths:
+        assert workbook_path.exists(), f"Private workbook does not exist: {workbook_path}"
+        assert workbook_path.suffix.lower() in {".xlsx", ".xlsm", ".xls"}
+
+        summary_start = time.perf_counter()
+        summary_response = _upload_workbook_summary(client, workbook_path)
+        summary_elapsed = time.perf_counter() - summary_start
+
+        assert summary_response.status_code == 200
+        summary = summary_response.json()
+        assert len(summary["assignment_rows"]) > 0
+        assert summary_elapsed < max_seconds
 
 
 def test_workshop_workbook_carbon_zip_performance_guard():
