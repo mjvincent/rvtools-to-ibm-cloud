@@ -88,9 +88,22 @@ async function mockHealthyProjectApi(
   if (options.terraform) {
     await page.route(`**/api/projects/${projectId}/terraform`, options.terraform);
   }
-  if (options.preflight) {
-    await page.route(`**/api/projects/${projectId}/preflight`, options.preflight);
-  }
+  await page.route(`**/api/projects/${projectId}/preflight`, async (route) => {
+    if (options.preflight) {
+      await options.preflight(route);
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        project_id: projectId,
+        project_name: projectName,
+        summary: { blockers: 0, warnings: 0, info: 0, total: 0 },
+        findings: [],
+      }),
+    });
+  });
 }
 
 async function uploadAndSaveMockedProject(page: Page, projectName: string) {

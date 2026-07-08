@@ -4,7 +4,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { Button, InlineNotification, Layer, Search, Select, SelectItem, Tag, Tile } from '@carbon/react';
 import { Close, CloudUpload, Download, Renew, View } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
-import type { Workflow } from '../../types/network-planning';
+import type { AssignmentVm, Workflow } from '../../types/network-planning';
 import {
   generateTerraform,
   previewTerraform,
@@ -100,6 +100,61 @@ type PreflightRoute = {
   readinessFilter?: string;
 };
 
+type AssignmentSuggestionKind = 'subnet' | 'securityGroup' | 'storage' | 'wave';
+
+type AssignmentSuggestion = {
+  kind: AssignmentSuggestionKind;
+  row: AssignmentVm;
+  value: string;
+  label: string;
+  reason: string;
+};
+
+const suggestionLabels: Record<AssignmentSuggestionKind, string> = {
+  subnet: 'subnet',
+  securityGroup: 'security group',
+  storage: 'storage/IOPS',
+  wave: 'wave',
+};
+
+function tokenize(value: string | undefined) {
+  return new Set(
+    (value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .split(/\s+/)
+      .map((token) => token.replace(/\d+$/, ''))
+      .filter((token) => token.length > 1),
+  );
+}
+
+function sharedTokenCount(target: AssignmentVm, candidate: AssignmentVm) {
+  const targetTokens = tokenize([
+    target.name,
+    target.application,
+    target.network,
+    target.owner,
+    target.cutoverGroup,
+    target.dependencyGroup,
+  ].join(' '));
+  const candidateTokens = tokenize([
+    candidate.name,
+    candidate.application,
+    candidate.network,
+    candidate.owner,
+    candidate.cutoverGroup,
+    candidate.dependencyGroup,
+  ].join(' '));
+  return Array.from(targetTokens).filter((token) => candidateTokens.has(token)).length;
+}
+
+function rowAssignmentValue(row: AssignmentVm, kind: AssignmentSuggestionKind) {
+  if (kind === 'subnet') return row.subnet;
+  if (kind === 'securityGroup') return row.securityGroup;
+  if (kind === 'storage') return row.overrideStorageTier || row.storageTier;
+  return row.wave;
+}
+
 export default function ExportWorkflow() {
   const { state, dispatch } = useAppState();
   const planningStateInputRef = useRef<HTMLInputElement>(null);
@@ -149,6 +204,33 @@ export default function ExportWorkflow() {
   const blockingFindingCount = findings.reduce((total, [, count]) => total + count, 0);
   const preflightSummary = preflight?.summary;
   const visiblePreflightFindings = preflight?.findings.slice(0, 5) || [];
+  const exportChecklist = [
+    {
+      label: 'Network plan saved',
+      complete: !!selectedProjectId && !state.isDirty,
+    },
+    {
+      label: 'VM assignments complete',
+      complete: planningCompleteness.missingSubnet === 0 && planningCompleteness.missingSg === 0,
+    },
+    {
+      label: 'Overrides reviewed',
+      complete: planningCompleteness.missingStorage === 0,
+    },
+    {
+      label: 'Wave plan complete',
+      complete: planningCompleteness.missingWave === 0,
+    },
+    {
+      label: 'Subnet CIDRs complete',
+      complete: planningCompleteness.missingCidr === 0,
+    },
+    {
+      label: 'Backend preflight run',
+      complete: !!preflight,
+    },
+  ];
+  const exportChecklistComplete = exportChecklist.filter((item) => item.complete).length;
   const selectedPreviewFile = terraformPreview?.files.find((file) =>
     file.path === selectedPreviewPath,
   ) || terraformPreview?.files[0];
@@ -170,6 +252,152 @@ export default function ExportWorkflow() {
   const handoffCsvCount = terraformPreview?.files.filter((file) =>
     file.category === 'Migration handoff' && file.path.endsWith('.csv'),
   ).length || 0;
+
+  function inferAssignmentSuggestion(
+    row: AssignmentVm,
+    kind: AssignmentSuggestionKind,
+  ): AssignmentSuggestion | null {
+    const existing = rowAssignmentValue(row, kind);
+    if (existing) return null;
+
+    const scoredRows = assignmentRows
+      .filter((candidate) => candidate.id !== row.id && rowAssignmentValue(candidate, kind))
+      .map((candidate) => {
+        let score = sharedTokenCount(row, candidate);
+        if (row.application && candidate.application && row.application === candidate.application) score += 3;
+        if (row.network && candidate.network && row.network === candidate.network) score += 3;
+        if (row.owner && candidate.owner && row.owner === candidate.owner) score += 2;
+        if (row.cutoverGroup && candidate.cutoverGroup && row.cutoverGroup === candidate.cutoverGroup) score += 2;
+        return { candidate, score };
+      })
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    const matchedRow = scoredRows[0]?.candidate;
+    if (matchedRow) {
+      const value = rowAssignmentValue(matchedRow, kind);
+      return {
+        kind,
+        row,
+        value,
+        label: value,
+        reason: `Matches ${matchedRow.name} by VM naming or planning metadata.`,
+      };
+    }
+
+    const rowTokens = tokenize(`${row.name} ${row.application} ${row.network}`);
+    if (kind === 'subnet') {
+      const match = resources.subnets
+        .map((subnet) => ({
+          subnet,
+          score: Array.from(rowTokens).filter((token) =>
+            tokenize(`${subnet.name} ${subnet.purpose}`).has(token),
+          ).length,
+        }))
+        .sort((a, b) => b.score - a.score)[0];
+      if (match?.score > 0) {
+        return {
+          kind,
+          row,
+          value: match.subnet.name,
+          label: match.subnet.name,
+          reason: `Matches subnet name or purpose for ${row.name}.`,
+        };
+      }
+    }
+    if (kind === 'securityGroup') {
+      const match = resources.securityGroups
+        .map((securityGroup) => ({
+          securityGroup,
+          score: Array.from(rowTokens).filter((token) =>
+            tokenize(`${securityGroup.name} ${securityGroup.purpose}`).has(token),
+          ).length,
+        }))
+        .sort((a, b) => b.score - a.score)[0];
+      if (match?.score > 0) {
+        return {
+          kind,
+          row,
+          value: match.securityGroup.name,
+          label: match.securityGroup.name,
+          reason: `Matches security group name or purpose for ${row.name}.`,
+        };
+      }
+    }
+    if (kind === 'storage') {
+      const match = resources.storageProfiles.find((profile) => profile.tier === row.storageTier)
+        || resources.storageProfiles.find((profile) => profile.name.toLowerCase().includes(row.application.toLowerCase()));
+      if (match) {
+        return {
+          kind,
+          row,
+          value: match.tier,
+          label: `${match.name} (${match.tier})`,
+          reason: `Matches the VM storage tier or application profile.`,
+        };
+      }
+    }
+    if (kind === 'wave' && resources.waves.length === 1) {
+      return {
+        kind,
+        row,
+        value: resources.waves[0].name,
+        label: resources.waves[0].name,
+        reason: 'Only one migration wave is defined.',
+      };
+    }
+    return null;
+  }
+
+  const assignmentSuggestions = useMemo(() => {
+    const suggestions: AssignmentSuggestion[] = [];
+    for (const row of assignmentRows) {
+      for (const kind of ['subnet', 'securityGroup', 'storage', 'wave'] as const) {
+        const suggestion = inferAssignmentSuggestion(row, kind);
+        if (suggestion) suggestions.push(suggestion);
+      }
+    }
+    return suggestions.slice(0, 6);
+  // inferAssignmentSuggestion intentionally closes over current resources and rows.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignmentRows, resources]);
+
+  function applyAssignmentSuggestion(suggestion: AssignmentSuggestion) {
+    dispatch({
+      type: 'SET_ASSIGNMENT_ROWS',
+      payload: assignmentRows.map((row) => {
+        if (row.id !== suggestion.row.id) return row;
+        if (suggestion.kind === 'subnet') return { ...row, subnet: suggestion.value };
+        if (suggestion.kind === 'securityGroup') return { ...row, securityGroup: suggestion.value };
+        if (suggestion.kind === 'storage') return { ...row, storageTier: suggestion.value };
+        return { ...row, wave: suggestion.value };
+      }),
+    });
+    dispatch({
+      type: 'SET_TERRAFORM_STATUS',
+      payload: `Applied suggested ${suggestionLabels[suggestion.kind]} for ${suggestion.row.name}. Save the project to persist it.`,
+    });
+  }
+
+  function suggestionKindForFinding(
+    finding: PreflightResponse['findings'][number],
+  ): AssignmentSuggestionKind | null {
+    const category = finding.Category;
+    const field = String(finding.Field || '').toLowerCase();
+    if (category === 'network_mapping' || field.includes('subnet')) return 'subnet';
+    if (category === 'security_group' || field.includes('security')) return 'securityGroup';
+    if (category === 'storage' || field.includes('storage') || field.includes('iops')) return 'storage';
+    if (category === 'wave' || field.includes('wave')) return 'wave';
+    return null;
+  }
+
+  function suggestionForFinding(finding: PreflightResponse['findings'][number]) {
+    const matchingVm = assignmentRows.find((row) =>
+      row.name === finding.Subject || row.id === finding.Subject,
+    );
+    const kind = suggestionKindForFinding(finding);
+    return matchingVm && kind ? inferAssignmentSuggestion(matchingVm, kind) : null;
+  }
 
   function routeStatus(finding: PreflightResponse['findings'][number], fallback: string) {
     const action = finding['Suggested Action'];
@@ -359,8 +587,18 @@ export default function ExportWorkflow() {
     dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
     dispatch({ type: 'SET_GENERATING_TERRAFORM', payload: true });
     try {
-      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Saving latest network plan...' });
+      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Saving latest network plan before export preflight...' });
       await saveLatestNetworkPlan();
+      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Running package preflight before ZIP download...' });
+      const preflightResult = await runProjectPreflight(selectedProjectId);
+      setPreflight(preflightResult);
+      if (preflightResult.summary.blockers > 0) {
+        dispatch({
+          type: 'SET_TERRAFORM_ERROR',
+          payload: `Terraform ZIP blocked by ${preflightResult.summary.blockers} preflight blocker(s). Resolve or route the findings below, then try again.`,
+        });
+        return;
+      }
       dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Generating Terraform ZIP...' });
       const blob = await generateTerraform(selectedProjectId);
       const url = window.URL.createObjectURL(blob);
@@ -371,7 +609,12 @@ export default function ExportWorkflow() {
       link.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-      dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Terraform ZIP downloaded.' });
+      dispatch({
+        type: 'SET_TERRAFORM_STATUS',
+        payload: preflightResult.summary.warnings > 0
+          ? `Terraform ZIP downloaded with ${preflightResult.summary.warnings} warning(s).`
+          : 'Terraform ZIP downloaded.',
+      });
       dispatch({ type: 'SET_IS_DIRTY', payload: false });
     } catch (error) {
       dispatch({
@@ -528,6 +771,29 @@ export default function ExportWorkflow() {
           subtitle={terraformError}
         />
       )}
+      <div className="export-package">
+        <div className="section-header compact">
+          <div>
+            <h2>Export checklist</h2>
+            <p>{exportChecklistComplete}/{exportChecklist.length} readiness item(s) complete before Terraform handoff.</p>
+          </div>
+          <Tag type={exportChecklistComplete === exportChecklist.length ? 'green' : 'warm-gray'}>
+            {exportChecklistComplete === exportChecklist.length ? 'Ready' : 'In progress'}
+          </Tag>
+        </div>
+        <div className="resource-list">
+          {exportChecklist.map((item) => (
+            <Tile key={item.label} className="resource-tile">
+              <div className="package-tile__header">
+                <h3>{item.label}</h3>
+                <Tag type={item.complete ? 'green' : 'warm-gray'}>
+                  {item.complete ? 'Complete' : 'Needs review'}
+                </Tag>
+              </div>
+            </Tile>
+          ))}
+        </div>
+      </div>
       <div className="resource-list">
         {findings.map(([label, count]) => (
           <Tile key={label} className="resource-tile">
@@ -536,6 +802,41 @@ export default function ExportWorkflow() {
           </Tile>
         ))}
       </div>
+      {assignmentSuggestions.length > 0 && (
+        <div className="export-package">
+          <div className="section-header compact">
+            <div>
+              <h2>Suggested assignment fixes</h2>
+              <p>Review likely fixes inferred from matching VM names, applications, networks, and existing assignments.</p>
+            </div>
+            <Tag type="blue">{assignmentSuggestions.length} suggestion(s)</Tag>
+          </div>
+          <div className="resource-list">
+            {assignmentSuggestions.map((suggestion) => (
+              <Tile
+                key={`${suggestion.row.id}-${suggestion.kind}-${suggestion.value}`}
+                className="resource-tile"
+              >
+                <div className="package-tile__header">
+                  <h3>{suggestion.row.name}</h3>
+                  <Tag type="blue">{suggestionLabels[suggestion.kind]}</Tag>
+                </div>
+                <p>{suggestion.label}</p>
+                <p>{suggestion.reason}</p>
+                <div className="network-actions">
+                  <Button
+                    kind="tertiary"
+                    size="sm"
+                    onClick={() => applyAssignmentSuggestion(suggestion)}
+                  >
+                    Apply suggestion
+                  </Button>
+                </div>
+              </Tile>
+            ))}
+          </div>
+        </div>
+      )}
       {preflightSummary && (
         <div className="export-package">
           <div className="section-header compact">
@@ -557,26 +858,47 @@ export default function ExportWorkflow() {
             <div className="resource-list">
               {visiblePreflightFindings.map((finding, index) => (
                 <Tile key={`${finding.Subject}-${finding.Category}-${index}`} className="resource-tile">
-                  <div className="package-tile__header">
-                    <h3>{finding.Subject || 'Package'}</h3>
-                    <Tag type={finding.Severity === 'blocker' ? 'red' : finding.Severity === 'warning' ? 'warm-gray' : 'gray'}>
-                      {finding.Severity}
-                    </Tag>
-                  </div>
-                  <p>{finding.Message}</p>
-                  {finding['Fix Category'] && <p>{finding['Fix Category']}</p>}
-                  <div className="network-actions">
-                    {routesForFinding(finding).map((route) => (
-                      <Button
-                        key={route.label}
-                        kind="tertiary"
-                        size="sm"
-                        onClick={() => openPreflightFinding(finding, route)}
-                      >
-                        {route.label}
-                      </Button>
-                    ))}
-                  </div>
+                  {(() => {
+                    const suggestion = suggestionForFinding(finding);
+                    return (
+                      <>
+                        <div className="package-tile__header">
+                          <h3>{finding.Subject || 'Package'}</h3>
+                          <Tag type={finding.Severity === 'blocker' ? 'red' : finding.Severity === 'warning' ? 'warm-gray' : 'gray'}>
+                            {finding.Severity}
+                          </Tag>
+                        </div>
+                        <p>{finding.Message}</p>
+                        {finding['Fix Category'] && <p>{finding['Fix Category']}</p>}
+                        {suggestion && (
+                          <p>
+                            Suggested {suggestionLabels[suggestion.kind]}: {suggestion.label}. {suggestion.reason}
+                          </p>
+                        )}
+                        <div className="network-actions">
+                          {suggestion && (
+                            <Button
+                              kind="tertiary"
+                              size="sm"
+                              onClick={() => applyAssignmentSuggestion(suggestion)}
+                            >
+                              Apply suggested {suggestionLabels[suggestion.kind]}
+                            </Button>
+                          )}
+                          {routesForFinding(finding).map((route) => (
+                            <Button
+                              key={route.label}
+                              kind="tertiary"
+                              size="sm"
+                              onClick={() => openPreflightFinding(finding, route)}
+                            >
+                              {route.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </Tile>
               ))}
             </div>

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import ExportWorkflow from '../../components/workflows/ExportWorkflow';
 import { AppProvider, defaultResources, useAppState } from '../../store/AppContext';
 import * as api from '../../hooks/useApi';
+import type { AssignmentVm } from '../../types/network-planning';
 
 jest.mock('../../hooks/useApi', () => ({
   saveNetworkPlan: jest.fn(),
@@ -26,6 +27,24 @@ function StateProbe() {
   return (
     <div data-testid="state-probe">
       {state.activeWorkflow}|{state.searchValue}|{state.selectedVmIds.join(',')}|{state.assignmentMode}
+    </div>
+  );
+}
+
+function SeedAssignments({ rows }: { rows: AssignmentVm[] }) {
+  const { dispatch } = useAppState();
+  React.useEffect(() => {
+    dispatch({ type: 'SET_ASSIGNMENT_ROWS', payload: rows });
+  }, [dispatch, rows]);
+  return null;
+}
+
+function AssignmentProbe({ vmId }: { vmId: string }) {
+  const { state } = useAppState();
+  const row = state.assignmentRows.find((assignment) => assignment.id === vmId);
+  return (
+    <div data-testid="assignment-probe">
+      {row ? `${row.subnet}|${row.securityGroup}|${row.storageTier}|${row.wave}` : ''}
     </div>
   );
 }
@@ -142,6 +161,7 @@ describe('ExportWorkflow', () => {
   it('renders export readiness findings', () => {
     renderWithProvider(<ExportWorkflow />);
     expect(screen.getByText('Export readiness')).toBeTruthy();
+    expect(screen.getByText('Export checklist')).toBeTruthy();
     expect(screen.getByText('Missing subnet assignments')).toBeTruthy();
   });
 
@@ -166,15 +186,34 @@ describe('ExportWorkflow', () => {
   });
 
   it('saves the network plan before downloading Terraform ZIP', async () => {
+    (api.runProjectPreflight as jest.Mock).mockResolvedValueOnce({
+      project_id: 'project-1',
+      project_name: 'Export Project',
+      summary: { blockers: 0, warnings: 1, info: 0, total: 1 },
+      findings: [],
+    });
     renderWithProvider(<ExportWorkflow />);
 
     await userEvent.click(screen.getByText('Download Terraform ZIP'));
 
     await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.runProjectPreflight).toHaveBeenCalledWith('project-1'));
     await waitFor(() => expect(api.generateTerraform).toHaveBeenCalledWith('project-1'));
     const [, payload] = (api.saveNetworkPlan as jest.Mock).mock.calls[0];
     expect(payload.vm_assignments).toHaveLength(3);
     expect(payload.metadata.project_name).toBe('Export Project');
+    expect(screen.getByText('Terraform ZIP downloaded with 1 warning(s).')).toBeTruthy();
+  });
+
+  it('blocks Terraform ZIP download when export preflight has blockers', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Download Terraform ZIP'));
+
+    await waitFor(() => expect(api.runProjectPreflight).toHaveBeenCalledWith('project-1'));
+    expect(api.generateTerraform).not.toHaveBeenCalled();
+    expect(screen.getByText('Terraform ZIP blocked by 1 preflight blocker(s). Resolve or route the findings below, then try again.')).toBeTruthy();
+    expect(screen.getByText('Package preflight')).toBeTruthy();
   });
 
   it('saves the network plan before running backend preflight', async () => {
@@ -277,6 +316,12 @@ describe('ExportWorkflow', () => {
   });
 
   it('imports planning-state JSON before saving Terraform', async () => {
+    (api.runProjectPreflight as jest.Mock).mockResolvedValueOnce({
+      project_id: 'project-1',
+      project_name: 'Export Project',
+      summary: { blockers: 0, warnings: 0, info: 0, total: 0 },
+      findings: [],
+    });
     renderWithProvider(<ExportWorkflow />);
     const importedPlan = {
       version: '1.0',
@@ -335,5 +380,79 @@ describe('ExportWorkflow', () => {
       application: 'Database',
       network: 'db-net',
     });
+  });
+
+  it('applies an inferred assignment from a similarly named VM', async () => {
+    const rows: AssignmentVm[] = [
+      {
+        id: 'app-01',
+        name: 'app-01',
+        image: 'Ready',
+        imageReasons: '',
+        migration: 'Ready',
+        migrationReasons: '',
+        memory: 'Ready',
+        memoryReasons: '',
+        networkReadiness: 'Ready',
+        networkReasons: '',
+        profile: 'bx2-2x8',
+        overrideProfile: '',
+        storageTier: '5iops-tier',
+        overrideStorageTier: '',
+        network: 'app-net',
+        subnet: 'prod-app-us-south-1',
+        securityGroup: 'sg-app-private',
+        power: 'poweredOn',
+        owner: 'App owner',
+        application: 'App tier',
+        wave: 'Wave 1',
+        cutoverGroup: 'app-cutover',
+        priority: '',
+        dependencyGroup: '',
+      },
+      {
+        id: 'app-02',
+        name: 'app-02',
+        image: 'Ready',
+        imageReasons: '',
+        migration: 'Ready',
+        migrationReasons: '',
+        memory: 'Ready',
+        memoryReasons: '',
+        networkReadiness: 'Ready',
+        networkReasons: '',
+        profile: 'bx2-2x8',
+        overrideProfile: '',
+        storageTier: '5iops-tier',
+        overrideStorageTier: '',
+        network: 'app-net',
+        subnet: '',
+        securityGroup: '',
+        power: 'poweredOn',
+        owner: 'App owner',
+        application: 'App tier',
+        wave: '',
+        cutoverGroup: 'app-cutover',
+        priority: '',
+        dependencyGroup: '',
+      },
+    ];
+    render(
+      <AppProvider>
+        <SeedProject>
+          <SeedAssignments rows={rows} />
+          <ExportWorkflow />
+          <AssignmentProbe vmId="app-02" />
+        </SeedProject>
+      </AppProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Suggested assignment fixes')).toBeTruthy());
+    await userEvent.click(screen.getAllByText('Apply suggestion')[0]);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('assignment-probe').textContent).toContain('prod-app-us-south-1'),
+    );
+    expect(screen.getByText('Applied suggested subnet for app-02. Save the project to persist it.')).toBeTruthy();
   });
 });
