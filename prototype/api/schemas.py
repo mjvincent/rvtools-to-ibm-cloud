@@ -6,7 +6,6 @@ These schemas validate incoming requests and outgoing responses.
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-import re
 
 
 class AddressPrefixSchema(BaseModel):
@@ -14,7 +13,7 @@ class AddressPrefixSchema(BaseModel):
 
     id: str
     name: str = Field(..., min_length=1, max_length=63)
-    cidr: str = Field(..., pattern=r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$")
+    cidr: str = Field(..., pattern=r"^$|^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$")
     zone: str
     is_default: bool = Field(default=False, alias="isDefault")
 
@@ -33,16 +32,6 @@ class VpcPlanSchema(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="createdAt")
     updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="updatedAt")
 
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, v):
-        if not re.match(r"^[a-z0-9-]+$", v):
-            raise ValueError(
-                "Name must contain only lowercase letters, numbers, and hyphens"
-            )
-        return v
-
-
 class SubnetPlanSchema(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -50,7 +39,9 @@ class SubnetPlanSchema(BaseModel):
     name: str = Field(..., min_length=1, max_length=63)
     vpc_id: str = Field(..., alias="vpcId")
     zone: str
-    cidr: str = Field(..., pattern=r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$")
+    # Carbon saves draft planning state before export; blank CIDRs are reported
+    # by package preflight instead of blocking persistence.
+    cidr: str = Field(..., pattern=r"^$|^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$")
     purpose: str = ""
     source_network: Optional[str] = Field(default=None, alias="sourceNetwork")
     public_gateway: bool = Field(default=False, alias="publicGateway")

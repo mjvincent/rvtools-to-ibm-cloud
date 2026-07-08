@@ -63,6 +63,7 @@ def client():
             "test-project-secondary-nics",
             "test-project-concurrent",
             "test-project-terraform",
+            "test-project-draft-gaps",
         ):
             _projects[pid] = {"id": pid, "name": pid, "description": ""}
         # vm-assignments tests expect a pre-existing network plan in state.
@@ -201,6 +202,40 @@ class TestNetworkPlanningEndpoints:
         assert data["status"] == "success"
         assert "message" in data
         assert "Network plan saved" in data["message"]
+
+    def test_save_network_plan_allows_draft_carbon_planning_gaps(
+        self, client, sample_network_plan
+    ):
+        """Draft Carbon plans can persist before preflight/export gaps are resolved."""
+        project_id = "test-project-draft-gaps"
+        draft_plan = json.loads(json.dumps(sample_network_plan))
+        draft_plan["vpcs"][0]["name"] = "Test VPC 1"
+        draft_plan["vpcs"][0]["address_prefixes"][0]["cidr"] = ""
+        draft_plan["subnets"][0]["name"] = "App Subnet 1"
+        draft_plan["subnets"][0]["cidr"] = ""
+        draft_plan["vm_assignments"] = [
+            {
+                "vm_key": "vm-draft-1",
+                "vm_name": "draft-vm-1",
+                "primary_subnet_id": "",
+                "primary_security_group_id": "",
+                "secondary_nics": [],
+                "excluded": False,
+            }
+        ]
+
+        response = client.post(
+            f"/api/projects/{project_id}/network-plan",
+            json=draft_plan,
+        )
+
+        assert response.status_code == 200
+        get_response = client.get(f"/api/projects/{project_id}/network-plan")
+        assert get_response.status_code == 200
+        persisted_plan = get_response.json()
+        assert persisted_plan["vpcs"][0]["name"] == "Test VPC 1"
+        assert persisted_plan["subnets"][0]["cidr"] == ""
+        assert persisted_plan["vm_assignments"][0]["primary_subnet_id"] == ""
 
     def test_save_network_plan_validation_error(self, client):
         """Test saving a network plan with validation errors."""
