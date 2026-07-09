@@ -175,6 +175,7 @@ function normalizeSuggestionAudit(rawAudit): SuggestionAuditEntry[] {
       reason: String(entry.reason || ''),
       evidence: Array.isArray(entry.evidence) ? entry.evidence.map(String) : [],
       appliedAt: String(entry.appliedAt || entry.applied_at || ''),
+      revertedAt: entry.revertedAt || entry.reverted_at ? String(entry.revertedAt || entry.reverted_at) : undefined,
     }));
 }
 
@@ -190,6 +191,7 @@ function suggestionAuditToPlanningState(audit: SuggestionAuditEntry[]) {
     reason: entry.reason,
     evidence: entry.evidence,
     applied_at: entry.appliedAt,
+    reverted_at: entry.revertedAt || null,
   }));
 }
 

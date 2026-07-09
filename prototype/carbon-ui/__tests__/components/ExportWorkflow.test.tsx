@@ -458,6 +458,17 @@ describe('ExportWorkflow', () => {
     );
     expect(screen.getByTestId('assignment-probe').textContent).toContain('audit:1');
     expect(screen.getByText('Applied suggested subnet for app-02. Save the project to persist it.')).toBeTruthy();
+    expect(screen.getByText('Suggestion audit')).toBeTruthy();
+    expect(screen.getByText('(blank) to prod-app-us-south-1')).toBeTruthy();
+
+    await userEvent.click(screen.getByText('Undo suggestion'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('assignment-probe').textContent).toContain('||5iops-tier||audit:1'),
+    );
+    expect(screen.getByTestId('assignment-probe').textContent).not.toContain('prod-app-us-south-1');
+    expect(screen.getByText('Reverted')).toBeTruthy();
+    expect(screen.getByText('Reverted suggested subnet change for app-02. Save the project to persist it.')).toBeTruthy();
   });
 
   it('bulk applies high-confidence inferred assignments and audits each change', async () => {

@@ -417,6 +417,8 @@ export default function ExportWorkflow() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignmentRows, resources]);
   const highConfidenceSuggestions = assignmentSuggestions.filter((suggestion) => suggestion.confidence === 'High');
+  const recentSuggestionAudit = suggestionAudit.slice(0, 6);
+  const activeAuditCount = suggestionAudit.filter((entry) => !entry.revertedAt).length;
 
   function applyAssignmentSuggestions(suggestions: AssignmentSuggestion[]) {
     if (suggestions.length === 0) return;
@@ -468,6 +470,33 @@ export default function ExportWorkflow() {
 
   function applyHighConfidenceSuggestions() {
     applyAssignmentSuggestions(assignmentSuggestions.filter((suggestion) => suggestion.confidence === 'High'));
+  }
+
+  function revertSuggestionAuditEntry(entryId: string) {
+    const entry = suggestionAudit.find((candidate) => candidate.id === entryId);
+    if (!entry || entry.revertedAt) return;
+    dispatch({
+      type: 'SET_ASSIGNMENT_ROWS',
+      payload: assignmentRows.map((row) => {
+        if (row.id !== entry.vmId) return row;
+        if (entry.field === 'subnet') return { ...row, subnet: entry.oldValue };
+        if (entry.field === 'securityGroup') return { ...row, securityGroup: entry.oldValue };
+        if (entry.field === 'storage') return { ...row, storageTier: entry.oldValue };
+        return { ...row, wave: entry.oldValue };
+      }),
+    });
+    dispatch({
+      type: 'SET_SUGGESTION_AUDIT',
+      payload: suggestionAudit.map((candidate) =>
+        candidate.id === entryId
+          ? { ...candidate, revertedAt: new Date().toISOString() }
+          : candidate,
+      ),
+    });
+    dispatch({
+      type: 'SET_TERRAFORM_STATUS',
+      payload: `Reverted suggested ${suggestionLabels[entry.field]} change for ${entry.vmName}. Save the project to persist it.`,
+    });
   }
 
   function suggestionKindForFinding(
@@ -941,6 +970,50 @@ export default function ExportWorkflow() {
                     onClick={() => applyAssignmentSuggestion(suggestion)}
                   >
                     Apply suggestion
+                  </Button>
+                </div>
+              </Tile>
+            ))}
+          </div>
+        </div>
+      )}
+      {recentSuggestionAudit.length > 0 && (
+        <div className="export-package">
+          <div className="section-header compact">
+            <div>
+              <h2>Suggestion audit</h2>
+              <p>Review applied recommendation changes and revert any active suggestion before export.</p>
+            </div>
+            <div className="network-actions">
+              <Tag type="blue">{suggestionAudit.length} total</Tag>
+              <Tag type={activeAuditCount === 0 ? 'gray' : 'green'}>{activeAuditCount} active</Tag>
+            </div>
+          </div>
+          <div className="resource-list">
+            {recentSuggestionAudit.map((entry) => (
+              <Tile key={entry.id} className="resource-tile">
+                <div className="package-tile__header">
+                  <h3>{entry.vmName}</h3>
+                  <div className="network-actions">
+                    <Tag type="blue">{suggestionLabels[entry.field]}</Tag>
+                    <Tag type={confidenceTagType(entry.confidence)}>
+                      {entry.confidence} confidence
+                    </Tag>
+                    {entry.revertedAt && <Tag type="gray">Reverted</Tag>}
+                  </div>
+                </div>
+                <p>{entry.oldValue || '(blank)'} to {entry.newValue || '(blank)'}</p>
+                <p>{entry.reason}</p>
+                {entry.evidence.length > 0 && <p>{entry.evidence.slice(0, 2).join(' | ')}</p>}
+                <p>Applied {entry.appliedAt}</p>
+                <div className="network-actions">
+                  <Button
+                    kind="tertiary"
+                    size="sm"
+                    disabled={Boolean(entry.revertedAt)}
+                    onClick={() => revertSuggestionAuditEntry(entry.id)}
+                  >
+                    Undo suggestion
                   </Button>
                 </div>
               </Tile>

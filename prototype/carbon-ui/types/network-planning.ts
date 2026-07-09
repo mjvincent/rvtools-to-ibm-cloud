@@ -407,6 +407,7 @@ export type SuggestionAuditEntry = {
   reason: string;
   evidence: string[];
   appliedAt: string;
+  revertedAt?: string;
 };
 
 export type SavedProjectState = {
