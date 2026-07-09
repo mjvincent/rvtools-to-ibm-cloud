@@ -44,7 +44,7 @@ function AssignmentProbe({ vmId }: { vmId: string }) {
   const row = state.assignmentRows.find((assignment) => assignment.id === vmId);
   return (
     <div data-testid="assignment-probe">
-      {row ? `${row.subnet}|${row.securityGroup}|${row.storageTier}|${row.wave}` : ''}
+      {row ? `${row.subnet}|${row.securityGroup}|${row.storageTier}|${row.wave}|audit:${state.suggestionAudit.length}` : ''}
     </div>
   );
 }
@@ -448,11 +448,90 @@ describe('ExportWorkflow', () => {
     );
 
     await waitFor(() => expect(screen.getByText('Suggested assignment fixes')).toBeTruthy());
+    expect(screen.getAllByText('High confidence').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Same application: App tier/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Same source network: app-net/).length).toBeGreaterThan(0);
     await userEvent.click(screen.getAllByText('Apply suggestion')[0]);
 
     await waitFor(() =>
       expect(screen.getByTestId('assignment-probe').textContent).toContain('prod-app-us-south-1'),
     );
+    expect(screen.getByTestId('assignment-probe').textContent).toContain('audit:1');
     expect(screen.getByText('Applied suggested subnet for app-02. Save the project to persist it.')).toBeTruthy();
+  });
+
+  it('bulk applies high-confidence inferred assignments and audits each change', async () => {
+    const rows: AssignmentVm[] = [
+      {
+        id: 'app-01',
+        name: 'app-01',
+        image: 'Ready',
+        imageReasons: '',
+        migration: 'Ready',
+        migrationReasons: '',
+        memory: 'Ready',
+        memoryReasons: '',
+        networkReadiness: 'Ready',
+        networkReasons: '',
+        profile: 'bx2-2x8',
+        overrideProfile: '',
+        storageTier: '5iops-tier',
+        overrideStorageTier: '',
+        network: 'app-net',
+        subnet: 'prod-app-us-south-1',
+        securityGroup: 'sg-app-private',
+        power: 'poweredOn',
+        owner: 'App owner',
+        application: 'App tier',
+        wave: 'Wave 1',
+        cutoverGroup: 'app-cutover',
+        priority: '',
+        dependencyGroup: '',
+      },
+      {
+        id: 'app-02',
+        name: 'app-02',
+        image: 'Ready',
+        imageReasons: '',
+        migration: 'Ready',
+        migrationReasons: '',
+        memory: 'Ready',
+        memoryReasons: '',
+        networkReadiness: 'Ready',
+        networkReasons: '',
+        profile: 'bx2-2x8',
+        overrideProfile: '',
+        storageTier: '5iops-tier',
+        overrideStorageTier: '',
+        network: 'app-net',
+        subnet: '',
+        securityGroup: '',
+        power: 'poweredOn',
+        owner: 'App owner',
+        application: 'App tier',
+        wave: '',
+        cutoverGroup: 'app-cutover',
+        priority: '',
+        dependencyGroup: '',
+      },
+    ];
+    render(
+      <AppProvider>
+        <SeedProject>
+          <SeedAssignments rows={rows} />
+          <ExportWorkflow />
+          <AssignmentProbe vmId="app-02" />
+        </SeedProject>
+      </AppProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Apply high-confidence suggestions')).toBeTruthy());
+    await userEvent.click(screen.getByText('Apply high-confidence suggestions'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('assignment-probe').textContent).toContain('prod-app-us-south-1|sg-app-private|5iops-tier|Wave 1'),
+    );
+    expect(screen.getByTestId('assignment-probe').textContent).toContain('audit:3');
+    expect(screen.getByText('Applied 3 suggested assignment(s), including 3 high-confidence item(s). Save the project to persist them.')).toBeTruthy();
   });
 });

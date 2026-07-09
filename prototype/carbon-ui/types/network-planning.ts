@@ -394,6 +394,21 @@ export type ResourceState = {
   networkComponents: NetworkComponent[];
 };
 
+export type SuggestionConfidence = 'High' | 'Medium' | 'Low';
+
+export type SuggestionAuditEntry = {
+  id: string;
+  vmId: string;
+  vmName: string;
+  field: 'subnet' | 'securityGroup' | 'storage' | 'wave';
+  oldValue: string;
+  newValue: string;
+  confidence: SuggestionConfidence;
+  reason: string;
+  evidence: string[];
+  appliedAt: string;
+};
+
 export type SavedProjectState = {
   planning_state_json?: {
     carbon_summary?: WorkbookSummary;
@@ -401,6 +416,7 @@ export type SavedProjectState = {
     carbon_resources?: ResourceState;
     carbon_remediation_tracker?: RemediationTracker;
     carbon_image_import_status?: ImageImportStatus;
+    carbon_suggestion_audit?: SuggestionAuditEntry[];
     remediation_tracker?: Record<string, {
       status?: string;
       owner?: string;

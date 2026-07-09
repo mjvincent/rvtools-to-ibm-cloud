@@ -4,7 +4,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { Button, InlineNotification, Layer, Search, Select, SelectItem, Tag, Tile } from '@carbon/react';
 import { Close, CloudUpload, Download, Renew, View } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
-import type { AssignmentVm, Workflow } from '../../types/network-planning';
+import type { AssignmentVm, SuggestionConfidence, Workflow } from '../../types/network-planning';
 import {
   generateTerraform,
   previewTerraform,
@@ -108,6 +108,9 @@ type AssignmentSuggestion = {
   value: string;
   label: string;
   reason: string;
+  confidence: SuggestionConfidence;
+  score: number;
+  evidence: string[];
 };
 
 const suggestionLabels: Record<AssignmentSuggestionKind, string> = {
@@ -148,11 +151,27 @@ function sharedTokenCount(target: AssignmentVm, candidate: AssignmentVm) {
   return Array.from(targetTokens).filter((token) => candidateTokens.has(token)).length;
 }
 
+function confidenceFromScore(score: number): SuggestionConfidence {
+  if (score >= 7) return 'High';
+  if (score >= 3) return 'Medium';
+  return 'Low';
+}
+
+function confidenceTagType(confidence: SuggestionConfidence) {
+  if (confidence === 'High') return 'green' as const;
+  if (confidence === 'Medium') return 'blue' as const;
+  return 'warm-gray' as const;
+}
+
 function rowAssignmentValue(row: AssignmentVm, kind: AssignmentSuggestionKind) {
   if (kind === 'subnet') return row.subnet;
   if (kind === 'securityGroup') return row.securityGroup;
   if (kind === 'storage') return row.overrideStorageTier || row.storageTier;
   return row.wave;
+}
+
+function buildAuditId(row: AssignmentVm, kind: AssignmentSuggestionKind, value: string) {
+  return `${row.id}-${kind}-${value}-${Date.now()}`;
 }
 
 export default function ExportWorkflow() {
@@ -174,6 +193,7 @@ export default function ExportWorkflow() {
     terraformStatus,
     terraformError,
     generatingTerraform,
+    suggestionAudit,
   } = state;
 
   const planningCompleteness = useMemo(() => {
@@ -264,17 +284,35 @@ export default function ExportWorkflow() {
       .filter((candidate) => candidate.id !== row.id && rowAssignmentValue(candidate, kind))
       .map((candidate) => {
         let score = sharedTokenCount(row, candidate);
-        if (row.application && candidate.application && row.application === candidate.application) score += 3;
-        if (row.network && candidate.network && row.network === candidate.network) score += 3;
-        if (row.owner && candidate.owner && row.owner === candidate.owner) score += 2;
-        if (row.cutoverGroup && candidate.cutoverGroup && row.cutoverGroup === candidate.cutoverGroup) score += 2;
-        return { candidate, score };
+        const evidence: string[] = [];
+        const sharedTokens = sharedTokenCount(row, candidate);
+        if (sharedTokens > 0) {
+          evidence.push(`Shared VM naming/planning tokens with ${candidate.name}`);
+        }
+        if (row.application && candidate.application && row.application === candidate.application) {
+          score += 3;
+          evidence.push(`Same application: ${row.application}`);
+        }
+        if (row.network && candidate.network && row.network === candidate.network) {
+          score += 3;
+          evidence.push(`Same source network: ${row.network}`);
+        }
+        if (row.owner && candidate.owner && row.owner === candidate.owner) {
+          score += 2;
+          evidence.push(`Same owner: ${row.owner}`);
+        }
+        if (row.cutoverGroup && candidate.cutoverGroup && row.cutoverGroup === candidate.cutoverGroup) {
+          score += 2;
+          evidence.push(`Same cutover group: ${row.cutoverGroup}`);
+        }
+        return { candidate, score, evidence };
       })
       .filter(({ score }) => score > 0)
       .sort((a, b) => b.score - a.score);
 
-    const matchedRow = scoredRows[0]?.candidate;
-    if (matchedRow) {
+    const matched = scoredRows[0];
+    const matchedRow = matched?.candidate;
+    if (matchedRow && matched) {
       const value = rowAssignmentValue(matchedRow, kind);
       return {
         kind,
@@ -282,6 +320,9 @@ export default function ExportWorkflow() {
         value,
         label: value,
         reason: `Matches ${matchedRow.name} by VM naming or planning metadata.`,
+        confidence: confidenceFromScore(matched.score),
+        score: matched.score,
+        evidence: matched.evidence,
       };
     }
 
@@ -302,6 +343,9 @@ export default function ExportWorkflow() {
           value: match.subnet.name,
           label: match.subnet.name,
           reason: `Matches subnet name or purpose for ${row.name}.`,
+          confidence: confidenceFromScore(match.score),
+          score: match.score,
+          evidence: [`Matched subnet name or purpose: ${match.subnet.name}`],
         };
       }
     }
@@ -321,6 +365,9 @@ export default function ExportWorkflow() {
           value: match.securityGroup.name,
           label: match.securityGroup.name,
           reason: `Matches security group name or purpose for ${row.name}.`,
+          confidence: confidenceFromScore(match.score),
+          score: match.score,
+          evidence: [`Matched security group name or purpose: ${match.securityGroup.name}`],
         };
       }
     }
@@ -334,6 +381,11 @@ export default function ExportWorkflow() {
           value: match.tier,
           label: `${match.name} (${match.tier})`,
           reason: `Matches the VM storage tier or application profile.`,
+          confidence: row.storageTier === match.tier ? 'Medium' : 'Low',
+          score: row.storageTier === match.tier ? 3 : 1,
+          evidence: row.storageTier === match.tier
+            ? [`Same storage tier: ${row.storageTier}`]
+            : [`Matched storage profile name: ${match.name}`],
         };
       }
     }
@@ -344,6 +396,9 @@ export default function ExportWorkflow() {
         value: resources.waves[0].name,
         label: resources.waves[0].name,
         reason: 'Only one migration wave is defined.',
+        confidence: 'Low',
+        score: 1,
+        evidence: ['Only one migration wave is defined.'],
       };
     }
     return null;
@@ -361,22 +416,58 @@ export default function ExportWorkflow() {
   // inferAssignmentSuggestion intentionally closes over current resources and rows.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignmentRows, resources]);
+  const highConfidenceSuggestions = assignmentSuggestions.filter((suggestion) => suggestion.confidence === 'High');
 
-  function applyAssignmentSuggestion(suggestion: AssignmentSuggestion) {
+  function applyAssignmentSuggestions(suggestions: AssignmentSuggestion[]) {
+    if (suggestions.length === 0) return;
+    const suggestionByRowAndKind = new Map(
+      suggestions.map((suggestion) => [`${suggestion.row.id}:${suggestion.kind}`, suggestion]),
+    );
     dispatch({
       type: 'SET_ASSIGNMENT_ROWS',
       payload: assignmentRows.map((row) => {
-        if (row.id !== suggestion.row.id) return row;
-        if (suggestion.kind === 'subnet') return { ...row, subnet: suggestion.value };
-        if (suggestion.kind === 'securityGroup') return { ...row, securityGroup: suggestion.value };
-        if (suggestion.kind === 'storage') return { ...row, storageTier: suggestion.value };
-        return { ...row, wave: suggestion.value };
+        let nextRow = row;
+        for (const kind of ['subnet', 'securityGroup', 'storage', 'wave'] as const) {
+          const suggestion = suggestionByRowAndKind.get(`${row.id}:${kind}`);
+          if (!suggestion) continue;
+          if (kind === 'subnet') nextRow = { ...nextRow, subnet: suggestion.value };
+          if (kind === 'securityGroup') nextRow = { ...nextRow, securityGroup: suggestion.value };
+          if (kind === 'storage') nextRow = { ...nextRow, storageTier: suggestion.value };
+          if (kind === 'wave') nextRow = { ...nextRow, wave: suggestion.value };
+        }
+        return nextRow;
       }),
     });
     dispatch({
-      type: 'SET_TERRAFORM_STATUS',
-      payload: `Applied suggested ${suggestionLabels[suggestion.kind]} for ${suggestion.row.name}. Save the project to persist it.`,
+      type: 'APPEND_SUGGESTION_AUDIT',
+      payload: suggestions.map((suggestion) => ({
+        id: buildAuditId(suggestion.row, suggestion.kind, suggestion.value),
+        vmId: suggestion.row.id,
+        vmName: suggestion.row.name,
+        field: suggestion.kind,
+        oldValue: rowAssignmentValue(suggestion.row, suggestion.kind),
+        newValue: suggestion.value,
+        confidence: suggestion.confidence,
+        reason: suggestion.reason,
+        evidence: suggestion.evidence,
+        appliedAt: new Date().toISOString(),
+      })),
     });
+    const highConfidenceCount = suggestions.filter((suggestion) => suggestion.confidence === 'High').length;
+    dispatch({
+      type: 'SET_TERRAFORM_STATUS',
+      payload: suggestions.length === 1
+        ? `Applied suggested ${suggestionLabels[suggestions[0].kind]} for ${suggestions[0].row.name}. Save the project to persist it.`
+        : `Applied ${suggestions.length} suggested assignment(s), including ${highConfidenceCount} high-confidence item(s). Save the project to persist them.`,
+    });
+  }
+
+  function applyAssignmentSuggestion(suggestion: AssignmentSuggestion) {
+    applyAssignmentSuggestions([suggestion]);
+  }
+
+  function applyHighConfidenceSuggestions() {
+    applyAssignmentSuggestions(assignmentSuggestions.filter((suggestion) => suggestion.confidence === 'High'));
   }
 
   function suggestionKindForFinding(
@@ -809,7 +900,19 @@ export default function ExportWorkflow() {
               <h2>Suggested assignment fixes</h2>
               <p>Review likely fixes inferred from matching VM names, applications, networks, and existing assignments.</p>
             </div>
-            <Tag type="blue">{assignmentSuggestions.length} suggestion(s)</Tag>
+            <div className="network-actions">
+              {suggestionAudit.length > 0 && <Tag type="gray">{suggestionAudit.length} audited</Tag>}
+              <Tag type="blue">{assignmentSuggestions.length} suggestion(s)</Tag>
+              <Tag type="green">{highConfidenceSuggestions.length} high confidence</Tag>
+              <Button
+                kind="tertiary"
+                size="sm"
+                disabled={highConfidenceSuggestions.length === 0}
+                onClick={applyHighConfidenceSuggestions}
+              >
+                Apply high-confidence suggestions
+              </Button>
+            </div>
           </div>
           <div className="resource-list">
             {assignmentSuggestions.map((suggestion) => (
@@ -819,10 +922,18 @@ export default function ExportWorkflow() {
               >
                 <div className="package-tile__header">
                   <h3>{suggestion.row.name}</h3>
-                  <Tag type="blue">{suggestionLabels[suggestion.kind]}</Tag>
+                  <div className="network-actions">
+                    <Tag type="blue">{suggestionLabels[suggestion.kind]}</Tag>
+                    <Tag type={confidenceTagType(suggestion.confidence)}>
+                      {suggestion.confidence} confidence
+                    </Tag>
+                  </div>
                 </div>
                 <p>{suggestion.label}</p>
                 <p>{suggestion.reason}</p>
+                {suggestion.evidence.length > 0 && (
+                  <p>{suggestion.evidence.join(' | ')}</p>
+                )}
                 <div className="network-actions">
                   <Button
                     kind="tertiary"
@@ -871,9 +982,19 @@ export default function ExportWorkflow() {
                         <p>{finding.Message}</p>
                         {finding['Fix Category'] && <p>{finding['Fix Category']}</p>}
                         {suggestion && (
-                          <p>
-                            Suggested {suggestionLabels[suggestion.kind]}: {suggestion.label}. {suggestion.reason}
-                          </p>
+                          <>
+                            <p>
+                              Suggested {suggestionLabels[suggestion.kind]}: {suggestion.label}. {suggestion.reason}
+                            </p>
+                            <div className="network-actions">
+                              <Tag type={confidenceTagType(suggestion.confidence)}>
+                                {suggestion.confidence} confidence
+                              </Tag>
+                              {suggestion.evidence.slice(0, 2).map((item) => (
+                                <Tag key={item} type="gray">{item}</Tag>
+                              ))}
+                            </div>
+                          </>
                         )}
                         <div className="network-actions">
                           {suggestion && (

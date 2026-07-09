@@ -41,7 +41,7 @@ import {
   rowsFromNetworkPlan,
   vmAssignmentsFromRows,
 } from '../utils/planning-state';
-import type { ImageImportStatus, RemediationTracker, Workflow } from '../types/network-planning';
+import type { ImageImportStatus, RemediationTracker, SuggestionAuditEntry, Workflow } from '../types/network-planning';
 
 import OverviewWorkflow from '../components/workflows/OverviewWorkflow';
 import IntakeWorkflow from '../components/workflows/IntakeWorkflow';
@@ -158,9 +158,45 @@ function normalizeImageImportStatus(rawStatus): ImageImportStatus {
   );
 }
 
-function buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, imageImportStatus, projectName }) {
+function normalizeSuggestionAudit(rawAudit): SuggestionAuditEntry[] {
+  if (!Array.isArray(rawAudit)) return [];
+  const validFields = ['subnet', 'securityGroup', 'storage', 'wave'];
+  const validConfidence = ['High', 'Medium', 'Low'];
+  return rawAudit
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry: any) => ({
+      id: String(entry.id || `${entry.vmId || entry.vm_id || entry.vmName || entry.vm_name || 'vm'}-${entry.field || 'field'}-${entry.appliedAt || entry.applied_at || Date.now()}`),
+      vmId: String(entry.vmId || entry.vm_id || ''),
+      vmName: String(entry.vmName || entry.vm_name || ''),
+      field: validFields.includes(entry.field) ? entry.field : 'subnet',
+      oldValue: String(entry.oldValue || entry.old_value || ''),
+      newValue: String(entry.newValue || entry.new_value || ''),
+      confidence: validConfidence.includes(entry.confidence) ? entry.confidence : 'Low',
+      reason: String(entry.reason || ''),
+      evidence: Array.isArray(entry.evidence) ? entry.evidence.map(String) : [],
+      appliedAt: String(entry.appliedAt || entry.applied_at || ''),
+    }));
+}
+
+function suggestionAuditToPlanningState(audit: SuggestionAuditEntry[]) {
+  return audit.map((entry) => ({
+    id: entry.id,
+    vm_id: entry.vmId,
+    vm_name: entry.vmName,
+    field: entry.field,
+    old_value: entry.oldValue,
+    new_value: entry.newValue,
+    confidence: entry.confidence,
+    reason: entry.reason,
+    evidence: entry.evidence,
+    applied_at: entry.appliedAt,
+  }));
+}
+
+function buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, imageImportStatus, suggestionAudit, projectName }) {
   const planningStateTracker = remediationTrackerToPlanningState(remediationTracker);
   const planningImageStatus = imageImportStatusToPlanningState(imageImportStatus);
+  const planningSuggestionAudit = suggestionAuditToPlanningState(suggestionAudit || []);
   return {
     schema_version: 'carbon-prototype-0.3',
     metadata: { project_name: projectName.trim(), source: 'carbon-ui-prototype' },
@@ -168,11 +204,13 @@ function buildProjectStatePayload({ assignmentRows, summary, resources, remediat
     wave_planning: assignmentRows.map(waveDecision),
     remediation_tracker: planningStateTracker,
     image_import_status: planningImageStatus,
+    suggestion_audit: planningSuggestionAudit,
     carbon_summary: summary,
     carbon_assignment_rows: assignmentRows,
     carbon_resources: resources,
     carbon_remediation_tracker: remediationTracker,
     carbon_image_import_status: imageImportStatus,
+    carbon_suggestion_audit: suggestionAudit || [],
   };
 }
 
@@ -183,6 +221,7 @@ function WorkbenchShell() {
     projectName, projectDescription, projectStatus, projectError, uploadStatus,
     activeWorkflow, assignmentRows, resources, summary, persistenceEnabled,
     isDirty, autoSaveStatus, autoSaveError, remediationTracker, imageImportStatus,
+    suggestionAudit,
   } = state;
   const hasLoadedProject = useRef(false);
 
@@ -286,7 +325,7 @@ function WorkbenchShell() {
       try {
         await api.saveProjectState(
           selectedProjectId,
-          buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, imageImportStatus, projectName }),
+          buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, imageImportStatus, suggestionAudit, projectName }),
           projectName.trim(),
         );
         await api.saveNetworkPlan(
@@ -303,7 +342,7 @@ function WorkbenchShell() {
       }
     }, 900);
     return () => window.clearTimeout(timer);
-  }, [assignmentRows, resources, remediationTracker, imageImportStatus, selectedProjectId, persistenceEnabled, isDirty, projectName, summary]);
+  }, [assignmentRows, resources, remediationTracker, imageImportStatus, suggestionAudit, selectedProjectId, persistenceEnabled, isDirty, projectName, summary]);
 
   // Push VM placement edits through the narrower assignment endpoint.
   useEffect(() => {
@@ -335,7 +374,7 @@ function WorkbenchShell() {
         await api.updateProject(projectId, projectName, projectDescription);
       }
       await api.saveProjectState(projectId, {
-        ...buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, imageImportStatus, projectName }),
+        ...buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, imageImportStatus, suggestionAudit, projectName }),
       }, projectName.trim());
       await api.saveNetworkPlan(
         projectId,
@@ -391,6 +430,16 @@ function WorkbenchShell() {
         });
       } else {
         dispatch({ type: 'SET_IMAGE_IMPORT_STATUS', payload: {} });
+      }
+      if (savedState?.planning_state_json?.carbon_suggestion_audit || savedState?.planning_state_json?.suggestion_audit) {
+        dispatch({
+          type: 'SET_SUGGESTION_AUDIT',
+          payload: normalizeSuggestionAudit(
+            savedState.planning_state_json.carbon_suggestion_audit || savedState.planning_state_json.suggestion_audit,
+          ),
+        });
+      } else {
+        dispatch({ type: 'SET_SUGGESTION_AUDIT', payload: [] });
       }
       try {
         const networkPlan = await api.loadNetworkPlan(projectId);

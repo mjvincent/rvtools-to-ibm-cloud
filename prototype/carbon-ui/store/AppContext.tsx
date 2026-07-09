@@ -8,6 +8,7 @@ import type {
   RemediationTracker,
   ResourceState,
   SavedProject,
+  SuggestionAuditEntry,
   Workflow,
   WorkbookSummary,
 } from '../types/network-planning';
@@ -275,6 +276,7 @@ export type AppState = {
   assignmentRows: AssignmentVm[];
   remediationTracker: RemediationTracker;
   imageImportStatus: ImageImportStatus;
+  suggestionAudit: SuggestionAuditEntry[];
   selectedVmIds: string[];
   searchValue: string;
   readinessFilter: string;
@@ -314,6 +316,7 @@ const initialState: AppState = {
   assignmentRows: sampleRows,
   remediationTracker: {},
   imageImportStatus: {},
+  suggestionAudit: [],
   selectedVmIds: [],
   searchValue: '',
   readinessFilter: 'all',
@@ -351,6 +354,8 @@ export type AppAction =
   | { type: 'SET_ASSIGNMENT_ROWS'; payload: AssignmentVm[] }
   | { type: 'SET_REMEDIATION_TRACKER'; payload: RemediationTracker }
   | { type: 'SET_IMAGE_IMPORT_STATUS'; payload: ImageImportStatus }
+  | { type: 'SET_SUGGESTION_AUDIT'; payload: SuggestionAuditEntry[] }
+  | { type: 'APPEND_SUGGESTION_AUDIT'; payload: SuggestionAuditEntry[] }
   | { type: 'SET_SELECTED_VM_IDS'; payload: string[] }
   | { type: 'SET_SEARCH_VALUE'; payload: string }
   | { type: 'SET_READINESS_FILTER'; payload: string }
@@ -393,6 +398,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_ASSIGNMENT_ROWS': return markDirty({ ...state, assignmentRows: action.payload });
     case 'SET_REMEDIATION_TRACKER': return markDirty({ ...state, remediationTracker: action.payload });
     case 'SET_IMAGE_IMPORT_STATUS': return markDirty({ ...state, imageImportStatus: action.payload });
+    case 'SET_SUGGESTION_AUDIT': return markDirty({ ...state, suggestionAudit: action.payload });
+    case 'APPEND_SUGGESTION_AUDIT': return markDirty({ ...state, suggestionAudit: [...action.payload, ...state.suggestionAudit] });
     case 'SET_SELECTED_VM_IDS': return { ...state, selectedVmIds: action.payload };
     case 'SET_SEARCH_VALUE': return { ...state, searchValue: action.payload };
     case 'SET_READINESS_FILTER': return { ...state, readinessFilter: action.payload };
