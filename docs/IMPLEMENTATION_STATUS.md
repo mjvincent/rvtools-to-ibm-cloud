@@ -5,8 +5,8 @@
 This document tracks the implementation status of the Carbon UI integration with
 the RVTools to IBM Cloud migration tool.
 
-**Last Updated**: 2026-07-02  
-**Current Phase**: Carbon UI Phase 4 feature-parity workflows in progress  
+**Last Updated**: 2026-07-09
+**Current Phase**: Carbon UI Phase 6 promotion-readiness evidence and polish
 **Production UI**: Streamlit remains production until Carbon closes the remaining
 feature-parity and production-readiness gaps.
 
@@ -100,6 +100,12 @@ feature-parity and production-readiness gaps.
 - [x] Carbon Export workflow supports planning-state JSON export/import for offline handoff and reload review
 - [x] Carbon Export workflow can save the latest plan, run backend package preflight, and display blocker/warning findings before ZIP download
 - [x] Carbon Export preflight findings provide safe next-step actions that route users to the relevant workflow and VM for remediation, scope, image import, network placement, security, storage, or override review
+- [x] Carbon Export remediation queue prioritizes backend preflight blockers, local planning gaps, subnet CIDR gaps, Terraform naming cleanup, and warnings
+- [x] Carbon Export `Resolve next issue` and queue-level `Review issue` actions share the same routing model so users land in the correct workflow with the relevant VM or planning context selected
+- [x] Carbon Export can infer subnet, security group, storage/IOPS, and wave fixes from VM naming, application/network/owner/cutover metadata, existing assignments, and matching bucket purpose
+- [x] Carbon Export supports individual suggested fixes, high-confidence bulk selection, selected bulk application, suggestion audit entries, and undo
+- [x] Carbon Export readiness report downloads checklist, planning gaps, preflight findings, suggestion audit, and package inventory as JSON for review meetings
+- [x] Carbon Terraform package preview includes in-page browsing, package-section filtering, handoff CSV filtering, selected-file download, and explicit close behavior
 - [x] Sample-workbook performance guard covers FastAPI summary parsing across both checked-in real samples, plus workshop project state save/load, VM assignment updates, Terraform preview, and ZIP generation
 - [x] Optional private customer-workbook summary performance fixture hook is documented and skipped unless `CARBON_PERF_CUSTOMER_WORKBOOKS` is set
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
@@ -112,16 +118,17 @@ Latest verified commands:
 
 ```bash
 cd prototype/carbon-ui
-npx tsc --noEmit --incremental false
+npx tsc --noEmit
 npm test -- --runInBand
-npm run test:e2e
+CARBON_BASE_URL=http://localhost:3000 npx playwright test
 ```
 
 Results:
+- Python compile: passed
+- Python pytest: 354 passed, 1 skipped
 - TypeScript: 0 errors
-- Jest: 158 tests passing
-- Playwright: 1 browser smoke passing
-- Python focused handoff parity: 13 tests passing
+- Jest: 171 tests passing
+- Playwright: 21 tests passing across Chromium, Firefox, and WebKit
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
@@ -129,7 +136,9 @@ drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign
 persistence, drag/drop accessibility labels, autosave reload, persistence outage
 warning display, Export preflight blocker routing to remediation review, Export
 preview/download/save-before-export failure handling, package preview handoff CSV
-switching/download, and cleanup of temporary smoke projects.
+switching/download, package preview close behavior, keyboard navigation,
+readiness-chip review routing, and cleanup of temporary smoke projects across
+Chromium, Firefox, and WebKit.
 
 The Python parity suite includes `tests/test_carbon_handoff_parity.py`, which
 now covers Streamlit-vs-Carbon fixture parity, an edge-case mapping/readiness
@@ -167,14 +176,14 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 2. **Production readiness**
    - Captured customer-scale large-workbook performance evidence from private fixtures
    - Broader screen-reader/manual accessibility audit
-   - Browser-specific coverage beyond the smoke path
+   - Browser-specific coverage beyond the current smoke and failure-path suite
    - Hosted-runtime alerting/log sink configuration
    - Hosted-runtime restore drill validation
    - Named production support owners and rollback authority
 
 3. **UX polish**
    - Editable network diagram nodes
-   - Richer validation beyond package preflight feedback
+   - Richer validation beyond package preflight and remediation queue feedback
 
 ---
 
@@ -212,6 +221,8 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Carbon Export workflow package browser preview before ZIP download
 - [x] Carbon Export package preview selected-file download and handoff CSV filter
 - [x] Planning-state JSON export/import in Carbon Export workflow
+- [x] Carbon Export readiness report download
+- [x] Carbon Export remediation queue with routing, suggested fixes, bulk application, audit, and undo
 
 ### Phase 6: Polish and Promotion
 - [x] Initial keyboard/accessibility E2E audit for Carbon assignment flow
@@ -219,6 +230,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Multi-browser Playwright smoke coverage for Chromium, Firefox, and WebKit
 - [x] Browser failure-path coverage for persistence outage warning, Export preflight blocker routing, preview/download failures, and save-before-export failure
 - [x] Sample-workbook summary plus workshop state/assignment/preview/ZIP performance guard
+- [x] Export readiness workflow user-manual documentation
 - [ ] Additional customer-scale performance benchmark fixtures
 - [x] Carbon checkpoint documented in user manual
 - [x] Promotion/cutover documentation
