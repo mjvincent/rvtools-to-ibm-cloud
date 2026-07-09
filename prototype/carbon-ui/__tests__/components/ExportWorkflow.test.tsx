@@ -315,6 +315,28 @@ describe('ExportWorkflow', () => {
     expect(screen.getByText('Planning state JSON downloaded.')).toBeTruthy();
   });
 
+  it('downloads an export readiness report with checklist, gaps, and package inventory', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Download readiness report'));
+
+    await waitFor(() => expect(window.URL.createObjectURL).toHaveBeenCalledTimes(1));
+    const blob = (window.URL.createObjectURL as jest.Mock).mock.calls[0][0] as Blob;
+    const payload = JSON.parse(await readBlobText(blob));
+    expect(payload.schema_version).toBe('carbon-export-readiness-report-1.0');
+    expect(payload.project.name).toBe('Export Project');
+    expect(payload.readiness.status).toBe('Needs review');
+    expect(payload.readiness.checklist).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'VM assignments complete', complete: false }),
+      ]),
+    );
+    expect(payload.readiness.planning_gaps['Missing subnet assignments']).toBe(3);
+    expect(payload.package_inventory.total_files).toBe(37);
+    expect(payload.suggestions.available.length).toBeGreaterThan(0);
+    expect(screen.getByText('Export readiness report downloaded.')).toBeTruthy();
+  });
+
   it('imports planning-state JSON before saving Terraform', async () => {
     (api.runProjectPreflight as jest.Mock).mockResolvedValueOnce({
       project_id: 'project-1',

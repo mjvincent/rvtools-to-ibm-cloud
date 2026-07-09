@@ -419,6 +419,7 @@ export default function ExportWorkflow() {
   const highConfidenceSuggestions = assignmentSuggestions.filter((suggestion) => suggestion.confidence === 'High');
   const recentSuggestionAudit = suggestionAudit.slice(0, 6);
   const activeAuditCount = suggestionAudit.filter((entry) => !entry.revertedAt).length;
+  const activeAssignmentGapCount = findings.reduce((total, [, count]) => total + count, 0);
 
   function applyAssignmentSuggestions(suggestions: AssignmentSuggestion[]) {
     if (suggestions.length === 0) return;
@@ -759,6 +760,62 @@ export default function ExportWorkflow() {
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: `Downloaded ${file.path}.` });
   }
 
+  function handleDownloadReadinessReport() {
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
+    dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
+    const generatedAt = new Date().toISOString();
+    const report = {
+      schema_version: 'carbon-export-readiness-report-1.0',
+      generated_at: generatedAt,
+      project: {
+        id: selectedProjectId || null,
+        name: projectName,
+        workbook: summary?.filename || null,
+      },
+      readiness: {
+        status: activeAssignmentGapCount === 0 && (preflightSummary?.blockers || 0) === 0 ? 'Ready' : 'Needs review',
+        checklist: exportChecklist,
+        planning_gaps: Object.fromEntries(findings.map(([label, count]) => [label, count])),
+      },
+      preflight: preflight
+        ? {
+          summary: preflight.summary,
+          findings: preflight.findings,
+        }
+        : null,
+      suggestions: {
+        available: assignmentSuggestions.map((suggestion) => ({
+          vm_id: suggestion.row.id,
+          vm_name: suggestion.row.name,
+          field: suggestion.kind,
+          suggested_value: suggestion.value,
+          label: suggestion.label,
+          confidence: suggestion.confidence,
+          score: suggestion.score,
+          reason: suggestion.reason,
+          evidence: suggestion.evidence,
+        })),
+        audit: suggestionAudit,
+      },
+      package_inventory: {
+        total_files: packageFileCount,
+        terraform_files: terraformPackageFiles.length,
+        handoff_files: handoffPackageFiles.length,
+        carbon_state_files: carbonPackageFiles.length,
+      },
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${projectName.replace(/\s+/g, '-')}-carbon-export-readiness-${generatedAt.split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Export readiness report downloaded.' });
+  }
+
   function showHandoffCsvs() {
     setPreviewCategory('Migration handoff');
     setPreviewSearch('.csv');
@@ -845,6 +902,14 @@ export default function ExportWorkflow() {
             onClick={handleExportPlanningState}
           >
             Export planning JSON
+          </Button>
+          <Button
+            kind="secondary"
+            size="sm"
+            renderIcon={Download}
+            onClick={handleDownloadReadinessReport}
+          >
+            Download readiness report
           </Button>
           <Button
             kind="secondary"
