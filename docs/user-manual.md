@@ -142,6 +142,14 @@ docker compose up --build --detach
 
 Open `http://localhost:8501` and upload an RVTools XLSX export in the sidebar. Streamlit receives `DATABASE_URL` automatically in the Compose-backed launch, so the sidebar `Save Progress` panel can save planning state to the database.
 
+The same Compose stack also starts the experimental Carbon UI and FastAPI backend:
+- Streamlit production workbench: `http://localhost:8501`
+- Carbon UI prototype: `http://localhost:3000`
+- FastAPI backend: `http://localhost:8000`
+- Postgres: `localhost:5432`
+
+Use Carbon for prototype evaluation, workflow parity review, and current UI testing. Use Streamlit for production migration handoff until Carbon is formally promoted.
+
 For a stateless single-container run without database save:
 
 ```bash
@@ -170,6 +178,18 @@ make docker-run
 make compose-up
 make compose-pull
 make compose-down
+```
+
+After local Carbon UI changes, rebuild and restart the Carbon service and its dependent API image:
+
+```bash
+docker compose up -d --build carbon-ui
+```
+
+Check local stack health with:
+
+```bash
+docker compose ps
 ```
 
 For browser access through a container or hosted service, see [Deployment Guide](deployment.md). Hosted deployments should require authenticated access because RVTools exports and generated migration packages can contain sensitive infrastructure data. The app also shows non-blocking reminders near upload and export controls. A static HTML page can link to the app, but it cannot replace the Streamlit/Python backend.
@@ -698,7 +718,11 @@ The `Build Readiness Checklist` is informational. It shows Ready, Review, and Bl
 
 Use `Preview Terraform` to save the latest Carbon network plan and inspect the generated package before downloading the ZIP. The preview includes Terraform files, migration handoff files, and Carbon state files with search, package-section filtering, handoff CSV filtering, and selected-file download.
 
+In Carbon, `Preview Terraform` opens an in-page package preview rather than downloading a ZIP. Use `Close preview` to collapse that preview, `Download selected` to download the currently selected file, or `Show handoff CSVs` to filter the preview to migration handoff CSV files.
+
 Before the ZIP is created, the app runs package preflight validation. Blockers stop package generation; warnings are shown in the UI and exported in the package. Preflight checks cover blocked readiness, empty scope, unresolved custom image placeholders, CIDR syntax and overlap, duplicate Terraform names, missing subnet/security group mappings, unsupported storage tiers, and profile/region support warnings.
+
+In Carbon, the Export Readiness page also shows a remediation queue. The queue orders actionable issues by export priority and provides `Review issue` routing to the correct workflow. When Carbon can infer a likely subnet, security group, storage/IOPS, or wave fix from existing VM assignments and planning metadata, the queue shows the suggested value, confidence, and evidence. Users can apply one fix at a time, select high-confidence fixes in bulk, or clear the selection. Applied suggestions are written to the suggestion audit and can be undone before saving.
 
 The `Terraform Validation Guidance` section explains checks to run after downloading and extracting the ZIP. Package preflight runs inside the app. Offline format validation uses `python scripts/validate_terraform_package.py` or `terraform fmt -check -recursive`. Strict init validation uses `python scripts/validate_terraform_package.py --init-validate` for CI, release checks, or connected operator review. The local `--allow-provider-download-failure` flag is only for VPN, proxy, DNS, or offline environments where provider downloads fail; do not use it for CI.
 
@@ -1028,7 +1052,7 @@ Use it to:
 ## Experimental Carbon UI Checkpoint
 The IBM Carbon UI under `prototype/carbon-ui` is an experimental enterprise UI candidate. Streamlit remains the supported production UI until Carbon passes the promotion gates documented in [Carbon/React UI Strategy](carbon-react-ui-strategy.md), [Carbon Promotion Gate Review](carbon-promotion-gate-review.md), [Carbon Handoff Parity](carbon-handoff-parity.md), and [Carbon Operations Runbook](carbon-operations-runbook.md).
 
-As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow surfaces, package parity checks, guided export readiness controls, and initial keyboard accessibility coverage needed for continued evaluation:
+As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow surfaces, package parity checks, guided export readiness controls, remediation-queue assistance, and initial keyboard accessibility coverage needed for continued evaluation:
 
 - **Workbook intake and overview**: Carbon uploads RVTools workbooks through the shared FastAPI summary path, then shows estate metrics, readiness counts, project persistence status, and saved-project controls.
 - **Assignment workflow**: VM rows can be selected individually or in groups, then assigned by drag/drop or the explicit `Assign` button.
@@ -1040,12 +1064,42 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 - **Wave planning, remediation, image import, and migration ops**: Carbon includes workflow tabs for wave metadata, remediation backlog tracking, image import status, and cutover readiness. These workflows persist through saved project state and contribute to the generated handoff ZIP.
 - **Export parity status**: Carbon Export shows package parity status before download. It identifies the Streamlit handoff file set, the Carbon modular Terraform layout, and the documented Carbon-only `network-plan.json` addition.
 - **Export readiness guidance**: Carbon Export includes a readiness checklist, backend package preflight, blocker routing, Terraform package preview, and ZIP download gating. ZIP download runs preflight first and stops when blockers remain.
+- **Remediation queue**: Carbon Export includes a prioritized queue that combines backend preflight blockers, local planning gaps, subnet CIDR gaps, Terraform naming cleanup, and warnings. `Resolve next issue` and each row-level `Review issue` action use the same routing logic so the user lands in the correct workflow with the affected VM or planning area selected.
 - **Suggested assignment fixes**: Carbon can suggest subnet, security group, storage/IOPS, and wave assignments from similarly named VMs, shared application/network/owner/cutover metadata, or matching bucket purpose. Suggestions show confidence and evidence, and users must explicitly apply them.
+- **Bulk remediation assistance**: Suggested queue fixes can be selected with checkboxes, selected in bulk when confidence is high, cleared, or applied from the Export Readiness queue. Each applied fix is audited.
 - **Suggestion audit and undo**: Applied suggestions are recorded in project state with old value, new value, confidence, reason, evidence, and timestamp. Active suggestion changes can be undone from the Export Readiness audit panel.
 - **Readiness report**: Carbon can download a `carbon-export-readiness` JSON report containing checklist status, assignment gaps, latest preflight findings, suggestion audit entries, and package inventory counts for migration review meetings.
 - **Terraform ZIP contents**: Carbon-generated ZIPs include the Streamlit handoff inventory, Carbon modular Terraform files, and `network-plan.json`. The UI inventory is backed by a shared JSON contract and tested against backend ZIP inventory constants to prevent drift.
 - **Persistence expectations**: Saved projects, network plans, VM assignments, override values, and dirty-state autosave use the shared FastAPI/Postgres prototype stack. If the API or database is unavailable, Carbon shows a persistence warning and the work should be treated as temporary until saved successfully.
 - **Accessibility and E2E coverage**: Drag/drop regions, assignment buttons, row checkboxes, and reviewable readiness chips expose descriptive accessible names. Playwright coverage runs in Chromium, Firefox, and WebKit and includes workbook upload, project save/load, keyboard navigation, keyboard assignment, review-chip routing, single and multi-select drag/drop, unassign persistence, autosave reload, and drag/drop accessibility labels.
+
+### Carbon End-to-End Workflow
+1. Open `http://localhost:3000` after starting the Compose stack.
+2. Use `Workbook Intake` to upload the RVTools XLSX workbook.
+3. Review `Overview` metrics, project persistence state, and readiness counts.
+4. Use `VM Assignment` to map VMs to subnets, security groups, storage/IOPS targets, and waves.
+5. Use `VM Overrides` for VSI profile overrides, storage tier overrides, exclusion decisions, and override reasons.
+6. Review `Remediation Backlog`, `Image Import Planning`, and `Migration Ops` to track blocker owners, image import status, and cutover readiness.
+7. Review `Network Plan`, `Security Plan`, `Storage / IOPS Plan`, and `Wave Plan` for target design completeness.
+8. Open `Export Readiness`.
+9. Save or load the desired project, then run `Run preflight`.
+10. Use the remediation queue to route to blockers or apply reviewed high-confidence suggestions.
+11. Use `Preview Terraform` to inspect generated package files in the UI.
+12. Download the readiness report if a review artifact is needed.
+13. Click `Download Terraform ZIP` after preflight blockers are resolved.
+
+### Carbon And Streamlit Parity
+| Area | Carbon status | Notes |
+| --- | --- | --- |
+| Workbook upload and overview | Implemented | Uses FastAPI summary path and Postgres project persistence. |
+| VM assignment | Implemented | Supports row selection, drag/drop, explicit assignment, unassign actions, and target chips. |
+| VSI profile and storage overrides | Implemented | VM Overrides workflow records profile, storage, scope, reasons, pricing impact, and decision audit. |
+| Network, security, storage, and wave planning | Implemented | Carbon has workflow tabs and saved-state persistence for these planning surfaces. |
+| Remediation, image import, and migration ops | Implemented | Carbon includes workflow tabs, CSV exports/imports where applicable, and handoff ZIP persistence. |
+| Export readiness and Terraform ZIP | Implemented | Includes package parity inventory, preview, preflight, queue routing, ZIP download, and readiness report. |
+| Handoff package parity | Strong but still under review | Real-workbook parity coverage exists, but broader customer-scale and edge-case fixture coverage remains a promotion item. |
+| Accessibility and browser coverage | Partial | Automated Chromium, Firefox, and WebKit smoke coverage exists; broader manual screen-reader validation remains required. |
+| Production operations | Partial | Local Compose stack is healthy; hosted-runtime, backup/restore, support, and formal cutover operating model still need signoff. |
 
 Use Carbon for prototype evaluation and parity review, not production migration handoff. Use Streamlit for production work until Carbon parity and production-readiness gaps are closed, especially additional real-workbook parity fixtures, broader screen-reader/manual accessibility testing, customer-scale large-workbook performance validation beyond the workshop sample, hosted-runtime operations validation, and a formal go/no-go promotion decision.
 
@@ -1146,6 +1200,54 @@ Change the overrides and click `Build Terraform Project` again. Download the new
 
 ### Cached pricing says cached catalog instead of exact catalog
 Global Catalog dimensions are used only when they map to one positive, currently effective, linear metric. If some dimensions are missing or ambiguous, the app preserves the mapped catalog metrics, falls back for the rest, and labels the status as `cached_catalog`.
+
+### Carbon UI does not show recent changes
+Refresh the browser first. If the UI still does not show recent local code changes, rebuild and restart the Carbon service from the repository root:
+
+```bash
+docker compose up -d --build carbon-ui
+```
+
+Then confirm the stack is healthy:
+
+```bash
+docker compose ps
+```
+
+Open `http://localhost:3000` for Carbon and `http://localhost:8501` for Streamlit. The Python virtual environment shown in a VS Code terminal does not hurt Docker Compose commands; Compose runs the containers independently.
+
+### Carbon save, preflight, or ZIP download returns HTTP 422
+HTTP 422 usually means FastAPI rejected the request body validation. In Carbon Export, this most often happens when the network plan payload contains an unexpected shape, a missing required assignment key, or stale browser state from an older UI build.
+
+Recommended recovery:
+1. Confirm all containers are healthy with `docker compose ps`.
+2. Refresh Carbon at `http://localhost:3000`.
+3. Save the project again before export.
+4. If the error continues, rebuild Carbon with `docker compose up -d --build carbon-ui`.
+5. Re-run `Run preflight` before attempting `Download Terraform ZIP`.
+
+The browser console may also show extension warnings such as unsupported `clipboard-write` feature policy messages from browser add-ons. Those warnings are not the Carbon export failure. Use the Network tab XHR response body for the real FastAPI validation error.
+
+### Carbon preview looks like a download button but opens in the page
+In Carbon, `Preview Terraform` intentionally opens an in-page package browser. Use:
+- `Close preview` to collapse the preview panel.
+- `Download selected` to download the currently selected file.
+- `Show handoff CSVs` to filter the preview to migration handoff CSV files.
+- `Download Terraform ZIP` to download the complete ZIP after preflight passes.
+
+### Carbon Export says blockers remain
+Run `Run preflight`, then use the `Remediation queue`. `Review issue` opens the correct workflow and selects the relevant VM or planning area when possible. If a suggested fix is available, review the confidence and evidence before applying it. Bulk-select high-confidence suggestions only when the proposed subnet, security group, storage/IOPS, or wave assignments match the migration design.
+
+### GitHub Desktop fetch works but terminal push fails
+GitHub Desktop and the terminal can use different credential helpers. If GitHub Desktop can fetch the IBM repository but terminal push fails, confirm the terminal remote and branch:
+
+```bash
+git remote -v
+git status --short --branch
+git push ibm-remote feature/carbon-ui-network-planning-phase1
+```
+
+If authentication still fails, sign out and back into the IBM GitHub account in GitHub Desktop, then retry the terminal push. IBM remote pushes may run a pre-receive secret scan; a successful push includes a message that push metadata was collected and the hook finished successfully.
 
 ## Glossary
 ### Address Prefix
