@@ -170,6 +170,13 @@ function rowAssignmentValue(row: AssignmentVm, kind: AssignmentSuggestionKind) {
   return row.wave;
 }
 
+function planningGapLabel(mode: 'network' | 'security' | 'storage' | 'wave') {
+  if (mode === 'network') return 'subnet';
+  if (mode === 'security') return 'security group';
+  if (mode === 'storage') return 'storage/IOPS';
+  return 'wave';
+}
+
 function buildAuditId(row: AssignmentVm, kind: AssignmentSuggestionKind, value: string) {
   return `${row.id}-${kind}-${value}-${Date.now()}`;
 }
@@ -420,6 +427,15 @@ export default function ExportWorkflow() {
   const recentSuggestionAudit = suggestionAudit.slice(0, 6);
   const activeAuditCount = suggestionAudit.filter((entry) => !entry.revertedAt).length;
   const activeAssignmentGapCount = findings.reduce((total, [, count]) => total + count, 0);
+  const hasResolvableIssue = Boolean(
+    preflight?.findings.length
+      || planningCompleteness.missingSubnet
+      || planningCompleteness.missingSg
+      || planningCompleteness.missingStorage
+      || planningCompleteness.missingWave
+      || planningCompleteness.missingCidr
+      || planningCompleteness.invalidLabels,
+  );
 
   function applyAssignmentSuggestions(suggestions: AssignmentSuggestion[]) {
     if (suggestions.length === 0) return;
@@ -642,6 +658,66 @@ export default function ExportWorkflow() {
     }
     dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: route.workflow });
     dispatch({ type: 'SET_PROJECT_STATUS', payload: route.status });
+  }
+
+  function openVmPlanningGap(row: AssignmentVm, mode: 'network' | 'security' | 'storage' | 'wave') {
+    dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [row.id] });
+    dispatch({ type: 'SET_SEARCH_VALUE', payload: row.name });
+    dispatch({ type: 'SET_ASSIGNMENT_MODE', payload: mode });
+    dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: mode === 'storage' ? 'overrides' : mode === 'wave' ? 'waves' : 'assignment' });
+    dispatch({
+      type: 'SET_PROJECT_STATUS',
+      payload: `Resolve missing ${planningGapLabel(mode)} for ${row.name}.`,
+    });
+  }
+
+  function handleResolveNextIssue() {
+    const blocker = preflight?.findings.find((finding) => finding.Severity === 'blocker');
+    if (blocker) {
+      openPreflightFinding(blocker, routesForFinding(blocker)[0]);
+      return;
+    }
+
+    const missingSubnetRow = assignmentRows.find((row) => !row.subnet);
+    if (missingSubnetRow) {
+      openVmPlanningGap(missingSubnetRow, 'network');
+      return;
+    }
+    const missingSecurityRow = assignmentRows.find((row) => !row.securityGroup);
+    if (missingSecurityRow) {
+      openVmPlanningGap(missingSecurityRow, 'security');
+      return;
+    }
+    const missingStorageRow = assignmentRows.find((row) => !row.overrideStorageTier && !row.storageTier);
+    if (missingStorageRow) {
+      openVmPlanningGap(missingStorageRow, 'storage');
+      return;
+    }
+    const missingWaveRow = assignmentRows.find((row) => !row.wave);
+    if (missingWaveRow) {
+      openVmPlanningGap(missingWaveRow, 'wave');
+      return;
+    }
+    if (planningCompleteness.missingCidr > 0) {
+      dispatch({ type: 'SET_ASSIGNMENT_MODE', payload: 'network' });
+      dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'network' });
+      dispatch({ type: 'SET_PROJECT_STATUS', payload: 'Resolve subnet CIDR planning gaps before export.' });
+      return;
+    }
+    if (planningCompleteness.invalidLabels > 0) {
+      dispatch({ type: 'SET_ASSIGNMENT_MODE', payload: 'network' });
+      dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'network' });
+      dispatch({ type: 'SET_PROJECT_STATUS', payload: 'Resolve Terraform label cleanup findings before export.' });
+      return;
+    }
+
+    const warning = preflight?.findings.find((finding) => finding.Severity === 'warning');
+    if (warning) {
+      openPreflightFinding(warning, routesForFinding(warning)[0]);
+      return;
+    }
+
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: 'No unresolved export readiness issues found.' });
   }
 
   async function saveLatestNetworkPlan() {
@@ -879,6 +955,15 @@ export default function ExportWorkflow() {
         </div>
         <div className="network-actions">
           <Tag type={blockingFindingCount === 0 ? 'green' : 'warm-gray'}>{blockingFindingCount === 0 ? 'Ready' : 'Needs review'}</Tag>
+          <Button
+            kind="tertiary"
+            size="sm"
+            renderIcon={Renew}
+            disabled={!hasResolvableIssue}
+            onClick={handleResolveNextIssue}
+          >
+            Resolve next issue
+          </Button>
           <Button
             kind="tertiary"
             size="sm"

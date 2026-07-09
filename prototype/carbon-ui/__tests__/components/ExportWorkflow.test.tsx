@@ -302,6 +302,28 @@ describe('ExportWorkflow', () => {
     );
   });
 
+  it('routes resolve next issue to the first local assignment gap', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Resolve next issue'));
+
+    expect(screen.getByTestId('state-probe').textContent).toBe(
+      'assignment|app-01|sample-app-01|network',
+    );
+  });
+
+  it('prioritizes preflight blockers when resolving the next issue', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Run preflight'));
+    await waitFor(() => expect(screen.getByText('Package preflight')).toBeTruthy());
+    await userEvent.click(screen.getByText('Resolve next issue'));
+
+    expect(screen.getByTestId('state-probe').textContent).toBe(
+      'remediation|db-01|sample-db-01|network',
+    );
+  });
+
   it('downloads the current planning-state JSON', async () => {
     renderWithProvider(<ExportWorkflow />);
 
