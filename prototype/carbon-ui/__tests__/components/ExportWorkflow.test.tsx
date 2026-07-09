@@ -227,8 +227,8 @@ describe('ExportWorkflow', () => {
     expect(screen.getByText('3 backend finding(s) from the saved Carbon network plan.')).toBeTruthy();
     expect(screen.getByText('1 blocker(s)')).toBeTruthy();
     expect(screen.getByText('2 warning(s)')).toBeTruthy();
-    expect(screen.getByText('sample-db-01')).toBeTruthy();
-    expect(screen.getByText('Image readiness is blocked.')).toBeTruthy();
+    expect(screen.getAllByText('sample-db-01').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Image readiness is blocked.').length).toBeGreaterThan(0);
     expect(screen.getByText('Review scope decision')).toBeTruthy();
   });
 
@@ -312,12 +312,39 @@ describe('ExportWorkflow', () => {
     );
   });
 
+  it('shows a prioritized remediation queue for local planning gaps', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    expect(screen.getByText('Remediation queue')).toBeTruthy();
+    expect(screen.getByText(/issue\(s\) sorted by export priority/)).toBeTruthy();
+    expect(screen.getAllByText('Missing subnet assignment')[0]).toBeTruthy();
+    expect(screen.getAllByText('app-01')[0]).toBeTruthy();
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Review issue' })[0]);
+
+    expect(screen.getByTestId('state-probe').textContent).toBe(
+      'assignment|app-01|sample-app-01|network',
+    );
+  });
+
   it('prioritizes preflight blockers when resolving the next issue', async () => {
     renderWithProvider(<ExportWorkflow />);
 
     await userEvent.click(screen.getByText('Run preflight'));
     await waitFor(() => expect(screen.getByText('Package preflight')).toBeTruthy());
     await userEvent.click(screen.getByText('Resolve next issue'));
+
+    expect(screen.getByTestId('state-probe').textContent).toBe(
+      'remediation|db-01|sample-db-01|network',
+    );
+  });
+
+  it('places preflight blockers first in the remediation queue', async () => {
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Run preflight'));
+    await waitFor(() => expect(screen.getByText('Preflight blocker')).toBeTruthy());
+    await userEvent.click(screen.getAllByRole('button', { name: 'Review issue' })[0]);
 
     expect(screen.getByTestId('state-probe').textContent).toBe(
       'remediation|db-01|sample-db-01|network',

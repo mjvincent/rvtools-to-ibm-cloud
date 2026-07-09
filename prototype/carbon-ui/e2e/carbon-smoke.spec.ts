@@ -248,8 +248,9 @@ test('routes preflight blockers to remediation review', async ({ page }) => {
   await page.getByRole('link', { name: 'Export Readiness' }).click();
   await page.getByRole('button', { name: 'Run preflight' }).click();
   await expect(page.getByRole('heading', { name: 'Package preflight' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Remediation queue' })).toBeVisible();
   await expect(page.getByText('1 blocker(s)', { exact: true })).toBeVisible();
-  await expect(page.getByText('Image readiness must be resolved before export.')).toBeVisible();
+  await expect(page.getByText('Image readiness must be resolved before export.').first()).toBeVisible();
 
   await page.getByRole('button', { name: 'Open remediation' }).click();
   await expect(page.getByRole('heading', { name: 'Remediation backlog' })).toBeVisible();

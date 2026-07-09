@@ -378,6 +378,54 @@ body {
   padding-top: 1rem;
 }
 
+.remediation-queue {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.remediation-queue__item {
+  align-items: center;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  padding: 0.75rem;
+}
+
+.remediation-queue__rank {
+  align-items: center;
+  background: #edf5ff;
+  color: #0f62fe;
+  display: flex;
+  font-size: 0.875rem;
+  font-weight: 600;
+  height: 2.25rem;
+  justify-content: center;
+  width: 2.25rem;
+}
+
+.remediation-queue__body {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.remediation-queue__body h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.remediation-queue__body p {
+  color: #525252;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.remediation-queue__action {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .terraform-preview {
   background: #161616;
   color: #f4f4f4;
@@ -818,6 +866,15 @@ body {
   .preview-browser,
   .resource-list {
     grid-template-columns: 1fr;
+  }
+
+  .remediation-queue__item {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .remediation-queue__action {
+    justify-content: flex-start;
   }
 
   .assignment-main,

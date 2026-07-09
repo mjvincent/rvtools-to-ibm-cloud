@@ -113,6 +113,45 @@ type AssignmentSuggestion = {
   evidence: string[];
 };
 
+type RemediationQueueItem =
+  | {
+    id: string;
+    source: 'preflight';
+    severity: 'blocker' | 'warning' | 'info';
+    title: string;
+    subject: string;
+    detail: string;
+    tag: string;
+    tagType: 'red' | 'warm-gray' | 'gray';
+    route: PreflightRoute;
+    finding: PreflightResponse['findings'][number];
+  }
+  | {
+    id: string;
+    source: 'vm-gap';
+    severity: 'blocker';
+    title: string;
+    subject: string;
+    detail: string;
+    tag: string;
+    tagType: 'red' | 'warm-gray' | 'gray';
+    row: AssignmentVm;
+    mode: 'network' | 'security' | 'storage' | 'wave';
+  }
+  | {
+    id: string;
+    source: 'plan-gap';
+    severity: 'blocker';
+    title: string;
+    subject: string;
+    detail: string;
+    tag: string;
+    tagType: 'red' | 'warm-gray' | 'gray';
+    workflow: Workflow;
+    assignmentMode?: 'network' | 'security' | 'storage' | 'wave';
+    status: string;
+  };
+
 const suggestionLabels: Record<AssignmentSuggestionKind, string> = {
   subnet: 'subnet',
   securityGroup: 'security group',
@@ -427,15 +466,6 @@ export default function ExportWorkflow() {
   const recentSuggestionAudit = suggestionAudit.slice(0, 6);
   const activeAuditCount = suggestionAudit.filter((entry) => !entry.revertedAt).length;
   const activeAssignmentGapCount = findings.reduce((total, [, count]) => total + count, 0);
-  const hasResolvableIssue = Boolean(
-    preflight?.findings.length
-      || planningCompleteness.missingSubnet
-      || planningCompleteness.missingSg
-      || planningCompleteness.missingStorage
-      || planningCompleteness.missingWave
-      || planningCompleteness.missingCidr
-      || planningCompleteness.invalidLabels,
-  );
 
   function applyAssignmentSuggestions(suggestions: AssignmentSuggestion[]) {
     if (suggestions.length === 0) return;
@@ -671,52 +701,148 @@ export default function ExportWorkflow() {
     });
   }
 
+  function openPlanGap(workflow: Workflow, status: string, assignmentMode?: 'network' | 'security' | 'storage' | 'wave') {
+    if (assignmentMode) {
+      dispatch({ type: 'SET_ASSIGNMENT_MODE', payload: assignmentMode });
+    }
+    dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [] });
+    dispatch({ type: 'SET_SEARCH_VALUE', payload: '' });
+    dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: workflow });
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: status });
+  }
+
+  function preflightQueueItem(
+    finding: PreflightResponse['findings'][number],
+    index: number,
+  ): RemediationQueueItem {
+    const route = routesForFinding(finding)[0];
+    const severity = finding.Severity === 'blocker' || finding.Severity === 'warning'
+      ? finding.Severity
+      : 'info';
+    return {
+      id: `preflight-${finding.Severity}-${finding.Category}-${finding.Subject}-${index}`,
+      source: 'preflight',
+      severity,
+      title: severity === 'blocker' ? 'Preflight blocker' : severity === 'warning' ? 'Preflight warning' : 'Preflight info',
+      subject: finding.Subject || 'Package',
+      detail: finding.Message || route.status,
+      tag: finding.Category.replace(/_/g, ' '),
+      tagType: severity === 'blocker' ? 'red' : severity === 'warning' ? 'warm-gray' : 'gray',
+      route,
+      finding,
+    };
+  }
+
+  const remediationQueue: RemediationQueueItem[] = [
+    ...(preflight?.findings || [])
+      .filter((finding) => finding.Severity === 'blocker')
+      .map(preflightQueueItem),
+    ...assignmentRows
+      .filter((row) => !row.subnet)
+      .map((row) => ({
+        id: `missing-subnet-${row.id}`,
+        source: 'vm-gap' as const,
+        severity: 'blocker' as const,
+        title: 'Missing subnet assignment',
+        subject: row.name,
+        detail: 'Select the target subnet before Terraform export.',
+        tag: 'subnet',
+        tagType: 'red' as const,
+        row,
+        mode: 'network' as const,
+      })),
+    ...assignmentRows
+      .filter((row) => !row.securityGroup)
+      .map((row) => ({
+        id: `missing-security-${row.id}`,
+        source: 'vm-gap' as const,
+        severity: 'blocker' as const,
+        title: 'Missing security group assignment',
+        subject: row.name,
+        detail: 'Select the target security group before Terraform export.',
+        tag: 'security group',
+        tagType: 'red' as const,
+        row,
+        mode: 'security' as const,
+      })),
+    ...assignmentRows
+      .filter((row) => !row.overrideStorageTier && !row.storageTier)
+      .map((row) => ({
+        id: `missing-storage-${row.id}`,
+        source: 'vm-gap' as const,
+        severity: 'blocker' as const,
+        title: 'Missing storage/IOPS assignment',
+        subject: row.name,
+        detail: 'Select or override the storage tier before Terraform export.',
+        tag: 'storage/IOPS',
+        tagType: 'red' as const,
+        row,
+        mode: 'storage' as const,
+      })),
+    ...assignmentRows
+      .filter((row) => !row.wave)
+      .map((row) => ({
+        id: `missing-wave-${row.id}`,
+        source: 'vm-gap' as const,
+        severity: 'blocker' as const,
+        title: 'Missing wave assignment',
+        subject: row.name,
+        detail: 'Place the VM in a migration wave before Terraform export.',
+        tag: 'wave',
+        tagType: 'red' as const,
+        row,
+        mode: 'wave' as const,
+      })),
+    ...(planningCompleteness.missingCidr > 0 ? [{
+      id: 'missing-subnet-cidrs',
+      source: 'plan-gap' as const,
+      severity: 'blocker' as const,
+      title: 'Subnets missing CIDR',
+      subject: `${planningCompleteness.missingCidr} subnet(s)`,
+      detail: 'Complete subnet CIDR values in the Network Plan.',
+      tag: 'network plan',
+      tagType: 'red' as const,
+      workflow: 'network' as const,
+      assignmentMode: 'network' as const,
+      status: 'Resolve subnet CIDR planning gaps before export.',
+    }] : []),
+    ...(planningCompleteness.invalidLabels > 0 ? [{
+      id: 'invalid-terraform-labels',
+      source: 'plan-gap' as const,
+      severity: 'blocker' as const,
+      title: 'Labels need Terraform cleanup',
+      subject: `${planningCompleteness.invalidLabels} label(s)`,
+      detail: 'Update labels so generated Terraform resource names are stable.',
+      tag: 'naming',
+      tagType: 'red' as const,
+      workflow: 'network' as const,
+      assignmentMode: 'network' as const,
+      status: 'Resolve Terraform label cleanup findings before export.',
+    }] : []),
+    ...(preflight?.findings || [])
+      .filter((finding) => finding.Severity !== 'blocker')
+      .map(preflightQueueItem),
+  ];
+  const hasResolvableIssue = remediationQueue.length > 0;
+
+  function reviewRemediationIssue(item: RemediationQueueItem) {
+    if (item.source === 'preflight') {
+      openPreflightFinding(item.finding, item.route);
+      return;
+    }
+    if (item.source === 'vm-gap') {
+      openVmPlanningGap(item.row, item.mode);
+      return;
+    }
+    openPlanGap(item.workflow, item.status, item.assignmentMode);
+  }
+
   function handleResolveNextIssue() {
-    const blocker = preflight?.findings.find((finding) => finding.Severity === 'blocker');
-    if (blocker) {
-      openPreflightFinding(blocker, routesForFinding(blocker)[0]);
+    const nextIssue = remediationQueue[0];
+    if (nextIssue) {
+      reviewRemediationIssue(nextIssue);
       return;
     }
-
-    const missingSubnetRow = assignmentRows.find((row) => !row.subnet);
-    if (missingSubnetRow) {
-      openVmPlanningGap(missingSubnetRow, 'network');
-      return;
-    }
-    const missingSecurityRow = assignmentRows.find((row) => !row.securityGroup);
-    if (missingSecurityRow) {
-      openVmPlanningGap(missingSecurityRow, 'security');
-      return;
-    }
-    const missingStorageRow = assignmentRows.find((row) => !row.overrideStorageTier && !row.storageTier);
-    if (missingStorageRow) {
-      openVmPlanningGap(missingStorageRow, 'storage');
-      return;
-    }
-    const missingWaveRow = assignmentRows.find((row) => !row.wave);
-    if (missingWaveRow) {
-      openVmPlanningGap(missingWaveRow, 'wave');
-      return;
-    }
-    if (planningCompleteness.missingCidr > 0) {
-      dispatch({ type: 'SET_ASSIGNMENT_MODE', payload: 'network' });
-      dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'network' });
-      dispatch({ type: 'SET_PROJECT_STATUS', payload: 'Resolve subnet CIDR planning gaps before export.' });
-      return;
-    }
-    if (planningCompleteness.invalidLabels > 0) {
-      dispatch({ type: 'SET_ASSIGNMENT_MODE', payload: 'network' });
-      dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'network' });
-      dispatch({ type: 'SET_PROJECT_STATUS', payload: 'Resolve Terraform label cleanup findings before export.' });
-      return;
-    }
-
-    const warning = preflight?.findings.find((finding) => finding.Severity === 'warning');
-    if (warning) {
-      openPreflightFinding(warning, routesForFinding(warning)[0]);
-      return;
-    }
-
     dispatch({ type: 'SET_PROJECT_STATUS', payload: 'No unresolved export readiness issues found.' });
   }
 
@@ -1071,6 +1197,53 @@ export default function ExportWorkflow() {
             <p>{count === 0 ? 'Ready' : `${count} item(s) need attention`}</p>
           </Tile>
         ))}
+      </div>
+      <div className="export-package">
+        <div className="section-header compact">
+          <div>
+            <h2>Remediation queue</h2>
+            <p>{remediationQueue.length === 0 ? 'No unresolved export readiness issues.' : `${remediationQueue.length} issue(s) sorted by export priority.`}</p>
+          </div>
+          <Tag type={remediationQueue.length === 0 ? 'green' : 'warm-gray'}>
+            {remediationQueue.length === 0 ? 'Clear' : 'Action needed'}
+          </Tag>
+        </div>
+        {remediationQueue.length > 0 ? (
+          <div className="remediation-queue">
+            {remediationQueue.map((item, index) => (
+              <Tile key={item.id} className="remediation-queue__item">
+                <div className="remediation-queue__rank">P{index + 1}</div>
+                <div className="remediation-queue__body">
+                  <div className="package-tile__header">
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>{item.subject}</p>
+                    </div>
+                    <div className="network-actions">
+                      <Tag type={item.tagType}>{item.severity}</Tag>
+                      <Tag type="gray">{item.tag}</Tag>
+                    </div>
+                  </div>
+                  <p>{item.detail}</p>
+                </div>
+                <div className="remediation-queue__action">
+                  <Button
+                    kind="tertiary"
+                    size="sm"
+                    onClick={() => reviewRemediationIssue(item)}
+                  >
+                    Review issue
+                  </Button>
+                </div>
+              </Tile>
+            ))}
+          </div>
+        ) : (
+          <Tile className="resource-tile">
+            <h3>Ready</h3>
+            <p>All tracked export readiness items are clear.</p>
+          </Tile>
+        )}
       </div>
       {assignmentSuggestions.length > 0 && (
         <div className="export-package">
