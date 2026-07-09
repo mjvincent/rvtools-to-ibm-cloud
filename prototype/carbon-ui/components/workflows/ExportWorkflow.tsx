@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Button, InlineNotification, Layer, Search, Select, SelectItem, Tag, Tile } from '@carbon/react';
+import { Button, Checkbox, InlineNotification, Layer, Search, Select, SelectItem, Tag, Tile } from '@carbon/react';
 import { Close, CloudUpload, Download, Renew, View } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import type { AssignmentVm, SuggestionConfidence, Workflow } from '../../types/network-planning';
@@ -209,6 +209,17 @@ function rowAssignmentValue(row: AssignmentVm, kind: AssignmentSuggestionKind) {
   return row.wave;
 }
 
+function suggestionKey(suggestion: AssignmentSuggestion) {
+  return `${suggestion.row.id}:${suggestion.kind}:${suggestion.value}`;
+}
+
+function suggestionKindForMode(mode: 'network' | 'security' | 'storage' | 'wave'): AssignmentSuggestionKind {
+  if (mode === 'network') return 'subnet';
+  if (mode === 'security') return 'securityGroup';
+  if (mode === 'storage') return 'storage';
+  return 'wave';
+}
+
 function planningGapLabel(mode: 'network' | 'security' | 'storage' | 'wave') {
   if (mode === 'network') return 'subnet';
   if (mode === 'security') return 'security group';
@@ -230,6 +241,7 @@ export default function ExportWorkflow() {
   const [previewSearch, setPreviewSearch] = useState('');
   const [previewCategory, setPreviewCategory] = useState('All');
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [selectedQueueSuggestionIds, setSelectedQueueSuggestionIds] = useState<string[]>([]);
   const {
     assignmentRows,
     resources,
@@ -825,6 +837,56 @@ export default function ExportWorkflow() {
   ];
   const hasResolvableIssue = remediationQueue.length > 0;
 
+  function suggestionForQueueItem(item: RemediationQueueItem) {
+    if (item.source === 'preflight') {
+      return suggestionForFinding(item.finding);
+    }
+    if (item.source === 'vm-gap') {
+      return inferAssignmentSuggestion(item.row, suggestionKindForMode(item.mode));
+    }
+    return null;
+  }
+
+  const queueSuggestionEntries = remediationQueue
+    .map((item) => {
+      const suggestion = suggestionForQueueItem(item);
+      return suggestion ? { item, suggestion, key: suggestionKey(suggestion) } : null;
+    })
+    .filter((entry): entry is { item: RemediationQueueItem; suggestion: AssignmentSuggestion; key: string } =>
+      Boolean(entry),
+    );
+  const uniqueQueueSuggestionEntries = Array.from(
+    new Map(queueSuggestionEntries.map((entry) => [entry.key, entry])).values(),
+  );
+  const selectedQueueSuggestions = uniqueQueueSuggestionEntries
+    .filter((entry) => selectedQueueSuggestionIds.includes(entry.key))
+    .map((entry) => entry.suggestion);
+  const highConfidenceQueueSuggestionIds = uniqueQueueSuggestionEntries
+    .filter((entry) => entry.suggestion.confidence === 'High')
+    .map((entry) => entry.key);
+
+  function toggleQueueSuggestion(suggestion: AssignmentSuggestion, checked: boolean) {
+    const key = suggestionKey(suggestion);
+    setSelectedQueueSuggestionIds((current) =>
+      checked
+        ? Array.from(new Set([...current, key]))
+        : current.filter((candidate) => candidate !== key),
+    );
+  }
+
+  function selectHighConfidenceQueueSuggestions() {
+    setSelectedQueueSuggestionIds(highConfidenceQueueSuggestionIds);
+  }
+
+  function clearQueueSuggestionSelection() {
+    setSelectedQueueSuggestionIds([]);
+  }
+
+  function applySelectedQueueSuggestions() {
+    applyAssignmentSuggestions(selectedQueueSuggestions);
+    setSelectedQueueSuggestionIds([]);
+  }
+
   function reviewRemediationIssue(item: RemediationQueueItem) {
     if (item.source === 'preflight') {
       openPreflightFinding(item.finding, item.route);
@@ -1204,39 +1266,110 @@ export default function ExportWorkflow() {
             <h2>Remediation queue</h2>
             <p>{remediationQueue.length === 0 ? 'No unresolved export readiness issues.' : `${remediationQueue.length} issue(s) sorted by export priority.`}</p>
           </div>
-          <Tag type={remediationQueue.length === 0 ? 'green' : 'warm-gray'}>
-            {remediationQueue.length === 0 ? 'Clear' : 'Action needed'}
-          </Tag>
+          <div className="network-actions">
+            <Tag type={remediationQueue.length === 0 ? 'green' : 'warm-gray'}>
+              {remediationQueue.length === 0 ? 'Clear' : 'Action needed'}
+            </Tag>
+            <Tag type={uniqueQueueSuggestionEntries.length === 0 ? 'gray' : 'blue'}>
+              {uniqueQueueSuggestionEntries.length} suggested
+            </Tag>
+            <Tag type={selectedQueueSuggestions.length === 0 ? 'gray' : 'green'}>
+              {selectedQueueSuggestions.length} selected
+            </Tag>
+            <Button
+              kind="tertiary"
+              size="sm"
+              disabled={highConfidenceQueueSuggestionIds.length === 0}
+              onClick={selectHighConfidenceQueueSuggestions}
+            >
+              Select high confidence
+            </Button>
+            <Button
+              kind="tertiary"
+              size="sm"
+              disabled={selectedQueueSuggestions.length === 0}
+              onClick={clearQueueSuggestionSelection}
+            >
+              Clear selection
+            </Button>
+            <Button
+              kind="secondary"
+              size="sm"
+              disabled={selectedQueueSuggestions.length === 0}
+              onClick={applySelectedQueueSuggestions}
+            >
+              Apply selected fixes
+            </Button>
+          </div>
         </div>
         {remediationQueue.length > 0 ? (
           <div className="remediation-queue">
-            {remediationQueue.map((item, index) => (
-              <Tile key={item.id} className="remediation-queue__item">
-                <div className="remediation-queue__rank">P{index + 1}</div>
-                <div className="remediation-queue__body">
-                  <div className="package-tile__header">
-                    <div>
-                      <h3>{item.title}</h3>
-                      <p>{item.subject}</p>
+            {remediationQueue.map((item, index) => {
+              const suggestion = suggestionForQueueItem(item);
+              const key = suggestion ? suggestionKey(suggestion) : '';
+              const selected = selectedQueueSuggestionIds.includes(key);
+              return (
+                <Tile key={item.id} className="remediation-queue__item">
+                  <div className="remediation-queue__rank">P{index + 1}</div>
+                  <div className="remediation-queue__body">
+                    <div className="package-tile__header">
+                      <div>
+                        <h3>{item.title}</h3>
+                        <p>{item.subject}</p>
+                      </div>
+                      <div className="network-actions">
+                        <Tag type={item.tagType}>{item.severity}</Tag>
+                        <Tag type="gray">{item.tag}</Tag>
+                      </div>
                     </div>
-                    <div className="network-actions">
-                      <Tag type={item.tagType}>{item.severity}</Tag>
-                      <Tag type="gray">{item.tag}</Tag>
-                    </div>
+                    <p>{item.detail}</p>
+                    {suggestion ? (
+                      <div className="remediation-queue__suggestion">
+                        <Checkbox
+                          id={`queue-suggestion-${key}`}
+                          labelText={`Select suggested ${suggestionLabels[suggestion.kind]} for ${suggestion.row.name}`}
+                          checked={selected}
+                          onChange={(_, data) => toggleQueueSuggestion(suggestion, Boolean(data.checked))}
+                        />
+                        <div>
+                          <p>
+                            Suggested {suggestionLabels[suggestion.kind]}: {suggestion.label}
+                          </p>
+                          <div className="network-actions">
+                            <Tag type={confidenceTagType(suggestion.confidence)}>
+                              {suggestion.confidence} confidence
+                            </Tag>
+                            {suggestion.evidence.slice(0, 2).map((evidence) => (
+                              <Tag key={evidence} type="gray">{evidence}</Tag>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p>No automatic suggestion is available for this issue.</p>
+                    )}
                   </div>
-                  <p>{item.detail}</p>
-                </div>
-                <div className="remediation-queue__action">
-                  <Button
-                    kind="tertiary"
-                    size="sm"
-                    onClick={() => reviewRemediationIssue(item)}
-                  >
-                    Review issue
-                  </Button>
-                </div>
-              </Tile>
-            ))}
+                  <div className="remediation-queue__action">
+                    {suggestion && (
+                      <Button
+                        kind="tertiary"
+                        size="sm"
+                        onClick={() => applyAssignmentSuggestion(suggestion)}
+                      >
+                        Apply fix
+                      </Button>
+                    )}
+                    <Button
+                      kind="tertiary"
+                      size="sm"
+                      onClick={() => reviewRemediationIssue(item)}
+                    >
+                      Review issue
+                    </Button>
+                  </div>
+                </Tile>
+              );
+            })}
           </div>
         ) : (
           <Tile className="resource-tile">

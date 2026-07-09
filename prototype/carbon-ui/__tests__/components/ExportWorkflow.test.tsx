@@ -327,6 +327,82 @@ describe('ExportWorkflow', () => {
     );
   });
 
+  it('bulk applies selected high-confidence fixes from the remediation queue', async () => {
+    const rows: AssignmentVm[] = [
+      {
+        id: 'app-01',
+        name: 'app-01',
+        image: 'Ready',
+        imageReasons: '',
+        migration: 'Ready',
+        migrationReasons: '',
+        memory: 'Ready',
+        memoryReasons: '',
+        networkReadiness: 'Ready',
+        networkReasons: '',
+        profile: 'bx2-2x8',
+        overrideProfile: '',
+        storageTier: '5iops-tier',
+        overrideStorageTier: '',
+        network: 'app-net',
+        subnet: 'prod-app-us-south-1',
+        securityGroup: 'sg-app-private',
+        power: 'poweredOn',
+        owner: 'App owner',
+        application: 'App tier',
+        wave: 'Wave 1',
+        cutoverGroup: 'app-cutover',
+        priority: '',
+        dependencyGroup: '',
+      },
+      {
+        id: 'app-02',
+        name: 'app-02',
+        image: 'Ready',
+        imageReasons: '',
+        migration: 'Ready',
+        migrationReasons: '',
+        memory: 'Ready',
+        memoryReasons: '',
+        networkReadiness: 'Ready',
+        networkReasons: '',
+        profile: 'bx2-2x8',
+        overrideProfile: '',
+        storageTier: '5iops-tier',
+        overrideStorageTier: '',
+        network: 'app-net',
+        subnet: '',
+        securityGroup: '',
+        power: 'poweredOn',
+        owner: 'App owner',
+        application: 'App tier',
+        wave: '',
+        cutoverGroup: 'app-cutover',
+        priority: '',
+        dependencyGroup: '',
+      },
+    ];
+    render(
+      <AppProvider>
+        <SeedProject>
+          <SeedAssignments rows={rows} />
+          <ExportWorkflow />
+          <AssignmentProbe vmId="app-02" />
+        </SeedProject>
+      </AppProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Remediation queue')).toBeTruthy());
+    await userEvent.click(screen.getByText('Select high confidence'));
+    await userEvent.click(screen.getByText('Apply selected fixes'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('assignment-probe').textContent).toContain('prod-app-us-south-1|sg-app-private|5iops-tier|Wave 1'),
+    );
+    expect(screen.getByTestId('assignment-probe').textContent).toContain('audit:3');
+    expect(screen.getByText('Applied 3 suggested assignment(s), including 3 high-confidence item(s). Save the project to persist them.')).toBeTruthy();
+  });
+
   it('prioritizes preflight blockers when resolving the next issue', async () => {
     renderWithProvider(<ExportWorkflow />);
 
