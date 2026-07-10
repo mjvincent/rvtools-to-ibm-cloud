@@ -98,6 +98,7 @@ describe('OverridesWorkflow', () => {
 
     expect(screen.getByText('VM Overrides')).toBeTruthy();
     expect(screen.getByText('Export decision audit CSV')).toBeTruthy();
+    expect(screen.getByRole('table', { name: 'VM override rows' })).toBeTruthy();
     expect(screen.getAllByText('Effective: bx2-2x8 (2 vCPU / 8 GB)').length).toBeGreaterThan(0);
 
     const profileSelect = screen.getByLabelText('Override profile for app-01') as HTMLSelectElement;

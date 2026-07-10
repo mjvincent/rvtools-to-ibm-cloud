@@ -113,6 +113,7 @@ feature-parity and production-readiness gaps.
 - [x] Optional private customer-workbook summary performance fixture hook is documented and skipped unless `CARBON_PERF_CUSTOMER_WORKBOOKS` is set
 - [x] Sanitized private-workbook evidence helper and template are documented for customer-scale timing capture without paths, filenames, VM names, IPs, owners, or application names
 - [x] Carbon accessibility and UAT results template is documented for manual review evidence, issue severity tracking, accepted pilot gaps, and promotion sign-off
+- [x] Focused automated Carbon accessibility/UAT pass recorded for VM Overrides and Export Readiness, with table naming and package-preview selected-state issues fixed
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
@@ -250,6 +251,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Export readiness workflow user-manual documentation
 - [x] Carbon accessibility and UAT checklist created
 - [x] Carbon accessibility and UAT results/sign-off template created
+- [x] Focused automated accessibility/UAT result recorded for VM Overrides and Export Readiness
 - [ ] Additional customer-scale performance benchmark fixtures
 - [x] Carbon checkpoint documented in user manual
 - [x] Promotion/cutover documentation
@@ -268,6 +270,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [Carbon Promotion Gate Review](./carbon-promotion-gate-review.md)
 - [Carbon Accessibility and UAT Checklist](./carbon-accessibility-uat-checklist.md)
 - [Carbon Accessibility and UAT Results Template](./carbon-accessibility-uat-results-template.md)
+- [Carbon Accessibility and UAT Focused Results - 2026-07-10](./carbon-accessibility-uat-results-2026-07-10-focused.md)
 - [Carbon Promotion and Cutover Guide](./carbon-promotion-cutover-guide.md)
 - [Carbon Operations Runbook](./carbon-operations-runbook.md)
 - [Carbon Handoff Parity](./carbon-handoff-parity.md)

@@ -523,6 +523,7 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
 
   await page.getByRole('link', { name: 'VM Overrides' }).click();
   await expect(page.getByRole('heading', { name: 'VM Overrides' })).toBeVisible();
+  await expect(page.getByRole('table', { name: 'VM override rows' })).toBeVisible();
   const uploadedOverrideRow = page.locator('tbody tr').filter({ hasText: uploadedFirstVmName }).first();
   await page.getByLabel(`Override profile for ${uploadedFirstVmName}`).selectOption(profileOverride);
   await page.getByLabel(`Profile override reason for ${uploadedFirstVmName}`).fill(profileOverrideReason);
@@ -715,6 +716,7 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await expect(page.getByText(/37 generated file\(s\)/)).toBeVisible();
   await page.getByRole('button', { name: 'Show handoff CSVs' }).click();
   await page.getByRole('button', { name: /decision-audit.csv/ }).click();
+  await expect(page.getByRole('button', { name: 'Preview decision-audit.csv (Migration handoff), selected' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByLabel('Terraform preview decision-audit.csv')).toContainText('VM Name');
   await expect(page.getByLabel('Terraform preview decision-audit.csv')).toContainText(profileOverride);
   await expect(page.getByLabel('Terraform preview decision-audit.csv')).toContainText(profileOverrideReason);

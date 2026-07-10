@@ -442,7 +442,7 @@ export default function OverridesWorkflow() {
       </Layer>
 
       <div className="vm-table-wrap override-table-wrap">
-        <table className="vm-table override-table">
+        <table className="vm-table override-table" aria-label="VM override rows">
           <thead>
             <tr>
               <th>

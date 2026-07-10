@@ -242,9 +242,15 @@ describe('ExportWorkflow', () => {
     expect(screen.getByText('Package preview')).toBeTruthy();
     expect(screen.getByText('4 generated file(s) from the saved Carbon network plan.')).toBeTruthy();
     expect(screen.getByLabelText('Terraform preview README.md').textContent).toContain('Terraform Package');
+    expect(
+      screen.getByRole('button', { name: 'Preview README.md (Terraform), selected' }).getAttribute('aria-pressed'),
+    ).toBe('true');
 
     await userEvent.click(screen.getByRole('button', { name: /main.tf/ }));
     expect(screen.getByLabelText('Terraform preview main.tf').textContent).toContain('required_version');
+    expect(
+      screen.getByRole('button', { name: 'Preview main.tf (Terraform), selected' }).getAttribute('aria-pressed'),
+    ).toBe('true');
 
     await userEvent.selectOptions(screen.getByLabelText('Package section'), 'Migration handoff');
     expect(screen.getByRole('button', { name: /decision-audit.csv/ })).toBeTruthy();

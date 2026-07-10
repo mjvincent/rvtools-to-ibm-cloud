@@ -1625,17 +1625,22 @@ export default function ExportWorkflow() {
                 ))}
               </Select>
               <div className="preview-file-list" aria-label="Package preview files">
-                {filteredPreviewFiles.map((file) => (
-                  <button
-                    key={file.path}
-                    className={`preview-file-row${file.path === selectedPreviewFile.path ? ' preview-file-row--selected' : ''}`}
-                    type="button"
-                    onClick={() => setSelectedPreviewPath(file.path)}
-                  >
-                    <span>{file.path}</span>
-                    <small>{file.category}</small>
-                  </button>
-                ))}
+                {filteredPreviewFiles.map((file) => {
+                  const isSelected = file.path === selectedPreviewFile.path;
+                  return (
+                    <button
+                      key={file.path}
+                      className={`preview-file-row${isSelected ? ' preview-file-row--selected' : ''}`}
+                      type="button"
+                      aria-pressed={isSelected}
+                      aria-label={`Preview ${file.path} (${file.category})${isSelected ? ', selected' : ''}`}
+                      onClick={() => setSelectedPreviewPath(file.path)}
+                    >
+                      <span>{file.path}</span>
+                      <small>{file.category}</small>
+                    </button>
+                  );
+                })}
                 {filteredPreviewFiles.length === 0 && (
                   <p className="preview-empty">No package files match this filter.</p>
                 )}
