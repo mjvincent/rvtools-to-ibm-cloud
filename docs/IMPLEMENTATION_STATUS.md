@@ -5,7 +5,7 @@
 This document tracks the implementation status of the Carbon UI integration with
 the RVTools to IBM Cloud migration tool.
 
-**Last Updated**: 2026-07-09
+**Last Updated**: 2026-07-10
 **Current Phase**: Carbon UI Phase 6 promotion-readiness evidence and polish
 **Production UI**: Streamlit remains production until Carbon closes the remaining
 feature-parity and production-readiness gaps.
@@ -112,6 +112,7 @@ feature-parity and production-readiness gaps.
 - [x] Generated 5,000-row Carbon UI performance guard covers VM Assignment search/sort and VM Overrides missing-reason filtering
 - [x] Optional private customer-workbook summary performance fixture hook is documented and skipped unless `CARBON_PERF_CUSTOMER_WORKBOOKS` is set
 - [x] Sanitized private-workbook evidence helper and template are documented for customer-scale timing capture without paths, filenames, VM names, IPs, owners, or application names
+- [x] Carbon accessibility and UAT results template is documented for manual review evidence, issue severity tracking, accepted pilot gaps, and promotion sign-off
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
@@ -186,7 +187,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 2. **Production readiness**
    - Captured customer-scale large-workbook performance evidence from private fixtures
-   - Broader screen-reader/manual accessibility audit
+   - Broader screen-reader/manual accessibility audit using the checklist and results template
    - Browser-specific coverage beyond the current smoke and failure-path suite
    - Hosted-runtime alerting/log sink configuration
    - Hosted-runtime restore drill validation
@@ -248,6 +249,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Generated 5,000-row Carbon UI Assignment/Overrides filtering performance guard
 - [x] Export readiness workflow user-manual documentation
 - [x] Carbon accessibility and UAT checklist created
+- [x] Carbon accessibility and UAT results/sign-off template created
 - [ ] Additional customer-scale performance benchmark fixtures
 - [x] Carbon checkpoint documented in user manual
 - [x] Promotion/cutover documentation
@@ -265,6 +267,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [Carbon React UI Strategy](./carbon-react-ui-strategy.md)
 - [Carbon Promotion Gate Review](./carbon-promotion-gate-review.md)
 - [Carbon Accessibility and UAT Checklist](./carbon-accessibility-uat-checklist.md)
+- [Carbon Accessibility and UAT Results Template](./carbon-accessibility-uat-results-template.md)
 - [Carbon Promotion and Cutover Guide](./carbon-promotion-cutover-guide.md)
 - [Carbon Operations Runbook](./carbon-operations-runbook.md)
 - [Carbon Handoff Parity](./carbon-handoff-parity.md)

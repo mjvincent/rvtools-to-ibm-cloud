@@ -32,7 +32,7 @@ Carbon is eligible for production promotion only when these gates are green:
 | Feature parity | Wave planning, remediation, image import, migration ops, overrides, decision audit, handoff package, and planning-state reload match Streamlit contracts. |
 | Real-workbook parity | Representative RVTools workbooks compare cleanly for handoff artifacts, with documented exceptions for Carbon-specific preflight checks. |
 | Runtime readiness | Docker Compose and the intended hosted runtime start API, Carbon UI, Streamlit, and Postgres reliably. |
-| Accessibility and browser coverage | Keyboard, screen-reader, multi-browser, and UAT checks pass for the primary workflow using the [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md). |
+| Accessibility and browser coverage | Keyboard, screen-reader, multi-browser, and UAT checks pass for the primary workflow using the [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md), with outcomes captured in the [Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md). |
 | Operations | Backup/restore, rollback, logging, monitoring, data retention, and support ownership are documented in the [Carbon Operations Runbook](carbon-operations-runbook.md). |
 | User acceptance | Migration users complete at least one realistic assessment through Carbon and approve the workflow. |
 
@@ -67,7 +67,7 @@ Before promotion:
    - `cutover-readiness.csv`
    - mapping/readiness CSVs
 7. Confirm Streamlit can still generate a package from the same workbook.
-8. Complete the [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md) for the release candidate and attach evidence to the promotion review.
+8. Complete the [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md) for the release candidate, record the decision in the [Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md), and attach evidence to the promotion review.
 9. Back up Postgres and the artifact volume using the
    [Carbon Operations Runbook](carbon-operations-runbook.md), or use the
    deployment platform's native backup mechanism.

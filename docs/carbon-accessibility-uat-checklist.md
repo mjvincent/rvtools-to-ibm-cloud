@@ -2,6 +2,11 @@
 
 Use this checklist to capture manual accessibility, keyboard, and user-acceptance evidence before promoting Carbon from prototype to production. Streamlit remains the supported production UI until these checks are completed and reviewed.
 
+Record the final outcome in the
+[Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md).
+The checklist is the step-by-step execution record; the results template is the
+promotion sign-off packet.
+
 ## Review Metadata
 
 | Field | Value |
@@ -115,4 +120,3 @@ Attach or link the following when completing a promotion review:
 | Are Carbon outputs acceptable compared with Streamlit for the reviewed workbook? |  |  |
 | Are remaining issues documented with owner and severity? |  |  |
 | Is Carbon ready for pilot use with Streamlit fallback? |  |  |
-
