@@ -19,8 +19,36 @@ import DraggableVmRow from '../dnd/DraggableVmRow';
 import PlacementModal from '../dnd/PlacementModal';
 import SubnetDropZone from '../dnd/SubnetDropZone';
 
-function textValue(value: unknown) {
+export function textValue(value: unknown) {
   return value === null || value === undefined ? '' : String(value);
+}
+
+export function filterAndSortAssignmentRows(
+  rows: AssignmentVm[],
+  params: {
+    searchValue: string;
+    readinessFilter: string;
+    sortKey: string;
+    sortDirection: 'asc' | 'desc';
+  },
+) {
+  const query = params.searchValue.trim().toLowerCase();
+  const filteredRows = rows.filter((row) => {
+    const matchesSearch = !query || [
+      row.name, row.network, row.subnet, row.securityGroup,
+      row.wave, row.application, row.owner,
+    ].some((value) => value.toLowerCase().includes(query));
+    const statuses = [row.image, row.migration, row.memory, row.networkReadiness];
+    const matchesReadiness = params.readinessFilter === 'all' || statuses.includes(params.readinessFilter);
+    return matchesSearch && matchesReadiness;
+  });
+  return [...filteredRows].sort((left, right) => {
+    const a = textValue((left as Record<string, unknown>)[params.sortKey]).toLowerCase();
+    const b = textValue((right as Record<string, unknown>)[params.sortKey]).toLowerCase();
+    if (a === b) return left.name.localeCompare(right.name);
+    const result = a > b ? 1 : -1;
+    return params.sortDirection === 'asc' ? result : -result;
+  });
 }
 
 function terraformLabel(value: string) {
@@ -56,22 +84,11 @@ export default function AssignmentWorkflow() {
   } = state;
 
   const filteredRows = useMemo(() => {
-    const query = searchValue.trim().toLowerCase();
-    const rows = assignmentRows.filter((row) => {
-      const matchesSearch = !query || [
-        row.name, row.network, row.subnet, row.securityGroup,
-        row.wave, row.application, row.owner,
-      ].some((value) => value.toLowerCase().includes(query));
-      const statuses = [row.image, row.migration, row.memory, row.networkReadiness];
-      const matchesReadiness = readinessFilter === 'all' || statuses.includes(readinessFilter);
-      return matchesSearch && matchesReadiness;
-    });
-    return [...rows].sort((left, right) => {
-      const a = textValue((left as Record<string, unknown>)[sortKey]).toLowerCase();
-      const b = textValue((right as Record<string, unknown>)[sortKey]).toLowerCase();
-      if (a === b) return left.name.localeCompare(right.name);
-      const result = a > b ? 1 : -1;
-      return sortDirection === 'asc' ? result : -result;
+    return filterAndSortAssignmentRows(assignmentRows, {
+      searchValue,
+      readinessFilter,
+      sortKey,
+      sortDirection,
     });
   }, [assignmentRows, readinessFilter, searchValue, sortDirection, sortKey]);
 

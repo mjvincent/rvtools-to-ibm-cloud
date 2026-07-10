@@ -146,12 +146,30 @@ export function summarizeOverrides(rows: AssignmentVm[]) {
 
 type OverrideFilter = 'all' | 'missingReasons' | 'profileOverrides' | 'storageOverrides' | 'excluded';
 
-function hasMissingOverrideReason(row: AssignmentVm) {
+export function hasMissingOverrideReason(row: AssignmentVm) {
   return Boolean(
     (row.overrideProfile && !row.overrideProfileReason?.trim())
       || (row.overrideStorageTier && !row.overrideStorageTierReason?.trim())
       || (row.excluded && !row.exclusionReason?.trim()),
   );
+}
+
+export function filterOverrideRows(
+  rows: AssignmentVm[],
+  searchValue: string,
+  overrideFilter: OverrideFilter,
+) {
+  const query = searchValue.trim().toLowerCase();
+  return rows.filter((row) => {
+    const matchesSearch = !query || [row.name, row.profile, row.overrideProfile, row.storageTier, row.overrideStorageTier, row.application, row.owner]
+      .some((value) => textValue(value).toLowerCase().includes(query));
+    if (!matchesSearch) return false;
+    if (overrideFilter === 'missingReasons') return hasMissingOverrideReason(row);
+    if (overrideFilter === 'profileOverrides') return Boolean(row.overrideProfile);
+    if (overrideFilter === 'storageOverrides') return Boolean(row.overrideStorageTier);
+    if (overrideFilter === 'excluded') return Boolean(row.excluded);
+    return true;
+  });
 }
 
 export default function OverridesWorkflow() {
@@ -165,17 +183,7 @@ export default function OverridesWorkflow() {
   const summary = summarizeOverrides(assignmentRows);
   const profileOptions = buildProfileOptions(assignmentRows);
 
-  const filteredRows = assignmentRows.filter((row) => {
-    const query = searchValue.trim().toLowerCase();
-    const matchesSearch = !query || [row.name, row.profile, row.overrideProfile, row.storageTier, row.overrideStorageTier, row.application, row.owner]
-      .some((value) => textValue(value).toLowerCase().includes(query));
-    if (!matchesSearch) return false;
-    if (overrideFilter === 'missingReasons') return hasMissingOverrideReason(row);
-    if (overrideFilter === 'profileOverrides') return Boolean(row.overrideProfile);
-    if (overrideFilter === 'storageOverrides') return Boolean(row.overrideStorageTier);
-    if (overrideFilter === 'excluded') return Boolean(row.excluded);
-    return true;
-  });
+  const filteredRows = filterOverrideRows(assignmentRows, searchValue, overrideFilter);
   const selectedOverrideRows = assignmentRows.filter((row) => selectedVmIds.includes(row.id));
   const selectedProfileOverrideRows = selectedOverrideRows.filter((row) => row.overrideProfile);
   const selectedStorageOverrideRows = selectedOverrideRows.filter((row) => row.overrideStorageTier);

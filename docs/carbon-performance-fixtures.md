@@ -33,6 +33,24 @@ venv/bin/python -m pytest tests/test_carbon_large_workbook_performance.py -q
 When `CARBON_PERF_CUSTOMER_WORKBOOKS` is not set, the private-customer fixture
 test is skipped and the checked-in sample workbook guards still run.
 
+## Run Generated UI Filter Guards
+
+The Carbon Jest suite also includes a generated 5,000-row UI guard for VM
+Assignment search/sort and VM Overrides missing-reason filtering. Run it with:
+
+```bash
+cd prototype/carbon-ui
+npm test -- --runInBand __tests__/large-ui-performance.test.ts
+```
+
+Optional threshold overrides:
+
+```bash
+CARBON_UI_ASSIGNMENT_FILTER_MAX_MS=250 \
+CARBON_UI_OVERRIDES_FILTER_MAX_MS=250 \
+npm test -- --runInBand __tests__/large-ui-performance.test.ts
+```
+
 ## Evidence Template
 
 Capture only sanitized evidence:
