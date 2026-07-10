@@ -1374,6 +1374,282 @@ def test_carbon_workshop_workbook_unknown_network_subset_matches_streamlit_hando
     } == expected_image_fields
 
 
+def test_carbon_workshop_operational_edge_subset_matches_streamlit_handoff():
+    summary = _workshop_workbook_summary()
+    records = [
+        dict(
+            next(
+                row
+                for row in summary["assignment_rows"]
+                if row["VM Name"] == vm_name
+            )
+        )
+        for vm_name in ("AKWSVCIDM1-1", "BBWMFG01", "BOWAB10SP1JS02", "AO-PROXY")
+    ]
+
+    records[0].update(
+        {
+            "Owner": "identity-team",
+            "Application": "Identity",
+            "Wave": "Wave 1",
+            "Cutover Group": "CG-Identity",
+            "Priority": "critical",
+            "Dependency Group": "directory-services",
+            "Override Profile": "bx2-2x8",
+            "Override Profile Reason": "Keep extra memory headroom for domain services",
+            "Override Profile Hourly": 0.114,
+            "Custom Image ID": "r001-identity-image",
+        }
+    )
+    records[1].update(
+        {
+            "Owner": "manufacturing-team",
+            "Application": "Manufacturing",
+            "Wave": "Wave 2",
+            "Cutover Group": "CG-Manufacturing",
+            "Priority": "high",
+            "Dependency Group": "mfg-core",
+            "Override Storage Tier": "5iops-tier",
+            "Override Storage Tier Reason": "Production file service latency target",
+            "Override Storage Tier Monthly Per GB": 0.10,
+        }
+    )
+    records[2].update(
+        {
+            "Owner": "app-team",
+            "Application": "Java Services",
+            "Wave": "Wave 3",
+            "Cutover Group": "CG-App",
+            "Priority": "medium",
+            "Dependency Group": "app-services",
+            "Exclude?": True,
+            "Exclusion Reason": "Retire after application consolidation",
+        }
+    )
+    records[3].update(
+        {
+            "Owner": "network-team",
+            "Application": "Proxy",
+            "Wave": "Wave 1",
+            "Cutover Group": "CG-Network",
+            "Priority": "medium",
+            "Dependency Group": "edge-services",
+        }
+    )
+
+    remediation_tracker = {
+        "AKWSVCIDM1-1::network": {
+            "vm_key": "AKWSVCIDM1-1",
+            "owner": "identity-team",
+            "status": "Open",
+            "due_date": "2026-07-24",
+            "notes": "Confirm target subnet because source network is unknown.",
+            "blocker_type": "Network",
+            "blocker_description": "Connected NIC has no usable source network name",
+        },
+        "BBWMFG01::memory": {
+            "vm_key": "BBWMFG01",
+            "owner": "manufacturing-team",
+            "status": "In Progress",
+            "due_date": "2026-07-28",
+            "notes": "Review memory headroom with manufacturing app owner.",
+            "blocker_type": "Memory",
+            "blocker_description": "Missing vMemory data requires owner validation",
+        },
+        "BOWAB10SP1JS02::image": {
+            "vm_key": "BOWAB10SP1JS02",
+            "owner": "app-team",
+            "status": "Closed",
+            "due_date": "2026-07-12",
+            "notes": "Application consolidation approved.",
+            "blocker_type": "Image",
+            "blocker_description": "Image import not required for excluded VM",
+        },
+    }
+    image_import_status = {
+        "1v / 4096M": {
+            "target_catalog_id": "r001-identity-image",
+            "import_status": "Imported",
+            "estimated_import_time": "35m",
+            "notes": "Identity image ready for Wave 1.",
+        },
+        "2v / 4096M": {
+            "target_catalog_id": "",
+            "import_status": "Pending",
+            "estimated_import_time": "45m",
+            "notes": "Proxy image pending owner validation.",
+        },
+        "8v / 16384M": {
+            "target_catalog_id": "",
+            "import_status": "Scheduled",
+            "estimated_import_time": "90m",
+            "notes": "Manufacturing image scheduled with migration factory.",
+        },
+        "8v / 32768M": {
+            "target_catalog_id": "",
+            "import_status": "Not Required",
+            "estimated_import_time": "",
+            "notes": "Excluded from migration scope.",
+        },
+    }
+    _plan, _planning_state, pricing_catalog = (
+        _carbon_plan_state_and_pricing_from_records(
+            records,
+            assessment_quality=summary["assessment_quality"],
+            remediation_tracker=remediation_tracker,
+            image_import_status=image_import_status,
+        )
+    )
+
+    streamlit_files = _streamlit_package_files(
+        records,
+        pricing_catalog=pricing_catalog,
+        remediation_tracker=remediation_tracker,
+        image_import_status=image_import_status,
+        assessment_quality=summary["assessment_quality"],
+    )
+    carbon_files = _carbon_package_files_from_records(
+        records,
+        assessment_quality=summary["assessment_quality"],
+        remediation_tracker=remediation_tracker,
+        image_import_status=image_import_status,
+    )
+
+    exact_handoff_files = {
+        "decision-audit.csv",
+        "remediation-backlog.csv",
+        "image-import-plan.csv",
+        "cutover-readiness.csv",
+        "assessment-quality.json",
+        "assessment-quality.csv",
+        "pricing-diagnostics.json",
+        "pricing-diagnostics.csv",
+        "vm-mapping.csv",
+        "nic-mapping.csv",
+        "memory-readiness.csv",
+        "readiness-findings.csv",
+    }
+    for file_name in exact_handoff_files:
+        assert carbon_files[file_name] == streamlit_files[file_name], file_name
+    assert _operational_planning_state(
+        carbon_files["planning-state.json"]
+    ) == _operational_planning_state(streamlit_files["planning-state.json"])
+
+    def assert_row_fields(row, expected):
+        assert {field: row[field] for field in expected} == expected
+
+    audit_rows = _csv_rows(carbon_files["decision-audit.csv"])
+    audit_by_vm = {
+        row["VM Name"]: row
+        for row in audit_rows
+        if row["VM Name"] and row["VM Name"] != "TOTAL"
+    }
+    assert_row_fields(
+        audit_by_vm["AKWSVCIDM1-1"],
+        {
+            "Original Profile": "cx2-2x4",
+            "Chosen Profile": "bx2-2x8",
+            "Profile Override Reason": "Keep extra memory headroom for domain services",
+            "Include/Exclude": "Include",
+        },
+    )
+    assert_row_fields(
+        audit_by_vm["BBWMFG01"],
+        {
+            "Original Storage Tier": "3iops-tier",
+            "Chosen Storage Tier": "5iops-tier",
+            "Storage Tier Override Reason": "Production file service latency target",
+        },
+    )
+    assert_row_fields(
+        audit_by_vm["BOWAB10SP1JS02"],
+        {
+            "Include/Exclude": "Exclude",
+            "Exclusion Reason": "Retire after application consolidation",
+        },
+    )
+
+    remediation_rows = [
+        row
+        for row in _csv_rows(carbon_files["remediation-backlog.csv"])
+        if row["VM Key"]
+    ]
+    assert {row["VM Key"] for row in remediation_rows} == {
+        "AKWSVCIDM1-1",
+        "BBWMFG01",
+        "BOWAB10SP1JS02",
+    }
+    assert_row_fields(
+        next(row for row in remediation_rows if row["VM Key"] == "AKWSVCIDM1-1"),
+        {
+            "Owner": "identity-team",
+            "Status": "Open",
+            "Blocker Type": "Network",
+        },
+    )
+
+    image_rows = _csv_rows(carbon_files["image-import-plan.csv"])
+    image_by_source = {row["Source Image"]: row for row in image_rows}
+    assert_row_fields(
+        image_by_source["1v / 4096M"],
+        {
+            "Count of VMs": "1",
+            "Owners": "identity-team",
+            "Target Catalog ID": "r001-identity-image",
+            "Import Status": "Imported",
+        },
+    )
+    assert_row_fields(
+        image_by_source["8v / 32768M"],
+        {
+            "Count of VMs": "1",
+            "Owners": "app-team",
+            "Import Status": "Not Required",
+            "Notes": "Excluded from migration scope.",
+        },
+    )
+    assert image_by_source["TOTAL"]["Count of VMs"] == "4"
+
+    cutover_rows = _csv_rows(carbon_files["cutover-readiness.csv"])
+    assert any(
+        row["VM Name"] == "AO-PROXY"
+        and row["Blocker Category"] == "Image Import Pending"
+        and "2v / 4096M import status is Pending" in row["Blocker Reason"]
+        for row in cutover_rows
+    )
+    assert any(
+        row["VM Name"] == "AKWSVCIDM1-1"
+        and row["Blocker Category"] == "Unresolved Remediation"
+        and row["Owner"] == "identity-team"
+        for row in cutover_rows
+    )
+    assert not any(
+        row["VM Name"] == "BOWAB10SP1JS02"
+        and row["Blocker Category"] == "Unresolved Remediation"
+        for row in cutover_rows
+    )
+
+    planning_state = json.loads(carbon_files["planning-state.json"])
+    wave_by_vm = {
+        row["VM Name"]: row
+        for row in planning_state["wave_planning"]
+    }
+    assert {
+        row["Wave"]
+        for row in wave_by_vm.values()
+    } == {"Wave 1", "Wave 2", "Wave 3"}
+    assert_row_fields(
+        wave_by_vm["BBWMFG01"],
+        {
+            "Wave": "Wave 2",
+            "Cutover Group": "CG-Manufacturing",
+            "Owner": "manufacturing-team",
+            "Application": "Manufacturing",
+            "Priority": "high",
+        },
+    )
+
+
 def test_carbon_sample_workbook_operational_overlays_match_streamlit_handoff():
     summary = _sample_workbook_summary()
     records = [dict(row) for row in summary["assignment_rows"]]

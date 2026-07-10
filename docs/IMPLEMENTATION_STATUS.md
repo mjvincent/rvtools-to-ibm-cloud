@@ -94,6 +94,7 @@ feature-parity and production-readiness gaps.
 - [x] First edge-case Streamlit-vs-Carbon fixture comparison covers multi-NIC, disk, partition, memory-readiness, and readiness-finding CSV fidelity
 - [x] Multi-VM Streamlit-vs-Carbon fixture comparison covers mixed waves, profile/storage overrides, exclusions, remediation, image import summaries, custom image tfvars, cutover readiness, and planning-state parity
 - [x] Workshop real-workbook subset comparison covers unknown-network, low-confidence assessment-quality, missing-vMemory, image-import, and cutover-readiness parity
+- [x] Workshop real-workbook operational edge subset comparison covers overrides, exclusions, remediation, image import status, wave/cutover metadata, unknown-network readiness, and exact operational handoff parity
 - [x] Sample-workbook operational overlay comparison covers real workbook rows with wave/cutover, remediation, image import, profile/storage overrides, planning-state parity, and exact non-preflight handoff file parity
 - [x] Carbon Export workflow shows package parity status, corrected modular Terraform inventory, and documented Carbon-only ZIP additions before download
 - [x] Carbon Export UI inventory is backed by a shared JSON contract and tested against the backend ZIP inventory constants
@@ -125,7 +126,7 @@ CARBON_BASE_URL=http://localhost:3000 npx playwright test
 
 Results:
 - Python compile: passed
-- Python pytest: 354 passed, 1 skipped
+- Python pytest: 355 passed, 1 skipped
 - TypeScript: 0 errors
 - Jest: 171 tests passing
 - Playwright: 21 tests passing across Chromium, Firefox, and WebKit
@@ -146,7 +147,9 @@ fixture for multi-NIC and disk/partition fidelity, a multi-VM operational
 fixture for overrides, exclusions, remediation, image import, cutover readiness,
 manifest handoff references, and planning-state parity, a workshop real-workbook subset fixture for
 unknown-network, storage mapping empty-state, and low-confidence
-assessment-quality behavior, and sample-workbook operational overlays for
+assessment-quality behavior, a workshop real-workbook operational edge fixture
+for overrides, exclusions, remediation, image import, wave/cutover metadata, and
+exact operational handoff parity, and sample-workbook operational overlays for
 wave/cutover, remediation, image import, profile/storage overrides, rich
 disk/partition mapping, exact non-preflight handoff files, Carbon preflight
 superset checks, and planning-state parity, plus
@@ -211,6 +214,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Full handoff artifact inventory in Carbon ZIP
 - [x] Initial Streamlit-vs-Carbon handoff fixture comparison coverage
 - [x] Real workbook operational overlay fixture coverage
+- [x] Workshop real-workbook operational edge fixture coverage
 - [x] Sample-workbook summary plus workshop state/assignment/preview/ZIP performance guard
 - [ ] Additional real-workbook edge fixture coverage
 

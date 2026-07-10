@@ -48,7 +48,7 @@ CARBON_BASE_URL=http://localhost:3000 npx playwright test
 
 Observed results:
 - Python compile: passed
-- Python pytest: 354 passed, 1 skipped
+- Python pytest: 355 passed, 1 skipped
 - Carbon TypeScript: 0 errors
 - Carbon Jest: 171 passed
 - Carbon Playwright: 21 passed across Chromium, Firefox, and WebKit
@@ -66,9 +66,9 @@ cleanup across Chromium, Firefox, and WebKit. The suite runs with one worker bec
 same FastAPI/Postgres backend during project save/load and cleanup.
 
 The Python parity suite now includes Streamlit-vs-Carbon single-VM, edge-case,
-multi-VM, workshop real-workbook subset, and sample-workbook operational overlay
-comparisons, including real-workbook disk/partition mapping parity and exact
-non-preflight handoff file parity for the sample workbook;
+multi-VM, workshop real-workbook subset, workshop operational edge subset, and
+sample-workbook operational overlay comparisons, including real-workbook
+disk/partition mapping parity and exact non-preflight handoff file parity for the sample workbook;
 manifest handoff references; sample-workbook handoff contract assertions;
 sample-workbook API ZIP inventory and handoff CSV payload
 verification; API preview-vs-ZIP file/content parity; and a Carbon Export UI
@@ -147,7 +147,9 @@ Current feature-parity status:
    - Streamlit-vs-Carbon fixture coverage now includes a synthetic fixture,
      multi-NIC/disk/partition/memory/readiness edge fixture, multi-VM
      operational fixture, workshop real-workbook subset fixture,
-     sample-workbook operational overlay fixture with exact non-preflight
+     workshop real-workbook operational edge fixture for overrides, exclusions,
+     remediation, image import, wave/cutover metadata, unknown-network readiness,
+     and exact operational handoff parity, sample-workbook operational overlay fixture with exact non-preflight
      handoff file parity, sample-workbook contract assertions, API ZIP
      inventory verification, Export UI/backend inventory
      drift protection, and performance coverage for sample-workbook summary
