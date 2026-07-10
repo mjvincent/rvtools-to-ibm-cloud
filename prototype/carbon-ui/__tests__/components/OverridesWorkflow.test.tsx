@@ -105,5 +105,16 @@ describe('OverridesWorkflow', () => {
 
     expect(profileSelect.value).toBe('mx2-16x128');
     expect(screen.getByText('Effective: mx2-16x128 (16 vCPU / 128 GB)')).toBeTruthy();
+    expect(screen.getByText('Reason needed')).toBeTruthy();
+
+    await userEvent.type(
+      screen.getByLabelText('Profile override reason for app-01'),
+      'Memory validation approved by workload owner',
+    );
+    expect(screen.queryByText('Reason needed')).toBeNull();
+
+    await userEvent.click(screen.getAllByText('Reset profile override')[0]);
+    expect(profileSelect.value).toBe('');
+    expect(screen.getAllByText('Effective: bx2-2x8 (2 vCPU / 8 GB)').length).toBeGreaterThan(0);
   });
 });

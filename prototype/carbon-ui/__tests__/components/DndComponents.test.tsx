@@ -30,6 +30,7 @@ describe('DnD components', () => {
               overrideStorageTier: '10iops-tier',
               storageLabel: 'db_high_iops',
               wave: 'Wave 1',
+              overrideProfile: 'mx2-16x128',
             }}
             selected
             assignmentMode="network"
@@ -46,6 +47,8 @@ describe('DnD components', () => {
     expect(screen.getByRole('checkbox', { name: 'Select app-01' })).toBeTruthy();
     expect(screen.getByText('prod-app-us-south-1')).toBeTruthy();
     expect(screen.getByText('Wave 1')).toBeTruthy();
+    expect(screen.getByText('Override: mx2-16x128')).toBeTruthy();
+    expect(screen.getByText('Reason needed')).toBeTruthy();
     fireEvent.dragStart(row!, { dataTransfer: dataTransfer() });
     expect(onDragStart).toHaveBeenCalledTimes(1);
 

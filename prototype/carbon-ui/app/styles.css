@@ -631,6 +631,39 @@ body {
   font-size: 0.8125rem;
 }
 
+.profile-decision {
+  background: #f4f4f4;
+  border-left: 3px solid #8d8d8d;
+  display: grid;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+}
+
+.profile-decision--overridden {
+  background: #edf5ff;
+  border-left-color: #0f62fe;
+}
+
+.profile-decision__label {
+  color: #525252;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.profile-decision strong {
+  overflow-wrap: anywhere;
+}
+
+.row-profile-tags {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+}
+
 .network-diagram {
   display: grid;
   gap: 1rem;

@@ -164,6 +164,10 @@ export default function OverridesWorkflow() {
     });
   }
 
+  function resetProfileOverride(rowId: string) {
+    updateRow(rowId, { overrideProfile: '', overrideProfileReason: '' });
+  }
+
   function exportCsv() {
     const blob = new Blob([decisionAuditCsv(assignmentRows)], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -242,6 +246,18 @@ export default function OverridesWorkflow() {
                   <span>{row.application || 'No application'} | {row.owner || 'No owner'}</span>
                 </td>
                 <td>
+                  <div className={`profile-decision${row.overrideProfile ? ' profile-decision--overridden' : ''}`}>
+                    <span className="profile-decision__label">Effective VSI profile</span>
+                    <strong>{profileSizeLabel(row.overrideProfile || row.profile)}</strong>
+                    <div className="network-actions">
+                      <Tag type={row.overrideProfile ? 'blue' : 'gray'}>
+                        {row.overrideProfile ? 'Override' : 'Recommended'}
+                      </Tag>
+                      {row.overrideProfile && !row.overrideProfileReason?.trim() && (
+                        <Tag type="red">Reason needed</Tag>
+                      )}
+                    </div>
+                  </div>
                   <Select
                     id={`profile-${row.id}`}
                     labelText={`Override profile for ${row.name}`}
@@ -259,6 +275,7 @@ export default function OverridesWorkflow() {
                     id={`profile-reason-${row.id}`}
                     labelText={`Profile override reason for ${row.name}`}
                     value={row.overrideProfileReason || ''}
+                    placeholder="Example: Rightsized after memory validation or workload owner approval"
                     onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
                       updateRow(row.id, { overrideProfileReason: event.target.value })
                     }
@@ -278,6 +295,14 @@ export default function OverridesWorkflow() {
                       updateRow(row.id, { overrideProfile: event.target.value })
                     }
                   />
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    disabled={!row.overrideProfile && !row.overrideProfileReason}
+                    onClick={() => resetProfileOverride(row.id)}
+                  >
+                    Reset profile override
+                  </Button>
                 </td>
                 <td>
                   <Select

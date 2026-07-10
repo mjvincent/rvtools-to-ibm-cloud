@@ -26,6 +26,8 @@ export default function DraggableVmRow({
   onOverride,
   onReadinessAction,
 }: DraggableVmRowProps) {
+  const effectiveProfile = row.overrideProfile || row.profile;
+
   return (
     <tr
       className={selected ? 'vm-row vm-row--selected' : 'vm-row'}
@@ -46,6 +48,14 @@ export default function DraggableVmRow({
       <td>
         <strong>{row.name}</strong>
         <span>{row.profile || 'No profile'} | {row.network || 'No source network'}</span>
+        <div className="row-profile-tags" aria-label={`Effective profile for ${row.name}`}>
+          <Tag type={row.overrideProfile ? 'blue' : 'gray'}>
+            {row.overrideProfile ? 'Override' : 'Recommended'}: {effectiveProfile || 'No profile'}
+          </Tag>
+          {row.overrideProfile && !row.overrideProfileReason?.trim() && (
+            <Tag type="red">Reason needed</Tag>
+          )}
+        </div>
       </td>
       <td>
         <ReadinessTag

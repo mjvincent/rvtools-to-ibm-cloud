@@ -58,9 +58,10 @@ The Playwright coverage includes workbook upload, project save/load, subnet
 drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign,
 autosave reload, persistence outage warning display, Export preflight blocker
 routing to remediation review, Export remediation queue high-confidence bulk
-fix application, suggestion audit/undo, Export preview/download/save-before-export
-failure handling, package preview handoff CSV switching/download, keyboard
-navigation, keyboard assignment through explicit Assign buttons,
+fix application, suggestion audit/undo, profile override save/load/export
+parity, Export preview/download/save-before-export failure handling, package
+preview handoff CSV switching/download, keyboard navigation, keyboard assignment
+through explicit Assign buttons,
 readiness-chip review routing, drag/drop accessibility labels, row checkbox
 accessible names, package preview close behavior, and temporary smoke-project
 cleanup across Chromium, Firefox, and WebKit. The suite runs with one worker because the smoke tests share the

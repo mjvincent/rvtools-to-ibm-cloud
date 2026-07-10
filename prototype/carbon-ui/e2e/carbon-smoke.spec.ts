@@ -480,6 +480,8 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   const projectName = `Carbon smoke ${Date.now()}`;
   const vpcName = `smoke-vpc-${Date.now()}`;
   const securityGroupName = `sg-smoke-${Date.now()}`;
+  const profileOverride = 'mx2-16x128';
+  const profileOverrideReason = 'Memory validation approved by workload owner';
 
   await page.goto('/');
   await expect(page.getByText('RVTools to IBM Cloud VPC')).toBeVisible();
@@ -496,6 +498,19 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
     page.getByText(/Loaded rvtools-small-complete.xlsx/),
   ).toBeVisible();
   await expect(page.getByRole('heading', { name: 'VM Assignment Workbench' })).toBeVisible();
+  const uploadedFirstVmName = (await page.locator('tbody tr').first().locator('strong').innerText()).trim();
+
+  await page.getByRole('link', { name: 'VM Overrides' }).click();
+  await expect(page.getByRole('heading', { name: 'VM Overrides' })).toBeVisible();
+  const uploadedOverrideRow = page.locator('tbody tr').filter({ hasText: uploadedFirstVmName }).first();
+  await page.getByLabel(`Override profile for ${uploadedFirstVmName}`).selectOption(profileOverride);
+  await page.getByLabel(`Profile override reason for ${uploadedFirstVmName}`).fill(profileOverrideReason);
+  await expect(uploadedOverrideRow).toContainText(profileOverride);
+  await expect(uploadedOverrideRow).toContainText(profileOverrideReason);
+  await expect(uploadedOverrideRow).not.toContainText('Reason needed');
+
+  await page.getByRole('link', { name: 'VM Assignment' }).click();
+  await expect(page.locator('tbody tr').filter({ hasText: uploadedFirstVmName }).first()).toContainText(`Override: ${profileOverride}`);
 
   await page.getByRole('button', { name: 'Create VPC' }).click();
   const vpcDialog = page.getByRole('dialog', { name: 'Create VPC bucket' });
@@ -566,6 +581,12 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await page.getByRole('button', { name: 'Load', exact: true }).click();
   await expect(page.getByText(new RegExp(`Loaded ${projectName}`))).toBeVisible();
   await expect(page.locator('tbody')).toContainText(securityGroupName);
+
+  await page.getByRole('link', { name: 'VM Overrides' }).click();
+  const loadedOverrideRow = page.locator('tbody tr').filter({ hasText: uploadedFirstVmName }).first();
+  await expect(loadedOverrideRow).toContainText(profileOverride);
+  await expect(loadedOverrideRow).toContainText(profileOverrideReason);
+  await page.getByRole('link', { name: 'VM Assignment' }).click();
 
   const firstVmName = (await page.locator('tbody tr').first().locator('strong').innerText()).trim();
   await expect(page.getByRole('checkbox', { name: `Select ${firstVmName}` })).toBeVisible();
@@ -674,6 +695,8 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   await page.getByRole('button', { name: 'Show handoff CSVs' }).click();
   await page.getByRole('button', { name: /decision-audit.csv/ }).click();
   await expect(page.getByLabel('Terraform preview decision-audit.csv')).toContainText('VM Name');
+  await expect(page.getByLabel('Terraform preview decision-audit.csv')).toContainText(profileOverride);
+  await expect(page.getByLabel('Terraform preview decision-audit.csv')).toContainText(profileOverrideReason);
   await page.getByRole('button', { name: /remediation-backlog.csv/ }).click();
   await expect(page.getByLabel('Terraform preview remediation-backlog.csv')).toContainText('Blocker Type');
   await page.getByRole('button', { name: /image-import-plan.csv/ }).click();
@@ -688,6 +711,8 @@ test('uploads workbook and round-trips saved project state', async ({ page }) =>
   expect(downloadPath).toBeTruthy();
   const content = await readFile(downloadPath as string, 'utf8');
   expect(content).toContain('VM Key,VM Name,Owner,Application,Wave,Original Profile,Chosen Profile');
+  expect(content).toContain(profileOverride);
+  expect(content).toContain(profileOverrideReason);
 
   const selectedProjectId = await projectSelect.inputValue();
   await page.request.delete(`/api/projects/${selectedProjectId}`);
