@@ -33,6 +33,34 @@ venv/bin/python -m pytest tests/test_carbon_large_workbook_performance.py -q
 When `CARBON_PERF_CUSTOMER_WORKBOOKS` is not set, the private-customer fixture
 test is skipped and the checked-in sample workbook guards still run.
 
+## Collect Sanitized Private Workbook Evidence
+
+Use the helper script when you need a copy/paste evidence block without exposing
+local paths, workbook filenames, VM names, IP addresses, owners, or application
+names:
+
+```bash
+venv/bin/python scripts/collect_carbon_perf_evidence.py \
+  medium-wave=/path/to/private-medium.xlsx \
+  large-estate=/path/to/private-large.xlsx
+```
+
+The left side of `label=/path/to/workbook.xlsx` is the only workbook identifier
+printed in the evidence. Choose neutral labels such as `medium-wave` or
+`large-estate`.
+
+Optional JSON output:
+
+```bash
+venv/bin/python scripts/collect_carbon_perf_evidence.py \
+  --json \
+  --threshold-seconds 45 \
+  medium-wave=/path/to/private-medium.xlsx
+```
+
+Use [Carbon Private Workbook Evidence Template](carbon-private-workbook-evidence-template.md)
+for manually collected evidence or review packets.
+
 ## Run Generated API State Guards
 
 The backend performance suite includes a generated 3,000-row Carbon project

@@ -111,6 +111,7 @@ feature-parity and production-readiness gaps.
 - [x] Generated 3,000-row Carbon API performance guard covers project-state save/load and VM assignment updates
 - [x] Generated 5,000-row Carbon UI performance guard covers VM Assignment search/sort and VM Overrides missing-reason filtering
 - [x] Optional private customer-workbook summary performance fixture hook is documented and skipped unless `CARBON_PERF_CUSTOMER_WORKBOOKS` is set
+- [x] Sanitized private-workbook evidence helper and template are documented for customer-scale timing capture without paths, filenames, VM names, IPs, owners, or application names
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
