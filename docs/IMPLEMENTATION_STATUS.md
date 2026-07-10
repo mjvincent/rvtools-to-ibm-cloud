@@ -108,6 +108,7 @@ feature-parity and production-readiness gaps.
 - [x] Carbon Export readiness report downloads checklist, planning gaps, preflight findings, suggestion audit, and package inventory as JSON for review meetings
 - [x] Carbon Terraform package preview includes in-page browsing, package-section filtering, handoff CSV filtering, selected-file download, and explicit close behavior
 - [x] Sample-workbook performance guard covers FastAPI summary parsing across both checked-in real samples, plus workshop project state save/load, VM assignment updates, Terraform preview, and ZIP generation
+- [x] Generated 3,000-row Carbon API performance guard covers project-state save/load and VM assignment updates
 - [x] Generated 5,000-row Carbon UI performance guard covers VM Assignment search/sort and VM Overrides missing-reason filtering
 - [x] Optional private customer-workbook summary performance fixture hook is documented and skipped unless `CARBON_PERF_CUSTOMER_WORKBOOKS` is set
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
@@ -167,8 +168,10 @@ sample-workbook summary parsing across both checked-in real samples, supports
 optional private customer-workbook summary guards via
 `CARBON_PERF_CUSTOMER_WORKBOOKS`, and guards workshop project state save/load,
 VM assignment update, Terraform preview, and ZIP paths against performance
-regressions. The Carbon Jest suite also guards generated 5,000-row UI
-filtering for VM Assignment search/sort and VM Overrides missing-reason cleanup.
+regressions. It also guards generated 3,000-row Carbon API project-state
+save/load and VM assignment updates. The Carbon Jest suite guards generated
+5,000-row UI filtering for VM Assignment search/sort and VM Overrides
+missing-reason cleanup.
 
 ---
 
@@ -220,6 +223,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Real workbook operational overlay fixture coverage
 - [x] Workshop real-workbook operational edge fixture coverage
 - [x] Sample-workbook summary plus workshop state/assignment/preview/ZIP performance guard
+- [x] Generated 3,000-row Carbon API project-state save/load/update performance guard
 - [x] Generated 5,000-row Carbon UI Assignment/Overrides filtering performance guard
 - [ ] Additional real-workbook edge fixture coverage
 
@@ -239,6 +243,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Multi-browser Playwright smoke coverage for Chromium, Firefox, and WebKit
 - [x] Browser failure-path coverage for persistence outage warning, Export preflight blocker routing, preview/download failures, and save-before-export failure
 - [x] Sample-workbook summary plus workshop state/assignment/preview/ZIP performance guard
+- [x] Generated 3,000-row Carbon API project-state save/load/update performance guard
 - [x] Generated 5,000-row Carbon UI Assignment/Overrides filtering performance guard
 - [x] Export readiness workflow user-manual documentation
 - [x] Carbon accessibility and UAT checklist created

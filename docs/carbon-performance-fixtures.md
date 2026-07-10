@@ -33,6 +33,25 @@ venv/bin/python -m pytest tests/test_carbon_large_workbook_performance.py -q
 When `CARBON_PERF_CUSTOMER_WORKBOOKS` is not set, the private-customer fixture
 test is skipped and the checked-in sample workbook guards still run.
 
+## Run Generated API State Guards
+
+The backend performance suite includes a generated 3,000-row Carbon project
+state guard for save, load, and VM assignment update endpoints. Run it with:
+
+```bash
+venv/bin/python -m pytest tests/test_carbon_large_workbook_performance.py::test_synthetic_large_carbon_project_state_save_load_update_performance_guard -q
+```
+
+Optional row-count and threshold overrides:
+
+```bash
+CARBON_PERF_SYNTHETIC_STATE_ROWS=5000 \
+CARBON_PERF_SYNTHETIC_STATE_SAVE_MAX_SECONDS=10 \
+CARBON_PERF_SYNTHETIC_STATE_LOAD_MAX_SECONDS=10 \
+CARBON_PERF_SYNTHETIC_ASSIGNMENT_UPDATE_MAX_SECONDS=10 \
+venv/bin/python -m pytest tests/test_carbon_large_workbook_performance.py::test_synthetic_large_carbon_project_state_save_load_update_performance_guard -q
+```
+
 ## Run Generated UI Filter Guards
 
 The Carbon Jest suite also includes a generated 5,000-row UI guard for VM

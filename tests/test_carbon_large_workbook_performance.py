@@ -35,6 +35,7 @@ SAMPLE_WORKBOOKS = (
     pytest.param("workshop", WORKSHOP_WORKBOOK, 763, id="workshop"),
 )
 CUSTOMER_WORKBOOKS_ENV = "CARBON_PERF_CUSTOMER_WORKBOOKS"
+SYNTHETIC_STATE_ROWS_ENV = "CARBON_PERF_SYNTHETIC_STATE_ROWS"
 
 
 def _max_seconds(env_var: str, default: float) -> float:
@@ -49,6 +50,26 @@ def _customer_workbook_paths() -> list[Path]:
 def _terraform_label(value: str) -> str:
     label = re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
     return label or "unknown"
+
+
+def _synthetic_assignment_rows(count: int) -> list[dict]:
+    rows = []
+    for index in range(1, count + 1):
+        network = f"synthetic-net-{index % 12:02d}"
+        rows.append(
+            {
+                "VM Key": f"synthetic-vm-{index:05d}",
+                "VM Name": f"synthetic-app-{index:05d}",
+                "IBM Profile": "bx2-4x16" if index % 4 == 0 else "bx2-2x8",
+                "Storage Tier": "10iops-tier" if index % 5 == 0 else "3iops-tier",
+                "Guest OS": "Red Hat Enterprise Linux 9 (64-bit)",
+                "Network": network,
+                "Owner": f"Owner {index % 20}",
+                "Application": "Database" if index % 3 == 0 else "App tier",
+                "Boot Disk GB": 100,
+            }
+        )
+    return rows
 
 
 def _upload_workbook_summary(client: TestClient, workbook_path: Path):
@@ -337,3 +358,79 @@ def test_large_carbon_project_state_save_load_update_performance_guard():
     assert len(loaded_state["carbon_assignment_rows"]) == 763
     assert len(loaded_state["carbon_network_plan"]["vm_assignments"]) == 763
     assert update_response.json()["message"] == "Updated 763 VM assignments"
+
+
+def test_synthetic_large_carbon_project_state_save_load_update_performance_guard():
+    client = TestClient(app)
+    row_count = int(os.environ.get(SYNTHETIC_STATE_ROWS_ENV, "3000"))
+    rows = _synthetic_assignment_rows(row_count)
+    project_id = "synthetic-state-performance"
+    project = {"id": project_id, "name": "Synthetic performance", "description": ""}
+    persisted_state: dict = {}
+    planning_state_json = _planning_state_json(
+        rows,
+        {"assessment_quality": {"source": "synthetic", "row_count": row_count}},
+    )
+
+    def save_project_state(project_id_arg, planning_state, **kwargs):
+        assert project_id_arg == project_id
+        persisted_state.update(
+            {
+                "planning_state_json": planning_state,
+                "target_region": kwargs.get("target_region"),
+                "target_zone": kwargs.get("target_zone"),
+                "project_name": kwargs.get("project_name"),
+            }
+        )
+        return persisted_state
+
+    def get_project_state(project_id_arg):
+        assert project_id_arg == project_id
+        return persisted_state or None
+
+    def update_project_state(project_id_arg, planning_state_json_arg):
+        assert project_id_arg == project_id
+        persisted_state["planning_state_json"] = planning_state_json_arg
+        return persisted_state
+
+    with (
+        patch("prototype.api.persistence.persistence_enabled", return_value=True),
+        patch("prototype.api.persistence.get_project", return_value=project),
+        patch("prototype.api.persistence.save_project_state", side_effect=save_project_state),
+        patch("prototype.api.persistence.get_project_state", side_effect=get_project_state),
+        patch("prototype.api.persistence.update_project_state", side_effect=update_project_state),
+        patch("prototype.api.persistence.list_artifacts", return_value=[]),
+    ):
+        save_start = time.perf_counter()
+        save_response = client.put(
+            f"/api/projects/{project_id}/state",
+            json={
+                "planning_state": planning_state_json,
+                "target_region": "us-south",
+                "target_zone": "us-south-1",
+                "project_name": "Synthetic performance",
+            },
+        )
+        save_elapsed = time.perf_counter() - save_start
+
+        load_start = time.perf_counter()
+        load_response = client.get(f"/api/projects/{project_id}")
+        load_elapsed = time.perf_counter() - load_start
+
+        update_start = time.perf_counter()
+        update_response = client.put(
+            f"/api/projects/{project_id}/vm-assignments",
+            json=_endpoint_assignment_payload(planning_state_json),
+        )
+        update_elapsed = time.perf_counter() - update_start
+
+    assert save_response.status_code == 200
+    assert load_response.status_code == 200
+    assert update_response.status_code == 200
+    assert save_elapsed < _max_seconds("CARBON_PERF_SYNTHETIC_STATE_SAVE_MAX_SECONDS", 8.0)
+    assert load_elapsed < _max_seconds("CARBON_PERF_SYNTHETIC_STATE_LOAD_MAX_SECONDS", 8.0)
+    assert update_elapsed < _max_seconds("CARBON_PERF_SYNTHETIC_ASSIGNMENT_UPDATE_MAX_SECONDS", 8.0)
+    loaded_state = load_response.json()["state"]["planning_state_json"]
+    assert len(loaded_state["carbon_assignment_rows"]) == row_count
+    assert len(loaded_state["carbon_network_plan"]["vm_assignments"]) == row_count
+    assert update_response.json()["message"] == f"Updated {row_count} VM assignments"

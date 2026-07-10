@@ -642,7 +642,7 @@ async def update_vm_assignments(
         )
 
     # Update VM assignments
-    network_plan_data["vm_assignments"] = [a.dict() for a in assignments]
+    network_plan_data["vm_assignments"] = [a.model_dump() for a in assignments]
     planning_state_json["carbon_network_plan"] = network_plan_data
 
     persistence.update_project_state(project_id, planning_state_json)
