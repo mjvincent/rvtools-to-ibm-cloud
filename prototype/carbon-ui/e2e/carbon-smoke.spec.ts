@@ -318,6 +318,27 @@ test('routes preflight blockers to remediation review', async ({ page }) => {
   await expect(page.getByText(/Review remediation blockers for app-01/)).toBeVisible();
 });
 
+test('bulk cleans up VM override profile reason gaps', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'VM Overrides' }).click();
+  await expect(page.getByRole('heading', { name: 'VM Overrides' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Select visible' }).click();
+  await page.getByLabel('Bulk profile override').selectOption('mx2-16x128');
+  await page.getByRole('button', { name: 'Apply profile', exact: true }).click();
+  await expect(page.getByText('Reason needed').first()).toBeVisible();
+
+  await page.getByLabel('Override filter').selectOption('missingReasons');
+  await expect(page.locator('tbody')).toContainText('app-01');
+  await expect(page.locator('tbody')).toContainText('db-01');
+  await expect(page.locator('tbody')).toContainText('web-01');
+
+  await page.getByLabel('Bulk profile reason').fill('Bulk rightsizing approved by migration architect');
+  await page.getByRole('button', { name: 'Apply profile reason' }).click();
+  await expect(page.getByText('Reason needed')).toHaveCount(0);
+  await expect(page.getByText('0 missing reasons')).toBeVisible();
+});
+
 test('bulk applies and audits remediation queue suggested fixes', async ({ page }) => {
   const projectName = `Carbon smoke queue ${Date.now()}`;
   const projectId = 'carbon-smoke-queue-project';

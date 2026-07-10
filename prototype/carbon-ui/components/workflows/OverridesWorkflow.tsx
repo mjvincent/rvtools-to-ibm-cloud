@@ -144,18 +144,44 @@ export function summarizeOverrides(rows: AssignmentVm[]) {
   );
 }
 
+type OverrideFilter = 'all' | 'missingReasons' | 'profileOverrides' | 'storageOverrides' | 'excluded';
+
+function hasMissingOverrideReason(row: AssignmentVm) {
+  return Boolean(
+    (row.overrideProfile && !row.overrideProfileReason?.trim())
+      || (row.overrideStorageTier && !row.overrideStorageTierReason?.trim())
+      || (row.excluded && !row.exclusionReason?.trim()),
+  );
+}
+
 export default function OverridesWorkflow() {
+  const [overrideFilter, setOverrideFilter] = React.useState<OverrideFilter>('all');
+  const [bulkProfile, setBulkProfile] = React.useState('');
+  const [bulkProfileReason, setBulkProfileReason] = React.useState('');
+  const [bulkStorageReason, setBulkStorageReason] = React.useState('');
+  const [bulkExclusionReason, setBulkExclusionReason] = React.useState('');
   const { state, dispatch } = useAppState();
-  const { assignmentRows, resources, searchValue } = state;
+  const { assignmentRows, resources, searchValue, selectedVmIds } = state;
   const summary = summarizeOverrides(assignmentRows);
   const profileOptions = buildProfileOptions(assignmentRows);
 
   const filteredRows = assignmentRows.filter((row) => {
     const query = searchValue.trim().toLowerCase();
-    if (!query) return true;
-    return [row.name, row.profile, row.overrideProfile, row.storageTier, row.overrideStorageTier, row.application, row.owner]
+    const matchesSearch = !query || [row.name, row.profile, row.overrideProfile, row.storageTier, row.overrideStorageTier, row.application, row.owner]
       .some((value) => textValue(value).toLowerCase().includes(query));
+    if (!matchesSearch) return false;
+    if (overrideFilter === 'missingReasons') return hasMissingOverrideReason(row);
+    if (overrideFilter === 'profileOverrides') return Boolean(row.overrideProfile);
+    if (overrideFilter === 'storageOverrides') return Boolean(row.overrideStorageTier);
+    if (overrideFilter === 'excluded') return Boolean(row.excluded);
+    return true;
   });
+  const selectedOverrideRows = assignmentRows.filter((row) => selectedVmIds.includes(row.id));
+  const selectedProfileOverrideRows = selectedOverrideRows.filter((row) => row.overrideProfile);
+  const selectedStorageOverrideRows = selectedOverrideRows.filter((row) => row.overrideStorageTier);
+  const selectedExcludedRows = selectedOverrideRows.filter((row) => row.excluded);
+  const allFilteredSelected =
+    filteredRows.length > 0 && filteredRows.every((row) => selectedVmIds.includes(row.id));
 
   function updateRow(rowId: string, patch: Partial<AssignmentVm>) {
     dispatch({
@@ -166,6 +192,92 @@ export default function OverridesWorkflow() {
 
   function resetProfileOverride(rowId: string) {
     updateRow(rowId, { overrideProfile: '', overrideProfileReason: '' });
+  }
+
+  function updateSelectedRows(patchForRow: (row: AssignmentVm) => Partial<AssignmentVm>) {
+    const selectedIds = new Set(selectedVmIds);
+    if (selectedIds.size === 0) {
+      dispatch({ type: 'SET_PROJECT_ERROR', payload: 'Select one or more VMs before applying bulk overrides.' });
+      return;
+    }
+    dispatch({ type: 'SET_PROJECT_ERROR', payload: '' });
+    dispatch({
+      type: 'SET_ASSIGNMENT_ROWS',
+      payload: assignmentRows.map((row) =>
+        selectedIds.has(row.id) ? { ...row, ...patchForRow(row) } : row,
+      ),
+    });
+  }
+
+  function toggleSelected(rowId: string, checked: boolean) {
+    dispatch({
+      type: 'SET_SELECTED_VM_IDS',
+      payload: checked
+        ? [...new Set([...selectedVmIds, rowId])]
+        : selectedVmIds.filter((id) => id !== rowId),
+    });
+  }
+
+  function toggleAllFiltered(checked: boolean) {
+    if (checked) {
+      dispatch({
+        type: 'SET_SELECTED_VM_IDS',
+        payload: [...new Set([...selectedVmIds, ...filteredRows.map((row) => row.id)])],
+      });
+      return;
+    }
+    const filteredIds = new Set(filteredRows.map((row) => row.id));
+    dispatch({
+      type: 'SET_SELECTED_VM_IDS',
+      payload: selectedVmIds.filter((id) => !filteredIds.has(id)),
+    });
+  }
+
+  function clearSelectedOverrides() {
+    dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [] });
+  }
+
+  function applyBulkProfile() {
+    if (!bulkProfile) return;
+    if (selectedOverrideRows.length === 0) {
+      dispatch({ type: 'SET_PROJECT_ERROR', payload: 'Select one or more VMs before applying bulk overrides.' });
+      return;
+    }
+    updateSelectedRows(() => ({ overrideProfile: bulkProfile }));
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: `Applied profile override ${bulkProfile} to ${selectedVmIds.length} VM(s).` });
+  }
+
+  function applyBulkProfileReason() {
+    const reason = bulkProfileReason.trim();
+    if (!reason) return;
+    if (selectedProfileOverrideRows.length === 0) {
+      dispatch({ type: 'SET_PROJECT_ERROR', payload: 'Select one or more VMs with profile overrides before applying a profile reason.' });
+      return;
+    }
+    updateSelectedRows((row) => (row.overrideProfile ? { overrideProfileReason: reason } : {}));
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: `Applied profile override reason to ${selectedProfileOverrideRows.length} VM(s).` });
+  }
+
+  function applyBulkStorageReason() {
+    const reason = bulkStorageReason.trim();
+    if (!reason) return;
+    if (selectedStorageOverrideRows.length === 0) {
+      dispatch({ type: 'SET_PROJECT_ERROR', payload: 'Select one or more VMs with storage overrides before applying a storage reason.' });
+      return;
+    }
+    updateSelectedRows((row) => (row.overrideStorageTier ? { overrideStorageTierReason: reason } : {}));
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: `Applied storage override reason to ${selectedStorageOverrideRows.length} VM(s).` });
+  }
+
+  function applyBulkExclusionReason() {
+    const reason = bulkExclusionReason.trim();
+    if (!reason) return;
+    if (selectedExcludedRows.length === 0) {
+      dispatch({ type: 'SET_PROJECT_ERROR', payload: 'Select one or more excluded VMs before applying an exclusion reason.' });
+      return;
+    }
+    updateSelectedRows((row) => (row.excluded ? { exclusionReason: reason } : {}));
+    dispatch({ type: 'SET_PROJECT_STATUS', payload: `Applied exclusion reason to ${selectedExcludedRows.length} VM(s).` });
   }
 
   function exportCsv() {
@@ -225,12 +337,116 @@ export default function OverridesWorkflow() {
             dispatch({ type: 'SET_SEARCH_VALUE', payload: event.target.value })
           }
         />
+        <Select
+          id="override-filter"
+          labelText="Override filter"
+          value={overrideFilter}
+          onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+            setOverrideFilter(event.target.value as OverrideFilter)
+          }
+        >
+          <SelectItem value="all" text="All override decisions" />
+          <SelectItem value="missingReasons" text="Missing reasons" />
+          <SelectItem value="profileOverrides" text="Profile overrides" />
+          <SelectItem value="storageOverrides" text="Storage overrides" />
+          <SelectItem value="excluded" text="Excluded VMs" />
+        </Select>
       </div>
+
+      <Layer className="bulk-override-panel">
+        <div className="section-header compact">
+          <div>
+            <h3>Bulk override cleanup</h3>
+            <p>{selectedOverrideRows.length} selected | {filteredRows.length} visible after filter</p>
+          </div>
+          <div className="network-actions">
+            <Button kind="tertiary" size="sm" disabled={filteredRows.length === 0} onClick={() => toggleAllFiltered(true)}>
+              Select visible
+            </Button>
+            <Button kind="tertiary" size="sm" disabled={selectedOverrideRows.length === 0} onClick={clearSelectedOverrides}>
+              Clear selection
+            </Button>
+          </div>
+        </div>
+        <div className="bulk-override-grid">
+          <Select
+            id="bulk-profile"
+            labelText="Bulk profile override"
+            value={bulkProfile}
+            onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setBulkProfile(event.target.value)}
+          >
+            <SelectItem text="Choose profile" value="" />
+            {profileOptions.map((profile) => (
+              <SelectItem key={profile} text={profileSizeLabel(profile)} value={profile} />
+            ))}
+          </Select>
+          <Button
+            kind="secondary"
+            size="sm"
+            disabled={!bulkProfile || selectedOverrideRows.length === 0}
+            onClick={applyBulkProfile}
+          >
+            Apply profile
+          </Button>
+          <TextArea
+            id="bulk-profile-reason"
+            labelText="Bulk profile reason"
+            value={bulkProfileReason}
+            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setBulkProfileReason(event.target.value)}
+          />
+          <Button
+            kind="tertiary"
+            size="sm"
+            disabled={!bulkProfileReason.trim() || selectedProfileOverrideRows.length === 0}
+            onClick={applyBulkProfileReason}
+          >
+            Apply profile reason
+          </Button>
+          <TextArea
+            id="bulk-storage-reason"
+            labelText="Bulk storage reason"
+            value={bulkStorageReason}
+            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setBulkStorageReason(event.target.value)}
+          />
+          <Button
+            kind="tertiary"
+            size="sm"
+            disabled={!bulkStorageReason.trim() || selectedStorageOverrideRows.length === 0}
+            onClick={applyBulkStorageReason}
+          >
+            Apply storage reason
+          </Button>
+          <TextArea
+            id="bulk-exclusion-reason"
+            labelText="Bulk exclusion reason"
+            value={bulkExclusionReason}
+            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setBulkExclusionReason(event.target.value)}
+          />
+          <Button
+            kind="tertiary"
+            size="sm"
+            disabled={!bulkExclusionReason.trim() || selectedExcludedRows.length === 0}
+            onClick={applyBulkExclusionReason}
+          >
+            Apply exclusion reason
+          </Button>
+        </div>
+      </Layer>
 
       <div className="vm-table-wrap override-table-wrap">
         <table className="vm-table override-table">
           <thead>
             <tr>
+              <th>
+                <label className="row-select-label">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all visible override rows"
+                    checked={allFilteredSelected}
+                    onChange={(event) => toggleAllFiltered(event.target.checked)}
+                  />
+                </label>
+              </th>
               <th>VM</th>
               <th>Profile override</th>
               <th>Storage override</th>
@@ -241,6 +457,16 @@ export default function OverridesWorkflow() {
           <tbody>
             {filteredRows.map((row) => (
               <tr key={row.id}>
+                <td>
+                  <label className="row-select-label">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select override row for ${row.name}`}
+                      checked={selectedVmIds.includes(row.id)}
+                      onChange={(event) => toggleSelected(row.id, event.target.checked)}
+                    />
+                  </label>
+                </td>
                 <td>
                   <strong>{row.name}</strong>
                   <span>{row.application || 'No application'} | {row.owner || 'No owner'}</span>

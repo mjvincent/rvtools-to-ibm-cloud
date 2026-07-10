@@ -117,4 +117,28 @@ describe('OverridesWorkflow', () => {
     expect(profileSelect.value).toBe('');
     expect(screen.getAllByText('Effective: bx2-2x8 (2 vCPU / 8 GB)').length).toBeGreaterThan(0);
   });
+
+  it('bulk applies profile overrides and clears missing profile reasons', async () => {
+    renderWithProvider(<OverridesWorkflow />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Select visible' }));
+    await userEvent.selectOptions(screen.getByLabelText('Bulk profile override'), 'mx2-16x128');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply profile' }));
+
+    expect(screen.getAllByText('Override').length).toBeGreaterThanOrEqual(3);
+    expect(screen.getAllByText('Reason needed').length).toBe(3);
+
+    await userEvent.selectOptions(screen.getByLabelText('Override filter'), 'missingReasons');
+    expect(screen.getByText('app-01')).toBeTruthy();
+    expect(screen.getByText('db-01')).toBeTruthy();
+    expect(screen.getByText('web-01')).toBeTruthy();
+
+    await userEvent.type(
+      screen.getByLabelText('Bulk profile reason'),
+      'Bulk rightsizing approved by migration architect',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Apply profile reason' }));
+
+    expect(screen.queryByText('Reason needed')).toBeNull();
+  });
 });
