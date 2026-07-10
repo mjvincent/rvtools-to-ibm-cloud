@@ -235,6 +235,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Browser failure-path coverage for persistence outage warning, Export preflight blocker routing, preview/download failures, and save-before-export failure
 - [x] Sample-workbook summary plus workshop state/assignment/preview/ZIP performance guard
 - [x] Export readiness workflow user-manual documentation
+- [x] Carbon accessibility and UAT checklist created
 - [ ] Additional customer-scale performance benchmark fixtures
 - [x] Carbon checkpoint documented in user manual
 - [x] Promotion/cutover documentation
@@ -251,6 +252,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 - [Carbon React UI Strategy](./carbon-react-ui-strategy.md)
 - [Carbon Promotion Gate Review](./carbon-promotion-gate-review.md)
+- [Carbon Accessibility and UAT Checklist](./carbon-accessibility-uat-checklist.md)
 - [Carbon Promotion and Cutover Guide](./carbon-promotion-cutover-guide.md)
 - [Carbon Operations Runbook](./carbon-operations-runbook.md)
 - [Carbon Handoff Parity](./carbon-handoff-parity.md)

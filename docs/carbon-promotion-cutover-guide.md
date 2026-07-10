@@ -32,7 +32,7 @@ Carbon is eligible for production promotion only when these gates are green:
 | Feature parity | Wave planning, remediation, image import, migration ops, overrides, decision audit, handoff package, and planning-state reload match Streamlit contracts. |
 | Real-workbook parity | Representative RVTools workbooks compare cleanly for handoff artifacts, with documented exceptions for Carbon-specific preflight checks. |
 | Runtime readiness | Docker Compose and the intended hosted runtime start API, Carbon UI, Streamlit, and Postgres reliably. |
-| Accessibility and browser coverage | Keyboard, screen-reader, and multi-browser checks pass for the primary workflow. |
+| Accessibility and browser coverage | Keyboard, screen-reader, multi-browser, and UAT checks pass for the primary workflow using the [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md). |
 | Operations | Backup/restore, rollback, logging, monitoring, data retention, and support ownership are documented in the [Carbon Operations Runbook](carbon-operations-runbook.md). |
 | User acceptance | Migration users complete at least one realistic assessment through Carbon and approve the workflow. |
 
@@ -67,11 +67,12 @@ Before promotion:
    - `cutover-readiness.csv`
    - mapping/readiness CSVs
 7. Confirm Streamlit can still generate a package from the same workbook.
-8. Back up Postgres and the artifact volume using the
+8. Complete the [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md) for the release candidate and attach evidence to the promotion review.
+9. Back up Postgres and the artifact volume using the
    [Carbon Operations Runbook](carbon-operations-runbook.md), or use the
    deployment platform's native backup mechanism.
-9. Capture the current production image/tag/commit for rollback.
-10. Fill in the support ownership and rollback authority matrix in the
+10. Capture the current production image/tag/commit for rollback.
+11. Fill in the support ownership and rollback authority matrix in the
     [Carbon Operations Runbook](carbon-operations-runbook.md).
 
 ## Cutover Pattern
@@ -150,6 +151,7 @@ The go/no-go review should answer:
 - Can Carbon complete the same assessment and handoff package as Streamlit?
 - Are known differences intentional and documented?
 - Can users recover work through saved projects or exported planning state?
+- Have keyboard, screen-reader, responsive, error-recovery, and UAT checklist items been completed?
 - Can the team roll back to Streamlit within the same day?
 - Are support and data-retention responsibilities assigned?
 
