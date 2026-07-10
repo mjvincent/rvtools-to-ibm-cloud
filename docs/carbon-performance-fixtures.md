@@ -58,6 +58,22 @@ venv/bin/python scripts/collect_carbon_perf_evidence.py \
   medium-wave=/path/to/private-medium.xlsx
 ```
 
+Safer environment-driven evidence collection:
+
+```bash
+export CARBON_PERF_CUSTOMER_WORKBOOKS="medium-wave=/path/to/private-medium.xlsx:large-estate=/path/to/private-large.xlsx"
+export CARBON_PERF_CUSTOMER_SUMMARY_MAX_SECONDS=45
+venv/bin/python scripts/collect_carbon_perf_evidence.py \
+  --from-env \
+  --json \
+  --output private-evidence/carbon-private-workbook-evidence.json
+```
+
+The repository ignores `private-evidence/`. Use it for local sanitized evidence
+captures that should not be committed with customer-adjacent review material.
+The helper prints only `Sanitized evidence written.` when `--output` is used;
+it does not echo output paths, workbook paths, or workbook filenames.
+
 Use [Carbon Private Workbook Evidence Template](carbon-private-workbook-evidence-template.md)
 for manually collected evidence or review packets.
 

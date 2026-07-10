@@ -111,7 +111,7 @@ feature-parity and production-readiness gaps.
 - [x] Generated 3,000-row Carbon API performance guard covers project-state save/load and VM assignment updates
 - [x] Generated 5,000-row Carbon UI performance guard covers VM Assignment search/sort and VM Overrides missing-reason filtering
 - [x] Optional private customer-workbook summary performance fixture hook is documented and skipped unless `CARBON_PERF_CUSTOMER_WORKBOOKS` is set
-- [x] Sanitized private-workbook evidence helper and template are documented for customer-scale timing capture without paths, filenames, VM names, IPs, owners, or application names
+- [x] Sanitized private-workbook evidence helper and template are documented for customer-scale timing capture without paths, filenames, VM names, IPs, owners, or application names; helper supports environment-driven input and ignored local output under `private-evidence/`
 - [x] Carbon accessibility and UAT results template is documented for manual review evidence, issue severity tracking, accepted pilot gaps, and promotion sign-off
 - [x] Focused automated Carbon accessibility/UAT pass recorded for VM Overrides and Export Readiness, with table naming and package-preview selected-state issues fixed
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
@@ -248,6 +248,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Sample-workbook summary plus workshop state/assignment/preview/ZIP performance guard
 - [x] Generated 3,000-row Carbon API project-state save/load/update performance guard
 - [x] Generated 5,000-row Carbon UI Assignment/Overrides filtering performance guard
+- [x] Safer private-workbook evidence helper path verified with ignored sanitized output
 - [x] Export readiness workflow user-manual documentation
 - [x] Carbon accessibility and UAT checklist created
 - [x] Carbon accessibility and UAT results/sign-off template created

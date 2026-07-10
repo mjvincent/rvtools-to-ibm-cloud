@@ -22,6 +22,7 @@ backups/
 # Local test data
 *.xlsx
 !samples/*.xlsx
+private-evidence/
 
 # Old root-level files we don't need anymore
 /parser.py

@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import subprocess
 import sys
 import time
@@ -33,6 +34,8 @@ from prototype.api.app import app  # noqa: E402
 
 
 DEFAULT_THRESHOLD_SECONDS = 30.0
+CUSTOMER_WORKBOOKS_ENV = "CARBON_PERF_CUSTOMER_WORKBOOKS"
+CUSTOMER_THRESHOLD_ENV = "CARBON_PERF_CUSTOMER_SUMMARY_MAX_SECONDS"
 
 
 def git_value(args: list[str], fallback: str = "unknown") -> str:
@@ -45,7 +48,7 @@ def git_value(args: list[str], fallback: str = "unknown") -> str:
             text=True,
         )
     except Exception:
-      return fallback
+        return fallback
     return result.stdout.strip() or fallback
 
 
@@ -101,6 +104,19 @@ def parse_labeled_workbook(value: str, index: int) -> tuple[str, Path]:
     return label, Path(raw_path).expanduser()
 
 
+def parse_labeled_workbooks(values: list[str]) -> list[tuple[str, Path]]:
+    return [
+        parse_labeled_workbook(value, index)
+        for index, value in enumerate(values, start=1)
+    ]
+
+
+def workbook_values_from_env(raw_value: str | None) -> list[str]:
+    if not raw_value:
+        return []
+    return [value for value in raw_value.split(os.pathsep) if value.strip()]
+
+
 def render_text(records: list[dict[str, object]]) -> str:
     lines = []
     for record in records:
@@ -130,17 +146,30 @@ def parse_args(argv=None):
     )
     parser.add_argument(
         "workbooks",
-        nargs="+",
+        nargs="*",
         help=(
             "Workbook path or label=/path/to/workbook.xlsx. Labels are printed; "
             "paths and filenames are not."
         ),
     )
     parser.add_argument(
+        "--from-env",
+        action="store_true",
+        help=(
+            f"Read workbook paths from {CUSTOMER_WORKBOOKS_ENV}. Values may be "
+            f"plain paths or label=path entries separated by {os.pathsep!r}."
+        ),
+    )
+    parser.add_argument(
         "--threshold-seconds",
         type=float,
-        default=DEFAULT_THRESHOLD_SECONDS,
+        default=None,
         help=f"Pass/fail threshold per workbook. Default: {DEFAULT_THRESHOLD_SECONDS}",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Optional output file for sanitized evidence. The path is not printed.",
     )
     parser.add_argument(
         "--json",
@@ -152,10 +181,22 @@ def parse_args(argv=None):
 
 def main(argv=None) -> int:
     args = parse_args(argv)
-    labeled_paths = [
-        parse_labeled_workbook(value, index)
-        for index, value in enumerate(args.workbooks, start=1)
-    ]
+    workbook_values = list(args.workbooks)
+    if args.from_env:
+        workbook_values.extend(workbook_values_from_env(os.environ.get(CUSTOMER_WORKBOOKS_ENV)))
+    if not workbook_values:
+        print(
+            "Error: provide workbook paths or use --from-env with "
+            f"{CUSTOMER_WORKBOOKS_ENV}.",
+            file=sys.stderr,
+        )
+        return 2
+
+    threshold_seconds = args.threshold_seconds
+    if threshold_seconds is None:
+        threshold_seconds = float(os.environ.get(CUSTOMER_THRESHOLD_ENV, DEFAULT_THRESHOLD_SECONDS))
+
+    labeled_paths = parse_labeled_workbooks(workbook_values)
     missing = [(label, path) for label, path in labeled_paths if not path.exists()]
     if missing:
         for label, _path in missing:
@@ -164,13 +205,19 @@ def main(argv=None) -> int:
 
     client = TestClient(app)
     records = [
-        collect_record(client, path, label, args.threshold_seconds)
+        collect_record(client, path, label, threshold_seconds)
         for label, path in labeled_paths
     ]
     if args.json:
-        print(json.dumps(records, indent=2))
+        output = json.dumps(records, indent=2)
     else:
-        print(render_text(records))
+        output = render_text(records)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(f"{output}\n", encoding="utf-8")
+        print("Sanitized evidence written.")
+    else:
+        print(output)
     return 0 if all(record["result"] == "pass" for record in records) else 1
 
 
