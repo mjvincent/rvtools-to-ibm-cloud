@@ -51,13 +51,14 @@ Observed results:
 - Python pytest: 355 passed, 1 skipped
 - Carbon TypeScript: 0 errors
 - Carbon Jest: 171 passed
-- Carbon Playwright: 21 passed across Chromium, Firefox, and WebKit
+- Carbon Playwright: 24 passed across Chromium, Firefox, and WebKit
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright coverage includes workbook upload, project save/load, subnet
 drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign,
 autosave reload, persistence outage warning display, Export preflight blocker
-routing to remediation review, Export preview/download/save-before-export
+routing to remediation review, Export remediation queue high-confidence bulk
+fix application, suggestion audit/undo, Export preview/download/save-before-export
 failure handling, package preview handoff CSV switching/download, keyboard
 navigation, keyboard assignment through explicit Assign buttons,
 readiness-chip review routing, drag/drop accessibility labels, row checkbox

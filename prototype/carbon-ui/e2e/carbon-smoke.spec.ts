@@ -106,6 +106,67 @@ async function mockHealthyProjectApi(
   });
 }
 
+async function mockWorkbookSummary(page: Page) {
+  await page.route('**/api/workbooks/summary', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        filename: 'rvtools-small-complete.xlsx',
+        estate_summary: {
+          in_scope: 2,
+          excluded: 0,
+          monthly: 0,
+          savings: 0,
+          blocked: 0,
+          review: 1,
+        },
+        overview_blockers: {},
+        readiness_counts: {},
+        assessment_quality: {},
+        readiness_rows: [],
+        assignment_rows: [
+          {
+            'VM Key': 'app-01',
+            'VM Name': 'app-01',
+            'Image Readiness': 'Ready',
+            'Migration Readiness': 'Ready',
+            'Memory Readiness': 'Ready',
+            'Network Readiness': 'Ready',
+            'IBM Profile': 'bx2-2x8',
+            'Storage Tier': '5iops-tier',
+            Network: 'prod-app-net',
+            Subnet: 'prod-app-us-south-1',
+            'Security Group': 'sg-app-private',
+            'Power State': 'poweredOn',
+            Owner: 'Payments',
+            Application: 'Payments',
+            Wave: 'Wave 1',
+            'Cutover Group': 'payments-cutover',
+            Priority: 'High',
+          },
+          {
+            'VM Key': 'app-02',
+            'VM Name': 'app-02',
+            'Image Readiness': 'Ready',
+            'Migration Readiness': 'Ready',
+            'Memory Readiness': 'Ready',
+            'Network Readiness': 'Review',
+            'IBM Profile': 'bx2-2x8',
+            'Storage Tier': '5iops-tier',
+            Network: 'prod-app-net',
+            'Power State': 'poweredOn',
+            Owner: 'Payments',
+            Application: 'Payments',
+            'Cutover Group': 'payments-cutover',
+            Priority: 'High',
+          },
+        ],
+      }),
+    });
+  });
+}
+
 async function uploadAndSaveMockedProject(page: Page, projectName: string) {
   await page.goto('/');
   await page.getByRole('link', { name: 'Workbook Intake' }).click();
@@ -255,6 +316,43 @@ test('routes preflight blockers to remediation review', async ({ page }) => {
   await page.getByRole('button', { name: 'Open remediation' }).click();
   await expect(page.getByRole('heading', { name: 'Remediation backlog' })).toBeVisible();
   await expect(page.getByText(/Review remediation blockers for app-01/)).toBeVisible();
+});
+
+test('bulk applies and audits remediation queue suggested fixes', async ({ page }) => {
+  const projectName = `Carbon smoke queue ${Date.now()}`;
+  const projectId = 'carbon-smoke-queue-project';
+
+  await mockWorkbookSummary(page);
+  await mockHealthyProjectApi(page, projectId, projectName);
+  await uploadAndSaveMockedProject(page, projectName);
+
+  await page.getByRole('link', { name: 'Export Readiness' }).click();
+  await expect(page.getByRole('heading', { name: 'Remediation queue' })).toBeVisible();
+  await expect(page.getByText('Suggested subnet: prod-app-us-south-1')).toBeVisible();
+  await expect(page.getByText('Suggested security group: sg-app-private')).toBeVisible();
+  await expect(page.getByText('Suggested wave: Wave 1')).toBeVisible();
+  await expect(page.getByText('High confidence').first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Select high confidence' }).click();
+  await expect(page.getByText('3 selected')).toBeVisible();
+  await page.getByRole('button', { name: 'Apply selected fixes' }).click();
+  await expect(page.getByText(/Applied 3 suggested assignment\(s\), including 3 high-confidence item\(s\)\./)).toBeVisible();
+
+  await expect(page.getByRole('heading', { name: 'Suggestion audit' })).toBeVisible();
+  await expect(page.getByText('(blank) to prod-app-us-south-1')).toBeVisible();
+  await expect(page.getByText('(blank) to sg-app-private')).toBeVisible();
+  await expect(page.getByText('(blank) to Wave 1')).toBeVisible();
+
+  await page.getByRole('link', { name: 'VM Assignment' }).click();
+  const appTwoRow = page.locator('tbody tr').filter({ hasText: 'app-02' });
+  await expect(appTwoRow).toContainText('prod-app-us-south-1');
+  await expect(appTwoRow).toContainText('sg-app-private');
+  await expect(appTwoRow).toContainText('Wave 1');
+
+  await page.getByRole('link', { name: 'Export Readiness' }).click();
+  await page.getByRole('button', { name: 'Undo suggestion' }).first().click();
+  await expect(page.getByText(/Reverted suggested .* change for app-02\./)).toBeVisible();
+  await expect(page.getByText('Reverted', { exact: true })).toBeVisible();
 });
 
 test('reports Terraform preview failure and allows retry', async ({ page }) => {

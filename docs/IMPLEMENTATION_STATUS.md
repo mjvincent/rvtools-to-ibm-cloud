@@ -129,13 +129,14 @@ Results:
 - Python pytest: 355 passed, 1 skipped
 - TypeScript: 0 errors
 - Jest: 171 tests passing
-- Playwright: 21 tests passing across Chromium, Firefox, and WebKit
+- Playwright: 24 tests passing across Chromium, Firefox, and WebKit
 - Docker Compose: API, Streamlit, Carbon UI, and Postgres healthy
 
 The Playwright smoke covers workbook upload, project save/load, subnet
 drag/drop, multi-select subnet/security/storage/wave drops, row-level unassign
 persistence, drag/drop accessibility labels, autosave reload, persistence outage
 warning display, Export preflight blocker routing to remediation review, Export
+remediation queue high-confidence bulk fix application, suggestion audit/undo,
 preview/download/save-before-export failure handling, package preview handoff CSV
 switching/download, package preview close behavior, keyboard navigation,
 readiness-chip review routing, and cleanup of temporary smoke projects across
