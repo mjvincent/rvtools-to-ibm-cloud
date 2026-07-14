@@ -1,15 +1,23 @@
-import { sampleRows } from '../store/AppContext';
+import { defaultResources, sampleRows } from '../store/AppContext';
 import {
+  applySuggestionsToRows,
   buildAuditId,
+  buildAssignmentSuggestions,
   buildRemediationQueue,
   confidenceFromScore,
+  inferAssignmentSuggestion,
+  markSuggestionAuditReverted,
   packageGroups,
   packageParitySummary,
   planningGapLabel,
   primaryRouteForFinding,
+  revertSuggestionInRows,
   rowAssignmentValue,
   routesForFinding,
   sharedTokenCount,
+  suggestionAuditEntries,
+  suggestionForFinding,
+  suggestionForQueueItem,
   suggestionKey,
   suggestionKindForMode,
   suggestionLabels,
@@ -247,5 +255,177 @@ describe('export workflow helpers', () => {
       'invalid-terraform-labels',
       'preflight-warning-security_group-app-01-0',
     ]);
+  });
+
+  it('infers assignment suggestions from matching existing VM assignments', () => {
+    const rows = [
+      {
+        ...sampleRows[0],
+        id: 'payments-app-01',
+        name: 'payments-app-01',
+        application: 'Payments',
+        network: 'payments-net',
+        subnet: 'prod-app-us-south-1',
+      },
+      {
+        ...sampleRows[1],
+        id: 'payments-app-02',
+        name: 'payments-app-02',
+        application: 'Payments',
+        network: 'payments-net',
+        subnet: '',
+      },
+    ];
+
+    const suggestion = inferAssignmentSuggestion({
+      row: rows[1],
+      kind: 'subnet',
+      assignmentRows: rows,
+      resources: { ...defaultResources, subnets: [] },
+    });
+
+    expect(suggestion).toMatchObject({
+      kind: 'subnet',
+      value: 'prod-app-us-south-1',
+      confidence: 'High',
+    });
+    expect(suggestion?.evidence).toContain('Same application: Payments');
+    expect(suggestion?.evidence).toContain('Same source network: payments-net');
+  });
+
+  it('infers assignment suggestions from resource names when no VM match exists', () => {
+    const row = {
+      ...sampleRows[0],
+      id: 'web-01',
+      name: 'web-01',
+      application: 'Web',
+      network: 'web-net',
+      subnet: '',
+      securityGroup: '',
+    };
+
+    const subnetSuggestion = inferAssignmentSuggestion({
+      row,
+      kind: 'subnet',
+      assignmentRows: [row],
+      resources: {
+        ...defaultResources,
+        subnets: [{
+          ...defaultResources.subnets[0],
+          name: 'prod-web-us-south-1',
+          purpose: 'Web',
+        }],
+      },
+    });
+    const securitySuggestion = inferAssignmentSuggestion({
+      row,
+      kind: 'securityGroup',
+      assignmentRows: [row],
+      resources: {
+        ...defaultResources,
+        securityGroups: [{
+          ...defaultResources.securityGroups[0],
+          name: 'sg-web-private',
+          purpose: 'Web',
+        }],
+      },
+    });
+
+    expect(subnetSuggestion).toMatchObject({
+      kind: 'subnet',
+      value: 'prod-web-us-south-1',
+    });
+    expect(securitySuggestion).toMatchObject({
+      kind: 'securityGroup',
+      value: 'sg-web-private',
+    });
+  });
+
+  it('builds, applies, audits, and reverts assignment suggestions', () => {
+    jest.spyOn(Date, 'now').mockReturnValue(111);
+    const rows = [
+      { ...sampleRows[0], id: 'app-01', name: 'app-01', subnet: 'prod-app-us-south-1', wave: 'Wave 1' },
+      { ...sampleRows[1], id: 'app-02', name: 'app-02', subnet: '', wave: '' },
+    ];
+    const suggestions = buildAssignmentSuggestions({
+      assignmentRows: rows,
+      resources: defaultResources,
+      limit: 10,
+    });
+    const subnetSuggestion = suggestions.find((suggestion) =>
+      suggestion.row.id === 'app-02' && suggestion.kind === 'subnet',
+    );
+
+    expect(subnetSuggestion).toBeTruthy();
+    const appliedRows = applySuggestionsToRows(rows, [subnetSuggestion!]);
+    expect(appliedRows[1].subnet).toBe('prod-app-us-south-1');
+
+    const audit = suggestionAuditEntries([subnetSuggestion!], '2026-07-14T12:00:00Z');
+    expect(audit[0]).toMatchObject({
+      id: 'app-02-subnet-prod-app-us-south-1-111',
+      vmId: 'app-02',
+      oldValue: '',
+      newValue: 'prod-app-us-south-1',
+      appliedAt: '2026-07-14T12:00:00Z',
+    });
+
+    const revertedRows = revertSuggestionInRows(appliedRows, audit[0]);
+    expect(revertedRows[1].subnet).toBe('');
+    expect(markSuggestionAuditReverted(audit, audit[0].id, '2026-07-14T12:05:00Z')[0].revertedAt).toBe(
+      '2026-07-14T12:05:00Z',
+    );
+  });
+
+  it('maps preflight and queue items to assignment suggestions', () => {
+    const rows = [
+      { ...sampleRows[0], id: 'app-01', name: 'app-01', securityGroup: 'sg-app-private' },
+      { ...sampleRows[1], id: 'app-02', name: 'app-02', securityGroup: '' },
+    ];
+    const finding = {
+      Severity: 'warning',
+      Category: 'security_group',
+      'Fix Category': 'Fix app planning',
+      Subject: 'app-02',
+      Message: 'Security group should be reviewed.',
+      Remediation: 'Review security group assignment.',
+      'Fix Location': 'Security Plan',
+      'Suggested Action': '',
+      'Valid Options': '',
+      'Recommended Option': '',
+      'Quick Fix Type': '',
+      Field: 'Security Group',
+      'Current Value': '',
+      Constraint: '',
+    };
+    const preflightSuggestion = suggestionForFinding({
+      finding,
+      assignmentRows: rows,
+      resources: defaultResources,
+    });
+    const queueSuggestion = suggestionForQueueItem({
+      item: {
+        id: 'preflight-warning-security_group-app-02-0',
+        source: 'preflight',
+        severity: 'warning',
+        title: 'Preflight warning',
+        subject: 'app-02',
+        detail: 'Security group should be reviewed.',
+        tag: 'security group',
+        tagType: 'warm-gray',
+        route: primaryRouteForFinding(finding),
+        finding,
+      },
+      assignmentRows: rows,
+      resources: defaultResources,
+    });
+
+    expect(preflightSuggestion).toMatchObject({
+      kind: 'securityGroup',
+      value: 'sg-app-private',
+    });
+    expect(queueSuggestion).toMatchObject({
+      kind: 'securityGroup',
+      value: 'sg-app-private',
+    });
   });
 });

@@ -27,24 +27,24 @@ import {
   rowsFromNetworkPlan,
 } from '../../utils/planning-state';
 import {
-  buildAuditId,
+  applySuggestionsToRows,
+  buildAssignmentSuggestions,
   buildRemediationQueue,
-  confidenceFromScore,
   confidenceTagType,
+  markSuggestionAuditReverted,
   packageGroups,
   packageParitySummary,
   planningGapLabel,
   readFileText,
-  rowAssignmentValue,
+  revertSuggestionInRows,
   routesForFinding,
-  sharedTokenCount,
+  suggestionAuditEntries,
+  suggestionForFinding,
+  suggestionForQueueItem,
   suggestionKey,
-  suggestionKindForMode,
   suggestionLabels,
   terraformLabel,
-  tokenize,
   type AssignmentSuggestion,
-  type AssignmentSuggestionKind,
   type PreflightRoute,
   type RemediationQueueItem,
 } from '../../utils/export-workflow';
@@ -149,148 +149,8 @@ export default function ExportWorkflow() {
     file.category === 'Migration handoff' && file.path.endsWith('.csv'),
   ).length || 0;
 
-  function inferAssignmentSuggestion(
-    row: AssignmentVm,
-    kind: AssignmentSuggestionKind,
-  ): AssignmentSuggestion | null {
-    const existing = rowAssignmentValue(row, kind);
-    if (existing) return null;
-
-    const scoredRows = assignmentRows
-      .filter((candidate) => candidate.id !== row.id && rowAssignmentValue(candidate, kind))
-      .map((candidate) => {
-        let score = sharedTokenCount(row, candidate);
-        const evidence: string[] = [];
-        const sharedTokens = sharedTokenCount(row, candidate);
-        if (sharedTokens > 0) {
-          evidence.push(`Shared VM naming/planning tokens with ${candidate.name}`);
-        }
-        if (row.application && candidate.application && row.application === candidate.application) {
-          score += 3;
-          evidence.push(`Same application: ${row.application}`);
-        }
-        if (row.network && candidate.network && row.network === candidate.network) {
-          score += 3;
-          evidence.push(`Same source network: ${row.network}`);
-        }
-        if (row.owner && candidate.owner && row.owner === candidate.owner) {
-          score += 2;
-          evidence.push(`Same owner: ${row.owner}`);
-        }
-        if (row.cutoverGroup && candidate.cutoverGroup && row.cutoverGroup === candidate.cutoverGroup) {
-          score += 2;
-          evidence.push(`Same cutover group: ${row.cutoverGroup}`);
-        }
-        return { candidate, score, evidence };
-      })
-      .filter(({ score }) => score > 0)
-      .sort((a, b) => b.score - a.score);
-
-    const matched = scoredRows[0];
-    const matchedRow = matched?.candidate;
-    if (matchedRow && matched) {
-      const value = rowAssignmentValue(matchedRow, kind);
-      return {
-        kind,
-        row,
-        value,
-        label: value,
-        reason: `Matches ${matchedRow.name} by VM naming or planning metadata.`,
-        confidence: confidenceFromScore(matched.score),
-        score: matched.score,
-        evidence: matched.evidence,
-      };
-    }
-
-    const rowTokens = tokenize(`${row.name} ${row.application} ${row.network}`);
-    if (kind === 'subnet') {
-      const match = resources.subnets
-        .map((subnet) => ({
-          subnet,
-          score: Array.from(rowTokens).filter((token) =>
-            tokenize(`${subnet.name} ${subnet.purpose}`).has(token),
-          ).length,
-        }))
-        .sort((a, b) => b.score - a.score)[0];
-      if (match?.score > 0) {
-        return {
-          kind,
-          row,
-          value: match.subnet.name,
-          label: match.subnet.name,
-          reason: `Matches subnet name or purpose for ${row.name}.`,
-          confidence: confidenceFromScore(match.score),
-          score: match.score,
-          evidence: [`Matched subnet name or purpose: ${match.subnet.name}`],
-        };
-      }
-    }
-    if (kind === 'securityGroup') {
-      const match = resources.securityGroups
-        .map((securityGroup) => ({
-          securityGroup,
-          score: Array.from(rowTokens).filter((token) =>
-            tokenize(`${securityGroup.name} ${securityGroup.purpose}`).has(token),
-          ).length,
-        }))
-        .sort((a, b) => b.score - a.score)[0];
-      if (match?.score > 0) {
-        return {
-          kind,
-          row,
-          value: match.securityGroup.name,
-          label: match.securityGroup.name,
-          reason: `Matches security group name or purpose for ${row.name}.`,
-          confidence: confidenceFromScore(match.score),
-          score: match.score,
-          evidence: [`Matched security group name or purpose: ${match.securityGroup.name}`],
-        };
-      }
-    }
-    if (kind === 'storage') {
-      const match = resources.storageProfiles.find((profile) => profile.tier === row.storageTier)
-        || resources.storageProfiles.find((profile) => profile.name.toLowerCase().includes(row.application.toLowerCase()));
-      if (match) {
-        return {
-          kind,
-          row,
-          value: match.tier,
-          label: `${match.name} (${match.tier})`,
-          reason: `Matches the VM storage tier or application profile.`,
-          confidence: row.storageTier === match.tier ? 'Medium' : 'Low',
-          score: row.storageTier === match.tier ? 3 : 1,
-          evidence: row.storageTier === match.tier
-            ? [`Same storage tier: ${row.storageTier}`]
-            : [`Matched storage profile name: ${match.name}`],
-        };
-      }
-    }
-    if (kind === 'wave' && resources.waves.length === 1) {
-      return {
-        kind,
-        row,
-        value: resources.waves[0].name,
-        label: resources.waves[0].name,
-        reason: 'Only one migration wave is defined.',
-        confidence: 'Low',
-        score: 1,
-        evidence: ['Only one migration wave is defined.'],
-      };
-    }
-    return null;
-  }
-
   const assignmentSuggestions = useMemo(() => {
-    const suggestions: AssignmentSuggestion[] = [];
-    for (const row of assignmentRows) {
-      for (const kind of ['subnet', 'securityGroup', 'storage', 'wave'] as const) {
-        const suggestion = inferAssignmentSuggestion(row, kind);
-        if (suggestion) suggestions.push(suggestion);
-      }
-    }
-    return suggestions.slice(0, 6);
-  // inferAssignmentSuggestion intentionally closes over current resources and rows.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return buildAssignmentSuggestions({ assignmentRows, resources });
   }, [assignmentRows, resources]);
   const highConfidenceSuggestions = assignmentSuggestions.filter((suggestion) => suggestion.confidence === 'High');
   const recentSuggestionAudit = suggestionAudit.slice(0, 6);
@@ -299,38 +159,13 @@ export default function ExportWorkflow() {
 
   function applyAssignmentSuggestions(suggestions: AssignmentSuggestion[]) {
     if (suggestions.length === 0) return;
-    const suggestionByRowAndKind = new Map(
-      suggestions.map((suggestion) => [`${suggestion.row.id}:${suggestion.kind}`, suggestion]),
-    );
     dispatch({
       type: 'SET_ASSIGNMENT_ROWS',
-      payload: assignmentRows.map((row) => {
-        let nextRow = row;
-        for (const kind of ['subnet', 'securityGroup', 'storage', 'wave'] as const) {
-          const suggestion = suggestionByRowAndKind.get(`${row.id}:${kind}`);
-          if (!suggestion) continue;
-          if (kind === 'subnet') nextRow = { ...nextRow, subnet: suggestion.value };
-          if (kind === 'securityGroup') nextRow = { ...nextRow, securityGroup: suggestion.value };
-          if (kind === 'storage') nextRow = { ...nextRow, storageTier: suggestion.value };
-          if (kind === 'wave') nextRow = { ...nextRow, wave: suggestion.value };
-        }
-        return nextRow;
-      }),
+      payload: applySuggestionsToRows(assignmentRows, suggestions),
     });
     dispatch({
       type: 'APPEND_SUGGESTION_AUDIT',
-      payload: suggestions.map((suggestion) => ({
-        id: buildAuditId(suggestion.row, suggestion.kind, suggestion.value),
-        vmId: suggestion.row.id,
-        vmName: suggestion.row.name,
-        field: suggestion.kind,
-        oldValue: rowAssignmentValue(suggestion.row, suggestion.kind),
-        newValue: suggestion.value,
-        confidence: suggestion.confidence,
-        reason: suggestion.reason,
-        evidence: suggestion.evidence,
-        appliedAt: new Date().toISOString(),
-      })),
+      payload: suggestionAuditEntries(suggestions, new Date().toISOString()),
     });
     const highConfidenceCount = suggestions.filter((suggestion) => suggestion.confidence === 'High').length;
     dispatch({
@@ -354,46 +189,16 @@ export default function ExportWorkflow() {
     if (!entry || entry.revertedAt) return;
     dispatch({
       type: 'SET_ASSIGNMENT_ROWS',
-      payload: assignmentRows.map((row) => {
-        if (row.id !== entry.vmId) return row;
-        if (entry.field === 'subnet') return { ...row, subnet: entry.oldValue };
-        if (entry.field === 'securityGroup') return { ...row, securityGroup: entry.oldValue };
-        if (entry.field === 'storage') return { ...row, storageTier: entry.oldValue };
-        return { ...row, wave: entry.oldValue };
-      }),
+      payload: revertSuggestionInRows(assignmentRows, entry),
     });
     dispatch({
       type: 'SET_SUGGESTION_AUDIT',
-      payload: suggestionAudit.map((candidate) =>
-        candidate.id === entryId
-          ? { ...candidate, revertedAt: new Date().toISOString() }
-          : candidate,
-      ),
+      payload: markSuggestionAuditReverted(suggestionAudit, entryId, new Date().toISOString()),
     });
     dispatch({
       type: 'SET_TERRAFORM_STATUS',
       payload: `Reverted suggested ${suggestionLabels[entry.field]} change for ${entry.vmName}. Save the project to persist it.`,
     });
-  }
-
-  function suggestionKindForFinding(
-    finding: PreflightResponse['findings'][number],
-  ): AssignmentSuggestionKind | null {
-    const category = finding.Category;
-    const field = String(finding.Field || '').toLowerCase();
-    if (category === 'network_mapping' || field.includes('subnet')) return 'subnet';
-    if (category === 'security_group' || field.includes('security')) return 'securityGroup';
-    if (category === 'storage' || field.includes('storage') || field.includes('iops')) return 'storage';
-    if (category === 'wave' || field.includes('wave')) return 'wave';
-    return null;
-  }
-
-  function suggestionForFinding(finding: PreflightResponse['findings'][number]) {
-    const matchingVm = assignmentRows.find((row) =>
-      row.name === finding.Subject || row.id === finding.Subject,
-    );
-    const kind = suggestionKindForFinding(finding);
-    return matchingVm && kind ? inferAssignmentSuggestion(matchingVm, kind) : null;
   }
 
   function openPreflightFinding(
@@ -448,19 +253,9 @@ export default function ExportWorkflow() {
   });
   const hasResolvableIssue = remediationQueue.length > 0;
 
-  function suggestionForQueueItem(item: RemediationQueueItem) {
-    if (item.source === 'preflight') {
-      return suggestionForFinding(item.finding);
-    }
-    if (item.source === 'vm-gap') {
-      return inferAssignmentSuggestion(item.row, suggestionKindForMode(item.mode));
-    }
-    return null;
-  }
-
   const queueSuggestionEntries = remediationQueue
     .map((item) => {
-      const suggestion = suggestionForQueueItem(item);
+      const suggestion = suggestionForQueueItem({ item, assignmentRows, resources });
       return suggestion ? { item, suggestion, key: suggestionKey(suggestion) } : null;
     })
     .filter((entry): entry is { item: RemediationQueueItem; suggestion: AssignmentSuggestion; key: string } =>
@@ -916,7 +711,7 @@ export default function ExportWorkflow() {
         {remediationQueue.length > 0 ? (
           <div className="remediation-queue">
             {remediationQueue.map((item, index) => {
-              const suggestion = suggestionForQueueItem(item);
+              const suggestion = suggestionForQueueItem({ item, assignmentRows, resources });
               const key = suggestion ? suggestionKey(suggestion) : '';
               const selected = selectedQueueSuggestionIds.includes(key);
               return (
@@ -1110,7 +905,7 @@ export default function ExportWorkflow() {
               {visiblePreflightFindings.map((finding, index) => (
                 <Tile key={`${finding.Subject}-${finding.Category}-${index}`} className="resource-tile">
                   {(() => {
-                    const suggestion = suggestionForFinding(finding);
+                    const suggestion = suggestionForFinding({ finding, assignmentRows, resources });
                     return (
                       <>
                         <div className="package-tile__header">
