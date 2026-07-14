@@ -14,10 +14,7 @@ import {
   type TerraformPreviewResponse,
 } from '../../hooks/useApi';
 import {
-  carbonPackageFiles,
-  handoffPackageFiles,
   packageFileCount,
-  terraformPackageFiles,
 } from '../../utils/package-inventory';
 import {
   buildNetworkPlanBody,
@@ -29,13 +26,22 @@ import {
 import {
   applySuggestionsToRows,
   buildAssignmentSuggestions,
+  buildExportChecklist,
   buildRemediationQueue,
+  calculatePlanningCompleteness,
   confidenceTagType,
+  downloadBrowserFile,
+  filterPreviewFiles,
+  handoffCsvFileCount,
   markSuggestionAuditReverted,
   packageGroups,
   packageParitySummary,
+  planningFindings,
   planningGapLabel,
+  previewCategories as buildPreviewCategories,
+  previewFileSizeLabel,
   readFileText,
+  readinessReportPayload,
   revertSuggestionInRows,
   routesForFinding,
   suggestionAuditEntries,
@@ -43,7 +49,6 @@ import {
   suggestionForQueueItem,
   suggestionKey,
   suggestionLabels,
-  terraformLabel,
   type AssignmentSuggestion,
   type PreflightRoute,
   type RemediationQueueItem,
@@ -72,82 +77,36 @@ export default function ExportWorkflow() {
     suggestionAudit,
   } = state;
 
-  const planningCompleteness = useMemo(() => {
-    const total = assignmentRows.length || 1;
-    const missingSubnet = assignmentRows.filter((row) => !row.subnet).length;
-    const missingSg = assignmentRows.filter((row) => !row.securityGroup).length;
-    const missingStorage = assignmentRows.filter((row) => !row.overrideStorageTier && !row.storageTier).length;
-    const missingWave = assignmentRows.filter((row) => !row.wave).length;
-    const missingCidr = resources.subnets.filter((subnet) => !subnet.cidr).length;
-    const invalidLabels = [
-      ...resources.vpcs,
-      ...resources.subnets,
-      ...resources.securityGroups,
-      ...resources.storageProfiles,
-      ...(resources.networkComponents || []),
-    ].filter((bucket) => !bucket.label || bucket.label !== terraformLabel(bucket.label)).length;
-    return { missingSubnet, missingSg, missingStorage, missingWave, missingCidr, invalidLabels };
-  }, [assignmentRows, resources]);
+  const planningCompleteness = useMemo(() =>
+    calculatePlanningCompleteness({ assignmentRows, resources }),
+  [assignmentRows, resources]);
 
-  const findings: [string, number][] = [
-    ['Missing subnet assignments', planningCompleteness.missingSubnet],
-    ['Missing security group assignments', planningCompleteness.missingSg],
-    ['Missing storage/IOPS assignments', planningCompleteness.missingStorage],
-    ['Missing wave assignments', planningCompleteness.missingWave],
-    ['Subnets missing CIDR', planningCompleteness.missingCidr],
-    ['Labels needing Terraform cleanup', planningCompleteness.invalidLabels],
-  ];
+  const findings = useMemo(() => planningFindings(planningCompleteness), [planningCompleteness]);
   const blockingFindingCount = findings.reduce((total, [, count]) => total + count, 0);
   const preflightSummary = preflight?.summary;
   const visiblePreflightFindings = preflight?.findings.slice(0, 5) || [];
-  const exportChecklist = [
-    {
-      label: 'Network plan saved',
-      complete: !!selectedProjectId && !state.isDirty,
-    },
-    {
-      label: 'VM assignments complete',
-      complete: planningCompleteness.missingSubnet === 0 && planningCompleteness.missingSg === 0,
-    },
-    {
-      label: 'Overrides reviewed',
-      complete: planningCompleteness.missingStorage === 0,
-    },
-    {
-      label: 'Wave plan complete',
-      complete: planningCompleteness.missingWave === 0,
-    },
-    {
-      label: 'Subnet CIDRs complete',
-      complete: planningCompleteness.missingCidr === 0,
-    },
-    {
-      label: 'Backend preflight run',
-      complete: !!preflight,
-    },
-  ];
+  const exportChecklist = buildExportChecklist({
+    selectedProjectId,
+    isDirty: state.isDirty,
+    planningCompleteness,
+    hasPreflight: !!preflight,
+  });
   const exportChecklistComplete = exportChecklist.filter((item) => item.complete).length;
   const selectedPreviewFile = terraformPreview?.files.find((file) =>
     file.path === selectedPreviewPath,
   ) || terraformPreview?.files[0];
   const previewCategories = useMemo(() => {
-    const categories = new Set(terraformPreview?.files.map((file) => file.category) || []);
-    return ['All', ...Array.from(categories)];
+    return buildPreviewCategories(terraformPreview?.files || []);
   }, [terraformPreview]);
   const filteredPreviewFiles = useMemo(() => {
-    const query = previewSearch.trim().toLowerCase();
-    return terraformPreview?.files.filter((file) => {
-      const matchesCategory = previewCategory === 'All' || file.category === previewCategory;
-      const matchesSearch = !query || file.path.toLowerCase().includes(query);
-      return matchesCategory && matchesSearch;
-    }) || [];
+    return filterPreviewFiles({
+      files: terraformPreview?.files || [],
+      category: previewCategory,
+      search: previewSearch,
+    });
   }, [previewCategory, previewSearch, terraformPreview]);
-  const selectedPreviewSize = selectedPreviewFile
-    ? `${Math.max(1, Math.ceil(selectedPreviewFile.size_bytes / 1024))} KB`
-    : '';
-  const handoffCsvCount = terraformPreview?.files.filter((file) =>
-    file.category === 'Migration handoff' && file.path.endsWith('.csv'),
-  ).length || 0;
+  const selectedPreviewSize = previewFileSizeLabel(selectedPreviewFile);
+  const handoffCsvCount = handoffCsvFileCount(terraformPreview?.files || []);
 
   const assignmentSuggestions = useMemo(() => {
     return buildAssignmentSuggestions({ assignmentRows, resources });
@@ -392,14 +351,10 @@ export default function ExportWorkflow() {
       }
       dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Generating Terraform ZIP...' });
       const blob = await generateTerraform(selectedProjectId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${projectName.replace(/\s+/g, '-')}-terraform-${new Date().toISOString().split('T')[0]}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(link);
+      downloadBrowserFile({
+        blob,
+        filename: `${projectName.replace(/\s+/g, '-')}-terraform-${new Date().toISOString().split('T')[0]}.zip`,
+      });
       dispatch({
         type: 'SET_TERRAFORM_STATUS',
         payload: preflightResult.summary.warnings > 0
@@ -419,14 +374,10 @@ export default function ExportWorkflow() {
 
   function downloadPreviewFile(file: TerraformPreviewResponse['files'][number]) {
     const blob = new Blob([file.content], { type: 'text/plain;charset=utf-8' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = file.path.replace(/\//g, '__');
-    document.body.appendChild(link);
-    link.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(link);
+    downloadBrowserFile({
+      blob,
+      filename: file.path.replace(/\//g, '__'),
+    });
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: `Downloaded ${file.path}.` });
   }
 
@@ -434,55 +385,23 @@ export default function ExportWorkflow() {
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
     dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
     const generatedAt = new Date().toISOString();
-    const report = {
-      schema_version: 'carbon-export-readiness-report-1.0',
-      generated_at: generatedAt,
-      project: {
-        id: selectedProjectId || null,
-        name: projectName,
-        workbook: summary?.filename || null,
-      },
-      readiness: {
-        status: activeAssignmentGapCount === 0 && (preflightSummary?.blockers || 0) === 0 ? 'Ready' : 'Needs review',
-        checklist: exportChecklist,
-        planning_gaps: Object.fromEntries(findings.map(([label, count]) => [label, count])),
-      },
-      preflight: preflight
-        ? {
-          summary: preflight.summary,
-          findings: preflight.findings,
-        }
-        : null,
-      suggestions: {
-        available: assignmentSuggestions.map((suggestion) => ({
-          vm_id: suggestion.row.id,
-          vm_name: suggestion.row.name,
-          field: suggestion.kind,
-          suggested_value: suggestion.value,
-          label: suggestion.label,
-          confidence: suggestion.confidence,
-          score: suggestion.score,
-          reason: suggestion.reason,
-          evidence: suggestion.evidence,
-        })),
-        audit: suggestionAudit,
-      },
-      package_inventory: {
-        total_files: packageFileCount,
-        terraform_files: terraformPackageFiles.length,
-        handoff_files: handoffPackageFiles.length,
-        carbon_state_files: carbonPackageFiles.length,
-      },
-    };
+    const report = readinessReportPayload({
+      generatedAt,
+      selectedProjectId,
+      projectName,
+      workbookFilename: summary?.filename,
+      activeAssignmentGapCount,
+      preflight,
+      exportChecklist,
+      findings,
+      assignmentSuggestions,
+      suggestionAudit,
+    });
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${projectName.replace(/\s+/g, '-')}-carbon-export-readiness-${generatedAt.split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(link);
+    downloadBrowserFile({
+      blob,
+      filename: `${projectName.replace(/\s+/g, '-')}-carbon-export-readiness-${generatedAt.split('T')[0]}.json`,
+    });
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Export readiness report downloaded.' });
   }
 
@@ -502,14 +421,10 @@ export default function ExportWorkflow() {
     dispatch({ type: 'SET_TERRAFORM_ERROR', payload: '' });
     const json = exportNetworkPlanJson({ resources, assignmentRows, projectName, summary });
     const blob = new Blob([json], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${projectName.replace(/\s+/g, '-')}-planning-state-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(link);
+    downloadBrowserFile({
+      blob,
+      filename: `${projectName.replace(/\s+/g, '-')}-planning-state-${new Date().toISOString().split('T')[0]}.json`,
+    });
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Planning state JSON downloaded.' });
   }
 

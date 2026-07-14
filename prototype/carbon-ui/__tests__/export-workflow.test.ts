@@ -3,14 +3,22 @@ import {
   applySuggestionsToRows,
   buildAuditId,
   buildAssignmentSuggestions,
+  buildExportChecklist,
   buildRemediationQueue,
+  calculatePlanningCompleteness,
   confidenceFromScore,
+  filterPreviewFiles,
+  handoffCsvFileCount,
   inferAssignmentSuggestion,
   markSuggestionAuditReverted,
   packageGroups,
   packageParitySummary,
   planningGapLabel,
+  planningFindings,
+  previewCategories,
+  previewFileSizeLabel,
   primaryRouteForFinding,
+  readinessReportPayload,
   revertSuggestionInRows,
   rowAssignmentValue,
   routesForFinding,
@@ -119,6 +127,98 @@ describe('export workflow helpers', () => {
       'Migration handoff',
       'Carbon state',
     ]);
+  });
+
+  it('builds planning completeness, findings, and checklist rows', () => {
+    const resources = {
+      ...defaultResources,
+      subnets: [{ ...defaultResources.subnets[0], cidr: '' }],
+      securityGroups: [{ ...defaultResources.securityGroups[0], label: 'Bad Label' }],
+    };
+    const completeness = calculatePlanningCompleteness({
+      assignmentRows: [
+        { ...sampleRows[0], subnet: '', securityGroup: '', storageTier: '', overrideStorageTier: '', wave: '' },
+        { ...sampleRows[1], subnet: 'prod-db-us-south-1', securityGroup: 'sg-db-private', storageTier: '10iops-tier', wave: 'Wave 1' },
+      ],
+      resources,
+    });
+    const checklist = buildExportChecklist({
+      selectedProjectId: 'project-1',
+      isDirty: false,
+      planningCompleteness: completeness,
+      hasPreflight: true,
+    });
+
+    expect(completeness).toMatchObject({
+      missingSubnet: 1,
+      missingSg: 1,
+      missingStorage: 1,
+      missingWave: 1,
+      missingCidr: 1,
+      invalidLabels: 1,
+    });
+    expect(planningFindings(completeness)).toContainEqual(['Subnets missing CIDR', 1]);
+    expect(checklist).toContainEqual({ label: 'Network plan saved', complete: true });
+    expect(checklist).toContainEqual({ label: 'VM assignments complete', complete: false });
+    expect(checklist).toContainEqual({ label: 'Backend preflight run', complete: true });
+  });
+
+  it('filters preview files and formats preview metadata', () => {
+    const files = [
+      { path: 'README.md', category: 'Terraform', size_bytes: 1200, content: '' },
+      { path: 'decision-audit.csv', category: 'Migration handoff', size_bytes: 48, content: '' },
+      { path: 'network-plan.json', category: 'Carbon state', size_bytes: 24, content: '' },
+    ];
+
+    expect(previewCategories(files)).toEqual(['All', 'Terraform', 'Migration handoff', 'Carbon state']);
+    expect(filterPreviewFiles({ files, category: 'Migration handoff', search: 'audit' })).toEqual([files[1]]);
+    expect(previewFileSizeLabel(files[0])).toBe('2 KB');
+    expect(previewFileSizeLabel()).toBe('');
+    expect(handoffCsvFileCount(files)).toBe(1);
+  });
+
+  it('builds a readiness report payload with suggestions and package inventory', () => {
+    const suggestion: AssignmentSuggestion = {
+      kind: 'subnet',
+      row: sampleRows[0],
+      value: 'prod-app-us-south-1',
+      label: 'prod-app-us-south-1',
+      reason: 'Matched source network',
+      confidence: 'High',
+      score: 8,
+      evidence: ['Same source network'],
+    };
+    const report = readinessReportPayload({
+      generatedAt: '2026-07-14T12:00:00Z',
+      selectedProjectId: 'project-1',
+      projectName: 'Export Project',
+      workbookFilename: 'rvtools.xlsx',
+      activeAssignmentGapCount: 0,
+      preflight: {
+        project_id: 'project-1',
+        project_name: 'Export Project',
+        summary: { blockers: 0, warnings: 0, info: 0, total: 0 },
+        findings: [],
+      },
+      exportChecklist: [{ label: 'Network plan saved', complete: true }],
+      findings: [['Missing subnet assignments', 0]],
+      assignmentSuggestions: [suggestion],
+      suggestionAudit: [],
+    });
+
+    expect(report).toMatchObject({
+      schema_version: 'carbon-export-readiness-report-1.0',
+      generated_at: '2026-07-14T12:00:00Z',
+      project: { id: 'project-1', name: 'Export Project', workbook: 'rvtools.xlsx' },
+      readiness: { status: 'Ready' },
+    });
+    expect(report.suggestions.available[0]).toMatchObject({
+      vm_id: sampleRows[0].id,
+      field: 'subnet',
+      suggested_value: 'prod-app-us-south-1',
+    });
+    expect(report.package_inventory.total_files).toBeGreaterThan(0);
+    expect(report.package_inventory.handoff_files).toBeGreaterThan(0);
   });
 
   it('routes preflight findings to the right Carbon workflow', () => {

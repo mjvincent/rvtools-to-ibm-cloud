@@ -9,6 +9,7 @@ import type { PreflightResponse } from '../hooks/useApi';
 import {
   carbonPackageFiles,
   handoffPackageFiles,
+  packageFileCount,
   terraformPackageFiles,
 } from './package-inventory';
 
@@ -711,4 +712,194 @@ export function markSuggestionAuditReverted(
       ? { ...candidate, revertedAt }
       : candidate,
   );
+}
+
+export type ExportChecklistItem = {
+  label: string;
+  complete: boolean;
+};
+
+export type PreviewFile = {
+  path: string;
+  category: string;
+  size_bytes: number;
+  content: string;
+};
+
+export function calculatePlanningCompleteness(params: {
+  assignmentRows: AssignmentVm[];
+  resources: ResourceState;
+}) {
+  const { assignmentRows, resources } = params;
+  const missingSubnet = assignmentRows.filter((row) => !row.subnet).length;
+  const missingSg = assignmentRows.filter((row) => !row.securityGroup).length;
+  const missingStorage = assignmentRows.filter((row) => !row.overrideStorageTier && !row.storageTier).length;
+  const missingWave = assignmentRows.filter((row) => !row.wave).length;
+  const missingCidr = resources.subnets.filter((subnet) => !subnet.cidr).length;
+  const invalidLabels = [
+    ...resources.vpcs,
+    ...resources.subnets,
+    ...resources.securityGroups,
+    ...resources.storageProfiles,
+    ...(resources.networkComponents || []),
+  ].filter((bucket) => !bucket.label || bucket.label !== terraformLabel(bucket.label)).length;
+  return { missingSubnet, missingSg, missingStorage, missingWave, missingCidr, invalidLabels };
+}
+
+export function planningFindings(planningCompleteness: PlanningCompleteness): [string, number][] {
+  return [
+    ['Missing subnet assignments', planningCompleteness.missingSubnet],
+    ['Missing security group assignments', planningCompleteness.missingSg],
+    ['Missing storage/IOPS assignments', planningCompleteness.missingStorage],
+    ['Missing wave assignments', planningCompleteness.missingWave],
+    ['Subnets missing CIDR', planningCompleteness.missingCidr],
+    ['Labels needing Terraform cleanup', planningCompleteness.invalidLabels],
+  ];
+}
+
+export function buildExportChecklist(params: {
+  selectedProjectId: string;
+  isDirty: boolean;
+  planningCompleteness: PlanningCompleteness;
+  hasPreflight: boolean;
+}): ExportChecklistItem[] {
+  const { selectedProjectId, isDirty, planningCompleteness, hasPreflight } = params;
+  return [
+    {
+      label: 'Network plan saved',
+      complete: !!selectedProjectId && !isDirty,
+    },
+    {
+      label: 'VM assignments complete',
+      complete: planningCompleteness.missingSubnet === 0 && planningCompleteness.missingSg === 0,
+    },
+    {
+      label: 'Overrides reviewed',
+      complete: planningCompleteness.missingStorage === 0,
+    },
+    {
+      label: 'Wave plan complete',
+      complete: planningCompleteness.missingWave === 0,
+    },
+    {
+      label: 'Subnet CIDRs complete',
+      complete: planningCompleteness.missingCidr === 0,
+    },
+    {
+      label: 'Backend preflight run',
+      complete: hasPreflight,
+    },
+  ];
+}
+
+export function previewCategories(files: PreviewFile[] = []) {
+  const categories = new Set(files.map((file) => file.category));
+  return ['All', ...Array.from(categories)];
+}
+
+export function filterPreviewFiles(params: {
+  files: PreviewFile[];
+  category: string;
+  search: string;
+}) {
+  const query = params.search.trim().toLowerCase();
+  return params.files.filter((file) => {
+    const matchesCategory = params.category === 'All' || file.category === params.category;
+    const matchesSearch = !query || file.path.toLowerCase().includes(query);
+    return matchesCategory && matchesSearch;
+  });
+}
+
+export function previewFileSizeLabel(file?: PreviewFile) {
+  return file ? `${Math.max(1, Math.ceil(file.size_bytes / 1024))} KB` : '';
+}
+
+export function handoffCsvFileCount(files: PreviewFile[] = []) {
+  return files.filter((file) =>
+    file.category === 'Migration handoff' && file.path.endsWith('.csv'),
+  ).length;
+}
+
+export function readinessReportPayload(params: {
+  generatedAt: string;
+  selectedProjectId: string;
+  projectName: string;
+  workbookFilename?: string | null;
+  activeAssignmentGapCount: number;
+  preflight?: PreflightResponse | null;
+  exportChecklist: ExportChecklistItem[];
+  findings: [string, number][];
+  assignmentSuggestions: AssignmentSuggestion[];
+  suggestionAudit: SuggestionAuditEntry[];
+}) {
+  const {
+    generatedAt,
+    selectedProjectId,
+    projectName,
+    workbookFilename,
+    activeAssignmentGapCount,
+    preflight,
+    exportChecklist,
+    findings,
+    assignmentSuggestions,
+    suggestionAudit,
+  } = params;
+  return {
+    schema_version: 'carbon-export-readiness-report-1.0',
+    generated_at: generatedAt,
+    project: {
+      id: selectedProjectId || null,
+      name: projectName,
+      workbook: workbookFilename || null,
+    },
+    readiness: {
+      status: activeAssignmentGapCount === 0 && (preflight?.summary.blockers || 0) === 0 ? 'Ready' : 'Needs review',
+      checklist: exportChecklist,
+      planning_gaps: Object.fromEntries(findings.map(([label, count]) => [label, count])),
+    },
+    preflight: preflight
+      ? {
+        summary: preflight.summary,
+        findings: preflight.findings,
+      }
+      : null,
+    suggestions: {
+      available: assignmentSuggestions.map((suggestion) => ({
+        vm_id: suggestion.row.id,
+        vm_name: suggestion.row.name,
+        field: suggestion.kind,
+        suggested_value: suggestion.value,
+        label: suggestion.label,
+        confidence: suggestion.confidence,
+        score: suggestion.score,
+        reason: suggestion.reason,
+        evidence: suggestion.evidence,
+      })),
+      audit: suggestionAudit,
+    },
+    package_inventory: {
+      total_files: packageFileCount,
+      terraform_files: terraformPackageFiles.length,
+      handoff_files: handoffPackageFiles.length,
+      carbon_state_files: carbonPackageFiles.length,
+    },
+  };
+}
+
+export function downloadBrowserFile(params: {
+  blob: Blob;
+  filename: string;
+  documentRef?: Document;
+  urlRef?: typeof window.URL;
+}) {
+  const documentTarget = params.documentRef || document;
+  const urlTarget = params.urlRef || window.URL;
+  const url = urlTarget.createObjectURL(params.blob);
+  const link = documentTarget.createElement('a');
+  link.href = url;
+  link.download = params.filename;
+  documentTarget.body.appendChild(link);
+  link.click();
+  urlTarget.revokeObjectURL(url);
+  documentTarget.body.removeChild(link);
 }
