@@ -434,6 +434,25 @@ export type SavedProjectState = {
       estimatedImportTime?: string;
       notes?: string;
     }>;
+    suggestion_audit?: Array<{
+      id?: string;
+      vm_id?: string;
+      vmId?: string;
+      vm_name?: string;
+      vmName?: string;
+      field?: string;
+      old_value?: string;
+      oldValue?: string;
+      new_value?: string;
+      newValue?: string;
+      confidence?: string;
+      reason?: string;
+      evidence?: string[];
+      applied_at?: string;
+      appliedAt?: string;
+      reverted_at?: string | null;
+      revertedAt?: string | null;
+    }>;
     metadata?: Record<string, string>;
   };
 };

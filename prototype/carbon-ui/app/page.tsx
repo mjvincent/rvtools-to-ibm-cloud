@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import React, { useEffect, useRef } from 'react';
@@ -42,6 +41,10 @@ import {
   vmAssignmentsFromRows,
 } from '../utils/planning-state';
 import type { ImageImportStatus, RemediationTracker, SuggestionAuditEntry, Workflow } from '../types/network-planning';
+import {
+  buildProjectStatePayload,
+  normalizeProjectState,
+} from '../utils/project-state';
 
 import OverviewWorkflow from '../components/workflows/OverviewWorkflow';
 import IntakeWorkflow from '../components/workflows/IntakeWorkflow';
@@ -71,150 +74,7 @@ const workflows: Array<{ id: Workflow; label: string; icon?: React.ComponentType
   { id: 'export', label: 'Export Readiness', icon: Save },
 ];
 
-function vmDecision(row) {
-  return {
-    'VM Key': row.id,
-    'VM Name': row.name,
-    'Exclude?': Boolean(row.excluded),
-    'Exclusion Reason': row.exclusionReason,
-    'Override Profile': row.overrideProfile,
-    'Override Profile Reason': row.overrideProfileReason,
-    'Override Storage Tier': row.overrideStorageTier,
-    'Override Storage Tier Reason': row.overrideStorageTierReason,
-    Network: row.network,
-    Subnet: row.subnet,
-    'Security Group': row.securityGroup,
-  };
-}
-
-function waveDecision(row) {
-  return {
-    'VM Key': row.id,
-    'VM Name': row.name,
-    Wave: row.wave,
-    'Cutover Group': row.cutoverGroup,
-    Owner: row.owner,
-    Application: row.application,
-    Priority: row.priority,
-    'Dependency Group': row.dependencyGroup,
-  };
-}
-
-function remediationTrackerToPlanningState(tracker: RemediationTracker) {
-  return Object.fromEntries(
-    Object.entries(tracker).map(([blockerId, entry]) => [blockerId, {
-      status: entry.status,
-      due_date: entry.dueDate,
-      notes: entry.notes,
-      owner: entry.owner,
-      vm_key: entry.vm_key || entry.vmKey || blockerId.split('::', 1)[0].split(':', 1)[0],
-      blocker_type: entry.blocker_type || entry.blockerType || entry.type || '',
-      blocker_description: entry.blocker_description || entry.blockerDescription || entry.description || '',
-    }]),
-  );
-}
-
-function normalizeRemediationTracker(rawTracker): RemediationTracker {
-  if (!rawTracker || typeof rawTracker !== 'object') return {};
-  return Object.fromEntries(
-    Object.entries(rawTracker).map(([blockerId, entry]: [string, any]) => [blockerId, {
-      status: ['Open', 'In Progress', 'Resolved', 'Deferred'].includes(entry?.status) ? entry.status : 'Open',
-      owner: entry?.owner || '',
-      dueDate: entry?.dueDate || entry?.due_date || '',
-      notes: entry?.notes || '',
-      vmKey: entry?.vmKey || entry?.vm_key || String(blockerId).split('::', 1)[0].split(':', 1)[0],
-      vm_key: entry?.vm_key || entry?.vmKey || String(blockerId).split('::', 1)[0].split(':', 1)[0],
-      blockerType: entry?.blockerType || entry?.blocker_type || entry?.type || '',
-      blocker_type: entry?.blocker_type || entry?.blockerType || entry?.type || '',
-      blockerDescription: entry?.blockerDescription || entry?.blocker_description || entry?.description || '',
-      blocker_description: entry?.blocker_description || entry?.blockerDescription || entry?.description || '',
-    }]),
-  );
-}
-
-function imageImportStatusToPlanningState(status: ImageImportStatus) {
-  return Object.fromEntries(
-    Object.entries(status).map(([sourceImage, entry]) => [sourceImage, {
-      target_catalog_id: entry.targetCatalogId,
-      import_status: entry.importStatus,
-      estimated_import_time: entry.estimatedImportTime,
-      notes: entry.notes,
-    }]),
-  );
-}
-
-function normalizeImageImportStatus(rawStatus): ImageImportStatus {
-  if (!rawStatus || typeof rawStatus !== 'object') return {};
-  const validStatuses = ['', 'Pending', 'Scheduled', 'Imported', 'Failed', 'Review'];
-  return Object.fromEntries(
-    Object.entries(rawStatus).map(([sourceImage, entry]: [string, any]) => [sourceImage, {
-      targetCatalogId: entry?.targetCatalogId || entry?.target_catalog_id || '',
-      importStatus: validStatuses.includes(entry?.importStatus || entry?.import_status)
-        ? (entry?.importStatus || entry?.import_status)
-        : '',
-      estimatedImportTime: entry?.estimatedImportTime || entry?.estimated_import_time || '',
-      notes: entry?.notes || '',
-    }]),
-  );
-}
-
-function normalizeSuggestionAudit(rawAudit): SuggestionAuditEntry[] {
-  if (!Array.isArray(rawAudit)) return [];
-  const validFields = ['subnet', 'securityGroup', 'storage', 'wave'];
-  const validConfidence = ['High', 'Medium', 'Low'];
-  return rawAudit
-    .filter((entry) => entry && typeof entry === 'object')
-    .map((entry: any) => ({
-      id: String(entry.id || `${entry.vmId || entry.vm_id || entry.vmName || entry.vm_name || 'vm'}-${entry.field || 'field'}-${entry.appliedAt || entry.applied_at || Date.now()}`),
-      vmId: String(entry.vmId || entry.vm_id || ''),
-      vmName: String(entry.vmName || entry.vm_name || ''),
-      field: validFields.includes(entry.field) ? entry.field : 'subnet',
-      oldValue: String(entry.oldValue || entry.old_value || ''),
-      newValue: String(entry.newValue || entry.new_value || ''),
-      confidence: validConfidence.includes(entry.confidence) ? entry.confidence : 'Low',
-      reason: String(entry.reason || ''),
-      evidence: Array.isArray(entry.evidence) ? entry.evidence.map(String) : [],
-      appliedAt: String(entry.appliedAt || entry.applied_at || ''),
-      revertedAt: entry.revertedAt || entry.reverted_at ? String(entry.revertedAt || entry.reverted_at) : undefined,
-    }));
-}
-
-function suggestionAuditToPlanningState(audit: SuggestionAuditEntry[]) {
-  return audit.map((entry) => ({
-    id: entry.id,
-    vm_id: entry.vmId,
-    vm_name: entry.vmName,
-    field: entry.field,
-    old_value: entry.oldValue,
-    new_value: entry.newValue,
-    confidence: entry.confidence,
-    reason: entry.reason,
-    evidence: entry.evidence,
-    applied_at: entry.appliedAt,
-    reverted_at: entry.revertedAt || null,
-  }));
-}
-
-function buildProjectStatePayload({ assignmentRows, summary, resources, remediationTracker, imageImportStatus, suggestionAudit, projectName }) {
-  const planningStateTracker = remediationTrackerToPlanningState(remediationTracker);
-  const planningImageStatus = imageImportStatusToPlanningState(imageImportStatus);
-  const planningSuggestionAudit = suggestionAuditToPlanningState(suggestionAudit || []);
-  return {
-    schema_version: 'carbon-prototype-0.3',
-    metadata: { project_name: projectName.trim(), source: 'carbon-ui-prototype' },
-    vm_decisions: assignmentRows.map(vmDecision),
-    wave_planning: assignmentRows.map(waveDecision),
-    remediation_tracker: planningStateTracker,
-    image_import_status: planningImageStatus,
-    suggestion_audit: planningSuggestionAudit,
-    carbon_summary: summary,
-    carbon_assignment_rows: assignmentRows,
-    carbon_resources: resources,
-    carbon_remediation_tracker: remediationTracker,
-    carbon_image_import_status: imageImportStatus,
-    carbon_suggestion_audit: suggestionAudit || [],
-  };
-}
+type CarbonTagType = 'red' | 'green' | 'blue' | 'purple' | 'gray' | 'warm-gray' | 'cyan';
 
 function WorkbenchShell() {
   const { state, dispatch } = useAppState();
@@ -260,7 +120,11 @@ function WorkbenchShell() {
     }, 0)
   ), [assignmentRows, remediationTracker]);
 
-  const saveState = React.useMemo(() => {
+  const saveState = React.useMemo<{
+    tagType: CarbonTagType;
+    label: string;
+    detail: string;
+  }>(() => {
     if (!persistenceEnabled) {
       return {
         tagType: 'gray',
@@ -402,47 +266,28 @@ function WorkbenchShell() {
       dispatch({ type: 'SET_SELECTED_PROJECT_ID', payload: project.id });
       dispatch({ type: 'SET_PROJECT_NAME', payload: project.name || 'Migration assessment' });
       dispatch({ type: 'SET_PROJECT_DESCRIPTION', payload: project.description || '' });
-      if (savedState?.planning_state_json?.carbon_summary) {
-        dispatch({ type: 'SET_SUMMARY', payload: savedState.planning_state_json.carbon_summary });
+      const normalizedState = savedState ? normalizeProjectState(savedState) : {
+        summary: null,
+        assignmentRows: [],
+        resources: undefined,
+        remediationTracker: {},
+        imageImportStatus: {},
+        suggestionAudit: [],
+      };
+      if (normalizedState.summary) {
+        dispatch({ type: 'SET_SUMMARY', payload: normalizedState.summary });
       }
-      if (savedState?.planning_state_json?.carbon_assignment_rows) {
-        dispatch({ type: 'SET_ASSIGNMENT_ROWS', payload: savedState.planning_state_json.carbon_assignment_rows });
-      } else if (savedState?.planning_state_json?.carbon_summary) {
-        dispatch({ type: 'SET_ASSIGNMENT_ROWS', payload: rowsFromSummary(savedState.planning_state_json.carbon_summary) });
+      if (normalizedState.assignmentRows.length > 0) {
+        dispatch({ type: 'SET_ASSIGNMENT_ROWS', payload: normalizedState.assignmentRows });
+      } else if (normalizedState.summary) {
+        dispatch({ type: 'SET_ASSIGNMENT_ROWS', payload: rowsFromSummary(normalizedState.summary) });
       }
-      if (savedState?.planning_state_json?.carbon_resources) {
-        dispatch({ type: 'SET_RESOURCES', payload: savedState.planning_state_json.carbon_resources });
+      if (normalizedState.resources) {
+        dispatch({ type: 'SET_RESOURCES', payload: normalizedState.resources });
       }
-      if (savedState?.planning_state_json?.carbon_remediation_tracker || savedState?.planning_state_json?.remediation_tracker) {
-        dispatch({
-          type: 'SET_REMEDIATION_TRACKER',
-          payload: normalizeRemediationTracker(
-            savedState.planning_state_json.carbon_remediation_tracker || savedState.planning_state_json.remediation_tracker,
-          ),
-        });
-      } else {
-        dispatch({ type: 'SET_REMEDIATION_TRACKER', payload: {} });
-      }
-      if (savedState?.planning_state_json?.carbon_image_import_status || savedState?.planning_state_json?.image_import_status) {
-        dispatch({
-          type: 'SET_IMAGE_IMPORT_STATUS',
-          payload: normalizeImageImportStatus(
-            savedState.planning_state_json.carbon_image_import_status || savedState.planning_state_json.image_import_status,
-          ),
-        });
-      } else {
-        dispatch({ type: 'SET_IMAGE_IMPORT_STATUS', payload: {} });
-      }
-      if (savedState?.planning_state_json?.carbon_suggestion_audit || savedState?.planning_state_json?.suggestion_audit) {
-        dispatch({
-          type: 'SET_SUGGESTION_AUDIT',
-          payload: normalizeSuggestionAudit(
-            savedState.planning_state_json.carbon_suggestion_audit || savedState.planning_state_json.suggestion_audit,
-          ),
-        });
-      } else {
-        dispatch({ type: 'SET_SUGGESTION_AUDIT', payload: [] });
-      }
+      dispatch({ type: 'SET_REMEDIATION_TRACKER', payload: normalizedState.remediationTracker });
+      dispatch({ type: 'SET_IMAGE_IMPORT_STATUS', payload: normalizedState.imageImportStatus });
+      dispatch({ type: 'SET_SUGGESTION_AUDIT', payload: normalizedState.suggestionAudit });
       try {
         const networkPlan = await api.loadNetworkPlan(projectId);
         const nextResources = resourcesFromNetworkPlan(networkPlan);
@@ -684,8 +529,15 @@ function WorkbenchShell() {
   );
 }
 
-// Inline MetricTile (kept local to shell — not imported from components/ui to avoid circular deps)
-function MetricTileInline({ label, value, helper, onClick }) {
+type MetricTileInlineProps = {
+  label: string;
+  value: React.ReactNode;
+  helper: string;
+  onClick?: () => void;
+};
+
+// Inline MetricTile (kept local to shell to avoid coupling the shell to workflow UI components)
+function MetricTileInline({ label, value, helper, onClick }: MetricTileInlineProps) {
   return (
     <Tile className={onClick ? 'metric-tile metric-tile--button' : 'metric-tile'} onClick={onClick}>
       <p className="metric-label">{label}</p>
