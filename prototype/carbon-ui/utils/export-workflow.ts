@@ -209,3 +209,239 @@ export function planningGapLabel(mode: 'network' | 'security' | 'storage' | 'wav
 export function buildAuditId(row: AssignmentVm, kind: AssignmentSuggestionKind, value: string) {
   return `${row.id}-${kind}-${value}-${Date.now()}`;
 }
+
+export type PlanningCompleteness = {
+  missingSubnet: number;
+  missingSg: number;
+  missingStorage: number;
+  missingWave: number;
+  missingCidr: number;
+  invalidLabels: number;
+};
+
+export function routeStatus(
+  finding: PreflightResponse['findings'][number],
+  fallback: string,
+) {
+  const action = finding['Suggested Action'];
+  return action ? `${fallback} ${action}` : fallback;
+}
+
+export function primaryRouteForFinding(
+  finding: PreflightResponse['findings'][number],
+): PreflightRoute {
+  const category = finding.Category;
+  const quickFixType = finding['Quick Fix Type'];
+  const field = finding.Field;
+  const fixLocation = finding['Fix Location'];
+  if (category === 'custom_image' || quickFixType === 'image_placeholder') {
+    return {
+      workflow: 'imageImport',
+      label: 'Open image planning',
+      status: routeStatus(finding, `Review image import planning for ${finding.Subject}.`),
+    };
+  }
+  if (category === 'readiness' || fixLocation.includes('Readiness tab')) {
+    return {
+      workflow: 'remediation',
+      label: 'Open remediation',
+      readinessFilter: 'Blocked',
+      status: routeStatus(finding, `Review remediation blockers for ${finding.Subject}.`),
+    };
+  }
+  if (category === 'cidr') {
+    return {
+      workflow: 'network',
+      assignmentMode: 'network',
+      label: 'Open subnet CIDRs',
+      status: routeStatus(finding, `Review subnet CIDR planning for ${finding.Subject}.`),
+    };
+  }
+  if (category === 'network_mapping') {
+    return {
+      workflow: 'assignment',
+      assignmentMode: 'network',
+      label: 'Open network assignment',
+      status: routeStatus(finding, `Review network placement for ${finding.Subject}.`),
+    };
+  }
+  if (category === 'security_group') {
+    return {
+      workflow: 'security',
+      assignmentMode: 'security',
+      label: 'Open security plan',
+      status: routeStatus(finding, `Review security planning for ${finding.Subject}.`),
+    };
+  }
+  if (category === 'storage' || field === 'Override Storage Tier') {
+    return {
+      workflow: 'overrides',
+      assignmentMode: 'storage',
+      label: 'Open storage override',
+      status: routeStatus(finding, `Review storage override for ${finding.Subject}.`),
+    };
+  }
+  if (category === 'profile' || category === 'profile_region' || field === 'Override Profile') {
+    return {
+      workflow: 'overrides',
+      label: 'Open VM overrides',
+      status: routeStatus(finding, `Review profile override for ${finding.Subject}.`),
+    };
+  }
+  if (quickFixType === 'exclude_vm' || quickFixType === 'include_vm' || field === 'Exclude?') {
+    return {
+      workflow: 'overrides',
+      label: 'Open scope decision',
+      status: routeStatus(finding, `Review include/exclude decision for ${finding.Subject}.`),
+    };
+  }
+  if (category === 'terraform_names' && fixLocation.includes('Networks')) {
+    return {
+      workflow: 'network',
+      assignmentMode: 'network',
+      label: 'Open network plan',
+      status: routeStatus(finding, `Review network naming for ${finding.Subject}.`),
+    };
+  }
+  return {
+    workflow: 'assignment',
+    label: 'Open VM assignment',
+    status: routeStatus(finding, `Review package finding for ${finding.Subject}.`),
+  };
+}
+
+export function routesForFinding(
+  finding: PreflightResponse['findings'][number],
+): PreflightRoute[] {
+  const routes = [primaryRouteForFinding(finding)];
+  const quickFixType = finding['Quick Fix Type'];
+  const hasScopeRoute = routes.some((route) => route.label === 'Open scope decision');
+  if ((quickFixType === 'exclude_vm' || quickFixType === 'include_vm') && !hasScopeRoute) {
+    routes.push({
+      workflow: 'overrides',
+      label: 'Review scope decision',
+      status: routeStatus(finding, `Review include/exclude decision for ${finding.Subject}.`),
+    });
+  }
+  return routes;
+}
+
+export function preflightQueueItem(
+  finding: PreflightResponse['findings'][number],
+  index: number,
+): RemediationQueueItem {
+  const route = routesForFinding(finding)[0];
+  const severity = finding.Severity === 'blocker' || finding.Severity === 'warning'
+    ? finding.Severity
+    : 'info';
+  return {
+    id: `preflight-${finding.Severity}-${finding.Category}-${finding.Subject}-${index}`,
+    source: 'preflight',
+    severity,
+    title: severity === 'blocker' ? 'Preflight blocker' : severity === 'warning' ? 'Preflight warning' : 'Preflight info',
+    subject: finding.Subject || 'Package',
+    detail: finding.Message || route.status,
+    tag: finding.Category.replace(/_/g, ' '),
+    tagType: severity === 'blocker' ? 'red' : severity === 'warning' ? 'warm-gray' : 'gray',
+    route,
+    finding,
+  };
+}
+
+export function buildRemediationQueue(params: {
+  preflightFindings: PreflightResponse['findings'];
+  assignmentRows: AssignmentVm[];
+  planningCompleteness: PlanningCompleteness;
+}): RemediationQueueItem[] {
+  const { preflightFindings, assignmentRows, planningCompleteness } = params;
+  return [
+    ...preflightFindings
+      .filter((finding) => finding.Severity === 'blocker')
+      .map(preflightQueueItem),
+    ...assignmentRows
+      .filter((row) => !row.subnet)
+      .map((row) => ({
+        id: `missing-subnet-${row.id}`,
+        source: 'vm-gap' as const,
+        severity: 'blocker' as const,
+        title: 'Missing subnet assignment',
+        subject: row.name,
+        detail: 'Select the target subnet before Terraform export.',
+        tag: 'subnet',
+        tagType: 'red' as const,
+        row,
+        mode: 'network' as const,
+      })),
+    ...assignmentRows
+      .filter((row) => !row.securityGroup)
+      .map((row) => ({
+        id: `missing-security-${row.id}`,
+        source: 'vm-gap' as const,
+        severity: 'blocker' as const,
+        title: 'Missing security group assignment',
+        subject: row.name,
+        detail: 'Select the target security group before Terraform export.',
+        tag: 'security group',
+        tagType: 'red' as const,
+        row,
+        mode: 'security' as const,
+      })),
+    ...assignmentRows
+      .filter((row) => !row.overrideStorageTier && !row.storageTier)
+      .map((row) => ({
+        id: `missing-storage-${row.id}`,
+        source: 'vm-gap' as const,
+        severity: 'blocker' as const,
+        title: 'Missing storage/IOPS assignment',
+        subject: row.name,
+        detail: 'Select or override the storage tier before Terraform export.',
+        tag: 'storage/IOPS',
+        tagType: 'red' as const,
+        row,
+        mode: 'storage' as const,
+      })),
+    ...assignmentRows
+      .filter((row) => !row.wave)
+      .map((row) => ({
+        id: `missing-wave-${row.id}`,
+        source: 'vm-gap' as const,
+        severity: 'blocker' as const,
+        title: 'Missing wave assignment',
+        subject: row.name,
+        detail: 'Place the VM in a migration wave before Terraform export.',
+        tag: 'wave',
+        tagType: 'red' as const,
+        row,
+        mode: 'wave' as const,
+      })),
+    ...(planningCompleteness.missingCidr > 0 ? [{
+      id: 'missing-subnet-cidrs',
+      source: 'plan-gap' as const,
+      severity: 'blocker' as const,
+      title: 'Subnets missing CIDR',
+      subject: `${planningCompleteness.missingCidr} subnet(s)`,
+      detail: 'Complete subnet CIDR values in the Network Plan.',
+      tag: 'network plan',
+      tagType: 'red' as const,
+      workflow: 'network' as const,
+      assignmentMode: 'network' as const,
+      status: 'Resolve subnet CIDR planning gaps before export.',
+    }] : []),
+    ...(planningCompleteness.invalidLabels > 0 ? [{
+      id: 'invalid-terraform-labels',
+      source: 'plan-gap' as const,
+      severity: 'blocker' as const,
+      title: 'Labels need Terraform cleanup',
+      subject: `${planningCompleteness.invalidLabels} label(s)`,
+      detail: 'Update labels so generated Terraform resource names are stable.',
+      tag: 'naming',
+      tagType: 'red' as const,
+      workflow: 'network' as const,
+      assignmentMode: 'network' as const,
+      status: 'Resolve Terraform label cleanup findings before export.',
+    }] : []),
+    ...preflightFindings
+      .filter((finding) => finding.Severity !== 'blocker')
+      .map(preflightQueueItem),
+  ];
+}

@@ -1,11 +1,14 @@
 import { sampleRows } from '../store/AppContext';
 import {
   buildAuditId,
+  buildRemediationQueue,
   confidenceFromScore,
   packageGroups,
   packageParitySummary,
   planningGapLabel,
+  primaryRouteForFinding,
   rowAssignmentValue,
+  routesForFinding,
   sharedTokenCount,
   suggestionKey,
   suggestionKindForMode,
@@ -107,6 +110,142 @@ describe('export workflow helpers', () => {
       'Terraform project',
       'Migration handoff',
       'Carbon state',
+    ]);
+  });
+
+  it('routes preflight findings to the right Carbon workflow', () => {
+    const imageRoute = primaryRouteForFinding({
+      Severity: 'blocker',
+      Category: 'custom_image',
+      'Fix Category': 'Fix image planning',
+      Subject: 'app-01',
+      Message: 'Image placeholder is missing.',
+      Remediation: 'Import image and set target ID.',
+      'Fix Location': 'Image Import Planning',
+      'Suggested Action': 'Set target custom image ID.',
+      'Valid Options': '',
+      'Recommended Option': '',
+      'Quick Fix Type': 'image_placeholder',
+      Field: 'Image',
+      'Current Value': '',
+      Constraint: '',
+    });
+    const networkRoute = primaryRouteForFinding({
+      Severity: 'warning',
+      Category: 'network_mapping',
+      'Fix Category': 'Fix app planning',
+      Subject: 'app-02',
+      Message: 'VM subnet mapping is blank.',
+      Remediation: 'Select a target subnet.',
+      'Fix Location': 'VM Assignment',
+      'Suggested Action': '',
+      'Valid Options': '',
+      'Recommended Option': '',
+      'Quick Fix Type': '',
+      Field: 'Subnet',
+      'Current Value': '',
+      Constraint: '',
+    });
+
+    expect(imageRoute).toMatchObject({
+      workflow: 'imageImport',
+      label: 'Open image planning',
+    });
+    expect(imageRoute.status).toContain('Set target custom image ID.');
+    expect(networkRoute).toMatchObject({
+      workflow: 'assignment',
+      assignmentMode: 'network',
+      label: 'Open network assignment',
+    });
+  });
+
+  it('adds scope review as a secondary route when needed', () => {
+    const routes = routesForFinding({
+      Severity: 'blocker',
+      Category: 'readiness',
+      'Fix Category': 'Fix source data',
+      Subject: 'db-01',
+      Message: 'Migration readiness is blocked.',
+      Remediation: 'Review migration readiness.',
+      'Fix Location': 'Readiness tab',
+      'Suggested Action': '',
+      'Valid Options': '',
+      'Recommended Option': '',
+      'Quick Fix Type': 'exclude_vm',
+      Field: 'Migration Readiness',
+      'Current Value': 'Blocked',
+      Constraint: '',
+    });
+
+    expect(routes.map((route) => route.label)).toEqual([
+      'Open remediation',
+      'Review scope decision',
+    ]);
+  });
+
+  it('builds remediation queue entries from preflight and planning gaps', () => {
+    const queue = buildRemediationQueue({
+      preflightFindings: [
+        {
+          Severity: 'blocker',
+          Category: 'network_mapping',
+          'Fix Category': 'Fix app planning',
+          Subject: 'app-02',
+          Message: 'VM subnet mapping is blank.',
+          Remediation: 'Select a target subnet.',
+          'Fix Location': 'VM Assignment',
+          'Suggested Action': '',
+          'Valid Options': '',
+          'Recommended Option': '',
+          'Quick Fix Type': '',
+          Field: 'Subnet',
+          'Current Value': '',
+          Constraint: '',
+        },
+        {
+          Severity: 'warning',
+          Category: 'security_group',
+          'Fix Category': 'Fix app planning',
+          Subject: 'app-01',
+          Message: 'Security group should be reviewed.',
+          Remediation: 'Review security group assignment.',
+          'Fix Location': 'Security Plan',
+          'Suggested Action': '',
+          'Valid Options': '',
+          'Recommended Option': '',
+          'Quick Fix Type': '',
+          Field: 'Security Group',
+          'Current Value': '',
+          Constraint: '',
+        },
+      ],
+      assignmentRows: [
+        { ...sampleRows[0], subnet: '', securityGroup: '', wave: '' },
+        { ...sampleRows[1], subnet: 'prod-db-us-south-1', securityGroup: 'sg-db-private', wave: 'Wave 1' },
+      ],
+      planningCompleteness: {
+        missingSubnet: 1,
+        missingSg: 1,
+        missingStorage: 0,
+        missingWave: 1,
+        missingCidr: 1,
+        invalidLabels: 1,
+      },
+    });
+
+    expect(queue[0]).toMatchObject({
+      id: 'preflight-blocker-network_mapping-app-02-0',
+      source: 'preflight',
+      severity: 'blocker',
+    });
+    expect(queue.map((item) => item.id)).toEqual([
+      'preflight-blocker-network_mapping-app-02-0',
+      'missing-subnet-sample-app-01',
+      'missing-security-sample-app-01',
+      'missing-wave-sample-app-01',
+      'missing-subnet-cidrs',
+      'invalid-terraform-labels',
+      'preflight-warning-security_group-app-01-0',
     ]);
   });
 });
