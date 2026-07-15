@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AssignmentWorkflow from '../../components/workflows/AssignmentWorkflow';
-import { AppProvider } from '../../store/AppContext';
+import { AppProvider, useAppState } from '../../store/AppContext';
 
 function dataTransfer() {
   const store = new Map<string, string>();
@@ -16,6 +16,37 @@ function dataTransfer() {
 
 function renderWithProvider(ui: React.ReactElement) {
   return render(<AppProvider>{ui}</AppProvider>);
+}
+
+function ExistingComponentEditSeed() {
+  const { dispatch } = useAppState();
+  useEffect(() => {
+    dispatch({ type: 'SET_BUCKET_MODAL', payload: 'component' });
+    dispatch({
+      type: 'SET_BUCKET_DRAFT',
+      payload: {
+        id: 'component-public-gateway',
+        name: 'prod-public-gateway',
+        label: 'prod_public_gateway',
+        type: 'public_gateway',
+        vpcId: 'vpc-prod',
+        attachment: 'prod-app-us-south-1',
+        notes: 'Updated through the shared modal',
+      },
+    });
+  }, [dispatch]);
+  return null;
+}
+
+function ResourceProbe() {
+  const { state } = useAppState();
+  const componentNames = (state.resources.networkComponents || []).map((component) => component.name);
+  const componentNotes = (state.resources.networkComponents || []).map((component) => component.notes);
+  return (
+    <div data-testid="component-resource-state">
+      {`${componentNames.length}|${componentNames.join(',')}|${componentNotes.join(',')}`}
+    </div>
+  );
 }
 
 describe('AssignmentWorkflow', () => {
@@ -122,5 +153,24 @@ describe('AssignmentWorkflow', () => {
     }));
 
     expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('db-01');
+  });
+
+  it('updates an existing network component from the shared component modal', async () => {
+    renderWithProvider(
+      <>
+        <ExistingComponentEditSeed />
+        <AssignmentWorkflow />
+        <ResourceProbe />
+      </>,
+    );
+
+    expect(await screen.findByText('Edit network component')).toBeTruthy();
+    await userEvent.clear(screen.getByLabelText('Name'));
+    await userEvent.type(screen.getByLabelText('Name'), 'prod-public-gateway-renamed');
+    await userEvent.click(screen.getByRole('button', { name: 'Save component' }));
+
+    expect(screen.getByTestId('component-resource-state').textContent).toContain(
+      '2|prod-public-gateway-renamed,enterprise-transit-gateway|Updated through the shared modal,Private backbone connectivity placeholder',
+    );
   });
 });

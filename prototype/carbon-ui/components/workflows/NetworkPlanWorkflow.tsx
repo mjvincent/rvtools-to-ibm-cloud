@@ -6,6 +6,7 @@ import { Download } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import { generateTerraform, saveNetworkPlan } from '../../hooks/useApi';
 import { buildNetworkPlanBody } from '../../utils/planning-state';
+import type { NetworkComponent } from '../../types/network-planning';
 
 export default function NetworkPlanWorkflow() {
   const { state, dispatch } = useAppState();
@@ -22,6 +23,39 @@ export default function NetworkPlanWorkflow() {
 
   const components = resources.networkComponents || [];
   const canGenerateTerraform = selectedProjectId && resources.vpcs.length > 0;
+
+  function openCreateComponent() {
+    dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'assignment' });
+    dispatch({ type: 'SET_BUCKET_MODAL', payload: 'component' });
+    dispatch({
+      type: 'SET_BUCKET_DRAFT',
+      payload: {
+        name: '',
+        label: '',
+        type: 'Public Gateway',
+        vpcId: resources.vpcs[0]?.id || '',
+        attachment: '',
+        notes: '',
+      },
+    });
+  }
+
+  function openEditComponent(component: NetworkComponent) {
+    dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'assignment' });
+    dispatch({ type: 'SET_BUCKET_MODAL', payload: 'component' });
+    dispatch({
+      type: 'SET_BUCKET_DRAFT',
+      payload: {
+        id: component.id,
+        name: component.name,
+        label: component.label,
+        type: component.type,
+        vpcId: component.vpcId,
+        attachment: component.attachment || '',
+        notes: component.notes || '',
+      },
+    });
+  }
 
   async function handleGenerateTerraform() {
     dispatch({ type: 'SET_TERRAFORM_STATUS', payload: '' });
@@ -70,21 +104,7 @@ export default function NetworkPlanWorkflow() {
           <Button
             kind="secondary"
             size="sm"
-            onClick={() => {
-              dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'assignment' });
-              dispatch({ type: 'SET_BUCKET_MODAL', payload: 'component' });
-              dispatch({
-                type: 'SET_BUCKET_DRAFT',
-                payload: {
-                  name: '',
-                  label: '',
-                  type: 'Public Gateway',
-                  vpcId: resources.vpcs[0]?.id || '',
-                  attachment: '',
-                  notes: '',
-                },
-              });
-            }}
+            onClick={openCreateComponent}
           >
             Create network component
           </Button>
@@ -156,6 +176,13 @@ export default function NetworkPlanWorkflow() {
                       <Tag type="purple">{component.type}</Tag>
                       <strong>{component.name}</strong>
                       <span>{component.attachment || 'No attachment selected'}</span>
+                      <Button
+                        kind="tertiary"
+                        size="sm"
+                        onClick={() => openEditComponent(component)}
+                      >
+                        Edit {component.name}
+                      </Button>
                     </div>
                   ))}
                   {vpcComponents.length === 0 && (

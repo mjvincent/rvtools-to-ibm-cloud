@@ -22,6 +22,14 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 15, 2026: Carbon Network Component Edit Depth
+- Added a Network Plan diagram edit affordance for existing network components
+  that opens the shared component modal with the selected component values.
+- Updated the component save path so existing network components are updated in
+  place instead of duplicated, preserving the saved `network-plan.json` shape.
+- Added focused Carbon workflow tests for opening component edits from the
+  diagram and saving edits through the shared modal.
+
 ### July 15, 2026: Carbon Streamlit Parity Roadmap
 - Added a Carbon-to-Streamlit parity roadmap that turns promotion gates into
   prioritized implementation branches.

@@ -28,7 +28,7 @@ workbooks, then closing any workflow gaps found by those comparisons.
 | RVTools upload and summary | Production | Implemented through FastAPI | Keep sample and workshop workbook coverage current. |
 | Project persistence | Production planning-state JSON plus Postgres save progress | Implemented through FastAPI/Postgres project save/load/autosave | Verify restore behavior with real users and hosted runtime backups. |
 | VM review and decisions | Production | Implemented through Carbon assignment and override flows | Confirm equivalent decision audit and package output for representative workbooks. |
-| Network/security/storage/wave assignment | Production tab workflows | Implemented with Carbon buckets, drag/drop, bulk assignment, keyboard alternatives, and saved network plans | Add richer network component editing and continue accessibility review. |
+| Network/security/storage/wave assignment | Production tab workflows | Implemented with Carbon buckets, drag/drop, bulk assignment, keyboard alternatives, saved network plans, and diagram-driven network component edit handoff | Continue deeper network validation and accessibility review. |
 | Wave planning | Production | Implemented with editable fields, CSV import/export, and package handoff output | Add more real-workbook cutover and dependency edge coverage. |
 | Remediation backlog | Production | Implemented with editable tracker, CSV import/export, package output, and Export remediation queue | Expand readiness-category edge fixtures and failure-path tests. |
 | Image import planning | Production | Implemented with grouped source images, editable status, CSV import/export, and package output | Expand image grouping and custom image ID edge coverage. |
@@ -65,7 +65,8 @@ workbooks, then closing any workflow gaps found by those comparisons.
      rejected the operation.
 
 3. **Network planning editor depth**
-   - Add richer editing for network components and diagram-driven review.
+   - Continue enriching network component editing beyond the current
+     diagram-driven edit handoff.
    - Keep the saved `network-plan.json` contract stable.
    - Confirm Terraform output and package preflight still reflect the saved
      plan, not transient UI state.

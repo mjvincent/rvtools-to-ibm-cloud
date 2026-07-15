@@ -269,18 +269,26 @@ export default function AssignmentWorkflow() {
         },
       });
     } else if (bucketModal === 'component') {
+      const existingComponentId = bucketDraft.id;
+      const existingComponent = (resources.networkComponents || []).find(
+        (component) => component.id === existingComponentId,
+      );
+      const nextComponent = {
+        id: existingComponent?.id || newBucketId('component', name), name, label,
+        type: (bucketDraft.type as any) || 'public_gateway',
+        vpcId: bucketDraft.vpcId || resources.vpcs[0]?.id || '',
+        attachment: bucketDraft.attachment || '',
+        config: existingComponent?.config || {}, tags: existingComponent?.tags || {}, notes: bucketDraft.notes || '',
+        createdAt: existingComponent?.createdAt || now, updatedAt: now,
+      };
       dispatch({
         type: 'SET_RESOURCES',
         payload: {
           ...resources,
-          networkComponents: [...(resources.networkComponents || []), {
-            id: newBucketId('component', name), name, label,
-            type: (bucketDraft.type as any) || 'public_gateway',
-            vpcId: bucketDraft.vpcId || resources.vpcs[0]?.id || '',
-            attachment: bucketDraft.attachment || '',
-            config: {}, tags: {}, notes: bucketDraft.notes || '',
-            createdAt: now, updatedAt: now,
-          }],
+          networkComponents: existingComponentId
+            ? (resources.networkComponents || []).map((component) =>
+                component.id === existingComponentId ? nextComponent : component)
+            : [...(resources.networkComponents || []), nextComponent],
         },
       });
     } else if (bucketModal === 'network') {
@@ -375,6 +383,9 @@ export default function AssignmentWorkflow() {
 
   const setBucketDraft = (draft: Record<string, string>) =>
     dispatch({ type: 'SET_BUCKET_DRAFT', payload: draft });
+
+  const componentModalHeading = bucketDraft.id ? 'Edit network component' : 'Create network component';
+  const componentPrimaryButtonText = bucketDraft.id ? 'Save component' : 'Create component';
 
   return (
     <>
@@ -543,10 +554,10 @@ export default function AssignmentWorkflow() {
           bucketModal === 'vpc'
             ? 'Create VPC bucket'
             : bucketModal === 'component'
-              ? 'Create network component'
+              ? componentModalHeading
               : `Create ${assignmentMode === 'network' ? 'subnet' : assignmentMode} bucket`
         }
-        primaryButtonText={bucketModal === 'component' ? 'Create component' : 'Create bucket'}
+        primaryButtonText={bucketModal === 'component' ? componentPrimaryButtonText : 'Create bucket'}
         secondaryButtonText="Cancel"
         onRequestClose={() => dispatch({ type: 'SET_BUCKET_MODAL', payload: '' })}
         onRequestSubmit={createBucket}
