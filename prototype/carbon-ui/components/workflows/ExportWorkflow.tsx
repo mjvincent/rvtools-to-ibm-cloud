@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Button, Checkbox, InlineNotification, Layer, Search, Select, SelectItem, Tag, Tile } from '@carbon/react';
-import { Close, CloudUpload, Download, Renew, View } from '@carbon/icons-react';
+import { Button, Checkbox, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
+import { CloudUpload, Download, Renew, View } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import type { AssignmentVm, Workflow } from '../../types/network-planning';
 import {
@@ -24,6 +24,7 @@ import {
   rowsFromNetworkPlan,
 } from '../../utils/planning-state';
 import PackageParityStatus from './export/PackageParityStatus';
+import PackagePreview from './export/PackagePreview';
 import {
   applySuggestionsToRows,
   buildAssignmentSuggestions,
@@ -883,105 +884,27 @@ export default function ExportWorkflow() {
         </div>
       )}
       {terraformPreview && selectedPreviewFile && (
-        <div className="export-package">
-          <div className="section-header compact">
-            <div>
-              <h2>Package preview</h2>
-              <p>{terraformPreview.files.length} generated file(s) from the saved Carbon network plan.</p>
-            </div>
-            <div className="network-actions">
-              <Tag type="blue">{selectedPreviewFile.category}</Tag>
-              <Tag type="gray">{selectedPreviewSize}</Tag>
-              <Button
-                kind="tertiary"
-                size="sm"
-                renderIcon={Download}
-                onClick={showHandoffCsvs}
-              >
-                Show handoff CSVs
-              </Button>
-              <Button
-                kind="secondary"
-                size="sm"
-                renderIcon={Download}
-                onClick={() => downloadPreviewFile(selectedPreviewFile)}
-              >
-                Download selected
-              </Button>
-              <Button
-                kind="tertiary"
-                size="sm"
-                renderIcon={Close}
-                onClick={() => {
-                  setTerraformPreview(null);
-                  setSelectedPreviewPath('');
-                  setPreviewSearch('');
-                  setPreviewCategory('All');
-                }}
-              >
-                Close preview
-              </Button>
-            </div>
-          </div>
-          <div className="preview-browser">
-            <div className="preview-browser__sidebar">
-              <Search
-                id="terraform-preview-search"
-                labelText="Search package files"
-                placeholder="Search file path"
-                value={previewSearch}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                  setPreviewSearch(event.target.value)
-                }
-              />
-              <Select
-                id="terraform-preview-category"
-                labelText="Package section"
-                value={previewCategory}
-                onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-                  setPreviewCategory(event.target.value)
-                }
-              >
-                {previewCategories.map((category) => (
-                  <SelectItem key={category} value={category} text={category} />
-                ))}
-              </Select>
-              <div className="preview-file-list" aria-label="Package preview files">
-                {filteredPreviewFiles.map((file) => {
-                  const isSelected = file.path === selectedPreviewFile.path;
-                  return (
-                    <button
-                      key={file.path}
-                      className={`preview-file-row${isSelected ? ' preview-file-row--selected' : ''}`}
-                      type="button"
-                      aria-pressed={isSelected}
-                      aria-label={`Preview ${file.path} (${file.category})${isSelected ? ', selected' : ''}`}
-                      onClick={() => setSelectedPreviewPath(file.path)}
-                    >
-                      <span>{file.path}</span>
-                      <small>{file.category}</small>
-                    </button>
-                  );
-                })}
-                {filteredPreviewFiles.length === 0 && (
-                  <p className="preview-empty">No package files match this filter.</p>
-                )}
-              </div>
-            </div>
-            <div className="preview-browser__content">
-              <div className="preview-file-header">
-                <div>
-                  <strong>{selectedPreviewFile.path}</strong>
-                  <span>{selectedPreviewSize}</span>
-                </div>
-                <Tag type="blue">{handoffCsvCount} handoff CSVs</Tag>
-              </div>
-              <pre className="terraform-preview" aria-label={`Terraform preview ${selectedPreviewFile.path}`}>
-                <code>{selectedPreviewFile.content}</code>
-              </pre>
-            </div>
-          </div>
-        </div>
+        <PackagePreview
+          fileCount={terraformPreview.files.length}
+          selectedFile={selectedPreviewFile}
+          selectedFileSize={selectedPreviewSize}
+          previewSearch={previewSearch}
+          previewCategory={previewCategory}
+          previewCategories={previewCategories}
+          filteredPreviewFiles={filteredPreviewFiles}
+          handoffCsvCount={handoffCsvCount}
+          onSearchChange={setPreviewSearch}
+          onCategoryChange={setPreviewCategory}
+          onSelectFile={setSelectedPreviewPath}
+          onShowHandoffCsvs={showHandoffCsvs}
+          onDownloadSelected={downloadPreviewFile}
+          onClosePreview={() => {
+            setTerraformPreview(null);
+            setSelectedPreviewPath('');
+            setPreviewSearch('');
+            setPreviewCategory('All');
+          }}
+        />
       )}
       <PackageParityStatus
         packageFileCount={packageFileCount}
