@@ -44,6 +44,12 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Verified Carbon surfaces backend errors, avoids stale success UI, and does
   not call later backend export steps after an earlier save failure.
 
+### July 15, 2026: Carbon Planning-State Import Failure Coverage
+- Added Export workflow coverage for malformed planning-state JSON and
+  incomplete planning-state schemas.
+- Verified bad imports surface user-visible errors without replacing the
+  current valid exportable project state.
+
 ### June 22, 2026: Registry, Persistent Compose, and Carbon Prototype
 - Added a GHCR publishing path for prebuilt Docker images while preserving local Docker builds.
 - Added a Docker Compose stack with Streamlit, an experimental FastAPI service, Postgres, and artifact storage volumes for persistent project evaluation.

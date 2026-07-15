@@ -57,6 +57,8 @@ workbooks, then closing any workflow gaps found by those comparisons.
    - Keep fast unit coverage for Export failure paths so preflight, preview,
      and ZIP-generation errors cannot regress without running the full browser
      suite.
+   - Keep malformed planning-state import coverage so bad JSON or incomplete
+     schemas cannot overwrite the current valid Carbon project state.
    - Ensure the UI never implies work is saved or export-ready when the backend
      rejected the operation.
 

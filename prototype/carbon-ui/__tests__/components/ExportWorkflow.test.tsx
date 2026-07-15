@@ -587,6 +587,47 @@ describe('ExportWorkflow', () => {
     });
   });
 
+  it('reports malformed planning-state JSON without changing exportable state', async () => {
+    renderWithProvider(<ExportWorkflow />);
+    const file = new File(['not-json'], 'broken-planning-state.json', {
+      type: 'application/json',
+    });
+
+    await userEvent.upload(screen.getByLabelText('Import planning state JSON'), file);
+
+    await waitFor(() =>
+      expect(screen.getByText('Planning state file must be valid JSON.')).toBeTruthy(),
+    );
+    expect(screen.queryByText(/Imported planning state from/)).toBeNull();
+
+    await userEvent.click(screen.getByText('Export planning JSON'));
+
+    await waitFor(() => expect(window.URL.createObjectURL).toHaveBeenCalledTimes(1));
+    const blob = (window.URL.createObjectURL as jest.Mock).mock.calls[0][0] as Blob;
+    const payload = JSON.parse(await readBlobText(blob));
+    expect(payload.vm_assignments).toHaveLength(3);
+    expect(payload.metadata.project_name).toBe('Export Project');
+  });
+
+  it('reports planning-state schema errors and does not save imported rows', async () => {
+    renderWithProvider(<ExportWorkflow />);
+    const file = new File([JSON.stringify({ vpcs: [], subnets: [] })], 'missing-assignments.json', {
+      type: 'application/json',
+    });
+
+    await userEvent.upload(screen.getByLabelText('Import planning state JSON'), file);
+
+    await waitFor(() =>
+      expect(screen.getByText('Planning state file is missing security group resources.')).toBeTruthy(),
+    );
+    await userEvent.click(screen.getByText('Download Terraform ZIP'));
+
+    await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
+    const [, payload] = (api.saveNetworkPlan as jest.Mock).mock.calls[0];
+    expect(payload.vm_assignments).toHaveLength(3);
+    expect(payload.metadata.project_name).toBe('Export Project');
+  });
+
   it('applies an inferred assignment from a similarly named VM', async () => {
     const rows: AssignmentVm[] = [
       {
