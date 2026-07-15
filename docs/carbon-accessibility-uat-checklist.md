@@ -40,6 +40,7 @@ promotion sign-off packet.
 | Move through left navigation by keyboard. | Each workflow can be reached without a mouse. |  |  |
 | Activate primary buttons with keyboard. | Buttons respond to `Enter` or `Space` as expected. |  |  |
 | Use form controls in saved project, upload, assignment, override, and export areas. | Labels are announced and the current value is clear. |  |  |
+| Open a Network Plan component edit action by keyboard. | Each component edit button has a descriptive name and opens the component modal without a mouse. |  |  |
 | Confirm focus after modal open and close. | Focus moves into modal content and returns to the originating control after close. |  |  |
 | Confirm no keyboard trap exists. | Reviewer can leave every panel, modal, dropdown, and preview area. |  |  |
 
@@ -54,6 +55,7 @@ Use VoiceOver, NVDA, JAWS, or the assistive technology required by the deploymen
 | Readiness chips announce status and target route. | Non-ready chips explain what they represent and where review will go. |  |  |
 | VM row checkboxes announce VM identity. | Row selection is understandable without visual context. |  |  |
 | Drop zones and explicit assignment controls announce target names. | Drag/drop alternatives are discoverable. |  |  |
+| Network Plan validation is announced as a named region. | Reviewer can find `Network validation`, understand blocker/warning counts, and read recommended actions. |  |  |
 | Notifications announce success and error state. | Upload, save, export, and preflight messages are perceivable. |  |  |
 | Terraform preview area announces selected file and content. | Reviewer can understand the selected file and close/download controls. |  |  |
 
@@ -70,6 +72,7 @@ Use VoiceOver, NVDA, JAWS, or the assistive technology required by the deploymen
 | Remediation backlog | Edit owner, status, due date, and notes. | Changes persist and export to CSV when requested. |  |  |
 | Image import planning | Update import status, catalog ID, estimated time, and notes. | Changes persist and affect cutover readiness. |  |  |
 | Migration ops | Review wave and cutover readiness. | Unresolved remediation, image import, and readiness blockers are visible. |  |  |
+| Network Plan component review | Open Network Plan, edit an existing network component, and review local validation findings. | Component edit controls are descriptive, modal fields are labeled, and validation findings include severity, subject, message, and recommended action. |  |  |
 | Export readiness queue | Run preflight, use `Review issue`, then return to Export Readiness. | Review route lands in the correct workflow with useful VM/context selection. |  |  |
 | Bulk suggested fixes | Select high-confidence queue suggestions, apply them, and inspect the suggestion audit. | Changes are applied intentionally, audited, and can be undone. |  |  |
 | Terraform preview | Use `Preview Terraform`, filter files, download selected file, and close preview. | Preview is usable, selected download works, and `Close preview` collapses the panel. |  |  |

@@ -62,6 +62,7 @@ fix application, suggestion audit/undo, profile override save/load/export
 parity, bulk override missing-reason cleanup, Export
 preview/download/save-before-export failure handling, package preview handoff CSV
 switching/download, keyboard navigation, keyboard assignment through explicit Assign buttons,
+Network Plan validation/component-edit accessible role coverage,
 readiness-chip review routing, drag/drop accessibility labels, row checkbox
 accessible names, package preview close behavior, and temporary smoke-project
 cleanup across Chromium, Firefox, and WebKit. The suite runs with one worker because the smoke tests share the

@@ -61,7 +61,7 @@ describe('NetworkPlanWorkflow', () => {
 
   it('renders network validation status for a clean plan', () => {
     renderWithProvider(<NetworkPlanWorkflow />);
-    expect(screen.getByText('Network validation')).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Network validation' })).toBeTruthy();
     expect(screen.getByText('No network plan validation findings.')).toBeTruthy();
   });
 
@@ -86,10 +86,21 @@ describe('NetworkPlanWorkflow', () => {
       </>,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Edit prod-public-gateway' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit network component prod-public-gateway' }));
 
     expect(screen.getByTestId('network-plan-state').textContent).toContain(
       'assignment|component|component-public-gateway|prod-public-gateway|public_gateway|vpc-prod|prod-app-us-south-1',
     );
+  });
+
+  it('exposes network component edit actions with descriptive accessible names', () => {
+    renderWithProvider(<NetworkPlanWorkflow />);
+
+    expect(screen.getByRole('button', {
+      name: 'Edit network component prod-public-gateway',
+    })).toBeTruthy();
+    expect(screen.getByRole('button', {
+      name: 'Edit network component enterprise-transit-gateway',
+    })).toBeTruthy();
   });
 });

@@ -22,6 +22,14 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 15, 2026: Carbon Network Plan Accessibility/UAT Evidence
+- Added focused accessibility/UAT evidence for Network Plan component editing
+  and local validation findings.
+- Named the Network Plan validation panel as an accessible region and gave
+  component edit actions explicit target-specific labels.
+- Updated the Carbon checklist, results template, implementation status, and
+  promotion evidence references while keeping full human UAT sign-off open.
+
 ### July 15, 2026: Carbon Network Validation Depth
 - Added structured Carbon network validation findings for missing VPC
   references, missing or invalid subnet CIDRs, component attachment warnings,

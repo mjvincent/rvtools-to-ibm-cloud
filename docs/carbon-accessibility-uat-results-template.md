@@ -54,6 +54,7 @@ into this file. Use sanitized labels such as `customer-workbook-a`,
 | Workbook intake | Not started / Pass / Pass with issues / Fail |  |  |
 | Project save/load/autosave | Not started / Pass / Pass with issues / Fail |  |  |
 | VM assignment by keyboard | Not started / Pass / Pass with issues / Fail |  |  |
+| Network Plan component editing and validation | Not started / Pass / Pass with issues / Fail |  |  |
 | Drag/drop VM assignment | Not started / Pass / Pass with issues / Fail |  |  |
 | Readiness-chip review routing | Not started / Pass / Pass with issues / Fail |  |  |
 | VM profile/storage overrides | Not started / Pass / Pass with issues / Fail |  |  |
@@ -83,6 +84,7 @@ into this file. Use sanitized labels such as `customer-workbook-a`,
 | Could a keyboard-only user complete required assignments? |  |
 | Were inferred remediation suggestions understandable? |  |
 | Were subnet, security group, storage/IOPS, and wave choices clear? |  |
+| Were Network Plan component edit actions and validation findings understandable? |  |
 | Were VM override reasons and audit output acceptable? |  |
 
 ### Export Readiness

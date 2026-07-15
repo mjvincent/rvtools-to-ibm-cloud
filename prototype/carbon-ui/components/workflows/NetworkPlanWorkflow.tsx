@@ -143,10 +143,14 @@ export default function NetworkPlanWorkflow() {
         />
       )}
 
-      <Tile className="network-validation-panel">
+      <Tile
+        className="network-validation-panel"
+        role="region"
+        aria-labelledby="network-validation-heading"
+      >
         <div className="section-header section-header--compact">
           <div>
-            <h3>Network validation</h3>
+            <h3 id="network-validation-heading">Network validation</h3>
             <p>Review structural issues before saving the plan for Terraform preflight and package generation.</p>
           </div>
           <div className="network-validation-summary">
@@ -221,6 +225,7 @@ export default function NetworkPlanWorkflow() {
                       <Button
                         kind="tertiary"
                         size="sm"
+                        aria-label={`Edit network component ${component.name}`}
                         onClick={() => openEditComponent(component)}
                       >
                         Edit {component.name}
