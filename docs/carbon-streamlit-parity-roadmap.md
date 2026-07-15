@@ -59,6 +59,8 @@ workbooks, then closing any workflow gaps found by those comparisons.
      suite.
    - Keep malformed planning-state import coverage so bad JSON or incomplete
      schemas cannot overwrite the current valid Carbon project state.
+   - Keep workbook upload failure and retry coverage so parser/API outages do
+     not replace the current workbook state or leave stale upload errors.
    - Ensure the UI never implies work is saved or export-ready when the backend
      rejected the operation.
 

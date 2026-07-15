@@ -71,7 +71,9 @@ save-before-preview failures, and ZIP generation failures so Carbon does not
 show stale success or call later backend steps after an earlier rejection.
 It also guards malformed planning-state imports so invalid JSON or incomplete
 schema files surface errors without replacing the current exportable project
-state.
+state. Intake unit coverage now also verifies workbook upload failures preserve
+the current workbook state and that a successful retry clears the previous
+upload error.
 
 The Python parity suite now includes Streamlit-vs-Carbon single-VM, edge-case,
 multi-VM, workshop real-workbook subset, workshop operational edge subset, and

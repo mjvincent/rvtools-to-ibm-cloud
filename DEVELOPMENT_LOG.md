@@ -50,6 +50,11 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Verified bad imports surface user-visible errors without replacing the
   current valid exportable project state.
 
+### July 15, 2026: Carbon Workbook Upload Failure Coverage
+- Added Intake workflow coverage for workbook parser/API upload failures.
+- Verified failed uploads preserve the current workbook state and successful
+  retries clear stale upload errors before loading the new workbook summary.
+
 ### June 22, 2026: Registry, Persistent Compose, and Carbon Prototype
 - Added a GHCR publishing path for prebuilt Docker images while preserving local Docker builds.
 - Added a Docker Compose stack with Streamlit, an experimental FastAPI service, Postgres, and artifact storage volumes for persistent project evaluation.
