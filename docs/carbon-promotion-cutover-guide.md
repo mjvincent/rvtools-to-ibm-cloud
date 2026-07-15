@@ -8,6 +8,8 @@ forking the project or weakening the current Streamlit production path.
 Streamlit remains the supported production UI. Carbon is the enterprise UI
 candidate that uses the same parser, readiness logic, FastAPI persistence,
 handoff package generation, Terraform renderer, and Postgres project store.
+Use the [Carbon Streamlit Parity Roadmap](carbon-streamlit-parity-roadmap.md)
+to choose the next implementation branch before any default-UI decision.
 
 Do not split Streamlit and Carbon into separate repositories. A fork would make
 the shared migration engine harder to validate and would increase the risk that
@@ -35,6 +37,9 @@ Carbon is eligible for production promotion only when these gates are green:
 | Accessibility and browser coverage | Keyboard, screen-reader, multi-browser, and UAT checks pass for the primary workflow using the [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md), with outcomes captured in the [Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md). |
 | Operations | Backup/restore, rollback, logging, monitoring, data retention, and support ownership are documented in the [Carbon Operations Runbook](carbon-operations-runbook.md). |
 | User acceptance | Migration users complete at least one realistic assessment through Carbon and approve the workflow. |
+
+For the recommended implementation order behind these gates, see the
+[Carbon Streamlit Parity Roadmap](carbon-streamlit-parity-roadmap.md).
 
 ## Pre-Cutover Checklist
 

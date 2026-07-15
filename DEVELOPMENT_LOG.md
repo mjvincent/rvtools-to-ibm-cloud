@@ -22,6 +22,15 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 15, 2026: Carbon Streamlit Parity Roadmap
+- Added a Carbon-to-Streamlit parity roadmap that turns promotion gates into
+  prioritized implementation branches.
+- Clarified that Carbon has moved beyond basic prototype viability but should
+  not replace Streamlit until real-workbook parity, accessibility/UAT evidence,
+  and production operations evidence are complete.
+- Linked the roadmap from the Carbon strategy, promotion guide, Carbon README,
+  and root README.
+
 ### June 22, 2026: Registry, Persistent Compose, and Carbon Prototype
 - Added a GHCR publishing path for prebuilt Docker images while preserving local Docker builds.
 - Added a Docker Compose stack with Streamlit, an experimental FastAPI service, Postgres, and artifact storage volumes for persistent project evaluation.

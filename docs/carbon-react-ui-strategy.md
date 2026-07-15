@@ -46,9 +46,10 @@ The Carbon UI should prove enterprise value through real workflow slices:
 6. Provide drag-and-drop VM placement for subnet, security, storage, and wave
    assignment.
 
-Verified as of 2026-06-26: those slices are implemented and covered by
-TypeScript, Jest, and Playwright smoke validation. Streamlit-only feature parity
-still remains before promotion.
+Verified as of 2026-07-15: those slices are implemented and covered by
+TypeScript, Jest, Playwright smoke validation, and handoff parity tests.
+Streamlit remains production while Carbon builds deeper real-workbook parity,
+accessibility/UAT evidence, and production support evidence.
 
 ## Promotion Gates
 
@@ -59,8 +60,11 @@ Carbon should not replace Streamlit until it can:
 - [x] Assign VMs to subnet, security, storage, and wave buckets with
   drag-and-drop and autosave.
 - [x] Generate Terraform ZIP packages from saved Carbon network plans.
-- [ ] Reproduce the core Streamlit planning workflows: VM review, wave planning,
-  remediation tracking, image import planning, and export package generation.
+- [x] Reproduce the core Streamlit planning workflow surfaces: VM review, wave
+  planning, remediation tracking, image import planning, migration ops, and
+  export package generation.
+- [ ] Prove those workflows with enough real-workbook parity and UAT evidence
+  to replace Streamlit as the default UI.
 - [x] Pass browser-level smoke tests for upload, persistence, DnD assignment,
   autosave reload, and primary views.
 - [ ] Preserve or improve accessibility, performance, and auditability.
@@ -74,6 +78,8 @@ application until Carbon provides a complete and demonstrably better workflow.
 
 See [Carbon Promotion Gate Review](carbon-promotion-gate-review.md) for the
 current gate-by-gate pass/partial/fail assessment and Phase 4 backlog.
+See [Carbon Streamlit Parity Roadmap](carbon-streamlit-parity-roadmap.md) for
+the recommended next branches before a default-UI decision.
 See [Carbon Promotion and Cutover Guide](carbon-promotion-cutover-guide.md) for
 the staged rollout, rollback, and support checklist.
 See [Target Platform Roadmap](target-platform-roadmap.md) for why IBM Cloud VPC
