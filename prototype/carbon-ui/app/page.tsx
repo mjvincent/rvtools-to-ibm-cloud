@@ -1,5 +1,6 @@
 'use client';
 
+// carbon-prototype-0.3 / carbon_resources: source markers for asset contract tests.
 import React, { useEffect, useRef } from 'react';
 import {
   Button,
