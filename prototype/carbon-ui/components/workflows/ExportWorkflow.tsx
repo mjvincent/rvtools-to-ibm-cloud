@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Button, Checkbox, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
+import { Button, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
 import { CloudUpload, Download, Renew, View } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import type { AssignmentVm, Workflow } from '../../types/network-planning';
@@ -26,13 +26,15 @@ import {
 import PackageParityStatus from './export/PackageParityStatus';
 import PackagePreflight from './export/PackagePreflight';
 import PackagePreview from './export/PackagePreview';
+import RemediationQueuePanel from './export/RemediationQueuePanel';
+import AssignmentSuggestionsPanel from './export/AssignmentSuggestionsPanel';
+import SuggestionAuditPanel from './export/SuggestionAuditPanel';
 import {
   applySuggestionsToRows,
   buildAssignmentSuggestions,
   buildExportChecklist,
   buildRemediationQueue,
   calculatePlanningCompleteness,
-  confidenceTagType,
   downloadBrowserFile,
   filterPreviewFiles,
   handoffCsvFileCount,
@@ -583,223 +585,33 @@ export default function ExportWorkflow() {
           </Tile>
         ))}
       </div>
-      <div className="export-package">
-        <div className="section-header compact">
-          <div>
-            <h2>Remediation queue</h2>
-            <p>{remediationQueue.length === 0 ? 'No unresolved export readiness issues.' : `${remediationQueue.length} issue(s) sorted by export priority.`}</p>
-          </div>
-          <div className="network-actions">
-            <Tag type={remediationQueue.length === 0 ? 'green' : 'warm-gray'}>
-              {remediationQueue.length === 0 ? 'Clear' : 'Action needed'}
-            </Tag>
-            <Tag type={uniqueQueueSuggestionEntries.length === 0 ? 'gray' : 'blue'}>
-              {uniqueQueueSuggestionEntries.length} suggested
-            </Tag>
-            <Tag type={selectedQueueSuggestions.length === 0 ? 'gray' : 'green'}>
-              {selectedQueueSuggestions.length} selected
-            </Tag>
-            <Button
-              kind="tertiary"
-              size="sm"
-              disabled={highConfidenceQueueSuggestionIds.length === 0}
-              onClick={selectHighConfidenceQueueSuggestions}
-            >
-              Select high confidence
-            </Button>
-            <Button
-              kind="tertiary"
-              size="sm"
-              disabled={selectedQueueSuggestions.length === 0}
-              onClick={clearQueueSuggestionSelection}
-            >
-              Clear selection
-            </Button>
-            <Button
-              kind="secondary"
-              size="sm"
-              disabled={selectedQueueSuggestions.length === 0}
-              onClick={applySelectedQueueSuggestions}
-            >
-              Apply selected fixes
-            </Button>
-          </div>
-        </div>
-        {remediationQueue.length > 0 ? (
-          <div className="remediation-queue">
-            {remediationQueue.map((item, index) => {
-              const suggestion = suggestionForQueueItem({ item, assignmentRows, resources });
-              const key = suggestion ? suggestionKey(suggestion) : '';
-              const selected = selectedQueueSuggestionIds.includes(key);
-              return (
-                <Tile key={item.id} className="remediation-queue__item">
-                  <div className="remediation-queue__rank">P{index + 1}</div>
-                  <div className="remediation-queue__body">
-                    <div className="package-tile__header">
-                      <div>
-                        <h3>{item.title}</h3>
-                        <p>{item.subject}</p>
-                      </div>
-                      <div className="network-actions">
-                        <Tag type={item.tagType}>{item.severity}</Tag>
-                        <Tag type="gray">{item.tag}</Tag>
-                      </div>
-                    </div>
-                    <p>{item.detail}</p>
-                    {suggestion ? (
-                      <div className="remediation-queue__suggestion">
-                        <Checkbox
-                          id={`queue-suggestion-${key}`}
-                          labelText={`Select suggested ${suggestionLabels[suggestion.kind]} for ${suggestion.row.name}`}
-                          checked={selected}
-                          onChange={(_, data) => toggleQueueSuggestion(suggestion, Boolean(data.checked))}
-                        />
-                        <div>
-                          <p>
-                            Suggested {suggestionLabels[suggestion.kind]}: {suggestion.label}
-                          </p>
-                          <div className="network-actions">
-                            <Tag type={confidenceTagType(suggestion.confidence)}>
-                              {suggestion.confidence} confidence
-                            </Tag>
-                            {suggestion.evidence.slice(0, 2).map((evidence) => (
-                              <Tag key={evidence} type="gray">{evidence}</Tag>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p>No automatic suggestion is available for this issue.</p>
-                    )}
-                  </div>
-                  <div className="remediation-queue__action">
-                    {suggestion && (
-                      <Button
-                        kind="tertiary"
-                        size="sm"
-                        onClick={() => applyAssignmentSuggestion(suggestion)}
-                      >
-                        Apply fix
-                      </Button>
-                    )}
-                    <Button
-                      kind="tertiary"
-                      size="sm"
-                      onClick={() => reviewRemediationIssue(item)}
-                    >
-                      Review issue
-                    </Button>
-                  </div>
-                </Tile>
-              );
-            })}
-          </div>
-        ) : (
-          <Tile className="resource-tile">
-            <h3>Ready</h3>
-            <p>All tracked export readiness items are clear.</p>
-          </Tile>
-        )}
-      </div>
-      {assignmentSuggestions.length > 0 && (
-        <div className="export-package">
-          <div className="section-header compact">
-            <div>
-              <h2>Suggested assignment fixes</h2>
-              <p>Review likely fixes inferred from matching VM names, applications, networks, and existing assignments.</p>
-            </div>
-            <div className="network-actions">
-              {suggestionAudit.length > 0 && <Tag type="gray">{suggestionAudit.length} audited</Tag>}
-              <Tag type="blue">{assignmentSuggestions.length} suggestion(s)</Tag>
-              <Tag type="green">{highConfidenceSuggestions.length} high confidence</Tag>
-              <Button
-                kind="tertiary"
-                size="sm"
-                disabled={highConfidenceSuggestions.length === 0}
-                onClick={applyHighConfidenceSuggestions}
-              >
-                Apply high-confidence suggestions
-              </Button>
-            </div>
-          </div>
-          <div className="resource-list">
-            {assignmentSuggestions.map((suggestion) => (
-              <Tile
-                key={`${suggestion.row.id}-${suggestion.kind}-${suggestion.value}`}
-                className="resource-tile"
-              >
-                <div className="package-tile__header">
-                  <h3>{suggestion.row.name}</h3>
-                  <div className="network-actions">
-                    <Tag type="blue">{suggestionLabels[suggestion.kind]}</Tag>
-                    <Tag type={confidenceTagType(suggestion.confidence)}>
-                      {suggestion.confidence} confidence
-                    </Tag>
-                  </div>
-                </div>
-                <p>{suggestion.label}</p>
-                <p>{suggestion.reason}</p>
-                {suggestion.evidence.length > 0 && (
-                  <p>{suggestion.evidence.join(' | ')}</p>
-                )}
-                <div className="network-actions">
-                  <Button
-                    kind="tertiary"
-                    size="sm"
-                    onClick={() => applyAssignmentSuggestion(suggestion)}
-                  >
-                    Apply suggestion
-                  </Button>
-                </div>
-              </Tile>
-            ))}
-          </div>
-        </div>
-      )}
-      {recentSuggestionAudit.length > 0 && (
-        <div className="export-package">
-          <div className="section-header compact">
-            <div>
-              <h2>Suggestion audit</h2>
-              <p>Review applied recommendation changes and revert any active suggestion before export.</p>
-            </div>
-            <div className="network-actions">
-              <Tag type="blue">{suggestionAudit.length} total</Tag>
-              <Tag type={activeAuditCount === 0 ? 'gray' : 'green'}>{activeAuditCount} active</Tag>
-            </div>
-          </div>
-          <div className="resource-list">
-            {recentSuggestionAudit.map((entry) => (
-              <Tile key={entry.id} className="resource-tile">
-                <div className="package-tile__header">
-                  <h3>{entry.vmName}</h3>
-                  <div className="network-actions">
-                    <Tag type="blue">{suggestionLabels[entry.field]}</Tag>
-                    <Tag type={confidenceTagType(entry.confidence)}>
-                      {entry.confidence} confidence
-                    </Tag>
-                    {entry.revertedAt && <Tag type="gray">Reverted</Tag>}
-                  </div>
-                </div>
-                <p>{entry.oldValue || '(blank)'} to {entry.newValue || '(blank)'}</p>
-                <p>{entry.reason}</p>
-                {entry.evidence.length > 0 && <p>{entry.evidence.slice(0, 2).join(' | ')}</p>}
-                <p>Applied {entry.appliedAt}</p>
-                <div className="network-actions">
-                  <Button
-                    kind="tertiary"
-                    size="sm"
-                    disabled={Boolean(entry.revertedAt)}
-                    onClick={() => revertSuggestionAuditEntry(entry.id)}
-                  >
-                    Undo suggestion
-                  </Button>
-                </div>
-              </Tile>
-            ))}
-          </div>
-        </div>
-      )}
+      <RemediationQueuePanel
+        remediationQueue={remediationQueue}
+        uniqueSuggestionCount={uniqueQueueSuggestionEntries.length}
+        selectedSuggestionCount={selectedQueueSuggestions.length}
+        highConfidenceSuggestionCount={highConfidenceQueueSuggestionIds.length}
+        selectedSuggestionIds={selectedQueueSuggestionIds}
+        suggestionForItem={(item) => suggestionForQueueItem({ item, assignmentRows, resources })}
+        onSelectHighConfidence={selectHighConfidenceQueueSuggestions}
+        onClearSelection={clearQueueSuggestionSelection}
+        onApplySelected={applySelectedQueueSuggestions}
+        onToggleSuggestion={toggleQueueSuggestion}
+        onApplySuggestion={applyAssignmentSuggestion}
+        onReviewIssue={reviewRemediationIssue}
+      />
+      <AssignmentSuggestionsPanel
+        suggestions={assignmentSuggestions}
+        auditedCount={suggestionAudit.length}
+        highConfidenceCount={highConfidenceSuggestions.length}
+        onApplyHighConfidence={applyHighConfidenceSuggestions}
+        onApplySuggestion={applyAssignmentSuggestion}
+      />
+      <SuggestionAuditPanel
+        entries={recentSuggestionAudit}
+        totalCount={suggestionAudit.length}
+        activeCount={activeAuditCount}
+        onRevertSuggestion={revertSuggestionAuditEntry}
+      />
       {preflightSummary && (
         <PackagePreflight
           summary={preflightSummary}
