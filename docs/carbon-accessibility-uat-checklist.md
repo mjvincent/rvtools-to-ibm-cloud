@@ -6,6 +6,9 @@ Record the final outcome in the
 [Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md).
 The checklist is the step-by-step execution record; the results template is the
 promotion sign-off packet.
+For a reviewer-friendly execution sequence, evidence list, pass/fail rules, and
+data-handling guardrails, use the
+[Carbon Manual UAT Runbook](carbon-manual-uat-runbook.md).
 
 ## Review Metadata
 

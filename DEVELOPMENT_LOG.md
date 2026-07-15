@@ -22,6 +22,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 15, 2026: Carbon Manual UAT Packet
+- Added a reviewer-ready Carbon manual UAT runbook covering setup, workbook
+  selection, review sequence, accessibility checks, evidence capture, pass/fail
+  rules, and sensitive-data guardrails.
+- Linked the runbook from the Carbon checklist, results template, promotion
+  cutover guide, and implementation status.
+
 ### July 15, 2026: Carbon Network Plan Accessibility/UAT Evidence
 - Added focused accessibility/UAT evidence for Network Plan component editing
   and local validation findings.

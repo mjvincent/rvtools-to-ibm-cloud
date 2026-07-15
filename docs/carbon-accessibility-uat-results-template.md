@@ -4,6 +4,8 @@ Use this template for each Carbon release-candidate review. Pair it with the
 [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md)
 so the promotion review has a clear decision record, repeatable evidence, and
 named follow-up owners.
+Use the [Carbon Manual UAT Runbook](carbon-manual-uat-runbook.md) when planning
+the review sequence and evidence packet.
 
 Do not paste customer workbook paths, filenames, VM names, IP addresses, owners,
 application names, screenshots with sensitive values, or raw RVTools content

@@ -116,6 +116,7 @@ feature-parity and production-readiness gaps.
 - [x] Carbon accessibility and UAT results template is documented for manual review evidence, issue severity tracking, accepted pilot gaps, and promotion sign-off
 - [x] Focused automated Carbon accessibility/UAT pass recorded for VM Overrides and Export Readiness, with table naming and package-preview selected-state issues fixed
 - [x] Focused automated Carbon accessibility/UAT pass recorded for Network Plan component editing and local validation findings
+- [x] Carbon manual UAT runbook packet documented for reviewer setup, workflow sequence, evidence capture, pass/fail rules, and sensitive-data guardrails
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---
@@ -255,6 +256,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Export readiness workflow user-manual documentation
 - [x] Carbon accessibility and UAT checklist created
 - [x] Carbon accessibility and UAT results/sign-off template created
+- [x] Carbon manual UAT runbook created
 - [x] Focused automated accessibility/UAT result recorded for VM Overrides and Export Readiness
 - [x] Focused automated accessibility/UAT result recorded for Network Plan component editing and validation
 - [ ] Additional customer-scale performance benchmark fixtures
@@ -273,6 +275,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 - [Carbon React UI Strategy](./carbon-react-ui-strategy.md)
 - [Carbon Promotion Gate Review](./carbon-promotion-gate-review.md)
+- [Carbon Manual UAT Runbook](./carbon-manual-uat-runbook.md)
 - [Carbon Accessibility and UAT Checklist](./carbon-accessibility-uat-checklist.md)
 - [Carbon Accessibility and UAT Results Template](./carbon-accessibility-uat-results-template.md)
 - [Carbon Accessibility and UAT Focused Results - 2026-07-10](./carbon-accessibility-uat-results-2026-07-10-focused.md)
