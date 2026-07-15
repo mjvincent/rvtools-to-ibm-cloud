@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import { Button, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
-import { CloudUpload, Download, Renew, View } from '@carbon/icons-react';
+import { Download } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import type { AssignmentVm, Workflow } from '../../types/network-planning';
 import {
@@ -26,6 +26,9 @@ import {
 import PackageParityStatus from './export/PackageParityStatus';
 import PackagePreflight from './export/PackagePreflight';
 import PackagePreview from './export/PackagePreview';
+import ExportChecklistPanel from './export/ExportChecklistPanel';
+import ExportReadinessHeader from './export/ExportReadinessHeader';
+import PlanningGapSummary from './export/PlanningGapSummary';
 import RemediationQueuePanel from './export/RemediationQueuePanel';
 import AssignmentSuggestionsPanel from './export/AssignmentSuggestionsPanel';
 import SuggestionAuditPanel from './export/SuggestionAuditPanel';
@@ -461,83 +464,22 @@ export default function ExportWorkflow() {
 
   return (
     <Layer className="workbench-section">
-      <div className="section-header">
-        <div>
-          <h2>Export readiness</h2>
-          <p>Review planning gaps, then save the latest Carbon network plan and download a Terraform ZIP from FastAPI.</p>
-        </div>
-        <div className="network-actions">
-          <Tag type={blockingFindingCount === 0 ? 'green' : 'warm-gray'}>{blockingFindingCount === 0 ? 'Ready' : 'Needs review'}</Tag>
-          <Button
-            kind="tertiary"
-            size="sm"
-            renderIcon={Renew}
-            disabled={!hasResolvableIssue}
-            onClick={handleResolveNextIssue}
-          >
-            Resolve next issue
-          </Button>
-          <Button
-            kind="tertiary"
-            size="sm"
-            renderIcon={CloudUpload}
-            onClick={() => planningStateInputRef.current?.click()}
-          >
-            Import planning JSON
-          </Button>
-          <input
-            ref={planningStateInputRef}
-            aria-label="Import planning state JSON"
-            type="file"
-            accept="application/json,.json"
-            className="sr-only"
-            onChange={handleImportPlanningState}
-          />
-          <Button
-            kind="secondary"
-            size="sm"
-            renderIcon={Download}
-            onClick={handleExportPlanningState}
-          >
-            Export planning JSON
-          </Button>
-          <Button
-            kind="secondary"
-            size="sm"
-            renderIcon={Download}
-            onClick={handleDownloadReadinessReport}
-          >
-            Download readiness report
-          </Button>
-          <Button
-            kind="secondary"
-            size="sm"
-            renderIcon={Renew}
-            onClick={handleRunPreflight}
-            disabled={!selectedProjectId || runningPreflight}
-          >
-            {runningPreflight ? 'Running...' : 'Run preflight'}
-          </Button>
-          <Button
-            kind="secondary"
-            size="sm"
-            renderIcon={View}
-            onClick={handlePreviewTerraform}
-            disabled={!selectedProjectId || loadingPreview}
-          >
-            {loadingPreview ? 'Previewing...' : 'Preview Terraform'}
-          </Button>
-          <Button
-            kind="primary"
-            size="sm"
-            renderIcon={Download}
-            onClick={handleDownloadTerraform}
-            disabled={!selectedProjectId || generatingTerraform}
-          >
-            {generatingTerraform ? 'Generating...' : 'Download Terraform ZIP'}
-          </Button>
-        </div>
-      </div>
+      <ExportReadinessHeader
+        blockingFindingCount={blockingFindingCount}
+        planningStateInputRef={planningStateInputRef}
+        runningPreflight={runningPreflight}
+        loadingPreview={loadingPreview}
+        generatingTerraform={generatingTerraform}
+        hasResolvableIssue={hasResolvableIssue}
+        hasSelectedProject={Boolean(selectedProjectId)}
+        onResolveNextIssue={handleResolveNextIssue}
+        onImportPlanningState={handleImportPlanningState}
+        onExportPlanningState={handleExportPlanningState}
+        onDownloadReadinessReport={handleDownloadReadinessReport}
+        onRunPreflight={handleRunPreflight}
+        onPreviewTerraform={handlePreviewTerraform}
+        onDownloadTerraform={handleDownloadTerraform}
+      />
       {terraformStatus && (
         <InlineNotification
           kind="success"
@@ -554,37 +496,11 @@ export default function ExportWorkflow() {
           subtitle={terraformError}
         />
       )}
-      <div className="export-package">
-        <div className="section-header compact">
-          <div>
-            <h2>Export checklist</h2>
-            <p>{exportChecklistComplete}/{exportChecklist.length} readiness item(s) complete before Terraform handoff.</p>
-          </div>
-          <Tag type={exportChecklistComplete === exportChecklist.length ? 'green' : 'warm-gray'}>
-            {exportChecklistComplete === exportChecklist.length ? 'Ready' : 'In progress'}
-          </Tag>
-        </div>
-        <div className="resource-list">
-          {exportChecklist.map((item) => (
-            <Tile key={item.label} className="resource-tile">
-              <div className="package-tile__header">
-                <h3>{item.label}</h3>
-                <Tag type={item.complete ? 'green' : 'warm-gray'}>
-                  {item.complete ? 'Complete' : 'Needs review'}
-                </Tag>
-              </div>
-            </Tile>
-          ))}
-        </div>
-      </div>
-      <div className="resource-list">
-        {findings.map(([label, count]) => (
-          <Tile key={label} className="resource-tile">
-            <h3>{label}</h3>
-            <p>{count === 0 ? 'Ready' : `${count} item(s) need attention`}</p>
-          </Tile>
-        ))}
-      </div>
+      <ExportChecklistPanel
+        checklist={exportChecklist}
+        completeCount={exportChecklistComplete}
+      />
+      <PlanningGapSummary findings={findings} />
       <RemediationQueuePanel
         remediationQueue={remediationQueue}
         uniqueSuggestionCount={uniqueQueueSuggestionEntries.length}
