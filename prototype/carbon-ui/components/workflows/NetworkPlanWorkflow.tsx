@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Button, InlineNotification, Layer, Tag } from '@carbon/react';
+import { Button, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
 import { Download } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import { generateTerraform, saveNetworkPlan } from '../../hooks/useApi';
 import { buildNetworkPlanBody } from '../../utils/planning-state';
+import { validateResourceNetworkPlan } from '../../utils/network-validation';
 import type { NetworkComponent } from '../../types/network-planning';
 
 export default function NetworkPlanWorkflow() {
@@ -23,6 +24,9 @@ export default function NetworkPlanWorkflow() {
 
   const components = resources.networkComponents || [];
   const canGenerateTerraform = selectedProjectId && resources.vpcs.length > 0;
+  const validationFindings = React.useMemo(() => validateResourceNetworkPlan(resources), [resources]);
+  const validationBlockers = validationFindings.filter((finding) => finding.severity === 'blocker').length;
+  const validationWarnings = validationFindings.filter((finding) => finding.severity === 'warning').length;
 
   function openCreateComponent() {
     dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'assignment' });
@@ -138,6 +142,44 @@ export default function NetworkPlanWorkflow() {
           lowContrast
         />
       )}
+
+      <Tile className="network-validation-panel">
+        <div className="section-header section-header--compact">
+          <div>
+            <h3>Network validation</h3>
+            <p>Review structural issues before saving the plan for Terraform preflight and package generation.</p>
+          </div>
+          <div className="network-validation-summary">
+            <Tag type={validationBlockers ? 'red' : 'green'}>
+              {validationBlockers} blocker(s)
+            </Tag>
+            <Tag type={validationWarnings ? 'warm-gray' : 'green'}>
+              {validationWarnings} warning(s)
+            </Tag>
+          </div>
+        </div>
+        {validationFindings.length === 0 ? (
+          <p>No network plan validation findings.</p>
+        ) : (
+          <div className="network-validation-list" aria-label="Network validation findings">
+            {validationFindings.slice(0, 6).map((finding) => (
+              <div className="network-validation-item" key={finding.id}>
+                <Tag type={finding.severity === 'blocker' ? 'red' : 'warm-gray'}>
+                  {finding.severity}
+                </Tag>
+                <div>
+                  <strong>{finding.subject}</strong>
+                  <span>{finding.message}</span>
+                  <small>{finding.recommendedAction}</small>
+                </div>
+              </div>
+            ))}
+            {validationFindings.length > 6 && (
+              <p>{validationFindings.length - 6} more finding(s) will also be checked during Export preflight.</p>
+            )}
+          </div>
+        )}
+      </Tile>
 
       <div className="network-diagram" aria-label="Generated network diagram">
         {resources.vpcs.map((vpc) => {

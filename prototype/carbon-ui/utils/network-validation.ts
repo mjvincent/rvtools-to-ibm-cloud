@@ -10,7 +10,63 @@ import type {
   VmNetworkAssignment,
   SubnetBucket,
   SecurityBucket,
+  ResourceState,
+  NetworkComponentType,
 } from '../types/network-planning';
+
+export type NetworkValidationSeverity = 'blocker' | 'warning';
+
+export type NetworkValidationFinding = {
+  id: string;
+  severity: NetworkValidationSeverity;
+  subject: string;
+  message: string;
+  recommendedAction: string;
+};
+
+function terraformLabel(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'new_resource';
+}
+
+function resourceLabel(resource: { name: string; label?: string }) {
+  return terraformLabel(resource.label || resource.name);
+}
+
+function duplicateLabelFindings(
+  resources: Array<{ id: string; name: string; label?: string }>,
+  groupName: string,
+): NetworkValidationFinding[] {
+  const byLabel = new Map<string, Array<{ id: string; name: string }>>();
+  resources.forEach((resource) => {
+    const label = resourceLabel(resource);
+    byLabel.set(label, [...(byLabel.get(label) || []), resource]);
+  });
+
+  return Array.from(byLabel.entries())
+    .filter(([, matches]) => matches.length > 1)
+    .map(([label, matches]) => ({
+      id: `duplicate-label-${groupName}-${label}`,
+      severity: 'blocker' as const,
+      subject: `${groupName} labels`,
+      message: `Duplicate Terraform label "${label}" is used by ${matches.map((item) => item.name).join(', ')}.`,
+      recommendedAction: `Rename one of the ${groupName.toLowerCase()} resources or adjust its Terraform label before handoff.`,
+    }));
+}
+
+function componentNeedsAttachment(type: string) {
+  const normalized = type.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') as NetworkComponentType | string;
+  return [
+    'public_gateway',
+    'vpn_gateway',
+    'load_balancer',
+    'vpe_gateway',
+    'floating_ip',
+  ].includes(normalized);
+}
 
 /**
  * Validate CIDR format.
@@ -196,6 +252,105 @@ export function validateNetworkPlan(plan: NetworkPlanningState): string[] {
   });
 
   return errors;
+}
+
+export function validateResourceNetworkPlan(resources: ResourceState): NetworkValidationFinding[] {
+  const findings: NetworkValidationFinding[] = [];
+  const vpcIds = new Set(resources.vpcs.map((vpc) => vpc.id));
+  const hasNetworkResources =
+    resources.subnets.length > 0 ||
+    resources.securityGroups.length > 0 ||
+    (resources.networkComponents || []).length > 0;
+
+  if (hasNetworkResources && resources.vpcs.length === 0) {
+    findings.push({
+      id: 'network-plan-missing-vpc',
+      severity: 'blocker',
+      subject: 'Network plan',
+      message: 'Network resources exist but no VPC is defined.',
+      recommendedAction: 'Create a VPC bucket before saving or exporting the Carbon network plan.',
+    });
+  }
+
+  resources.subnets.forEach((subnet) => {
+    if (!subnet.cidr) {
+      findings.push({
+        id: `subnet-missing-cidr-${subnet.id}`,
+        severity: 'blocker',
+        subject: subnet.name || subnet.id,
+        message: 'Subnet is missing a CIDR block.',
+        recommendedAction: 'Enter a valid IPv4 CIDR for the subnet before Terraform handoff.',
+      });
+    } else if (!isValidCidr(subnet.cidr)) {
+      findings.push({
+        id: `subnet-invalid-cidr-${subnet.id}`,
+        severity: 'blocker',
+        subject: subnet.name || subnet.id,
+        message: `Subnet CIDR "${subnet.cidr}" is not valid.`,
+        recommendedAction: 'Replace the subnet CIDR with a valid IPv4 CIDR such as 10.40.10.0/24.',
+      });
+    }
+
+    if (!subnet.vpcId || !vpcIds.has(subnet.vpcId)) {
+      findings.push({
+        id: `subnet-missing-vpc-${subnet.id}`,
+        severity: 'blocker',
+        subject: subnet.name || subnet.id,
+        message: 'Subnet references a missing VPC.',
+        recommendedAction: 'Assign the subnet to an existing VPC before saving or exporting the plan.',
+      });
+    }
+  });
+
+  resources.securityGroups.forEach((securityGroup) => {
+    if (!securityGroup.vpcId || !vpcIds.has(securityGroup.vpcId)) {
+      findings.push({
+        id: `security-group-missing-vpc-${securityGroup.id}`,
+        severity: 'blocker',
+        subject: securityGroup.name || securityGroup.id,
+        message: 'Security group references a missing VPC.',
+        recommendedAction: 'Assign the security group to an existing VPC before Terraform handoff.',
+      });
+    }
+  });
+
+  (resources.networkComponents || []).forEach((component) => {
+    if (!component.vpcId) {
+      findings.push({
+        id: `component-no-vpc-${component.id}`,
+        severity: 'blocker',
+        subject: component.name || component.id,
+        message: 'Network component has no VPC selected.',
+        recommendedAction: 'Edit the component from the Network Plan diagram and select a VPC.',
+      });
+    } else if (!vpcIds.has(component.vpcId)) {
+      findings.push({
+        id: `component-missing-vpc-${component.id}`,
+        severity: 'blocker',
+        subject: component.name || component.id,
+        message: 'Network component references a VPC that no longer exists.',
+        recommendedAction: 'Edit the component and choose an existing VPC, or remove the stale component.',
+      });
+    }
+
+    if (componentNeedsAttachment(component.type) && !component.attachment) {
+      findings.push({
+        id: `component-missing-attachment-${component.id}`,
+        severity: 'warning',
+        subject: component.name || component.id,
+        message: `${component.type} has no attachment or target selected.`,
+        recommendedAction: 'Edit the component and select the target subnet, VPC, or service attachment expected by the Terraform operator.',
+      });
+    }
+  });
+
+  findings.push(
+    ...duplicateLabelFindings(resources.vpcs, 'VPC'),
+    ...duplicateLabelFindings(resources.subnets, 'Subnet'),
+    ...duplicateLabelFindings(resources.networkComponents || [], 'Network component'),
+  );
+
+  return findings;
 }
 
 /**

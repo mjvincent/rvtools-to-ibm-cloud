@@ -22,6 +22,15 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 15, 2026: Carbon Network Validation Depth
+- Added structured Carbon network validation findings for missing VPC
+  references, missing or invalid subnet CIDRs, component attachment warnings,
+  and duplicate Terraform labels.
+- Rendered a compact Network Plan validation panel so users can review local
+  blockers and warnings before Export preflight and Terraform package build.
+- Added focused utility and workflow tests while preserving the saved
+  `network-plan.json` contract.
+
 ### July 15, 2026: Carbon Network Component Edit Depth
 - Added a Network Plan diagram edit affordance for existing network components
   that opens the shared component modal with the selected component values.

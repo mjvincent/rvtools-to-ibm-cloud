@@ -10,10 +10,11 @@ import {
   validateSecurityRule,
   validateVmAssignment,
   validateNetworkPlan,
+  validateResourceNetworkPlan,
   detectCidrOverlaps,
 } from '../utils/network-validation';
 import { createInitialNetworkPlan, createEmptyNetworkPlan } from '../types/network-planning';
-import type { SecurityRule, VmNetworkAssignment, NetworkPlanningState } from '../types/network-planning';
+import type { ResourceState, SecurityRule, VmNetworkAssignment, NetworkPlanningState } from '../types/network-planning';
 
 describe('Network Validation Utilities', () => {
   describe('isValidCidr', () => {
@@ -357,6 +358,122 @@ describe('Network Validation Utilities', () => {
 
       const errors = validateNetworkPlan(plan);
       expect(errors.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('validateResourceNetworkPlan', () => {
+    const validResources: ResourceState = {
+      vpcs: [{
+        id: 'vpc-1',
+        name: 'prod-vpc',
+        label: 'prod_vpc',
+        region: 'us-south',
+        addressPrefixMode: 'manual',
+        addressPrefixes: [],
+        tags: {},
+        notes: '',
+        createdAt: '',
+        updatedAt: '',
+      }],
+      subnets: [{
+        id: 'subnet-1',
+        name: 'prod-app',
+        label: 'prod_app',
+        vpcId: 'vpc-1',
+        zone: 'us-south-1',
+        cidr: '10.40.10.0/24',
+        purpose: 'Application',
+        publicGateway: false,
+        tags: {},
+        notes: '',
+        createdAt: '',
+        updatedAt: '',
+      }],
+      securityGroups: [{
+        id: 'sg-1',
+        name: 'sg-app',
+        label: 'sg_app',
+        vpcId: 'vpc-1',
+        purpose: 'Application',
+        rules: [],
+        tags: {},
+        notes: '',
+        createdAt: '',
+        updatedAt: '',
+      }],
+      storageProfiles: [],
+      waves: [],
+      networkComponents: [{
+        id: 'component-1',
+        name: 'prod-public-gateway',
+        label: 'prod_public_gateway',
+        type: 'public_gateway',
+        vpcId: 'vpc-1',
+        attachment: 'prod-app',
+        config: {},
+        tags: {},
+        notes: '',
+        createdAt: '',
+        updatedAt: '',
+      }],
+    };
+
+    it('returns no findings for a valid resource network plan', () => {
+      expect(validateResourceNetworkPlan(validResources)).toEqual([]);
+    });
+
+    it('flags missing VPC references and component attachment warnings', () => {
+      const findings = validateResourceNetworkPlan({
+        ...validResources,
+        subnets: [{ ...validResources.subnets[0], vpcId: 'missing-vpc', cidr: '' }],
+        securityGroups: [{ ...validResources.securityGroups[0], vpcId: 'missing-vpc' }],
+        networkComponents: [{
+          ...validResources.networkComponents[0],
+          vpcId: '',
+          attachment: '',
+        }],
+      });
+
+      expect(findings.map((finding) => finding.id)).toEqual(expect.arrayContaining([
+        'subnet-missing-cidr-subnet-1',
+        'subnet-missing-vpc-subnet-1',
+        'security-group-missing-vpc-sg-1',
+        'component-no-vpc-component-1',
+        'component-missing-attachment-component-1',
+      ]));
+      expect(findings.find((finding) => finding.id === 'component-missing-attachment-component-1')?.severity).toBe('warning');
+    });
+
+    it('flags invalid subnet CIDR and duplicate Terraform labels', () => {
+      const findings = validateResourceNetworkPlan({
+        ...validResources,
+        subnets: [
+          { ...validResources.subnets[0], cidr: 'not-a-cidr' },
+          {
+            ...validResources.subnets[0],
+            id: 'subnet-2',
+            name: 'prod-app-copy',
+            label: 'prod_app',
+            cidr: '10.40.20.0/24',
+          },
+        ],
+        networkComponents: [
+          validResources.networkComponents[0],
+          {
+            ...validResources.networkComponents[0],
+            id: 'component-2',
+            name: 'duplicate-component',
+            label: 'prod_public_gateway',
+          },
+        ],
+      });
+
+      expect(findings.map((finding) => finding.id)).toEqual(expect.arrayContaining([
+        'subnet-invalid-cidr-subnet-1',
+        'duplicate-label-Subnet-prod_app',
+        'duplicate-label-Network component-prod_public_gateway',
+      ]));
+      expect(findings.every((finding) => finding.recommendedAction.length > 0)).toBe(true);
     });
   });
 
