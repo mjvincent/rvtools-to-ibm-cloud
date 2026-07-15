@@ -68,6 +68,10 @@ The parity tests now include:
   confirms `network-plan.json` is the only non-handoff/non-Terraform extra,
   and checks representative decision-audit, remediation, and image-import CSV
   payloads from the generated ZIP.
+- A workshop-workbook API ZIP evidence test that sends a larger representative
+  workbook subset through the real FastAPI Terraform ZIP endpoint and verifies
+  operational handoff evidence for overrides, exclusions, remediation, image
+  import status, cutover blockers, planning state, and saved network-plan state.
 - A sample-workbook API preview parity test that compares
   `POST /api/projects/{project_id}/terraform/preview` with the downloaded ZIP
   inventory and representative file contents for manifest, handoff CSV, and
@@ -118,8 +122,8 @@ Required handoff files:
 
 ## Recommended Implementation Order
 
-1. Add more Streamlit-vs-Carbon fixture comparisons for additional edge-case
-   workbooks.
+1. Add more API-level Streamlit-vs-Carbon fixture comparisons for additional
+   edge-case workbooks.
 2. Improve any remaining workbook-derived source metadata gaps found by those
    fixture comparisons.
 3. Continue tightening Carbon Export workflow feedback as more parity checks

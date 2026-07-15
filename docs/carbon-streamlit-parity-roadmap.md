@@ -45,6 +45,8 @@ workbooks, then closing any workflow gaps found by those comparisons.
      evidence run.
    - Compare Carbon and Streamlit handoff outputs for the package files that
      drive migration operations.
+   - Prefer API-level ZIP and preview tests when possible so evidence covers
+     the same backend path Carbon users exercise.
    - Treat output diffs as product decisions: fix regressions, or document
      intentional Carbon-only preflight differences.
 

@@ -31,6 +31,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Linked the roadmap from the Carbon strategy, promotion guide, Carbon README,
   and root README.
 
+### July 15, 2026: Carbon Real-Workbook API ZIP Parity
+- Added a workshop-workbook FastAPI Terraform ZIP parity test that exercises
+  the larger sample through the same backend package path Carbon users invoke.
+- Verified representative operational handoff evidence for overrides,
+  exclusions, remediation, image import status, cutover blockers, planning
+  state, and saved network-plan state.
+
 ### June 22, 2026: Registry, Persistent Compose, and Carbon Prototype
 - Added a GHCR publishing path for prebuilt Docker images while preserving local Docker builds.
 - Added a Docker Compose stack with Streamlit, an experimental FastAPI service, Postgres, and artifact storage volumes for persistent project evaluation.

@@ -419,6 +419,143 @@ def _sample_carbon_project_fixture():
     return project_id, project, project_state
 
 
+def _workshop_carbon_project_fixture():
+    summary = _workshop_workbook_summary()
+    records = [
+        dict(
+            next(
+                row
+                for row in summary["assignment_rows"]
+                if row["VM Name"] == vm_name
+            )
+        )
+        for vm_name in ("AKWSVCIDM1-1", "BBWMFG01", "BOWAB10SP1JS02", "AO-PROXY")
+    ]
+
+    records[0].update(
+        {
+            "Owner": "identity-team",
+            "Application": "Identity",
+            "Wave": "Wave 1",
+            "Cutover Group": "CG-Identity",
+            "Priority": "critical",
+            "Dependency Group": "directory-services",
+            "Override Profile": "bx2-2x8",
+            "Override Profile Reason": "Keep extra memory headroom for domain services",
+            "Override Profile Hourly": 0.114,
+            "Custom Image ID": "r001-identity-image",
+        }
+    )
+    records[1].update(
+        {
+            "Owner": "manufacturing-team",
+            "Application": "Manufacturing",
+            "Wave": "Wave 2",
+            "Cutover Group": "CG-Manufacturing",
+            "Priority": "high",
+            "Dependency Group": "mfg-core",
+            "Override Storage Tier": "5iops-tier",
+            "Override Storage Tier Reason": "Production file service latency target",
+            "Override Storage Tier Monthly Per GB": 0.10,
+        }
+    )
+    records[2].update(
+        {
+            "Owner": "app-team",
+            "Application": "Java Services",
+            "Wave": "Wave 3",
+            "Cutover Group": "CG-App",
+            "Priority": "medium",
+            "Dependency Group": "app-services",
+            "Exclude?": True,
+            "Exclusion Reason": "Retire after application consolidation",
+        }
+    )
+    records[3].update(
+        {
+            "Owner": "network-team",
+            "Application": "Proxy",
+            "Wave": "Wave 1",
+            "Cutover Group": "CG-Network",
+            "Priority": "medium",
+            "Dependency Group": "edge-services",
+        }
+    )
+    remediation_tracker = {
+        "AKWSVCIDM1-1::network": {
+            "vm_key": "AKWSVCIDM1-1",
+            "owner": "identity-team",
+            "status": "Open",
+            "due_date": "2026-07-24",
+            "notes": "Confirm target subnet because source network is unknown.",
+            "blocker_type": "Network",
+            "blocker_description": "Connected NIC has no usable source network name",
+        },
+        "BBWMFG01::memory": {
+            "vm_key": "BBWMFG01",
+            "owner": "manufacturing-team",
+            "status": "In Progress",
+            "due_date": "2026-07-28",
+            "notes": "Review memory headroom with manufacturing app owner.",
+            "blocker_type": "Memory",
+            "blocker_description": "Missing vMemory data requires owner validation",
+        },
+        "BOWAB10SP1JS02::image": {
+            "vm_key": "BOWAB10SP1JS02",
+            "owner": "app-team",
+            "status": "Closed",
+            "due_date": "2026-07-12",
+            "notes": "Application consolidation approved.",
+            "blocker_type": "Image",
+            "blocker_description": "Image import not required for excluded VM",
+        },
+    }
+    image_import_status = {
+        "1v / 4096M": {
+            "target_catalog_id": "r001-identity-image",
+            "import_status": "Imported",
+            "estimated_import_time": "35m",
+            "notes": "Identity image ready for Wave 1.",
+        },
+        "2v / 4096M": {
+            "target_catalog_id": "",
+            "import_status": "Pending",
+            "estimated_import_time": "45m",
+            "notes": "Proxy image pending owner validation.",
+        },
+        "8v / 16384M": {
+            "target_catalog_id": "",
+            "import_status": "Scheduled",
+            "estimated_import_time": "90m",
+            "notes": "Manufacturing image scheduled with migration factory.",
+        },
+        "8v / 32768M": {
+            "target_catalog_id": "",
+            "import_status": "Not Required",
+            "estimated_import_time": "",
+            "notes": "Excluded from migration scope.",
+        },
+    }
+    plan, planning_state, _pricing_catalog = _carbon_plan_state_and_pricing_from_records(
+        records,
+        assessment_quality=summary["assessment_quality"],
+        remediation_tracker=remediation_tracker,
+        image_import_status=image_import_status,
+    )
+    project_id = "workshop-carbon-parity"
+    planning_state_json = {
+        **planning_state,
+        "carbon_network_plan": to_dict(plan),
+    }
+    project = {"id": project_id, "name": "Workshop Migration", "description": ""}
+    project_state = {
+        "target_region": "us-south",
+        "target_zone": "us-south-1",
+        "planning_state_json": planning_state_json,
+    }
+    return project_id, project, project_state
+
+
 def _workshop_workbook_summary():
     client = TestClient(app)
     sample_path = SAMPLES_DIR / "SizingWorkshop-RVTools.xlsx"
@@ -2084,6 +2221,82 @@ def test_carbon_sample_workbook_api_zip_matches_expected_handoff_inventory():
     )
     assert planning_state_payload["schema_version"] == "1.0"
     assert network_plan_payload["metadata"]["project_name"] == "Migration"
+
+
+def test_carbon_workshop_api_zip_preserves_operational_handoff_evidence():
+    project_id, project, project_state = _workshop_carbon_project_fixture()
+
+    with (
+        patch("prototype.api.persistence.persistence_enabled", return_value=True),
+        patch("prototype.api.persistence.get_project", return_value=project),
+        patch("prototype.api.persistence.get_project_state", return_value=project_state),
+    ):
+        response = TestClient(app).post(f"/api/projects/{project_id}/terraform")
+
+    assert response.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+        names = set(archive.namelist())
+        manifest_payload = json.loads(
+            archive.read("migration-manifest.json").decode("utf-8")
+        )
+        decision_audit_rows = _csv_rows(
+            archive.read("decision-audit.csv").decode("utf-8")
+        )
+        remediation_rows = _csv_rows(
+            archive.read("remediation-backlog.csv").decode("utf-8")
+        )
+        image_rows = _csv_rows(
+            archive.read("image-import-plan.csv").decode("utf-8")
+        )
+        cutover_rows = _csv_rows(
+            archive.read("cutover-readiness.csv").decode("utf-8")
+        )
+        planning_state_payload = json.loads(
+            archive.read("planning-state.json").decode("utf-8")
+        )
+        network_plan_payload = json.loads(
+            archive.read("network-plan.json").decode("utf-8")
+        )
+
+    assert STREAMLIT_HANDOFF_FILES.issubset(names)
+    assert CARBON_MODULAR_TERRAFORM_FILES.issubset(names)
+    assert manifest_payload["project"]["name"] == "Migration"
+    assert len(manifest_payload["virtual_machines"]) == 4
+    assert set(manifest_payload["handoff_files"].values()).issubset(names)
+    assert network_plan_payload["metadata"]["project_name"] == "Migration"
+    assert len(network_plan_payload["vm_assignments"]) == 4
+
+    audit_by_vm = {
+        row["VM Name"]: row
+        for row in decision_audit_rows
+        if row["VM Name"] and row["VM Name"] != "TOTAL"
+    }
+    assert audit_by_vm["AKWSVCIDM1-1"]["Chosen Profile"] == "bx2-2x8"
+    assert audit_by_vm["BBWMFG01"]["Chosen Storage Tier"] == "5iops-tier"
+    assert audit_by_vm["BOWAB10SP1JS02"]["Include/Exclude"] == "Exclude"
+
+    assert any(
+        row["VM Key"] == "AKWSVCIDM1-1"
+        and row["Owner"] == "identity-team"
+        and row["Status"] == "Open"
+        for row in remediation_rows
+    )
+    assert any(
+        row["Source Image"] == "1v / 4096M"
+        and row["Target Catalog ID"] == "r001-identity-image"
+        and row["Import Status"] == "Imported"
+        for row in image_rows
+    )
+    assert any(
+        row["VM Name"] == "AO-PROXY"
+        and row["Blocker Category"] == "Image Import Pending"
+        for row in cutover_rows
+    )
+    assert planning_state_payload["schema_version"] == "1.0"
+    assert {
+        row["VM Name"]
+        for row in planning_state_payload["wave_planning"]
+    } == {"AKWSVCIDM1-1", "BBWMFG01", "BOWAB10SP1JS02", "AO-PROXY"}
 
 
 def test_carbon_package_preview_matches_api_zip_contents():
