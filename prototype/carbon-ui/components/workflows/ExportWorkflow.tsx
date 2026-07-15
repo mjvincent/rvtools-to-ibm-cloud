@@ -24,6 +24,7 @@ import {
   rowsFromNetworkPlan,
 } from '../../utils/planning-state';
 import PackageParityStatus from './export/PackageParityStatus';
+import PackagePreflight from './export/PackagePreflight';
 import PackagePreview from './export/PackagePreview';
 import {
   applySuggestionsToRows,
@@ -45,7 +46,6 @@ import {
   readFileText,
   readinessReportPayload,
   revertSuggestionInRows,
-  routesForFinding,
   suggestionAuditEntries,
   suggestionForFinding,
   suggestionForQueueItem,
@@ -801,87 +801,15 @@ export default function ExportWorkflow() {
         </div>
       )}
       {preflightSummary && (
-        <div className="export-package">
-          <div className="section-header compact">
-            <div>
-              <h2>Package preflight</h2>
-              <p>{preflightSummary.total} backend finding(s) from the saved Carbon network plan.</p>
-            </div>
-            <div className="network-actions">
-              <Tag type={preflightSummary.blockers === 0 ? 'green' : 'red'}>
-                {preflightSummary.blockers} blocker(s)
-              </Tag>
-              <Tag type={preflightSummary.warnings === 0 ? 'green' : 'warm-gray'}>
-                {preflightSummary.warnings} warning(s)
-              </Tag>
-              <Tag type="gray">{preflightSummary.info} info</Tag>
-            </div>
-          </div>
-          {visiblePreflightFindings.length > 0 ? (
-            <div className="resource-list">
-              {visiblePreflightFindings.map((finding, index) => (
-                <Tile key={`${finding.Subject}-${finding.Category}-${index}`} className="resource-tile">
-                  {(() => {
-                    const suggestion = suggestionForFinding({ finding, assignmentRows, resources });
-                    return (
-                      <>
-                        <div className="package-tile__header">
-                          <h3>{finding.Subject || 'Package'}</h3>
-                          <Tag type={finding.Severity === 'blocker' ? 'red' : finding.Severity === 'warning' ? 'warm-gray' : 'gray'}>
-                            {finding.Severity}
-                          </Tag>
-                        </div>
-                        <p>{finding.Message}</p>
-                        {finding['Fix Category'] && <p>{finding['Fix Category']}</p>}
-                        {suggestion && (
-                          <>
-                            <p>
-                              Suggested {suggestionLabels[suggestion.kind]}: {suggestion.label}. {suggestion.reason}
-                            </p>
-                            <div className="network-actions">
-                              <Tag type={confidenceTagType(suggestion.confidence)}>
-                                {suggestion.confidence} confidence
-                              </Tag>
-                              {suggestion.evidence.slice(0, 2).map((item) => (
-                                <Tag key={item} type="gray">{item}</Tag>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                        <div className="network-actions">
-                          {suggestion && (
-                            <Button
-                              kind="tertiary"
-                              size="sm"
-                              onClick={() => applyAssignmentSuggestion(suggestion)}
-                            >
-                              Apply suggested {suggestionLabels[suggestion.kind]}
-                            </Button>
-                          )}
-                          {routesForFinding(finding).map((route) => (
-                            <Button
-                              key={route.label}
-                              kind="tertiary"
-                              size="sm"
-                              onClick={() => openPreflightFinding(finding, route)}
-                            >
-                              {route.label}
-                            </Button>
-                          ))}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </Tile>
-              ))}
-            </div>
-          ) : (
-            <Tile className="resource-tile">
-              <h3>Ready</h3>
-              <p>No package preflight findings returned.</p>
-            </Tile>
-          )}
-        </div>
+        <PackagePreflight
+          summary={preflightSummary}
+          findings={visiblePreflightFindings}
+          suggestionForFinding={(finding) =>
+            suggestionForFinding({ finding, assignmentRows, resources })
+          }
+          onApplySuggestion={applyAssignmentSuggestion}
+          onOpenFinding={openPreflightFinding}
+        />
       )}
       {terraformPreview && selectedPreviewFile && (
         <PackagePreview
