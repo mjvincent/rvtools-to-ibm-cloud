@@ -38,6 +38,12 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
   exclusions, remediation, image import status, cutover blockers, planning
   state, and saved network-plan state.
 
+### July 15, 2026: Carbon Failure-Path Hardening
+- Added focused Export workflow unit coverage for backend preflight failures,
+  save-before-preview failures, and Terraform ZIP generation failures.
+- Verified Carbon surfaces backend errors, avoids stale success UI, and does
+  not call later backend export steps after an earlier save failure.
+
 ### June 22, 2026: Registry, Persistent Compose, and Carbon Prototype
 - Added a GHCR publishing path for prebuilt Docker images while preserving local Docker builds.
 - Added a Docker Compose stack with Streamlit, an experimental FastAPI service, Postgres, and artifact storage volumes for persistent project evaluation.

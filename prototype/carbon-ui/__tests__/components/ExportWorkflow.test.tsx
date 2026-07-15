@@ -232,6 +232,21 @@ describe('ExportWorkflow', () => {
     expect(screen.getByText('Review scope decision')).toBeTruthy();
   });
 
+  it('reports backend preflight failures without showing stale success', async () => {
+    (api.runProjectPreflight as jest.Mock).mockRejectedValueOnce(
+      new Error('Preflight service unavailable.'),
+    );
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Run preflight'));
+
+    await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.runProjectPreflight).toHaveBeenCalledWith('project-1'));
+    expect(screen.getByText('Preflight service unavailable.')).toBeTruthy();
+    expect(screen.queryByText('Package preflight')).toBeNull();
+    expect(screen.getByText('Run preflight')).toBeTruthy();
+  });
+
   it('saves the network plan before rendering the package preview', async () => {
     renderWithProvider(<ExportWorkflow />);
 
@@ -266,6 +281,21 @@ describe('ExportWorkflow', () => {
     expect(screen.queryByLabelText('Terraform preview README.md')).toBeNull();
   });
 
+  it('does not call preview when saving the network plan fails', async () => {
+    (api.saveNetworkPlan as jest.Mock).mockRejectedValueOnce(
+      new Error('Network plan save unavailable before preview.'),
+    );
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Preview Terraform'));
+
+    await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
+    expect(api.previewTerraform).not.toHaveBeenCalled();
+    expect(screen.getByText('Network plan save unavailable before preview.')).toBeTruthy();
+    expect(screen.queryByText('Package preview')).toBeNull();
+    expect(screen.getByText('Preview Terraform')).toBeTruthy();
+  });
+
   it('downloads the selected package preview file', async () => {
     renderWithProvider(<ExportWorkflow />);
 
@@ -282,6 +312,28 @@ describe('ExportWorkflow', () => {
     const blob = (window.URL.createObjectURL as jest.Mock).mock.calls[0][0] as Blob;
     await expect(readBlobText(blob)).resolves.toContain('VM Name,Original Profile,Chosen Profile');
     expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:terraform');
+  });
+
+  it('reports Terraform ZIP generation failures and allows retry', async () => {
+    (api.runProjectPreflight as jest.Mock).mockResolvedValueOnce({
+      project_id: 'project-1',
+      project_name: 'Export Project',
+      summary: { blockers: 0, warnings: 0, info: 0, total: 0 },
+      findings: [],
+    });
+    (api.generateTerraform as jest.Mock).mockRejectedValueOnce(
+      new Error('Terraform ZIP renderer unavailable.'),
+    );
+    renderWithProvider(<ExportWorkflow />);
+
+    await userEvent.click(screen.getByText('Download Terraform ZIP'));
+
+    await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.runProjectPreflight).toHaveBeenCalledWith('project-1'));
+    await waitFor(() => expect(api.generateTerraform).toHaveBeenCalledWith('project-1'));
+    expect(screen.getByText('Terraform ZIP renderer unavailable.')).toBeTruthy();
+    expect(screen.getByText('Download Terraform ZIP')).toBeTruthy();
+    expect(window.URL.createObjectURL).not.toHaveBeenCalled();
   });
 
   it('routes preflight findings to the right review workflow', async () => {

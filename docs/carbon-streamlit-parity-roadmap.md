@@ -54,6 +54,9 @@ workbooks, then closing any workflow gaps found by those comparisons.
    - Extend browser coverage for API unavailable, package preview failure,
      malformed planning-state import, workbook upload failure, and ZIP
      generation failure.
+   - Keep fast unit coverage for Export failure paths so preflight, preview,
+     and ZIP-generation errors cannot regress without running the full browser
+     suite.
    - Ensure the UI never implies work is saved or export-ready when the backend
      rejected the operation.
 

@@ -66,6 +66,9 @@ readiness-chip review routing, drag/drop accessibility labels, row checkbox
 accessible names, package preview close behavior, and temporary smoke-project
 cleanup across Chromium, Firefox, and WebKit. The suite runs with one worker because the smoke tests share the
 same FastAPI/Postgres backend during project save/load and cleanup.
+Fast Jest coverage now also guards Export preflight service failures,
+save-before-preview failures, and ZIP generation failures so Carbon does not
+show stale success or call later backend steps after an earlier rejection.
 
 The Python parity suite now includes Streamlit-vs-Carbon single-VM, edge-case,
 multi-VM, workshop real-workbook subset, workshop operational edge subset, and
