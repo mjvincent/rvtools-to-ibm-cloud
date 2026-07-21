@@ -63,7 +63,9 @@ python -m pip install -r requirements.txt
 2. Run the automated checks:
 
 ```bash
+python -m pip_audit -r requirements.txt
 python -m pytest
+python -m pytest -W error::DeprecationWarning
 python -m py_compile app.py rvtools_parser.py assessments.py assessment_quality.py sizing.py catalog_pricing.py terraform_renderer.py preflight.py ui.py logic_engine.py streamlit_app/*.py rvtools/*.py handoff/*.py models/*.py scripts/generate_pricing_cache.py scripts/validate_terraform_package.py
 python scripts/validate_terraform_package.py
 git diff --check
@@ -140,6 +142,16 @@ Run `terraform validate` only after `terraform init` has been intentionally perf
 After Carbon UI changes, start the Compose stack and open `http://localhost:3000`.
 Use `docs/carbon-manual-uat-runbook.md` for formal reviewer evidence. For a
 quick developer smoke:
+
+Automated Carbon checks mirror CI:
+
+```bash
+cd prototype/carbon-ui
+npm audit --audit-level=high
+npx tsc --noEmit --incremental false
+npm test -- --runInBand
+npm run build
+```
 
 1. Confirm the shell loads and the left workflow navigation is visible.
 2. Open a workflow `Help` control and confirm purpose, before-continuing,

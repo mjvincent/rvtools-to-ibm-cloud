@@ -50,6 +50,12 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added the `httpx2` test dependency so FastAPI/Starlette `TestClient` no
   longer falls back to the deprecated `httpx` path.
 
+### July 21, 2026: CI Warning and Audit Coverage
+- Added Python dependency audit enforcement to CI with `pip-audit`.
+- Tightened CI pytest execution to treat deprecation warnings as errors.
+- Added a Carbon UI CI job for npm audit, TypeScript checking, Jest, and
+  production build validation.
+
 ### July 15, 2026: Carbon Manual UAT Packet
 - Added a reviewer-ready Carbon manual UAT runbook covering setup, workbook
   selection, review sequence, accessibility checks, evidence capture, pass/fail
