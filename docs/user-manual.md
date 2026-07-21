@@ -1068,6 +1068,7 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 - **Suggested assignment fixes**: Carbon can suggest subnet, security group, storage/IOPS, and wave assignments from similarly named VMs, shared application/network/owner/cutover metadata, or matching bucket purpose. Suggestions show confidence and evidence, and users must explicitly apply them.
 - **Bulk remediation assistance**: Suggested queue fixes can be selected with checkboxes, selected in bulk when confidence is high, cleared, or applied from the Export Readiness queue. Each applied fix is audited.
 - **Suggestion audit and undo**: Applied suggestions are recorded in project state with old value, new value, confidence, reason, evidence, and timestamp. Active suggestion changes can be undone from the Export Readiness audit panel.
+- **Guided help**: Each Carbon workflow exposes a `Help` control that explains the current step's purpose, what to check before continuing, when the step is complete, common mistakes, and the recommended next step. `Open user guide` launches a separate guide window so reviewers can keep instructions visible while using the app.
 - **Readiness report**: Carbon can download a `carbon-export-readiness` JSON report containing checklist status, assignment gaps, latest preflight findings, suggestion audit entries, and package inventory counts for migration review meetings.
 - **Terraform ZIP contents**: Carbon-generated ZIPs include the Streamlit handoff inventory, Carbon modular Terraform files, and `network-plan.json`. The UI inventory is backed by a shared JSON contract and tested against backend ZIP inventory constants to prevent drift.
 - **Persistence expectations**: Saved projects, network plans, VM assignments, override values, and dirty-state autosave use the shared FastAPI/Postgres prototype stack. If the API or database is unavailable, Carbon shows a persistence warning and the work should be treated as temporary until saved successfully.
@@ -1075,18 +1076,20 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 
 ### Carbon End-to-End Workflow
 1. Open `http://localhost:3000` after starting the Compose stack.
-2. Use `Workbook Intake` to upload the RVTools XLSX workbook.
-3. Review `Overview` metrics, project persistence state, and readiness counts.
-4. Use `VM Assignment` to map VMs to subnets, security groups, storage/IOPS targets, and waves.
-5. Use `VM Overrides` for VSI profile overrides, storage tier overrides, exclusion decisions, and override reasons.
-6. Review `Remediation Backlog`, `Image Import Planning`, and `Migration Ops` to track blocker owners, image import status, and cutover readiness.
-7. Review `Network Plan`, `Security Plan`, `Storage / IOPS Plan`, and `Wave Plan` for target design completeness.
-8. Open `Export Readiness`.
-9. Save or load the desired project, then run `Run preflight`.
-10. Use the remediation queue to route to blockers or apply reviewed high-confidence suggestions.
-11. Use `Preview Terraform` to inspect generated package files in the UI.
-12. Download the readiness report if a review artifact is needed.
-13. Click `Download Terraform ZIP` after preflight blockers are resolved.
+2. Use `Help` on any workflow when the step purpose or completion criteria are unclear.
+3. Use `Open user guide` if you want a separate instruction window open while working.
+4. Use `Workbook Intake` to upload the RVTools XLSX workbook.
+5. Review `Overview` metrics, project persistence state, and readiness counts.
+6. Use `VM Assignment` to map VMs to subnets, security groups, storage/IOPS targets, and waves.
+7. Use `VM Overrides` for VSI profile overrides, storage tier overrides, exclusion decisions, and override reasons.
+8. Review `Remediation Backlog`, `Image Import Planning`, and `Migration Ops` to track blocker owners, image import status, and cutover readiness.
+9. Review `Network Plan`, `Security Plan`, `Storage / IOPS Plan`, and `Wave Plan` for target design completeness.
+10. Open `Export Readiness`.
+11. Save or load the desired project, then run `Run preflight`.
+12. Use the remediation queue to route to blockers or apply reviewed high-confidence suggestions.
+13. Use `Preview Terraform` to inspect generated package files in the UI.
+14. Download the readiness report if a review artifact is needed.
+15. Click `Download Terraform ZIP` after preflight blockers are resolved.
 
 ### Carbon And Streamlit Parity
 | Area | Carbon status | Notes |

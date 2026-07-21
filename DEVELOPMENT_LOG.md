@@ -22,6 +22,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 21, 2026: Carbon Guided Help Layer
+- Added workflow-specific Carbon help controls that explain each step's
+  purpose, completion criteria, common mistakes, and recommended next step.
+- Added a separate Carbon user-guide route that can stay open while migration
+  planners work through the app.
+- Updated Carbon evaluation documentation and tests for the guided-help content.
+
 ### July 15, 2026: Carbon Manual UAT Packet
 - Added a reviewer-ready Carbon manual UAT runbook covering setup, workbook
   selection, review sequence, accessibility checks, evidence capture, pass/fail

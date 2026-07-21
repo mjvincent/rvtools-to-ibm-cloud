@@ -131,6 +131,23 @@ terraform fmt -check -recursive .
 
 Run `terraform validate` only after `terraform init` has been intentionally performed for that temporary extraction. Do not initialize providers during lightweight browser validation unless provider download/network access is expected for the environment.
 
+## Carbon Manual Smoke
+
+After Carbon UI changes, start the Compose stack and open `http://localhost:3000`.
+Use `docs/carbon-manual-uat-runbook.md` for formal reviewer evidence. For a
+quick developer smoke:
+
+1. Confirm the shell loads and the left workflow navigation is visible.
+2. Open a workflow `Help` control and confirm purpose, before-continuing,
+   complete-when, common-mistakes, and next-step guidance appears.
+3. Click `Open user guide` and confirm it opens `/help/user-guide` in a separate
+   window or tab.
+4. Upload `samples/rvtools-small-complete.xlsx` from Workbook Intake.
+5. Visit VM Assignment, Network Plan, Remediation Backlog, Migration Ops, and
+   Export Readiness.
+6. Run preflight or preview/download checks appropriate for the branch under
+   test.
+
 ## Carbon Private Performance Fixtures
 
 Carbon includes checked-in performance guards for the sanitized sample workbooks.

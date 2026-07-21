@@ -117,6 +117,7 @@ feature-parity and production-readiness gaps.
 - [x] Focused automated Carbon accessibility/UAT pass recorded for VM Overrides and Export Readiness, with table naming and package-preview selected-state issues fixed
 - [x] Focused automated Carbon accessibility/UAT pass recorded for Network Plan component editing and local validation findings
 - [x] Carbon manual UAT runbook packet documented for reviewer setup, workflow sequence, evidence capture, pass/fail rules, and sensitive-data guardrails
+- [x] Carbon guided help controls explain each workflow's purpose, completion criteria, common mistakes, next step, and link to a separate user-guide window
 - [ ] Complete workbook-detail fidelity and parity comparison coverage
 
 ---

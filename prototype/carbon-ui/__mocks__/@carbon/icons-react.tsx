@@ -10,6 +10,7 @@ export const Close = icon('close');
 export const DataTable = icon('data-table');
 export const DeploymentPattern = icon('deployment-pattern');
 export const Download = icon('download');
+export const Help = icon('help');
 export const Information = icon('information');
 export const Renew = icon('renew');
 export const Save = icon('save');

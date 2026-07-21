@@ -59,6 +59,7 @@ import RemediationWorkflow from '../components/workflows/RemediationWorkflow';
 import ImageImportWorkflow from '../components/workflows/ImageImportWorkflow';
 import MigrationOpsWorkflow from '../components/workflows/MigrationOpsWorkflow';
 import ExportWorkflow from '../components/workflows/ExportWorkflow';
+import GuidedHelp from '../components/ui/GuidedHelp';
 
 const workflows: Array<{ id: Workflow; label: string; icon?: React.ComponentType }> = [
   { id: 'overview', label: 'Overview', icon: DataTableIcon },
@@ -87,6 +88,7 @@ function WorkbenchShell() {
     suggestionAudit,
   } = state;
   const hasLoadedProject = useRef(false);
+  const activeWorkflowLabel = workflows.find((workflow) => workflow.id === activeWorkflow)?.label || 'Overview';
 
   // Compute estate locally (not in state — it's derived)
   const computedEstate = React.useMemo(() => {
@@ -392,6 +394,7 @@ function WorkbenchShell() {
                 <h1>RVTools to IBM Cloud VPC</h1>
               </div>
               <div className="project-controls">
+                <GuidedHelp workflow={activeWorkflow} label={activeWorkflowLabel} />
                 <div className="save-state-indicator" aria-label="Project save state">
                   <Tag type={saveState.tagType}>{saveState.label}</Tag>
                   <span>{saveState.detail}</span>

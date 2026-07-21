@@ -84,31 +84,35 @@ RVTools rows into the evidence packet.
 ## Review Sequence
 
 1. Open Carbon and confirm the page shell loads without app console errors.
-2. Upload the small sample workbook from Workbook Intake.
-3. Save the project with a neutral name such as `Carbon UAT sample`.
-4. Refresh the browser and reload the saved project.
-5. Confirm VM Assignment rows, readiness chips, and assignment bucket controls
+2. Open the current workflow `Help` control and confirm step-specific guidance
+   appears.
+3. Click `Open user guide` and confirm the guide opens in a separate browser
+   window or tab that can remain visible during the review.
+4. Upload the small sample workbook from Workbook Intake.
+5. Save the project with a neutral name such as `Carbon UAT sample`.
+6. Refresh the browser and reload the saved project.
+7. Confirm VM Assignment rows, readiness chips, and assignment bucket controls
    are still populated.
-6. Use keyboard-only navigation for one subnet/security/storage/wave assignment.
-7. Use drag/drop for one VM assignment and confirm the placement modal appears.
-8. Open Network Plan.
-9. Review the `Network validation` region.
-10. Open an existing network component edit action, confirm the modal fields are
+8. Use keyboard-only navigation for one subnet/security/storage/wave assignment.
+9. Use drag/drop for one VM assignment and confirm the placement modal appears.
+10. Open Network Plan.
+11. Review the `Network validation` region.
+12. Open an existing network component edit action, confirm the modal fields are
     labeled, then cancel or save a harmless note change.
-11. Review Remediation Backlog and edit one non-sensitive owner/status/note
+13. Review Remediation Backlog and edit one non-sensitive owner/status/note
     value.
-12. Review Image Import Planning and edit one import status or note.
-13. Review Migration Ops and confirm open blockers/ready rows are understandable.
-14. Open Export Readiness.
-15. Run preflight and use at least one `Review issue` route when findings exist.
-16. Preview Terraform, filter files, download one selected file, and close the
+14. Review Image Import Planning and edit one import status or note.
+15. Review Migration Ops and confirm open blockers/ready rows are understandable.
+16. Open Export Readiness.
+17. Run preflight and use at least one `Review issue` route when findings exist.
+18. Preview Terraform, filter files, download one selected file, and close the
     preview.
-17. Download the readiness report JSON.
-18. Resolve blockers if needed, or use a clean project, then download the
+19. Download the readiness report JSON.
+20. Resolve blockers if needed, or use a clean project, then download the
     Terraform ZIP.
-19. Generate or compare Streamlit output for the same workbook when this is a
+21. Generate or compare Streamlit output for the same workbook when this is a
     promotion or pilot-readiness review.
-20. Complete the checklist, result matrix, issue log, known gaps, and sign-off
+22. Complete the checklist, result matrix, issue log, known gaps, and sign-off
     sections.
 
 ## Accessibility Review
