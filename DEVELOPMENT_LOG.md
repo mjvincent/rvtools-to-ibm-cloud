@@ -56,6 +56,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Added a Carbon UI CI job for npm audit, TypeScript checking, Jest, and
   production build validation.
 
+### July 21, 2026: CI Failure Artifact Capture
+- Added Carbon CI failure artifacts for npm audit, TypeScript, Jest, Next build,
+  and optional Next trace output.
+- Added Streamlit container and Docker Compose smoke failure artifacts with
+  service logs and status output.
+- Documented which CI artifacts to download when remote validation fails.
+
 ### July 15, 2026: Carbon Manual UAT Packet
 - Added a reviewer-ready Carbon manual UAT runbook covering setup, workbook
   selection, review sequence, accessibility checks, evidence capture, pass/fail

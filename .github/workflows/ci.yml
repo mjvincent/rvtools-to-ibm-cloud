@@ -90,16 +90,38 @@ jobs:
         run: npm ci
 
       - name: Audit Carbon dependencies
-        run: npm audit --audit-level=high
+        run: |
+          mkdir -p ci-artifacts
+          set -o pipefail
+          npm audit --audit-level=high 2>&1 | tee ci-artifacts/npm-audit.log
 
       - name: Type-check Carbon UI
-        run: npx tsc --noEmit --incremental false
+        run: |
+          mkdir -p ci-artifacts
+          set -o pipefail
+          npx tsc --noEmit --incremental false 2>&1 | tee ci-artifacts/typescript.log
 
       - name: Test Carbon UI
-        run: npm test -- --runInBand
+        run: |
+          mkdir -p ci-artifacts
+          set -o pipefail
+          npm test -- --runInBand 2>&1 | tee ci-artifacts/jest.log
 
       - name: Build Carbon UI
-        run: npm run build
+        run: |
+          mkdir -p ci-artifacts
+          set -o pipefail
+          npm run build 2>&1 | tee ci-artifacts/next-build.log
+
+      - name: Upload Carbon failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: carbon-ui-failure-artifacts
+          path: |
+            prototype/carbon-ui/ci-artifacts/*.log
+            prototype/carbon-ui/.next/trace
+          if-no-files-found: ignore
 
   container-smoke:
     name: Container smoke test
@@ -133,6 +155,21 @@ jobs:
           done
           docker logs rvtools-streamlit-smoke
           exit 1
+
+      - name: Capture Streamlit container logs
+        if: failure()
+        run: |
+          mkdir -p ci-artifacts
+          docker logs rvtools-streamlit-smoke > ci-artifacts/container-smoke.log 2>&1 || true
+          docker ps --all > ci-artifacts/container-ps.log 2>&1 || true
+
+      - name: Upload Streamlit container failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamlit-container-smoke-artifacts
+          path: ci-artifacts/*.log
+          if-no-files-found: ignore
 
       - name: Stop Streamlit container
         if: always()
@@ -182,6 +219,21 @@ jobs:
           done
           docker compose logs
           exit 1
+
+      - name: Capture Compose stack logs
+        if: failure()
+        run: |
+          mkdir -p ci-artifacts
+          docker compose logs > ci-artifacts/compose-smoke.log 2>&1 || true
+          docker compose ps > ci-artifacts/compose-ps.log 2>&1 || true
+
+      - name: Upload Compose failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-smoke-artifacts
+          path: ci-artifacts/*.log
+          if-no-files-found: ignore
 
       - name: Stop Compose stack
         if: always()

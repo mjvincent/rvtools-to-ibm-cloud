@@ -153,6 +153,10 @@ npm test -- --runInBand
 npm run build
 ```
 
+When Carbon CI fails, download the `carbon-ui-failure-artifacts` artifact from
+the run. It contains captured npm audit, TypeScript, Jest, and Next build logs
+when those steps reached execution.
+
 1. Confirm the shell loads and the left workflow navigation is visible.
 2. Open a workflow `Help` control and confirm purpose, before-continuing,
    complete-when, common-mistakes, and next-step guidance appears.
@@ -173,6 +177,11 @@ for the environment-variable workflow and sanitized evidence template.
 
 ## Container Validation
 Run this checklist after changing deployment assets, dependencies, or Streamlit launch configuration. GitHub Actions also runs a container smoke job that builds the Docker image, starts Streamlit on a test host port, and checks `/_stcore/health`.
+
+When a CI container smoke job fails, download the relevant failure artifact:
+`streamlit-container-smoke-artifacts` for the single-container health check or
+`compose-smoke-artifacts` for the Compose persistence stack. These include
+container or Compose logs plus service status output when available.
 
 1. Build the image:
 
