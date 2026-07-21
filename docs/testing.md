@@ -23,9 +23,8 @@ make test
 `pytest.ini` limits collection to `tests/` and excludes `experiments/`. The scripts under `experiments/` are preserved research artifacts, not production test coverage.
 
 The suite should not emit application-owned `datetime.utcnow()` deprecation
-warnings. A current FastAPI/Starlette test-client deprecation warning may still
-appear from the external dependency stack until that ecosystem finishes its
-`httpx` transition.
+warnings. FastAPI/Starlette `TestClient` checks use `httpx2` so the suite does
+not emit the deprecated `httpx` test-client path warning.
 
 ## Fixtures
 Shared setup lives in `tests/conftest.py`.

@@ -47,8 +47,8 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Replaced Carbon API, network-planning model, and affected test
   `datetime.utcnow()` calls with timezone-aware UTC timestamp generation while
   preserving the existing legacy timestamp string format.
-- Confirmed the remaining FastAPI/Starlette test-client warning comes from the
-  external dependency stack rather than app timestamp code.
+- Added the `httpx2` test dependency so FastAPI/Starlette `TestClient` no
+  longer falls back to the deprecated `httpx` path.
 
 ### July 15, 2026: Carbon Manual UAT Packet
 - Added a reviewer-ready Carbon manual UAT runbook covering setup, workbook

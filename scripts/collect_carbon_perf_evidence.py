@@ -25,7 +25,6 @@ if str(ROOT) not in sys.path:
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
-warnings.filterwarnings("ignore", message=r"Using `httpx` with `starlette\.testclient`.*")
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 from fastapi.testclient import TestClient  # noqa: E402
