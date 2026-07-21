@@ -1085,7 +1085,7 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
             "vm_key": "vm-db-001",
             "owner": "db-team",
             "status": "Open",
-            "due_date": "2026-07-20",
+            "due_date": "2026-08-20",
             "notes": "Confirm quiesce steps with database owner.",
             "blocker_type": "Migration",
             "blocker_description": "Database quiesce runbook required",
@@ -1283,7 +1283,7 @@ def test_carbon_multi_vm_fixture_preserves_operational_handoff_parity(
             "VM Name": "unknown-vm",
             "Owner": "db-team",
             "Status": "Open",
-            "Due Date": "2026-07-20",
+            "Due Date": "2026-08-20",
             "Blocker Description": "Database quiesce runbook required",
         },
     )

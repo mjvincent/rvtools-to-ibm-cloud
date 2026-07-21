@@ -35,6 +35,14 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Regenerated the Carbon lockfile and verified `npm audit` reports zero
   vulnerabilities.
 
+### July 21, 2026: Python Dependency Security Floors
+- Added explicit Python dependency floors for resolved transitive packages with
+  current security fixes: GitPython, idna, Pillow, PyJWT, Tornado, and urllib3.
+- Updated a Carbon handoff parity fixture date so the non-overdue remediation
+  assertion remains stable as calendar time advances.
+- Verified both `pip-audit` local and requirements-file audits report no known
+  vulnerabilities.
+
 ### July 15, 2026: Carbon Manual UAT Packet
 - Added a reviewer-ready Carbon manual UAT runbook covering setup, workbook
   selection, review sequence, accessibility checks, evidence capture, pass/fail
