@@ -60,6 +60,8 @@ import ImageImportWorkflow from '../components/workflows/ImageImportWorkflow';
 import MigrationOpsWorkflow from '../components/workflows/MigrationOpsWorkflow';
 import ExportWorkflow from '../components/workflows/ExportWorkflow';
 import GuidedHelp from '../components/ui/GuidedHelp';
+import WorkflowProgressGuide from '../components/ui/WorkflowProgressGuide';
+import { buildWorkflowProgress } from '../utils/workflow-progress';
 
 const workflows: Array<{ id: Workflow; label: string; icon?: React.ComponentType }> = [
   { id: 'overview', label: 'Overview', icon: DataTableIcon },
@@ -107,6 +109,24 @@ function WorkbenchShell() {
     const missingSg = assignmentRows.filter((row) => !row.securityGroup).length;
     return { total, missingSubnet, missingSg };
   }, [assignmentRows]);
+
+  const workflowProgress = React.useMemo(() => buildWorkflowProgress({
+    summary,
+    assignmentRows,
+    resources,
+    remediationTracker,
+    imageImportStatus,
+    selectedProjectId,
+    terraformStatus: state.terraformStatus,
+  }), [
+    assignmentRows,
+    imageImportStatus,
+    remediationTracker,
+    resources,
+    selectedProjectId,
+    state.terraformStatus,
+    summary,
+  ]);
 
   const activeRemediationCount = React.useMemo(() => (
     assignmentRows.reduce((count, row) => {
@@ -498,6 +518,11 @@ function WorkbenchShell() {
           </Column>
 
           <Column lg={16} md={8} sm={4}>
+            <WorkflowProgressGuide
+              steps={workflowProgress}
+              activeWorkflow={activeWorkflow}
+              onSelectWorkflow={(workflow) => dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: workflow })}
+            />
             {renderWorkflow()}
           </Column>
         </Grid>

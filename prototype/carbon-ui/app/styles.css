@@ -124,6 +124,118 @@ body {
   margin: 0.5rem 0;
 }
 
+.workflow-progress-guide {
+  background: #ffffff;
+  border-left: 4px solid #0f62fe;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.workflow-progress-guide__header {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  margin-bottom: 1rem;
+}
+
+.workflow-progress-guide__header h2 {
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin-bottom: 0.25rem;
+}
+
+.workflow-progress-guide__header p {
+  color: #525252;
+}
+
+.workflow-progress-guide__next {
+  background: #f4f4f4;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.workflow-progress-guide__next span {
+  color: #525252;
+  font-size: 0.8125rem;
+}
+
+.workflow-progress-guide__next strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.workflow-progress-guide__steps {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.workflow-progress-step {
+  border: 1px solid #e0e0e0;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  min-height: 7.5rem;
+  padding: 0.75rem;
+}
+
+.workflow-progress-step--active {
+  border-color: #0f62fe;
+  outline: 1px solid #0f62fe;
+}
+
+.workflow-progress-step__index {
+  align-items: center;
+  background: #e0e0e0;
+  border-radius: 50%;
+  display: flex;
+  font-size: 0.875rem;
+  font-weight: 600;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.workflow-progress-step__body {
+  min-width: 0;
+}
+
+.workflow-progress-step__title {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.workflow-progress-step__title button {
+  background: transparent;
+  border: 0;
+  color: #0f62fe;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-align: left;
+}
+
+.workflow-progress-step__title button:focus-visible {
+  outline: 2px solid #0f62fe;
+  outline-offset: 2px;
+}
+
+.workflow-progress-step p {
+  color: #525252;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
 .workbench-section {
   background: #ffffff;
   padding: 1rem;
@@ -1061,6 +1173,11 @@ body {
 
   .guided-help-actions {
     justify-content: flex-start;
+  }
+
+  .workflow-progress-guide__header,
+  .workflow-progress-guide__steps {
+    grid-template-columns: 1fr;
   }
 
   .summary-grid {

@@ -22,6 +22,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 21, 2026: Carbon Workflow Progress Guide
+- Added a Carbon workflow progress guide that summarizes step status from
+  workbook intake through Terraform package handoff.
+- Added next-action routing so reviewers can jump from the guide to the
+  workflow that needs attention.
+- Updated Carbon documentation and tests for the progress-guide behavior.
+
 ### July 21, 2026: Carbon Guided Help Layer
 - Added workflow-specific Carbon help controls that explain each step's
   purpose, completion criteria, common mistakes, and recommended next step.
