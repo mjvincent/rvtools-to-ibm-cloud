@@ -29,6 +29,12 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
   planners work through the app.
 - Updated Carbon evaluation documentation and tests for the guided-help content.
 
+### July 21, 2026: Carbon Dependency Security Maintenance
+- Added scoped Carbon npm overrides for vulnerable transitive
+  `brace-expansion` versions pulled through Jest tooling.
+- Regenerated the Carbon lockfile and verified `npm audit` reports zero
+  vulnerabilities.
+
 ### July 15, 2026: Carbon Manual UAT Packet
 - Added a reviewer-ready Carbon manual UAT runbook covering setup, workbook
   selection, review sequence, accessibility checks, evidence capture, pass/fail
