@@ -9,11 +9,16 @@ import pytest
 import json
 import zipfile
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from prototype.api.app import app
 from models.network_planning import NetworkPlanningState, VpcPlan, SubnetPlan, SecurityGroupPlan
+
+
+def utc_timestamp() -> str:
+    """Return a legacy ISO UTC timestamp using a timezone-aware source."""
+    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
 
 @pytest.fixture
@@ -82,7 +87,7 @@ def client():
 @pytest.fixture
 def sample_network_plan():
     """Create a sample network plan for testing."""
-    now = datetime.utcnow().isoformat()
+    now = utc_timestamp()
     return {
         "version": "1.0",
         "vpcs": [
@@ -422,8 +427,8 @@ class TestNetworkPlanningEndpoints:
             "public_gateway": False,
             "tags": {},
             "notes": "",
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": utc_timestamp(),
+            "updated_at": utc_timestamp(),
         })
 
         # Update the plan
@@ -443,7 +448,7 @@ class TestNetworkPlanningEndpoints:
     def test_complex_network_plan(self, client):
         """Test saving and retrieving a complex network plan with multiple resources."""
         project_id = "test-project-complex"
-        now = datetime.utcnow().isoformat()
+        now = utc_timestamp()
 
         complex_plan = {
             "version": "1.0",
@@ -606,8 +611,8 @@ class TestNetworkPlanningEndpoints:
                 "tier": "10iops-tier",
                 "iops_intent": "Database latency",
                 "notes": "",
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": utc_timestamp(),
+                "updated_at": utc_timestamp(),
             }
         ]
         plan["waves"] = [
@@ -618,8 +623,8 @@ class TestNetworkPlanningEndpoints:
                 "target_window": "2026-08-15",
                 "priority": "high",
                 "notes": "",
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": utc_timestamp(),
+                "updated_at": utc_timestamp(),
             }
         ]
         plan["vm_assignments"] = [

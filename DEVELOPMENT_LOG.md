@@ -43,6 +43,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - Verified both `pip-audit` local and requirements-file audits report no known
   vulnerabilities.
 
+### July 21, 2026: Python Warning Compatibility Cleanup
+- Replaced Carbon API, network-planning model, and affected test
+  `datetime.utcnow()` calls with timezone-aware UTC timestamp generation while
+  preserving the existing legacy timestamp string format.
+- Confirmed the remaining FastAPI/Starlette test-client warning comes from the
+  external dependency stack rather than app timestamp code.
+
 ### July 15, 2026: Carbon Manual UAT Packet
 - Added a reviewer-ready Carbon manual UAT runbook covering setup, workbook
   selection, review sequence, accessibility checks, evidence capture, pass/fail

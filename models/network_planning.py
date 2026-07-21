@@ -8,9 +8,14 @@ conversion to/from dict for JSON serialization.
 
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 SCHEMA_VERSION = "1.0"
+
+
+def utc_timestamp() -> str:
+    """Return a legacy ISO UTC timestamp using a timezone-aware source."""
+    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
 
 @dataclass
@@ -34,8 +39,8 @@ class VpcPlan:
     resource_group_id: Optional[str] = None
     tags: Dict[str, str] = field(default_factory=dict)
     notes: str = ""
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=utc_timestamp)
+    updated_at: str = field(default_factory=utc_timestamp)
 
     def __post_init__(self):
         if self.address_prefix_mode not in ("manual", "auto"):
@@ -64,8 +69,8 @@ class SubnetPlan:
     ipv4_cidr_count: Optional[int] = None
     tags: Dict[str, str] = field(default_factory=dict)
     notes: str = ""
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=utc_timestamp)
+    updated_at: str = field(default_factory=utc_timestamp)
 
 
 @dataclass
@@ -97,8 +102,8 @@ class SecurityGroupPlan:
     rules: List[SecurityRule] = field(default_factory=list)
     tags: Dict[str, str] = field(default_factory=dict)
     notes: str = ""
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=utc_timestamp)
+    updated_at: str = field(default_factory=utc_timestamp)
 
     def __post_init__(self):
         # Convert dict rules to SecurityRule objects
@@ -114,8 +119,8 @@ class StorageProfilePlan:
     tier: str
     iops_intent: str = ""
     notes: str = ""
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=utc_timestamp)
+    updated_at: str = field(default_factory=utc_timestamp)
 
 
 @dataclass
@@ -127,8 +132,8 @@ class WavePlan:
     target_window: str = ""
     priority: str = "medium"
     notes: str = ""
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=utc_timestamp)
+    updated_at: str = field(default_factory=utc_timestamp)
 
 
 @dataclass
@@ -143,8 +148,8 @@ class NetworkComponentPlan:
     config: Dict[str, Any] = field(default_factory=dict)
     tags: Dict[str, str] = field(default_factory=dict)
     notes: str = ""
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=utc_timestamp)
+    updated_at: str = field(default_factory=utc_timestamp)
 
 
 @dataclass
@@ -207,8 +212,8 @@ class PlanningMetadata:
     resource_group_id: Optional[str] = None
     backend_type: str = "local"
     created_by: Optional[str] = None
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=utc_timestamp)
+    updated_at: str = field(default_factory=utc_timestamp)
     rvtools_filename: Optional[str] = None
     rvtools_uploaded_at: Optional[str] = None
 

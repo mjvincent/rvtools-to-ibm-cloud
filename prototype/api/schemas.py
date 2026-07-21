@@ -5,7 +5,12 @@ These schemas validate incoming requests and outgoing responses.
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def utc_timestamp() -> str:
+    """Return a legacy ISO UTC timestamp using a timezone-aware source."""
+    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
 
 class AddressPrefixSchema(BaseModel):
@@ -29,8 +34,8 @@ class VpcPlanSchema(BaseModel):
     resource_group_id: Optional[str] = Field(default=None, alias="resourceGroupId")
     tags: Dict[str, str] = {}
     notes: str = ""
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="createdAt")
-    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="updatedAt")
+    created_at: str = Field(default_factory=utc_timestamp, alias="createdAt")
+    updated_at: str = Field(default_factory=utc_timestamp, alias="updatedAt")
 
 class SubnetPlanSchema(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
@@ -51,8 +56,8 @@ class SubnetPlanSchema(BaseModel):
     ipv4_cidr_count: Optional[int] = Field(default=None, alias="ipv4CidrCount")
     tags: Dict[str, str] = {}
     notes: str = ""
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="createdAt")
-    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="updatedAt")
+    created_at: str = Field(default_factory=utc_timestamp, alias="createdAt")
+    updated_at: str = Field(default_factory=utc_timestamp, alias="updatedAt")
 
 
 class SecurityRuleSchema(BaseModel):
@@ -86,8 +91,8 @@ class SecurityGroupPlanSchema(BaseModel):
     rules: List[SecurityRuleSchema] = []
     tags: Dict[str, str] = {}
     notes: str = ""
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="createdAt")
-    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="updatedAt")
+    created_at: str = Field(default_factory=utc_timestamp, alias="createdAt")
+    updated_at: str = Field(default_factory=utc_timestamp, alias="updatedAt")
 
 
 class StorageProfilePlanSchema(BaseModel):
@@ -98,8 +103,8 @@ class StorageProfilePlanSchema(BaseModel):
     tier: str
     iops_intent: str = Field(default="", alias="iopsIntent")
     notes: str = ""
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="createdAt")
-    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="updatedAt")
+    created_at: str = Field(default_factory=utc_timestamp, alias="createdAt")
+    updated_at: str = Field(default_factory=utc_timestamp, alias="updatedAt")
 
 
 class WavePlanSchema(BaseModel):
@@ -111,8 +116,8 @@ class WavePlanSchema(BaseModel):
     target_window: str = Field(default="", alias="targetWindow")
     priority: str = Field(default="medium", pattern="^(high|medium|low)$")
     notes: str = ""
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="createdAt")
-    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="updatedAt")
+    created_at: str = Field(default_factory=utc_timestamp, alias="createdAt")
+    updated_at: str = Field(default_factory=utc_timestamp, alias="updatedAt")
 
 
 class NetworkComponentPlanSchema(BaseModel):
@@ -127,8 +132,8 @@ class NetworkComponentPlanSchema(BaseModel):
     config: Dict[str, Any] = {}
     tags: Dict[str, str] = {}
     notes: str = ""
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="createdAt")
-    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="updatedAt")
+    created_at: str = Field(default_factory=utc_timestamp, alias="createdAt")
+    updated_at: str = Field(default_factory=utc_timestamp, alias="updatedAt")
 
     @field_validator("type")
     @classmethod
@@ -204,8 +209,8 @@ class PlanningMetadataSchema(BaseModel):
     resource_group_id: Optional[str] = Field(default=None, alias="resourceGroupId")
     backend_type: str = Field(default="local", pattern="^(local|s3|cos)$", alias="backendType")
     created_by: Optional[str] = Field(default=None, alias="createdBy")
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="createdAt")
-    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), alias="updatedAt")
+    created_at: str = Field(default_factory=utc_timestamp, alias="createdAt")
+    updated_at: str = Field(default_factory=utc_timestamp, alias="updatedAt")
     rvtools_filename: Optional[str] = Field(default=None, alias="rvtoolsFilename")
     rvtools_uploaded_at: Optional[str] = Field(default=None, alias="rvtoolsUploadedAt")
 

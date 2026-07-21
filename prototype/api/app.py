@@ -6,7 +6,7 @@ import io
 import json
 import zipfile
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -767,7 +767,7 @@ async def generate_terraform_package(project_id: str) -> StreamingResponse:
     zip_buffer.seek(0)
 
     # Generate filename with timestamp
-    timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     filename = f"{project_name}-terraform-{timestamp}.zip"
 
     return StreamingResponse(
@@ -923,7 +923,7 @@ For issues with:
 
 ## Generated
 
-- **Date**: {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")}
+- **Date**: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}
 - **Source**: Carbon UI Network Planning Workbench
 - **Project**: {project_name}
 """
