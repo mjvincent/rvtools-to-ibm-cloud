@@ -11,6 +11,8 @@ data-handling guardrails, use the
 [Carbon Manual UAT Runbook](carbon-manual-uat-runbook.md).
 Use [Carbon Manual UAT Evidence Index](carbon-manual-uat-evidence-index.md)
 to assemble the final review packet and track open manual evidence areas.
+Use [Carbon UAT Session Worksheet](carbon-uat-session-worksheet.md) as the
+fillable working copy for each reviewer run.
 
 ## Review Metadata
 

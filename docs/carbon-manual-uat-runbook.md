@@ -9,6 +9,9 @@ and the
 Use [Carbon Manual UAT Evidence Index](carbon-manual-uat-evidence-index.md)
 to confirm which evidence sources already exist and which manual review areas
 are still open.
+Use [Carbon UAT Session Worksheet](carbon-uat-session-worksheet.md) as the
+working document during each individual review session before summarizing final
+results in the template.
 
 Streamlit remains the supported production UI until this review is completed,
 signed off, and accepted in the Carbon promotion review.
@@ -23,6 +26,7 @@ owner names in the folder name or notes.
 Include:
 
 - completed checklist
+- completed session worksheet for each reviewer run
 - completed results template
 - Carbon commit SHA
 - validation command output

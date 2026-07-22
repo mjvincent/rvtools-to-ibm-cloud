@@ -6,6 +6,8 @@ so the promotion review has a clear decision record, repeatable evidence, and
 named follow-up owners.
 Use the [Carbon Manual UAT Runbook](carbon-manual-uat-runbook.md) when planning
 the review sequence and evidence packet.
+Use the [Carbon UAT Session Worksheet](carbon-uat-session-worksheet.md) during
+individual reviewer sessions, then summarize the final outcome here.
 
 Do not paste customer workbook paths, filenames, VM names, IP addresses, owners,
 application names, screenshots with sensitive values, or raw RVTools content
@@ -38,6 +40,7 @@ into this file. Use sanitized labels such as `customer-workbook-a`,
 | Evidence | Location / reference | Notes |
 | --- | --- | --- |
 | Completed checklist |  |  |
+| Completed session worksheet(s) |  |  |
 | Carbon readiness report JSON |  |  |
 | Carbon Terraform ZIP |  |  |
 | Streamlit comparison ZIP or parity output |  |  |

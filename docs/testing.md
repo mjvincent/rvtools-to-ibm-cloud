@@ -140,8 +140,9 @@ Run `terraform validate` only after `terraform init` has been intentionally perf
 ## Carbon Manual Smoke
 
 After Carbon UI changes, start the Compose stack and open `http://localhost:3000`.
-Use `docs/carbon-manual-uat-runbook.md` for formal reviewer execution and
-`docs/carbon-manual-uat-evidence-index.md` to assemble the review packet. For a
+Use `docs/carbon-manual-uat-runbook.md` for formal reviewer execution,
+`docs/carbon-uat-session-worksheet.md` as the fillable per-session working
+copy, and `docs/carbon-manual-uat-evidence-index.md` to assemble the review packet. For a
 quick developer smoke:
 
 Automated Carbon checks mirror CI:

@@ -22,6 +22,7 @@ Streamlit remains available as fallback during any Carbon pilot.
 | [Carbon Manual UAT Runbook](carbon-manual-uat-runbook.md) | Reviewer sequence, setup, evidence list, pass/fail rules, and data-handling guardrails. | Ready |
 | [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md) | Step-by-step manual keyboard, screen-reader, workflow, responsive, and recovery checklist. | Ready |
 | [Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md) | Release-candidate sign-off packet with issue log and promotion decision. | Ready |
+| [Carbon UAT Session Worksheet](carbon-uat-session-worksheet.md) | Fillable per-review working copy for one reviewer session before summarizing results. | Ready |
 | [Carbon Real-Workbook Parity Evidence](carbon-real-workbook-parity-evidence.md) | Checked-in sample/workshop workbook parser, parity, API ZIP, preview, and performance evidence. | Ready |
 | [Carbon Accessibility and UAT Results - Focused Automated Pass](carbon-accessibility-uat-results-2026-07-10-focused.md) | Automated focused evidence for VM Overrides and Export Readiness accessibility fixes. | Complete for focused scope |
 | [Carbon Accessibility and UAT Results - Network Plan Focused Pass](carbon-accessibility-uat-results-2026-07-15-network-plan.md) | Automated focused evidence for Network Plan component editing and validation. | Complete for focused scope |
@@ -42,6 +43,7 @@ Streamlit remains available as fallback during any Carbon pilot.
 Create one sanitized folder or ticket for each release-candidate review. Include:
 
 - completed `carbon-accessibility-uat-checklist.md`
+- completed copy of `carbon-uat-session-worksheet.md` for each reviewer session
 - completed `carbon-accessibility-uat-results-template.md`
 - Carbon commit SHA and branch/tag
 - validation command output

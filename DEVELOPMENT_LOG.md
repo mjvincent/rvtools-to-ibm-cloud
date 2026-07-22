@@ -22,6 +22,14 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon UAT Session Worksheet
+- Added a fillable Carbon UAT session worksheet for individual reviewer
+  walkthroughs before final results are summarized in the UAT template.
+- Linked the worksheet from the UAT evidence index, runbook, checklist, testing
+  guide, and README so reviewers can find the working copy quickly.
+- Extended documentation guard tests to keep the worksheet tied to the Carbon
+  evidence packet and sensitive-data boundary.
+
 ### July 22, 2026: Carbon Manual UAT Evidence Capture
 - Added a Carbon manual UAT evidence index that gathers the runbook, checklist,
   results template, real-workbook parity evidence, focused automated passes,
