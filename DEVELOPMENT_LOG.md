@@ -22,6 +22,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Dependency Security Follow-up
+- Updated the Carbon UI lockfile to resolve high-severity npm audit findings
+  for Next transitive image-processing and immutable-data dependencies.
+- Added a targeted `sharp` override so the Carbon build resolves a patched
+  image-processing dependency without downgrading Next.
+- Verified Python requirements still report no known vulnerabilities.
+
 ### July 21, 2026: Carbon Workflow Progress Guide
 - Added a Carbon workflow progress guide that summarizes step status from
   workbook intake through Terraform package handoff.
