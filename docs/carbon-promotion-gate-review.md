@@ -202,7 +202,7 @@ items are complete:
 | Feature parity | Core planning workflows, overrides, remediation, image import, migration ops, package preview, ZIP generation, guided help, and completion checklists are implemented. | Confirm remaining Streamlit edge workflows are either implemented in Carbon or explicitly declared out of Carbon promotion scope. |
 | Export/package parity | Handoff inventory and API ZIP parity are strongly covered for checked-in fixtures and sample/workshop paths. | Add at least one additional representative real-workbook parity run, preferably a sanitized customer-scale workbook or documented private evidence run. |
 | Real workbook validation | Small sample, workshop sample, generated large-state tests, optional private workbook hooks, and a checked-in evidence map exist. | Add at least one additional representative real-workbook parity run, preferably a sanitized customer-scale workbook or documented private evidence run. |
-| Accessibility and UAT | Keyboard and browser automation exists; checklist and result templates exist. | Complete manual keyboard, screen-reader, responsive, browser, and migration-user UAT review and store results in the template. |
+| Accessibility and UAT | Keyboard and browser automation exists; checklist, result template, runbook, and manual evidence index exist. | Complete manual keyboard, screen-reader, responsive, browser, and migration-user UAT review and store results in the template. |
 | Deployment and operations | Docker Compose, runbook, restore drill, local monitoring, and health checks are documented. | Validate the intended hosted runtime, log sinks, alerts, retention policy, backup/restore path, and support escalation flow. |
 | Support and rollback | Promotion/cutover guide defines staged rollout and rollback pattern. | Fill named support owners, rollback authority, release-candidate commit/tag, and same-day rollback acceptance criteria. |
 | Production decision | Current decision is no-go. | Run a formal go/no-go review after the evidence above is current and linked. |
@@ -210,6 +210,9 @@ items are complete:
 ## Phase 6 Backlog
 
 - Accessibility audit, including keyboard-only workflows and DnD alternatives, using the [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md) and recording sign-off in the [Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md).
+- Use the [Carbon Manual UAT Evidence Index](carbon-manual-uat-evidence-index.md)
+  to assemble release-candidate evidence packets and track open human review
+  areas.
 - Additional customer-scale performance benchmark fixtures for large RVTools
   workbooks.
 - Multi-browser e2e coverage.

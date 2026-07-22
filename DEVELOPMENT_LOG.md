@@ -22,6 +22,17 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Manual UAT Evidence Capture
+- Added a Carbon manual UAT evidence index that gathers the runbook, checklist,
+  results template, real-workbook parity evidence, focused automated passes,
+  required human review areas, packet contents, and sensitive-data rules in one
+  review-facing document.
+- Added documentation guard tests so the evidence index continues to reference
+  the required UAT sources, remaining manual review areas, and fallback/sensitive
+  data boundaries.
+- Updated Carbon promotion, testing, and implementation docs to use the index
+  as the release-candidate evidence packet guide.
+
 ### July 22, 2026: Carbon Failure Recovery Guidance
 - Hardened the shared Carbon API hook so transport outages and non-JSON backend
   failures show consistent recovery guidance instead of raw browser or parsing

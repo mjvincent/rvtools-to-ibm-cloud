@@ -6,6 +6,9 @@ practical companion to the
 [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md)
 and the
 [Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md).
+Use [Carbon Manual UAT Evidence Index](carbon-manual-uat-evidence-index.md)
+to confirm which evidence sources already exist and which manual review areas
+are still open.
 
 Streamlit remains the supported production UI until this review is completed,
 signed off, and accepted in the Carbon promotion review.

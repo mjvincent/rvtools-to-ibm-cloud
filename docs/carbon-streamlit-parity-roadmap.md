@@ -92,6 +92,8 @@ The current checked-in sample and workshop workbook evidence is summarized in
    - Run the manual checklist against the current Carbon workflow.
    - Capture keyboard, screen-reader, browser, and user-acceptance results in
      the results template.
+   - Use the manual UAT evidence index to assemble the review packet and keep
+     open evidence areas visible.
    - Include the progress guide, step help, user-guide popup, and completion
      checklist behavior in reviewer feedback.
    - Promote only if the primary workflow has acceptable evidence.
@@ -145,4 +147,5 @@ See also:
 - [Carbon Handoff Parity](carbon-handoff-parity.md)
 - [Carbon Real-Workbook Parity Evidence](carbon-real-workbook-parity-evidence.md)
 - [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md)
+- [Carbon Manual UAT Evidence Index](carbon-manual-uat-evidence-index.md)
 - [Carbon Operations Runbook](carbon-operations-runbook.md)
