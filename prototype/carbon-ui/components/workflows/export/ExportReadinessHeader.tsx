@@ -3,6 +3,7 @@
 import React from 'react';
 import { Button, Tag } from '@carbon/react';
 import { CloudUpload, Download, Renew, View } from '@carbon/icons-react';
+import WorkflowHeaderHelp from '../../ui/WorkflowHeaderHelp';
 
 type ExportReadinessHeaderProps = {
   blockingFindingCount: number;
@@ -44,6 +45,7 @@ export default function ExportReadinessHeader({
         <p>Review planning gaps, then save the latest Carbon network plan and download a Terraform ZIP from FastAPI.</p>
       </div>
       <div className="network-actions">
+        <WorkflowHeaderHelp workflow="export" />
         <Tag type={blockingFindingCount === 0 ? 'green' : 'warm-gray'}>
           {blockingFindingCount === 0 ? 'Ready' : 'Needs review'}
         </Tag>

@@ -13,6 +13,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 import type {
   AssignmentVm,
   ImageImportRow,
@@ -225,9 +226,12 @@ export default function ImageImportWorkflow() {
           <h2>Image Import Planning</h2>
           <p>Group active VMs by inferred source image and track IBM Cloud catalog import status.</p>
         </div>
-        <Tag type={summary.active ? 'purple' : 'green'}>
-          {summary.imported} of {summary.totalImages} imported
-        </Tag>
+        <div className="workflow-header-actions">
+          <WorkflowHeaderHelp workflow="imageImport" />
+          <Tag type={summary.active ? 'purple' : 'green'}>
+            {summary.imported} of {summary.totalImages} imported
+          </Tag>
+        </div>
       </div>
 
       <div className="summary-grid image-import-summary">

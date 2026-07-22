@@ -14,6 +14,7 @@ import {
 } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
 import type { AssignmentVm } from '../../types/network-planning';
+import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 const waveColumns = [
   'Wave',
@@ -273,9 +274,12 @@ export default function WavesWorkflow() {
           <h2>Wave Planning</h2>
           <p>Assign wave, cutover group, owner, application, priority, and dependency fields per VM.</p>
         </div>
-        <Tag type={completion.incomplete ? 'purple' : 'green'}>
-          {completion.complete} of {completion.total} complete
-        </Tag>
+        <div className="workflow-header-actions">
+          <WorkflowHeaderHelp workflow="waves" />
+          <Tag type={completion.incomplete ? 'purple' : 'green'}>
+            {completion.complete} of {completion.total} complete
+          </Tag>
+        </div>
       </div>
 
       <div className="summary-grid wave-summary">

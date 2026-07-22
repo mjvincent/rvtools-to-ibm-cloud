@@ -3,6 +3,7 @@
 import React from 'react';
 import { Layer, Tile } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 export default function SecurityWorkflow() {
   const { state } = useAppState();
@@ -20,6 +21,7 @@ export default function SecurityWorkflow() {
           <h2>Security Plan</h2>
           <p>Create security group intent buckets for Terraform review and VM assignment.</p>
         </div>
+        <WorkflowHeaderHelp workflow="security" />
       </div>
       <div className="resource-list">
         {rows.map((row) => (

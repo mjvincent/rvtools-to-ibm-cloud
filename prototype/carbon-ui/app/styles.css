@@ -518,10 +518,27 @@ body {
 }
 
 .network-actions {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: flex-end;
+}
+
+.workflow-header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.workflow-header-help {
+  display: inline-flex;
+}
+
+.workflow-header-help .cds--btn {
+  white-space: nowrap;
 }
 
 .export-package {
@@ -1172,6 +1189,11 @@ body {
   }
 
   .guided-help-actions {
+    justify-content: flex-start;
+  }
+
+  .network-actions,
+  .workflow-header-actions {
     justify-content: flex-start;
   }
 

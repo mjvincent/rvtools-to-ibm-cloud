@@ -1069,7 +1069,7 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 - **Bulk remediation assistance**: Suggested queue fixes can be selected with checkboxes, selected in bulk when confidence is high, cleared, or applied from the Export Readiness queue. Each applied fix is audited.
 - **Suggestion audit and undo**: Applied suggestions are recorded in project state with old value, new value, confidence, reason, evidence, and timestamp. Active suggestion changes can be undone from the Export Readiness audit panel.
 - **Workflow progress guide**: Carbon shows a compact progress guide above the active workflow. It summarizes the migration path from workbook intake through Terraform package handoff, marks each step as not started, needing attention, ready, or complete, and provides the next recommended action with direct routing to the relevant workflow.
-- **Guided help**: Each Carbon workflow exposes a `Help` control that explains the current step's purpose, what to check before continuing, when the step is complete, common mistakes, and the recommended next step. `Open user guide` launches a separate guide window so reviewers can keep instructions visible while using the app.
+- **Guided help**: Each Carbon workflow header exposes a local `Step help` control, and the shell keeps the broader `Help` control available near the project controls. Both explain the current step's purpose, what to check before continuing, when the step is complete, common mistakes, and the recommended next step. `Open user guide` launches a separate guide window so reviewers can keep instructions visible while using the app.
 - **Readiness report**: Carbon can download a `carbon-export-readiness` JSON report containing checklist status, assignment gaps, latest preflight findings, suggestion audit entries, and package inventory counts for migration review meetings.
 - **Terraform ZIP contents**: Carbon-generated ZIPs include the Streamlit handoff inventory, Carbon modular Terraform files, and `network-plan.json`. The UI inventory is backed by a shared JSON contract and tested against backend ZIP inventory constants to prevent drift.
 - **Persistence expectations**: Saved projects, network plans, VM assignments, override values, and dirty-state autosave use the shared FastAPI/Postgres prototype stack. If the API or database is unavailable, Carbon shows a persistence warning and the work should be treated as temporary until saved successfully.
@@ -1078,7 +1078,7 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 ### Carbon End-to-End Workflow
 1. Open `http://localhost:3000` after starting the Compose stack.
 2. Use the `Progress guide` to see the current step status and next recommended action.
-3. Use `Help` on any workflow when the step purpose or completion criteria are unclear.
+3. Use workflow-header `Step help` or shell-level `Help` when the step purpose or completion criteria are unclear.
 4. Use `Open user guide` if you want a separate instruction window open while working.
 5. Use `Workbook Intake` to upload the RVTools XLSX workbook.
 6. Review `Overview` metrics, project persistence state, and readiness counts.

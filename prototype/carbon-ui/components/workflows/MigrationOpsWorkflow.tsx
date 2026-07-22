@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { Layer, Tag, Tile } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 import type {
   AssignmentVm,
   CutoverReadinessRow,
@@ -274,9 +275,12 @@ export default function MigrationOpsWorkflow() {
           <h2>Migration Ops</h2>
           <p>Track cutover readiness across waves, remediation, and image imports.</p>
         </div>
-        <Tag type={blockers.length ? 'red' : 'green'}>
-          {blockers.length} open blocker(s)
-        </Tag>
+        <div className="workflow-header-actions">
+          <WorkflowHeaderHelp workflow="migrationOps" />
+          <Tag type={blockers.length ? 'red' : 'green'}>
+            {blockers.length} open blocker(s)
+          </Tag>
+        </div>
       </div>
 
       <div className="summary-grid migration-ops-summary">

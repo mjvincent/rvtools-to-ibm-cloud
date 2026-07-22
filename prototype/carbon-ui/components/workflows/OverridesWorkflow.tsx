@@ -16,6 +16,7 @@ import {
 import { Download } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import type { AssignmentVm } from '../../types/network-planning';
+import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 export const COMMON_VSI_PROFILES = [
   'bx2-2x8',
@@ -307,6 +308,7 @@ export default function OverridesWorkflow() {
           <p>Review IBM VSI sizing, storage tier, and exclusion decisions before Terraform handoff.</p>
         </div>
         <div className="network-actions">
+          <WorkflowHeaderHelp workflow="overrides" />
           <Tag type={summary.missingReasons > 0 ? 'red' : 'green'}>
             {summary.missingReasons} missing reasons
           </Tag>

@@ -22,6 +22,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Inline Workflow Help
+- Added local `Step help` controls to the main Carbon workflow headers so
+  users can open contextual guidance where they are working.
+- Reused the existing guided-help content and separate user-guide route rather
+  than creating a second help source.
+- Updated Carbon tests and documentation for the workflow-header help controls.
+
 ### July 22, 2026: Carbon Dependency Security Follow-up
 - Updated the Carbon UI lockfile to resolve high-severity npm audit findings
   for Next transitive image-processing and immutable-data dependencies.

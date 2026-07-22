@@ -8,6 +8,7 @@ import { generateTerraform, saveNetworkPlan } from '../../hooks/useApi';
 import { buildNetworkPlanBody } from '../../utils/planning-state';
 import { validateResourceNetworkPlan } from '../../utils/network-validation';
 import type { NetworkComponent } from '../../types/network-planning';
+import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 export default function NetworkPlanWorkflow() {
   const { state, dispatch } = useAppState();
@@ -105,6 +106,7 @@ export default function NetworkPlanWorkflow() {
           <p>Build the target IBM Cloud VPC network intent and watch the topology preview update as resources are added.</p>
         </div>
         <div className="network-actions">
+          <WorkflowHeaderHelp workflow="network" />
           <Button
             kind="secondary"
             size="sm"

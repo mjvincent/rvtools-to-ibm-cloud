@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { Layer, Tag, Tile } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 function terraformLabel(value: string) {
   return value
@@ -49,7 +50,10 @@ export default function OverviewWorkflow() {
           <h2>Planning overview</h2>
           <p>Carbon is tracking target architecture intent while Streamlit remains the supported Terraform ZIP path.</p>
         </div>
-        <Tag type="purple">Prototype planner</Tag>
+        <div className="workflow-header-actions">
+          <WorkflowHeaderHelp workflow="overview" />
+          <Tag type="purple">Prototype planner</Tag>
+        </div>
       </div>
       <div className="summary-grid">
         <Tile>

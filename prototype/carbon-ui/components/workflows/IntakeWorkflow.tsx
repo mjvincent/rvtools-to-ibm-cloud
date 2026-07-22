@@ -6,6 +6,7 @@ import { useAppState } from '../../store/AppContext';
 import { sampleRows } from '../../store/AppContext';
 import { uploadWorkbook } from '../../hooks/useApi';
 import type { WorkbookSummary } from '../../types/network-planning';
+import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 function textValue(value: unknown) {
   return value === null || value === undefined ? '' : String(value);
@@ -126,7 +127,10 @@ export default function IntakeWorkflow() {
           <h2>Workbook intake</h2>
           <p>Drag and drop a standard RVTools workbook to populate the live VM assignment workbench.</p>
         </div>
-        <Tag type="blue">Real API integration</Tag>
+        <div className="workflow-header-actions">
+          <WorkflowHeaderHelp workflow="intake" />
+          <Tag type="blue">Real API integration</Tag>
+        </div>
       </div>
       <FileUploaderDropContainer
         accept={['.xlsx']}

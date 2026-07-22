@@ -3,6 +3,7 @@
 import React from 'react';
 import { Layer, Tile } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 export default function StorageWorkflow() {
   const { state } = useAppState();
@@ -20,6 +21,7 @@ export default function StorageWorkflow() {
           <h2>Storage / IOPS Plan</h2>
           <p>Create storage intent buckets with labels that can later flow into Terraform naming and handoff files.</p>
         </div>
+        <WorkflowHeaderHelp workflow="storage" />
       </div>
       <div className="resource-list">
         {rows.map((row) => (

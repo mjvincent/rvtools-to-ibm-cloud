@@ -13,6 +13,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 import type {
   AssignmentVm,
   RemediationBacklogItem,
@@ -284,9 +285,12 @@ export default function RemediationWorkflow() {
           <h2>Remediation Backlog</h2>
           <p>Track readiness blockers with owners, status, due dates, and notes.</p>
         </div>
-        <Tag type={summary.open || summary.inProgress ? 'red' : 'green'}>
-          {summary.open + summary.inProgress} active
-        </Tag>
+        <div className="workflow-header-actions">
+          <WorkflowHeaderHelp workflow="remediation" />
+          <Tag type={summary.open || summary.inProgress ? 'red' : 'green'}>
+            {summary.open + summary.inProgress} active
+          </Tag>
+        </div>
       </div>
 
       <div className="summary-grid remediation-summary">
