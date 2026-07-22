@@ -139,14 +139,17 @@ Carbon should not become the default UI while any of these remain true:
 3. Complete accessibility and UAT evidence.
 4. Complete hosted operations evidence and support ownership.
 5. Run the promotion gate review.
-6. Enter shadow mode with Streamlit as fallback.
-7. Pilot with one realistic migration assessment.
-8. Decide whether Carbon becomes the default UI.
+6. Record the release-candidate decision in the Carbon promotion decision
+   packet.
+7. Enter shadow mode with Streamlit as fallback.
+8. Pilot with one realistic migration assessment.
+9. Decide whether Carbon becomes the default UI.
 
 See also:
 
 - [Carbon Promotion and Cutover Guide](carbon-promotion-cutover-guide.md)
 - [Carbon Promotion Gate Review](carbon-promotion-gate-review.md)
+- [Carbon Promotion Decision Packet](carbon-promotion-decision-packet.md)
 - [Carbon Handoff Parity](carbon-handoff-parity.md)
 - [Carbon Real-Workbook Parity Evidence](carbon-real-workbook-parity-evidence.md)
 - [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md)

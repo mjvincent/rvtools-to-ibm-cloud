@@ -205,7 +205,7 @@ items are complete:
 | Accessibility and UAT | Keyboard and browser automation exists; checklist, result template, runbook, and manual evidence index exist. | Complete manual keyboard, screen-reader, responsive, browser, and migration-user UAT review and store results in the template. |
 | Deployment and operations | Docker Compose, runbook, restore drill, local monitoring, health checks, and hosted operations readiness checklist are documented. | Validate the intended hosted runtime, log sinks, alerts, retention policy, backup/restore path, support escalation flow, artifact handling, and rollback authority. |
 | Support and rollback | Promotion/cutover guide defines staged rollout and rollback pattern. | Fill named support owners, rollback authority, release-candidate commit/tag, and same-day rollback acceptance criteria. |
-| Production decision | Current decision is no-go. | Run a formal go/no-go review after the evidence above is current and linked. |
+| Production decision | Current decision is no-go. | Run a formal go/no-go review after the evidence above is current and linked, then record the outcome in the [Carbon Promotion Decision Packet](carbon-promotion-decision-packet.md). |
 
 ## Phase 6 Backlog
 

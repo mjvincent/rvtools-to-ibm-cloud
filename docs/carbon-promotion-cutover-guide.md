@@ -164,4 +164,6 @@ The go/no-go review should answer:
 - Can the team roll back to Streamlit within the same day?
 - Are support and data-retention responsibilities assigned?
 
-If any answer is no, keep Streamlit as production and continue Carbon hardening.
+Record the decision in the
+[Carbon Promotion Decision Packet](carbon-promotion-decision-packet.md). If any
+answer is no, keep Streamlit as production and continue Carbon hardening.

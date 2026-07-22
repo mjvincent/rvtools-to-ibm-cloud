@@ -162,6 +162,10 @@ For hosted/pilot readiness changes, also review
 `docs/carbon-hosted-operations-readiness.md` and confirm the branch records
 health-check, alerting, logging, retention, backup/restore, artifact-handling,
 support-owner, and rollback evidence requirements.
+For promotion-decision changes, review
+`docs/carbon-promotion-decision-packet.md` and confirm the packet references
+parity, UAT, accessibility, hosted operations, rollback, validation, and open
+issue evidence.
 
 1. Confirm the shell loads and the left workflow navigation is visible.
 2. Confirm the `Progress guide` shows workflow step statuses and a next

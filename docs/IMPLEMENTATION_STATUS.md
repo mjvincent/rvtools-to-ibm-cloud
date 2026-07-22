@@ -271,6 +271,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Local health/log access verification
 - [x] Support ownership and rollback authority model
 - [x] Hosted operations readiness checklist for health checks, alerts, logs, retention, backup/restore, artifact handling, access control, support ownership, and rollback evidence
+- [x] Carbon promotion decision packet template for release-candidate go/no-go reviews
 - [ ] User acceptance testing
 - [ ] Go/no-go promotion decision
 
@@ -280,6 +281,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 
 - [Carbon React UI Strategy](./carbon-react-ui-strategy.md)
 - [Carbon Promotion Gate Review](./carbon-promotion-gate-review.md)
+- [Carbon Promotion Decision Packet](./carbon-promotion-decision-packet.md)
 - [Carbon Manual UAT Runbook](./carbon-manual-uat-runbook.md)
 - [Carbon Accessibility and UAT Checklist](./carbon-accessibility-uat-checklist.md)
 - [Carbon Accessibility and UAT Results Template](./carbon-accessibility-uat-results-template.md)

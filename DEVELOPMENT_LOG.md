@@ -22,6 +22,16 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Promotion Decision Packet
+- Added a Carbon promotion decision packet template for release-candidate
+  go/no-go reviews.
+- Tied the packet to parity, real-workbook evidence, manual UAT, accessibility,
+  hosted operations, rollback, validation, open risks, accepted gaps, and named
+  sign-off roles.
+- Added documentation guard tests and linked the packet from the cutover guide,
+  parity roadmap, promotion gate review, implementation status, testing guide,
+  and README.
+
 ### July 22, 2026: Carbon Hosted Operations Readiness
 - Added a hosted operations readiness checklist for Carbon pilot/promotion
   gates covering health checks, alerting, logs, retention, backup/restore,
