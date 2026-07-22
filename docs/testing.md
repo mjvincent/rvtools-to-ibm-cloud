@@ -160,8 +160,8 @@ when those steps reached execution.
 1. Confirm the shell loads and the left workflow navigation is visible.
 2. Confirm the `Progress guide` shows workflow step statuses and a next
    recommended action that routes to the matching workflow.
-3. Confirm the active workflow shows a `Complete when` checklist below its
-   header.
+3. Confirm the active workflow shows a compact `Complete when` checklist below
+   its header and that it can be collapsed and expanded.
 4. Open a workflow-header `Step help` control and confirm purpose,
    before-continuing, complete-when, common-mistakes, and next-step guidance
    appears.

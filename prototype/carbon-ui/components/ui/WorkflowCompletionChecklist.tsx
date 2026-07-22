@@ -13,8 +13,11 @@ export default function WorkflowCompletionChecklist({ workflow }: WorkflowComple
   const help = helpForWorkflow(workflow);
 
   return (
-    <aside className="workflow-completion-checklist" aria-labelledby={`${workflow}-completion-title`}>
-      <h3 id={`${workflow}-completion-title`}>Complete when</h3>
+    <details className="workflow-completion-checklist" open>
+      <summary id={`${workflow}-completion-title`}>
+        <span>Complete when</span>
+        <span className="workflow-completion-checklist__count">{help.completeWhen.length} items</span>
+      </summary>
       <ul>
         {help.completeWhen.map((item) => (
           <li key={item}>
@@ -23,6 +26,6 @@ export default function WorkflowCompletionChecklist({ workflow }: WorkflowComple
           </li>
         ))}
       </ul>
-    </aside>
+    </details>
   );
 }

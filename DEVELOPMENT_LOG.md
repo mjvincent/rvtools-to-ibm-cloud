@@ -22,6 +22,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Guidance Density Polish
+- Tightened the Carbon progress guide spacing so guidance consumes less vertical
+  space above each workflow.
+- Converted workflow completion checklists to compact native disclosure panels
+  that users can collapse and expand without losing the visible finish criteria.
+- Updated checklist tests and smoke guidance for the collapsible behavior.
+
 ### July 22, 2026: Carbon Workflow Completion Checklists
 - Added visible `Complete when` checklists to the main Carbon workflows so
   users can see step finish criteria without opening help.
