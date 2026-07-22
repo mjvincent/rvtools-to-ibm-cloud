@@ -113,6 +113,11 @@ For a larger realistic exercise, upload `samples/SizingWorkshop-RVTools.xlsx`. T
 
 The app is not static HTML. It needs Streamlit/Python running locally or in a hosted container. For a persistent local/team deployment, use `start-rvtools.command`, `make run`, or `docker compose up` to run the app with Postgres and an artifact volume. In Streamlit, the sidebar `Save Progress` panel can download planning-state JSON at any time after upload, save progress to Postgres, and reopen saved projects from the `Saved Projects` panel. Database save stores planning state and project metadata; it does not store the source RVTools workbook or replace downloaded Terraform ZIPs. Keep the source RVTools workbook and upload it again before restoring a saved project.
 
+The experimental Carbon UI is being evaluated as the eventual enterprise
+replacement for Streamlit. Current checked-in sample/workshop workbook parity
+evidence is recorded in
+[`docs/carbon-real-workbook-parity-evidence.md`](docs/carbon-real-workbook-parity-evidence.md).
+
 ## Common First-Run Fixes
 | Symptom | Fix |
 | --- | --- |

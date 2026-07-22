@@ -32,6 +32,8 @@ from the saved Carbon network plan and writes:
 Carbon now generates the same major handoff artifact inventory as Streamlit.
 The remaining parity work is to keep expanding fixture comparisons so workbook
 detail fidelity and operational edge cases are proven before promotion.
+The checked-in real-workbook evidence is summarized in
+[Carbon Real-Workbook Parity Evidence](carbon-real-workbook-parity-evidence.md).
 
 ## Streamlit Package Contract
 

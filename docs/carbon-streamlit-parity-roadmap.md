@@ -27,6 +27,9 @@ As of the July 22, 2026 promotion gap review, the highest-value next branch is
 real-workbook parity evidence. Additional visual polish should be secondary
 unless manual UAT finds a usability blocker.
 
+The current checked-in sample and workshop workbook evidence is summarized in
+[Carbon Real-Workbook Parity Evidence](carbon-real-workbook-parity-evidence.md).
+
 ## Capability Matrix
 
 | Capability | Streamlit status | Carbon status | Promotion requirement |
@@ -138,5 +141,6 @@ See also:
 - [Carbon Promotion and Cutover Guide](carbon-promotion-cutover-guide.md)
 - [Carbon Promotion Gate Review](carbon-promotion-gate-review.md)
 - [Carbon Handoff Parity](carbon-handoff-parity.md)
+- [Carbon Real-Workbook Parity Evidence](carbon-real-workbook-parity-evidence.md)
 - [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md)
 - [Carbon Operations Runbook](carbon-operations-runbook.md)

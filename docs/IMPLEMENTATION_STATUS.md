@@ -96,6 +96,7 @@ feature-parity and production-readiness gaps.
 - [x] Workshop real-workbook subset comparison covers unknown-network, low-confidence assessment-quality, missing-vMemory, image-import, and cutover-readiness parity
 - [x] Workshop real-workbook operational edge subset comparison covers overrides, exclusions, remediation, image import status, wave/cutover metadata, unknown-network readiness, and exact operational handoff parity
 - [x] Sample-workbook operational overlay comparison covers real workbook rows with wave/cutover, remediation, image import, profile/storage overrides, planning-state parity, and exact non-preflight handoff file parity
+- [x] Checked-in Carbon real-workbook parity evidence is documented for the small sample and workshop workbook, with links to executable parser, handoff, API ZIP, preview, and performance tests
 - [x] Carbon Export workflow shows package parity status, corrected modular Terraform inventory, and documented Carbon-only ZIP additions before download
 - [x] Carbon Export UI inventory is backed by a shared JSON contract and tested against the backend ZIP inventory constants
 - [x] Carbon Export workflow supports planning-state JSON export/import for offline handoff and reload review
@@ -118,7 +119,7 @@ feature-parity and production-readiness gaps.
 - [x] Focused automated Carbon accessibility/UAT pass recorded for Network Plan component editing and local validation findings
 - [x] Carbon manual UAT runbook packet documented for reviewer setup, workflow sequence, evidence capture, pass/fail rules, and sensitive-data guardrails
 - [x] Carbon guided help controls explain each workflow's purpose, completion criteria, common mistakes, next step, and link to a separate user-guide window
-- [ ] Complete workbook-detail fidelity and parity comparison coverage
+- [ ] Add additional customer-scale workbook-detail fidelity and parity comparison coverage
 
 ---
 

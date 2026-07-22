@@ -22,6 +22,14 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Real-Workbook Parity Evidence
+- Added a reviewer-facing evidence map for checked-in Carbon parity coverage
+  across the small sample workbook and larger workshop workbook.
+- Linked parser, handoff, API ZIP, package preview, and performance tests to
+  the Carbon promotion evidence story.
+- Updated promotion and implementation documentation to distinguish current
+  checked-in workbook evidence from remaining customer-scale validation.
+
 ### July 22, 2026: Carbon Promotion Gap Review
 - Refreshed the Carbon promotion gate review for the current `main` state,
   including guidance-layer UX work and current validation counts.
