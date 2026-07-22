@@ -46,8 +46,10 @@ The Carbon UI should prove enterprise value through real workflow slices:
 6. Provide drag-and-drop VM placement for subnet, security, storage, and wave
    assignment.
 
-Verified as of 2026-07-15: those slices are implemented and covered by
-TypeScript, Jest, Playwright smoke validation, and handoff parity tests.
+Verified as of 2026-07-22: those slices are implemented and covered by
+TypeScript, Jest, Playwright smoke validation, handoff parity tests, and Carbon
+guidance tests for progress, step help, user-guide routing, and completion
+checklists.
 Streamlit remains production while Carbon builds deeper real-workbook parity,
 accessibility/UAT evidence, and production support evidence.
 
@@ -63,6 +65,8 @@ Carbon should not replace Streamlit until it can:
 - [x] Reproduce the core Streamlit planning workflow surfaces: VM review, wave
   planning, remediation tracking, image import planning, migration ops, and
   export package generation.
+- [x] Provide in-app migration guidance through progress, step-help, and
+  completion-checklist affordances.
 - [ ] Prove those workflows with enough real-workbook parity and UAT evidence
   to replace Streamlit as the default UI.
 - [x] Pass browser-level smoke tests for upload, persistence, DnD assignment,

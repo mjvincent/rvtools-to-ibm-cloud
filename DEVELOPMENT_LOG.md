@@ -22,6 +22,15 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Promotion Gap Review
+- Refreshed the Carbon promotion gate review for the current `main` state,
+  including guidance-layer UX work and current validation counts.
+- Added a replacement gap checklist covering feature parity, export/package
+  parity, real-workbook evidence, accessibility/UAT, deployment/operations,
+  support ownership, rollback, and go/no-go decision requirements.
+- Updated the Carbon parity roadmap and strategy docs to prioritize
+  real-workbook parity evidence over more UI reshaping.
+
 ### July 22, 2026: Carbon Guidance Density Polish
 - Tightened the Carbon progress guide spacing so guidance consumes less vertical
   space above each workflow.

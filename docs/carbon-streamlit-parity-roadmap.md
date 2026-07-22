@@ -14,12 +14,18 @@ Do not replace Streamlit yet.
 Carbon is now past the basic prototype stage. It can upload workbooks through
 FastAPI, save and reload projects, edit assignment/planning state, run package
 preflight, preview package contents, and generate Terraform ZIPs with the major
-handoff artifact inventory.
+handoff artifact inventory. Recent UX work also added workflow progress
+guidance, workflow-header step help, a separate user-guide route, and compact
+collapsible completion checklists for each main workflow.
 
 The next work should focus on evidence and backend-backed parity, not more
 pure UI reshaping. The highest value is proving that Carbon can complete the
 same migration assessment and handoff workflow as Streamlit for representative
 workbooks, then closing any workflow gaps found by those comparisons.
+
+As of the July 22, 2026 promotion gap review, the highest-value next branch is
+real-workbook parity evidence. Additional visual polish should be secondary
+unless manual UAT finds a usability blocker.
 
 ## Capability Matrix
 
@@ -35,6 +41,7 @@ workbooks, then closing any workflow gaps found by those comparisons.
 | Migration Ops | Production | Implemented with readiness summaries and cutover-readiness export | Validate with realistic wave/cutover planning exercises. |
 | Export package build | Production | Implemented through FastAPI Terraform ZIP generation, package preflight, preview, and parity inventory checks | Continue exact Streamlit-vs-Carbon fixture comparisons. |
 | Pricing modes | Production static/cached/live behavior | Partial static-catalog diagnostics in Carbon ZIP | Decide whether live/cached pricing belongs in Carbon promotion scope. |
+| User guidance | Production Streamlit tabs and manual | Implemented with Carbon progress guide, workflow-header step help, user-guide popup route, and collapsible completion checklists | Validate during UAT that users understand each step and can progress without facilitator help. |
 | Accessibility and UAT | Streamlit production baseline | Checklist and templates exist; Carbon has keyboard/browser coverage but needs formal sign-off | Complete checklist and record evidence before pilot/default switch. |
 | Operations | Streamlit Docker/local paths documented | Compose stack, operations runbook, backup/restore guidance, and health checks exist | Fill named support owners, hosted logging/alerts, retention, and rollback authority. |
 
@@ -49,6 +56,8 @@ workbooks, then closing any workflow gaps found by those comparisons.
      the same backend path Carbon users exercise.
    - Treat output diffs as product decisions: fix regressions, or document
      intentional Carbon-only preflight differences.
+   - Record which workbook, commit, generated package files, and comparison
+     result were used as promotion evidence.
 
 2. **Carbon failure-path hardening**
    - Extend browser coverage for API unavailable, package preview failure,
@@ -78,6 +87,8 @@ workbooks, then closing any workflow gaps found by those comparisons.
    - Run the manual checklist against the current Carbon workflow.
    - Capture keyboard, screen-reader, browser, and user-acceptance results in
      the results template.
+   - Include the progress guide, step help, user-guide popup, and completion
+     checklist behavior in reviewer feedback.
    - Promote only if the primary workflow has acceptable evidence.
 
 5. **Production operations closure**

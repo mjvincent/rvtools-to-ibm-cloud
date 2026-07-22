@@ -1,8 +1,9 @@
 # Carbon Promotion Gate Review
 
-**Review date**: 2026-07-09
-**Reviewed state**: Carbon UI Phases 1-6 in progress on
-`feature/carbon-ui-network-planning-phase1`  
+**Review date**: 2026-07-22
+**Reviewed state**: Carbon UI through workflow progress guidance, inline step
+help, collapsible completion checklists, dependency security maintenance, and
+the FastAPI/Postgres package-generation path on `main`.
 **Recommendation**: Do not promote Carbon to production yet. Continue running
 Streamlit as the supported UI while Carbon closes the remaining parity and
 production-readiness gaps.
@@ -13,7 +14,8 @@ Carbon has crossed the prototype viability threshold and now covers the core
 planning path: upload, persistence, network planning, drag-and-drop assignment,
 autosave, VM overrides, Phase 4 planning workflow surfaces, Terraform ZIP
 export, package parity status, guided remediation queue, readiness reporting,
-and Docker Compose runtime are implemented and verified.
+workflow progress guidance, inline step help, visible collapsible completion
+checklists, and Docker Compose runtime are implemented and verified.
 
 Carbon has not crossed the production replacement threshold. The remaining gaps
 are mostly production-hardening and deeper parity evidence: additional
@@ -22,6 +24,11 @@ coverage, additional customer-scale performance fixtures beyond the workshop
 sample, production support posture, and a formal Streamlit-to-Carbon cutover
 plan.
 
+The next promotion work should be evidence-heavy rather than feature-heavy:
+prove Carbon output parity across more representative workbooks, complete
+manual accessibility/UAT evidence, validate the hosted runtime and support
+model, then run a formal go/no-go review.
+
 ## Gate Matrix
 
 | Gate | Status | Evidence | Remaining Work | Recommended Phase |
@@ -29,7 +36,7 @@ plan.
 | Gate 1: Core Functionality | Pass | Workbook upload calls FastAPI summary; project save/load uses Postgres; drag/drop assigns subnet/security/storage/wave; Terraform ZIP export works from saved Carbon network plans. | Keep maintaining regression coverage as parity work lands. | Maintenance |
 | Gate 2: Feature Parity | Partial | Carbon now has workflow surfaces for wave planning, remediation backlog, image import planning, migration ops, VM overrides, decision audit, handoff ZIP files, export readiness queue, readiness report, and Streamlit-vs-Carbon fixture comparisons. | Add more real-workbook edge fixtures and close remaining Streamlit bulk/edge workflow gaps before promotion. | Phase 5 and Phase 6 |
 | Gate 3: Network Planning | Partial | Carbon supports VPC/subnet/security/storage/wave/network component planning, diagram-driven network component edit handoff, local network validation findings, saved network plans, diagram display, Terraform generation, package inventory parity status, backend package preflight feedback, safe preflight next-step actions, a remediation queue, and a full package browser preview in Export. | Verify the network editing and validation flow through accessibility and UAT evidence, then continue backend parity coverage. | Phase 5 and Phase 6 |
-| Gate 4: User Experience | Partial | Native drag/drop supports single and multi-select assignment with confirmation modal, drop highlighting, row tags, row-level unassign, readiness-chip routing, explicit checkbox/drop-zone accessible labels, keyboard-operable assignment buttons, guided remediation queue routing, bulk high-confidence suggestion review, bulk override cleanup, and Playwright coverage for keyboard navigation and review-chip routing across Chromium, Firefox, and WebKit. The manual review checklist and results/sign-off template are prepared. | Run the [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md), record outcomes in the [Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md), then complete broader screen-reader/manual accessibility review, mobile/tablet review, and large-workbook UX/performance tests beyond the workshop sample. | Phase 6 |
+| Gate 4: User Experience | Partial | Native drag/drop supports single and multi-select assignment with confirmation modal, drop highlighting, row tags, row-level unassign, readiness-chip routing, explicit checkbox/drop-zone accessible labels, keyboard-operable assignment buttons, guided remediation queue routing, bulk high-confidence suggestion review, bulk override cleanup, workflow progress guidance, workflow-header step help, user-guide popup routing, and collapsible completion checklists. Playwright coverage covers keyboard navigation and review-chip routing across Chromium, Firefox, and WebKit. The manual review checklist and results/sign-off template are prepared. | Run the [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md), record outcomes in the [Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md), then complete broader screen-reader/manual accessibility review, mobile/tablet review, and large-workbook UX/performance tests beyond the workshop sample. | Phase 6 |
 | Gate 5: Quality and Testing | Partial | Verified: Python compile/full pytest, Carbon TypeScript, Jest, multi-browser Playwright smoke, handoff parity fixtures, real-workbook operational overlay parity, planning-state JSON import/export, backend preflight endpoint/UI feedback and next-step actions, API ZIP inventory guard, UI/backend ZIP inventory drift guard, export readiness queue tests, sample-workbook summary performance guards, optional private customer-workbook summary guard hook, sanitized private-workbook evidence helper/template, workshop state/assignment/preview/ZIP performance guards, generated 3,000-row Carbon API state/update guards, and generated 5,000-row Carbon UI filtering guards. | Add broader e2e coverage for failure paths, captured evidence from private customer-scale workbooks, accessibility automation, and more real-workbook parity fixtures. | Phase 5-6 |
 | Gate 6: Production Readiness | Partial | Docker Compose starts Streamlit, API, Carbon UI, and Postgres; local health/log checks are documented; Carbon healthcheck reports healthy; persistence warning exists; user manual now documents the Carbon checkpoint and production boundary; promotion/cutover guide now documents staged rollout and rollback; operations runbook documents backup/recovery, monitoring/logging, incident response, support ownership matrix, rollback authority, a successful local restore drill, and local monitoring evidence. | Wire hosted-runtime alerts/log sinks and fill in named production support owners before promotion. | Phase 6 |
 
@@ -48,9 +55,9 @@ CARBON_BASE_URL=http://localhost:3000 npx playwright test
 
 Observed results:
 - Python compile: passed
-- Python pytest: 355 passed, 1 skipped
+- Python pytest: 360 passed, 1 skipped
 - Carbon TypeScript: 0 errors
-- Carbon Jest: 174 passed
+- Carbon Jest: 249 passed
 - Carbon Playwright: 27 passed across Chromium, Firefox, and WebKit
 - Docker Compose health: API, Streamlit, Carbon UI, and Postgres healthy
 
@@ -180,6 +187,21 @@ Current feature-parity status:
 - Extend Carbon-side remediation guidance with additional safe autofill options for low-risk findings.
 - Extend failure-path browser coverage beyond persistence outage, remediation-route preflight blockers, and Export preview/download/save-before-export failures.
 - Extend planning-state reload coverage through Playwright and user acceptance.
+
+## Replacement Gap Checklist
+
+Carbon should remain a candidate UI, not the default UI, until these checklist
+items are complete:
+
+| Gap Area | Current State | Required Closure |
+| --- | --- | --- |
+| Feature parity | Core planning workflows, overrides, remediation, image import, migration ops, package preview, ZIP generation, guided help, and completion checklists are implemented. | Confirm remaining Streamlit edge workflows are either implemented in Carbon or explicitly declared out of Carbon promotion scope. |
+| Export/package parity | Handoff inventory and API ZIP parity are strongly covered for checked-in fixtures and sample/workshop paths. | Add at least one additional representative real-workbook parity run, preferably a sanitized customer-scale workbook or documented private evidence run. |
+| Real workbook validation | Small sample, workshop sample, generated large-state tests, and optional private workbook hooks exist. | Capture current evidence for one small and one larger representative workbook with package output comparison and documented exceptions. |
+| Accessibility and UAT | Keyboard and browser automation exists; checklist and result templates exist. | Complete manual keyboard, screen-reader, responsive, browser, and migration-user UAT review and store results in the template. |
+| Deployment and operations | Docker Compose, runbook, restore drill, local monitoring, and health checks are documented. | Validate the intended hosted runtime, log sinks, alerts, retention policy, backup/restore path, and support escalation flow. |
+| Support and rollback | Promotion/cutover guide defines staged rollout and rollback pattern. | Fill named support owners, rollback authority, release-candidate commit/tag, and same-day rollback acceptance criteria. |
+| Production decision | Current decision is no-go. | Run a formal go/no-go review after the evidence above is current and linked. |
 
 ## Phase 6 Backlog
 
