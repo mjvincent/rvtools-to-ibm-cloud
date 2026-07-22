@@ -22,6 +22,15 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Pilot Issue Template
+- Added a structured GitHub issue template for Carbon pilot and UAT findings,
+  including severity, workflow, reproduction steps, expected/actual results,
+  evidence, Streamlit fallback status, promotion impact, mitigation, owner, and
+  revisit date.
+- Linked the template from the Carbon decision packet, UAT worksheet, evidence
+  index, cutover guide, testing guide, and README.
+- Added guard tests to keep the issue form structured and sensitive-data-safe.
+
 ### July 22, 2026: Carbon Promotion Decision Packet
 - Added a Carbon promotion decision packet template for release-candidate
   go/no-go reviews.

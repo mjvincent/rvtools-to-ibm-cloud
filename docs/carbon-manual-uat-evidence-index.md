@@ -55,6 +55,8 @@ Create one sanitized folder or ticket for each release-candidate review. Include
 - Carbon Terraform ZIP or sanitized ZIP inventory
 - Streamlit comparison ZIP or parity-test output when used
 - issue log with owner, severity, status, and revisit date
+- GitHub issues created with the `Carbon pilot finding` template for blocker,
+  high, medium, or promotion-impacting findings
 
 ## Data Handling Rules
 

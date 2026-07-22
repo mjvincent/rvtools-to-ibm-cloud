@@ -167,3 +167,6 @@ The go/no-go review should answer:
 Record the decision in the
 [Carbon Promotion Decision Packet](carbon-promotion-decision-packet.md). If any
 answer is no, keep Streamlit as production and continue Carbon hardening.
+Track pilot and promotion findings with the GitHub `Carbon pilot finding` issue
+template so severity, owner, mitigation, Streamlit fallback status, and
+promotion impact stay visible.

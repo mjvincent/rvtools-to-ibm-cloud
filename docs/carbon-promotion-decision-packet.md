@@ -37,6 +37,10 @@ completed packet explicitly approves a Carbon pilot or later default promotion.
 | Validation commands | Python pytest, Python compile, Terraform package validation, Carbon TypeScript, Carbon Jest, Carbon build, and applicable Playwright evidence | Not started |
 | Open issues and accepted gaps | Issue tracker links with severity, owner, mitigation, and revisit date | Not started |
 
+Use the GitHub `Carbon pilot finding` issue template for every UAT or pilot
+finding that could affect pilot scope, default promotion, accessibility,
+operations, output parity, or Streamlit fallback.
+
 ## Gate Checklist
 
 | Gate | Required answer | Actual answer | Evidence / notes |

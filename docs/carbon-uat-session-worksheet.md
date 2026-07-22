@@ -95,6 +95,9 @@ Use this with:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | UAT-YYYYMMDD-001 |  |  |  |  |  |  |  |  |
 
+Open a GitHub issue with the `Carbon pilot finding` template for each blocker,
+high, medium, or promotion-impacting finding.
+
 ## Accepted Gaps
 
 | Gap | Reason accepted | Mitigation | Owner | Revisit date |

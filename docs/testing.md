@@ -166,6 +166,10 @@ For promotion-decision changes, review
 `docs/carbon-promotion-decision-packet.md` and confirm the packet references
 parity, UAT, accessibility, hosted operations, rollback, validation, and open
 issue evidence.
+For issue-template changes, validate `.github/ISSUE_TEMPLATE/carbon-pilot-finding.yml`
+and confirm it captures severity, workflow, reproduction steps, expected/actual
+results, evidence, owner, mitigation, Streamlit fallback status, promotion
+impact, and sensitive-data confirmation.
 
 1. Confirm the shell loads and the left workflow navigation is visible.
 2. Confirm the `Progress guide` shows workflow step statuses and a next

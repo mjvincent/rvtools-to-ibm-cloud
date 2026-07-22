@@ -1,0 +1,134 @@
+name: Carbon pilot finding
+description: Capture Carbon UAT, pilot, accessibility, operations, or promotion-blocking findings.
+title: "[Carbon pilot]: "
+labels:
+  - carbon
+  - pilot-feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for Carbon pilot/UAT findings. Do not include raw RVTools rows, private workbook paths, full VM names, IP addresses, CIDR plans, owner names, application names, screenshots with sensitive values, IBM Cloud credentials, Terraform state, API keys, or other secrets.
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: Choose the highest current impact.
+      options:
+        - Blocker - prevents a primary workflow, creates data-loss risk, or makes package output unacceptable
+        - High - primary workflow requires a difficult workaround
+        - Medium - workflow is usable but confusing, inefficient, or missing expected feedback
+        - Low - polish issue that does not block pilot use
+    validations:
+      required: true
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Workflow area
+      options:
+        - Workbook Intake
+        - Project Save/Load
+        - VM Assignment
+        - Network Plan
+        - VM Overrides
+        - Remediation Backlog
+        - Image Import Planning
+        - Migration Ops
+        - Export Readiness
+        - Terraform Package
+        - Accessibility
+        - Hosted Operations
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: release_candidate
+    attributes:
+      label: Release candidate branch/tag or commit
+      placeholder: codex/example-branch or abc1234
+    validations:
+      required: true
+  - type: input
+    id: workbook_label
+    attributes:
+      label: Workbook label
+      description: Use sanitized labels only.
+      placeholder: small-sample, workshop-sample, customer-workbook-a
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use sanitized values and avoid private inventory details.
+      placeholder: |
+        1. Open Carbon.
+        2. Load the sanitized workbook label.
+        3. Navigate to ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      placeholder: What should the user see or be able to complete?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      placeholder: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence link or sanitized attachment reference
+      description: Link to a private evidence ticket, sanitized screenshot, log bundle, readiness report, ZIP inventory, or UAT worksheet.
+      placeholder: No secrets, raw workbook rows, private VM names, IPs, or credentials.
+  - type: dropdown
+    id: streamlit_fallback
+    attributes:
+      label: Streamlit fallback status
+      options:
+        - Not checked
+        - Streamlit fallback works
+        - Streamlit fallback also affected
+        - Streamlit fallback unavailable
+    validations:
+      required: true
+  - type: dropdown
+    id: promotion_impact
+    attributes:
+      label: Promotion impact
+      options:
+        - Blocks Carbon pilot
+        - Blocks Carbon default promotion
+        - Accepted pilot gap if owner/revisit date are assigned
+        - No promotion impact
+    validations:
+      required: true
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Mitigation or workaround
+      placeholder: Describe the workaround, Streamlit fallback action, or recommended fix.
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      placeholder: Product / technical / operations / security-data owner
+  - type: input
+    id: revisit_date
+    attributes:
+      label: Revisit date
+      placeholder: YYYY-MM-DD
+  - type: checkboxes
+    id: sensitive_data_check
+    attributes:
+      label: Sensitive-data check
+      options:
+        - label: I removed raw RVTools rows, private workbook paths, full VM names, IP addresses, CIDR plans, owner names, application names, screenshots with sensitive values, IBM Cloud credentials, Terraform state, API keys, and other secrets.
+          required: true
