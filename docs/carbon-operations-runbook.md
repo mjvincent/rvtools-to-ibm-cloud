@@ -8,6 +8,12 @@ gates. These procedures make the Carbon path operable during shadow, pilot, and
 promotion testing without splitting the repository or weakening the Streamlit
 fallback.
 
+For hosted or pilot-runtime sign-off, use the
+[Carbon Hosted Operations Readiness Checklist](carbon-hosted-operations-readiness.md)
+with this runbook. The checklist turns hosted health, logging, alerting,
+retention, backup/restore, support ownership, rollback, and artifact-handling
+decisions into explicit promotion gates.
+
 ## Runtime Components
 
 The Compose stack uses these service and volume names:
@@ -223,6 +229,8 @@ Recommended retention:
 Hosted deployment decisions still need to be filled in for the selected
 platform: log sink, alert channel, storage thresholds, retention policy, support
 owner, and rollback decision maker.
+Record those decisions in the
+[Carbon Hosted Operations Readiness Checklist](carbon-hosted-operations-readiness.md).
 
 ## Support Ownership and Rollback Authority
 
@@ -325,6 +333,9 @@ Operational requirements before shared Carbon use:
 For Gate 6, record evidence that:
 
 - Docker Compose starts `app`, `api`, `carbon-ui`, and `postgres`
+- hosted runtime health checks, alerts, logs, retention, access control,
+  backup/restore, artifact handling, support ownership, and rollback authority
+  are recorded in the hosted operations readiness checklist
 - all configured health checks pass
 - a Postgres backup is created and restorable
 - the artifact volume backup is created and restorable

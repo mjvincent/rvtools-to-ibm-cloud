@@ -33,9 +33,9 @@ Carbon is eligible for production promotion only when these gates are green:
 | Core workflow | Workbook upload, project save/load, assignment, preflight, package preview, and ZIP export work through Carbon. |
 | Feature parity | Wave planning, remediation, image import, migration ops, overrides, decision audit, handoff package, and planning-state reload match Streamlit contracts. |
 | Real-workbook parity | Representative RVTools workbooks compare cleanly for handoff artifacts, with documented exceptions for Carbon-specific preflight checks. |
-| Runtime readiness | Docker Compose and the intended hosted runtime start API, Carbon UI, Streamlit, and Postgres reliably. |
+| Runtime readiness | Docker Compose and the intended hosted runtime start API, Carbon UI, Streamlit, and Postgres reliably, with hosted evidence recorded in the [Carbon Hosted Operations Readiness Checklist](carbon-hosted-operations-readiness.md). |
 | Accessibility and browser coverage | Keyboard, screen-reader, multi-browser, and UAT checks pass for the primary workflow using the [Carbon Manual UAT Runbook](carbon-manual-uat-runbook.md) and [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md), with outcomes captured in the [Carbon Accessibility and UAT Results Template](carbon-accessibility-uat-results-template.md). |
-| Operations | Backup/restore, rollback, logging, monitoring, data retention, and support ownership are documented in the [Carbon Operations Runbook](carbon-operations-runbook.md). |
+| Operations | Backup/restore, rollback, logging, monitoring, data retention, and support ownership are documented in the [Carbon Operations Runbook](carbon-operations-runbook.md) and hosted-readiness checklist. |
 | User acceptance | Migration users complete at least one realistic assessment through Carbon and approve the workflow. |
 
 For the recommended implementation order behind these gates, see the
@@ -79,6 +79,9 @@ Before promotion:
 10. Capture the current production image/tag/commit for rollback.
 11. Fill in the support ownership and rollback authority matrix in the
     [Carbon Operations Runbook](carbon-operations-runbook.md).
+12. Complete the
+    [Carbon Hosted Operations Readiness Checklist](carbon-hosted-operations-readiness.md)
+    for the intended pilot or hosted runtime.
 
 ## Cutover Pattern
 

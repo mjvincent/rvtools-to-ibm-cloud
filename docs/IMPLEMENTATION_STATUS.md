@@ -198,6 +198,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
    - Browser-specific coverage beyond the current smoke and failure-path suite
    - Hosted-runtime alerting/log sink configuration
    - Hosted-runtime restore drill validation
+   - Hosted operations readiness checklist completion
    - Named production support owners and rollback authority
 
 3. **UX polish**
@@ -269,6 +270,7 @@ Carbon is not ready to replace Streamlit yet. Remaining gaps:
 - [x] Local Postgres restore drill and artifact archive verification
 - [x] Local health/log access verification
 - [x] Support ownership and rollback authority model
+- [x] Hosted operations readiness checklist for health checks, alerts, logs, retention, backup/restore, artifact handling, access control, support ownership, and rollback evidence
 - [ ] User acceptance testing
 - [ ] Go/no-go promotion decision
 

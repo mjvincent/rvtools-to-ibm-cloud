@@ -104,6 +104,9 @@ The current checked-in sample and workshop workbook evidence is summarized in
      Docker.
    - Define retention for uploaded RVTools workbooks, saved project state, and
      generated artifacts.
+   - Record hosted health checks, logs, alerts, retention, backup/restore,
+     access control, artifact handling, support ownership, and rollback
+     authority in the hosted operations readiness checklist.
 
 ## Near-Term No-Go Items
 
@@ -149,3 +152,4 @@ See also:
 - [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md)
 - [Carbon Manual UAT Evidence Index](carbon-manual-uat-evidence-index.md)
 - [Carbon Operations Runbook](carbon-operations-runbook.md)
+- [Carbon Hosted Operations Readiness Checklist](carbon-hosted-operations-readiness.md)

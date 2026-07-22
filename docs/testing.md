@@ -158,6 +158,10 @@ npm run build
 When Carbon CI fails, download the `carbon-ui-failure-artifacts` artifact from
 the run. It contains captured npm audit, TypeScript, Jest, and Next build logs
 when those steps reached execution.
+For hosted/pilot readiness changes, also review
+`docs/carbon-hosted-operations-readiness.md` and confirm the branch records
+health-check, alerting, logging, retention, backup/restore, artifact-handling,
+support-owner, and rollback evidence requirements.
 
 1. Confirm the shell loads and the left workflow navigation is visible.
 2. Confirm the `Progress guide` shows workflow step statuses and a next

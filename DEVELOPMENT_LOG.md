@@ -22,6 +22,16 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Hosted Operations Readiness
+- Added a hosted operations readiness checklist for Carbon pilot/promotion
+  gates covering health checks, alerting, logs, retention, backup/restore,
+  artifact handling, access control, support ownership, and rollback.
+- Linked the checklist from the operations runbook, cutover guide, parity
+  roadmap, promotion gate review, implementation status, testing guide, and
+  README.
+- Added documentation guard tests so hosted operations evidence requirements
+  stay visible before Carbon can replace Streamlit.
+
 ### July 22, 2026: Carbon UAT Session Worksheet
 - Added a fillable Carbon UAT session worksheet for individual reviewer
   walkthroughs before final results are summarized in the UAT template.
