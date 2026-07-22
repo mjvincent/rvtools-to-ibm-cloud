@@ -140,6 +140,15 @@ export async function uploadWorkbook(file: File): Promise<WorkbookSummary> {
   return readJsonResponse<WorkbookSummary>(response, 'Workbook upload failed.');
 }
 
+export async function loadSampleWorkbookSummary(): Promise<WorkbookSummary> {
+  const response = await apiFetch(
+    '/api/workbooks/sample/summary',
+    undefined,
+    'Sample workbook load failed.',
+  );
+  return readJsonResponse<WorkbookSummary>(response, 'Sample workbook load failed.');
+}
+
 // ─── Projects ─────────────────────────────────────────────────────────────────
 
 export async function listProjects(): Promise<SavedProject[]> {

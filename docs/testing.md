@@ -184,7 +184,9 @@ and sensitive-data boundary.
    appears.
 5. Click `Open user guide` and confirm it opens `/help/user-guide` in a separate
    window or tab.
-6. Upload `samples/rvtools-small-complete.xlsx` from Workbook Intake.
+6. Click `Load sample workbook` from Workbook Intake for the bundled small
+   sample path, then optionally upload `samples/rvtools-small-complete.xlsx`
+   manually to confirm upload still overrides loaded sample data.
 7. Visit VM Assignment, Network Plan, Remediation Backlog, Migration Ops, and
    Export Readiness.
 8. Run preflight or preview/download checks appropriate for the branch under

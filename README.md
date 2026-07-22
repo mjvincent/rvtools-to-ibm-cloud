@@ -117,6 +117,9 @@ The experimental Carbon UI is being evaluated as the eventual enterprise
 replacement for Streamlit. Current checked-in sample/workshop workbook parity
 evidence is recorded in
 [`docs/carbon-real-workbook-parity-evidence.md`](docs/carbon-real-workbook-parity-evidence.md).
+Carbon Workbook Intake includes `Load sample workbook` for the bundled small
+sample, plus normal RVTools upload for local files and the larger workshop
+exercise.
 
 ## Common First-Run Fixes
 | Symptom | Fix |

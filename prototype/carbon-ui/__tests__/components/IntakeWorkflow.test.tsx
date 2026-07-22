@@ -3,10 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import IntakeWorkflow, { rowsFromSummary } from '../../components/workflows/IntakeWorkflow';
 import { AppProvider, useAppState } from '../../store/AppContext';
-import { uploadWorkbook } from '../../hooks/useApi';
+import { loadSampleWorkbookSummary, uploadWorkbook } from '../../hooks/useApi';
 import type { WorkbookSummary } from '../../types/network-planning';
 
 jest.mock('../../hooks/useApi', () => ({
+  loadSampleWorkbookSummary: jest.fn(),
   uploadWorkbook: jest.fn(),
 }));
 
@@ -108,6 +109,21 @@ describe('rowsFromSummary', () => {
 describe('IntakeWorkflow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('loads the bundled sample workbook without using the file picker', async () => {
+    (loadSampleWorkbookSummary as jest.Mock).mockResolvedValueOnce(
+      carbonSummary('rvtools-small-complete.xlsx'),
+    );
+    renderIntake();
+
+    await userEvent.click(screen.getByRole('button', { name: /Load sample workbook/i }));
+
+    await waitFor(() => expect(loadSampleWorkbookSummary).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByText('Loaded rvtools-small-complete.xlsx')).toBeTruthy());
+    expect(screen.getByTestId('intake-state').textContent).toContain(
+      'rvtools-small-complete.xlsx|Loaded rvtools-small-complete.xlsx|no-error|rvtools-small-complete|1|app-01',
+    );
   });
 
   it('reports workbook upload failures without replacing the current workbook state', async () => {

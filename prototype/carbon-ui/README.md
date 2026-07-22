@@ -26,9 +26,11 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-The workbook upload area calls the real FastAPI summary endpoint. Saved project
-controls, network-plan save/load, drag-and-drop VM assignment, autosave, and
-Terraform ZIP export all use the shared FastAPI/Postgres prototype stack.
+The workbook intake area can load `samples/rvtools-small-complete.xlsx` directly
+with `Load sample workbook`, or upload a local RVTools `.xlsx`. Both paths call
+the real FastAPI summary engine. Saved project controls, network-plan save/load,
+drag-and-drop VM assignment, autosave, and Terraform ZIP export all use the
+shared FastAPI/Postgres prototype stack.
 The shell includes a workflow progress guide, compact collapsible workflow
 completion checklists, workflow-header `Step help`, shell-level help, and a
 separate user-guide route so evaluators can see what to do next without leaving
@@ -49,9 +51,9 @@ With Docker Compose running and the Carbon dev server available on
 npm run test:e2e
 ```
 
-The smoke test uploads the bundled small RVTools workbook, saves a Carbon
-prototype project, exercises drag-and-drop assignment plus autosave reload,
-reloads it from Postgres, and deletes temporary smoke projects.
+The smoke test uses the bundled small RVTools workbook, saves a Carbon prototype
+project, exercises drag-and-drop assignment plus autosave reload, reloads it
+from Postgres, and deletes temporary smoke projects.
 
 ## Git Hygiene
 

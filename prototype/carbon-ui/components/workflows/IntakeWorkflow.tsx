@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { FileUploaderDropContainer, InlineNotification, Layer, Tag } from '@carbon/react';
+import { Button, FileUploaderDropContainer, InlineNotification, Layer, Tag } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
 import { sampleRows } from '../../store/AppContext';
-import { uploadWorkbook } from '../../hooks/useApi';
+import { loadSampleWorkbookSummary, uploadWorkbook } from '../../hooks/useApi';
 import type { WorkbookSummary } from '../../types/network-planning';
 import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
@@ -98,6 +98,31 @@ export default function IntakeWorkflow() {
   const { state, dispatch } = useAppState();
   const { uploadStatus, uploadError, projectName } = state;
 
+  function applyWorkbookSummary(payload: WorkbookSummary) {
+    const nextRows = rowsFromSummary(payload);
+    dispatch({ type: 'SET_SUMMARY', payload });
+    dispatch({ type: 'SET_ASSIGNMENT_ROWS', payload: nextRows });
+    dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [] });
+    dispatch({ type: 'SET_PROJECT_NAME', payload: payload.filename.replace(/\.xlsx$/i, '') || projectName });
+    dispatch({ type: 'SET_UPLOAD_STATUS', payload: `Loaded ${payload.filename}` });
+    dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'assignment' });
+  }
+
+  async function handleLoadSample() {
+    dispatch({ type: 'SET_UPLOAD_STATUS', payload: 'Loading bundled sample workbook' });
+    dispatch({ type: 'SET_UPLOAD_ERROR', payload: '' });
+    try {
+      const payload = await loadSampleWorkbookSummary();
+      applyWorkbookSummary(payload);
+    } catch (error) {
+      dispatch({
+        type: 'SET_UPLOAD_ERROR',
+        payload: error instanceof Error ? error.message : 'Sample workbook load failed.',
+      });
+      dispatch({ type: 'SET_UPLOAD_STATUS', payload: '' });
+    }
+  }
+
   async function handleUpload(_event: unknown, content: { addedFiles?: File[] }) {
     const file = content?.addedFiles?.[0];
     if (!file) return;
@@ -105,13 +130,7 @@ export default function IntakeWorkflow() {
     dispatch({ type: 'SET_UPLOAD_ERROR', payload: '' });
     try {
       const payload = await uploadWorkbook(file);
-      const nextRows = rowsFromSummary(payload);
-      dispatch({ type: 'SET_SUMMARY', payload });
-      dispatch({ type: 'SET_ASSIGNMENT_ROWS', payload: nextRows });
-      dispatch({ type: 'SET_SELECTED_VM_IDS', payload: [] });
-      dispatch({ type: 'SET_PROJECT_NAME', payload: payload.filename.replace(/\.xlsx$/i, '') || projectName });
-      dispatch({ type: 'SET_UPLOAD_STATUS', payload: `Loaded ${payload.filename}` });
-      dispatch({ type: 'SET_ACTIVE_WORKFLOW', payload: 'assignment' });
+      applyWorkbookSummary(payload);
     } catch (error) {
       dispatch({
         type: 'SET_UPLOAD_ERROR',
@@ -134,6 +153,12 @@ export default function IntakeWorkflow() {
         </div>
       </div>
       <WorkflowCompletionChecklist workflow="intake" />
+      <div className="sample-workbook-action">
+        <Button kind="tertiary" size="sm" onClick={handleLoadSample}>
+          Load sample workbook
+        </Button>
+        <p>Uses samples/rvtools-small-complete.xlsx for a clean first run.</p>
+      </div>
       <FileUploaderDropContainer
         accept={['.xlsx']}
         labelText="Drag and drop RVTools .xlsx here or click to upload"

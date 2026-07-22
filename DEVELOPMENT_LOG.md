@@ -22,6 +22,15 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon First-Run Sample Loader
+- Added a Carbon Workbook Intake `Load sample workbook` action backed by a
+  FastAPI sample summary endpoint that parses the bundled small RVTools sample
+  through the existing engine.
+- Kept manual workbook uploads on the same summary/app-state path so uploaded
+  workbooks remain the normal override for real assessments.
+- Updated Carbon, sample, user, and testing documentation for the direct
+  first-run sample path.
+
 ### July 22, 2026: Carbon Pilot Dry-Run Evidence
 - Added a sanitized automated dry-run evidence record for checked-in small and
   workshop sample coverage.

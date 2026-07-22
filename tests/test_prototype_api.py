@@ -56,6 +56,20 @@ def test_workbook_summary_upload_uses_existing_engine():
     assert isinstance(assignment_row["Network Details"], list)
 
 
+def test_sample_workbook_summary_uses_bundled_sample():
+    client = TestClient(app)
+
+    response = client.get("/api/workbooks/sample/summary")
+
+    payload = response.json()
+    assert response.status_code == 200
+    assert payload["filename"] == "rvtools-small-complete.xlsx"
+    assert payload["estate_summary"]["in_scope"] == 2
+    assert payload["estate_summary"]["excluded"] == 1
+    assert payload["readiness_rows"]
+    assert payload["assignment_rows"]
+
+
 def test_workbook_summary_rejects_non_xlsx_upload():
     client = TestClient(app)
 

@@ -43,6 +43,9 @@ from preflight import summarize_preflight
 DEFAULT_REGION = "us-south"
 DEFAULT_ZONE = "us-south-1"
 DEFAULT_THRESHOLD = 40
+SAMPLE_WORKBOOK_PATH = (
+    Path(__file__).resolve().parents[2] / "samples" / "rvtools-small-complete.xlsx"
+)
 
 
 @asynccontextmanager
@@ -276,6 +279,31 @@ def _parse_upload(
     return pd.DataFrame(records), parsed.assessment_quality
 
 
+def _parse_workbook_path(
+    workbook_path: Path,
+    target_region: str = DEFAULT_REGION,
+    utilization_threshold: int = DEFAULT_THRESHOLD,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    pricing_catalog = get_pricing_catalog("static", region=target_region)
+    try:
+        parsed = parse_rvtools_workbook(
+            workbook_path,
+            target_region=target_region,
+            utilization_threshold=utilization_threshold,
+            generate_security_groups=True,
+            catalog_profiles=pricing_catalog.get("profiles", []),
+            storage_tier_rates=pricing_catalog.get("storage_tier_rates"),
+            pricing_metadata=pricing_catalog.get("metadata", {}),
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not parse RVTools workbook: {exc}",
+        ) from exc
+    records = [vm.to_record() for vm in parsed.processed_vms]
+    return pd.DataFrame(records), parsed.assessment_quality
+
+
 def _status_counts(df: pd.DataFrame) -> dict[str, dict[str, int]]:
     active = df[~df["Exclude?"]]
     counts: dict[str, dict[str, int]] = {}
@@ -393,19 +421,11 @@ def _assignment_rows_payload(df: pd.DataFrame) -> list[dict[str, Any]]:
     return rows
 
 
-@app.get("/health")
-def health() -> dict[str, Any]:
-    return {
-        "status": "ok",
-        "persistence_enabled": persistence.persistence_enabled(),
-    }
-
-
-@app.post("/api/workbooks/summary")
-async def summarize_workbook(
-    workbook: UploadFile = File(...),
+def _workbook_summary_payload(
+    df: pd.DataFrame,
+    assessment_quality: dict[str, Any],
+    filename: str,
 ) -> dict[str, Any]:
-    df, assessment_quality = _parse_upload(workbook)
     summary = calculate_estate_summary(df)
     blockers = calculate_overview_blockers(df)
     active = df[~df["Exclude?"]].copy()
@@ -417,7 +437,7 @@ async def summarize_workbook(
         ascending=[False, True],
     ).head(25)
     return {
-        "filename": workbook.filename,
+        "filename": filename,
         "estate_summary": _estate_summary_payload(summary),
         "overview_blockers": _blocker_payload(blockers),
         "readiness_counts": _status_counts(df),
@@ -434,6 +454,37 @@ async def summarize_workbook(
             ]
         ].to_dict("records"),
     }
+
+
+@app.get("/health")
+def health() -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "persistence_enabled": persistence.persistence_enabled(),
+    }
+
+
+@app.post("/api/workbooks/summary")
+async def summarize_workbook(
+    workbook: UploadFile = File(...),
+) -> dict[str, Any]:
+    df, assessment_quality = _parse_upload(workbook)
+    return _workbook_summary_payload(df, assessment_quality, workbook.filename)
+
+
+@app.get("/api/workbooks/sample/summary")
+def summarize_sample_workbook() -> dict[str, Any]:
+    if not SAMPLE_WORKBOOK_PATH.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Bundled sample workbook not found.",
+        )
+    df, assessment_quality = _parse_workbook_path(SAMPLE_WORKBOOK_PATH)
+    return _workbook_summary_payload(
+        df,
+        assessment_quality,
+        SAMPLE_WORKBOOK_PATH.name,
+    )
 
 
 @app.get("/api/projects")

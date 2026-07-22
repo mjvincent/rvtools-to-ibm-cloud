@@ -1054,7 +1054,7 @@ The IBM Carbon UI under `prototype/carbon-ui` is an experimental enterprise UI c
 
 As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow surfaces, package parity checks, guided export readiness controls, remediation-queue assistance, and initial keyboard accessibility coverage needed for continued evaluation:
 
-- **Workbook intake and overview**: Carbon uploads RVTools workbooks through the shared FastAPI summary path, then shows estate metrics, readiness counts, project persistence status, and saved-project controls.
+- **Workbook intake and overview**: Carbon can load the bundled small sample workbook directly from Workbook Intake or upload RVTools workbooks through the shared FastAPI summary path, then shows estate metrics, readiness counts, project persistence status, and saved-project controls.
 - **Assignment workflow**: VM rows can be selected individually or in groups, then assigned by drag/drop or the explicit `Assign` button.
 - **Assignment targets**: Subnet, security group, storage/IOPS, and migration wave buckets all support placement through the same confirmation flow. Assignment bucket regions and explicit `Assign` buttons expose target-specific accessible names for keyboard and assistive-technology review.
 - **Confirmation modal**: Drag/drop assignment opens a placement modal that confirms the target bucket and selected VM count before applying changes.
@@ -1082,7 +1082,7 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 3. Use each workflow's `Complete when` checklist to understand what done means before moving forward.
 4. Use workflow-header `Step help` or shell-level `Help` when the step purpose or completion criteria are unclear.
 5. Use `Open user guide` if you want a separate instruction window open while working.
-6. Use `Workbook Intake` to upload the RVTools XLSX workbook.
+6. Use `Workbook Intake` to load the bundled small sample workbook or upload an RVTools XLSX workbook.
 7. Review `Overview` metrics, project persistence state, and readiness counts.
 8. Use `VM Assignment` to map VMs to subnets, security groups, storage/IOPS targets, and waves.
 9. Use `VM Overrides` for VSI profile overrides, storage tier overrides, exclusion decisions, and override reasons.
@@ -1098,7 +1098,7 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 ### Carbon And Streamlit Parity
 | Area | Carbon status | Notes |
 | --- | --- | --- |
-| Workbook upload and overview | Implemented | Uses FastAPI summary path and Postgres project persistence. |
+| Workbook upload and overview | Implemented | Uses FastAPI summary path, direct bundled sample loading, and Postgres project persistence. |
 | VM assignment | Implemented | Supports row selection, drag/drop, explicit assignment, unassign actions, and target chips. |
 | VSI profile and storage overrides | Implemented | VM Overrides workflow records profile, storage, scope, reasons, pricing impact, and decision audit. |
 | Network, security, storage, and wave planning | Implemented | Carbon has workflow tabs and saved-state persistence for these planning surfaces. |
