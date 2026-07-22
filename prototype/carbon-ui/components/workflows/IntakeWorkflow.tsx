@@ -6,6 +6,7 @@ import { useAppState } from '../../store/AppContext';
 import { sampleRows } from '../../store/AppContext';
 import { uploadWorkbook } from '../../hooks/useApi';
 import type { WorkbookSummary } from '../../types/network-planning';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 function textValue(value: unknown) {
@@ -132,6 +133,7 @@ export default function IntakeWorkflow() {
           <Tag type="blue">Real API integration</Tag>
         </div>
       </div>
+      <WorkflowCompletionChecklist workflow="intake" />
       <FileUploaderDropContainer
         accept={['.xlsx']}
         labelText="Drag and drop RVTools .xlsx here or click to upload"

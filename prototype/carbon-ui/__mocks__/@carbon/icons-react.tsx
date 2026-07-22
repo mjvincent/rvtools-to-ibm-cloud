@@ -6,6 +6,7 @@ const icon = (name: string) => ({ size, ...rest }: any) => (
 );
 
 export const CloudUpload = icon('cloud-upload');
+export const Checkmark = icon('checkmark');
 export const Close = icon('close');
 export const DataTable = icon('data-table');
 export const DeploymentPattern = icon('deployment-pattern');

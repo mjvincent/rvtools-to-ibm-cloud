@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { Layer, Tag, Tile } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 import type {
   AssignmentVm,
@@ -282,6 +283,7 @@ export default function MigrationOpsWorkflow() {
           </Tag>
         </div>
       </div>
+      <WorkflowCompletionChecklist workflow="migrationOps" />
 
       <div className="summary-grid migration-ops-summary">
         <Tile>

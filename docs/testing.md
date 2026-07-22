@@ -160,15 +160,17 @@ when those steps reached execution.
 1. Confirm the shell loads and the left workflow navigation is visible.
 2. Confirm the `Progress guide` shows workflow step statuses and a next
    recommended action that routes to the matching workflow.
-3. Open a workflow-header `Step help` control and confirm purpose,
+3. Confirm the active workflow shows a `Complete when` checklist below its
+   header.
+4. Open a workflow-header `Step help` control and confirm purpose,
    before-continuing, complete-when, common-mistakes, and next-step guidance
    appears.
-4. Click `Open user guide` and confirm it opens `/help/user-guide` in a separate
+5. Click `Open user guide` and confirm it opens `/help/user-guide` in a separate
    window or tab.
-5. Upload `samples/rvtools-small-complete.xlsx` from Workbook Intake.
-6. Visit VM Assignment, Network Plan, Remediation Backlog, Migration Ops, and
+6. Upload `samples/rvtools-small-complete.xlsx` from Workbook Intake.
+7. Visit VM Assignment, Network Plan, Remediation Backlog, Migration Ops, and
    Export Readiness.
-7. Run preflight or preview/download checks appropriate for the branch under
+8. Run preflight or preview/download checks appropriate for the branch under
    test.
 
 ## Carbon Private Performance Fixtures

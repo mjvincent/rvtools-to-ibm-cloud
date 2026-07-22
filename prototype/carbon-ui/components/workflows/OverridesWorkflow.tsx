@@ -16,6 +16,7 @@ import {
 import { Download } from '@carbon/icons-react';
 import { useAppState } from '../../store/AppContext';
 import type { AssignmentVm } from '../../types/network-planning';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 export const COMMON_VSI_PROFILES = [
@@ -317,6 +318,7 @@ export default function OverridesWorkflow() {
           </Button>
         </div>
       </div>
+      <WorkflowCompletionChecklist workflow="overrides" />
 
       <div className="summary-grid override-summary">
         <Tile>

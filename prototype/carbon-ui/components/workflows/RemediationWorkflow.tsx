@@ -13,6 +13,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 import type {
   AssignmentVm,
@@ -292,6 +293,7 @@ export default function RemediationWorkflow() {
           </Tag>
         </div>
       </div>
+      <WorkflowCompletionChecklist workflow="remediation" />
 
       <div className="summary-grid remediation-summary">
         <Tile>

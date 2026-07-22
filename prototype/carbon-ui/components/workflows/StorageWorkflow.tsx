@@ -3,6 +3,7 @@
 import React from 'react';
 import { Layer, Tile } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 export default function StorageWorkflow() {
@@ -23,6 +24,7 @@ export default function StorageWorkflow() {
         </div>
         <WorkflowHeaderHelp workflow="storage" />
       </div>
+      <WorkflowCompletionChecklist workflow="storage" />
       <div className="resource-list">
         {rows.map((row) => (
           <Tile key={`Storage / IOPS Plan-${row.name}`} className="resource-tile">

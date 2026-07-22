@@ -8,6 +8,7 @@ import { generateTerraform, saveNetworkPlan } from '../../hooks/useApi';
 import { buildNetworkPlanBody } from '../../utils/planning-state';
 import { validateResourceNetworkPlan } from '../../utils/network-validation';
 import type { NetworkComponent } from '../../types/network-planning';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 export default function NetworkPlanWorkflow() {
@@ -125,6 +126,7 @@ export default function NetworkPlanWorkflow() {
           </Button>
         </div>
       </div>
+      <WorkflowCompletionChecklist workflow="network" />
 
       {terraformStatus && (
         <InlineNotification

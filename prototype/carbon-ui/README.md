@@ -29,9 +29,10 @@ Open `http://localhost:3000`.
 The workbook upload area calls the real FastAPI summary endpoint. Saved project
 controls, network-plan save/load, drag-and-drop VM assignment, autosave, and
 Terraform ZIP export all use the shared FastAPI/Postgres prototype stack.
-The shell includes a workflow progress guide, workflow-header `Step help`,
-shell-level help, and a separate user-guide route so evaluators can see what to
-do next without leaving the workbench.
+The shell includes a workflow progress guide, visible workflow completion
+checklists, workflow-header `Step help`, shell-level help, and a separate
+user-guide route so evaluators can see what to do next without leaving the
+workbench.
 Streamlit remains the supported production UI while Carbon is evaluated against
 the promotion gates.
 

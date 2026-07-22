@@ -13,6 +13,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 import type {
   AssignmentVm,
@@ -233,6 +234,7 @@ export default function ImageImportWorkflow() {
           </Tag>
         </div>
       </div>
+      <WorkflowCompletionChecklist workflow="imageImport" />
 
       <div className="summary-grid image-import-summary">
         <Tile>

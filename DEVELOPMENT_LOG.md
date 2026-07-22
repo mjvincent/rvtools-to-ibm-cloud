@@ -22,6 +22,12 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Workflow Completion Checklists
+- Added visible `Complete when` checklists to the main Carbon workflows so
+  users can see step finish criteria without opening help.
+- Reused the existing guided-help content as the checklist source of truth.
+- Added checklist component and workflow placement tests.
+
 ### July 22, 2026: Carbon Inline Workflow Help
 - Added local `Step help` controls to the main Carbon workflow headers so
   users can open contextual guidance where they are working.

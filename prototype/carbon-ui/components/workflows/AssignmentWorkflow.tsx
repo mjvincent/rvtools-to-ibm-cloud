@@ -18,6 +18,7 @@ import type { AssignmentMode, AssignmentVm } from '../../types/network-planning'
 import DraggableVmRow from '../dnd/DraggableVmRow';
 import PlacementModal from '../dnd/PlacementModal';
 import SubnetDropZone from '../dnd/SubnetDropZone';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 export function textValue(value: unknown) {
@@ -402,6 +403,7 @@ export default function AssignmentWorkflow() {
               <Tag type={selectedVmIds.length ? 'blue' : 'gray'}>{selectedVmIds.length} selected</Tag>
             </div>
           </div>
+          <WorkflowCompletionChecklist workflow="assignment" />
 
           <div className="assignment-toolbar">
             <Search

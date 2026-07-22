@@ -32,6 +32,7 @@ import PlanningGapSummary from './export/PlanningGapSummary';
 import RemediationQueuePanel from './export/RemediationQueuePanel';
 import AssignmentSuggestionsPanel from './export/AssignmentSuggestionsPanel';
 import SuggestionAuditPanel from './export/SuggestionAuditPanel';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import {
   applySuggestionsToRows,
   buildAssignmentSuggestions,
@@ -480,6 +481,7 @@ export default function ExportWorkflow() {
         onPreviewTerraform={handlePreviewTerraform}
         onDownloadTerraform={handleDownloadTerraform}
       />
+      <WorkflowCompletionChecklist workflow="export" />
       {terraformStatus && (
         <InlineNotification
           kind="success"

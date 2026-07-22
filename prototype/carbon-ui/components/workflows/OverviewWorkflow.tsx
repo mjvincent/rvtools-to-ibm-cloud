@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { Layer, Tag, Tile } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 function terraformLabel(value: string) {
@@ -55,6 +56,7 @@ export default function OverviewWorkflow() {
           <Tag type="purple">Prototype planner</Tag>
         </div>
       </div>
+      <WorkflowCompletionChecklist workflow="overview" />
       <div className="summary-grid">
         <Tile>
           <h3>Assessment quality</h3>

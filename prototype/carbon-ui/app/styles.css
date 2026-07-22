@@ -541,6 +541,43 @@ body {
   white-space: nowrap;
 }
 
+.workflow-completion-checklist {
+  background: #f4f4f4;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+}
+
+.workflow-completion-checklist h3 {
+  color: #393939;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.workflow-completion-checklist ul {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.workflow-completion-checklist li {
+  align-items: start;
+  color: #393939;
+  display: flex;
+  font-size: 0.875rem;
+  gap: 0.5rem;
+  line-height: 1.35;
+}
+
+.workflow-completion-checklist svg {
+  color: #24a148;
+  flex: 0 0 auto;
+  margin-top: 0.125rem;
+}
+
 .export-package {
   border-top: 1px solid #e0e0e0;
   margin-top: 1rem;
@@ -1198,7 +1235,8 @@ body {
   }
 
   .workflow-progress-guide__header,
-  .workflow-progress-guide__steps {
+  .workflow-progress-guide__steps,
+  .workflow-completion-checklist ul {
     grid-template-columns: 1fr;
   }
 

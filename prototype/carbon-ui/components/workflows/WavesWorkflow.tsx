@@ -14,6 +14,7 @@ import {
 } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
 import type { AssignmentVm } from '../../types/network-planning';
+import WorkflowCompletionChecklist from '../ui/WorkflowCompletionChecklist';
 import WorkflowHeaderHelp from '../ui/WorkflowHeaderHelp';
 
 const waveColumns = [
@@ -281,6 +282,7 @@ export default function WavesWorkflow() {
           </Tag>
         </div>
       </div>
+      <WorkflowCompletionChecklist workflow="waves" />
 
       <div className="summary-grid wave-summary">
         <Tile>
