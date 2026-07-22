@@ -12,6 +12,9 @@ type ApiErrorPayload = {
   detail?: unknown;
 };
 
+const API_RECOVERY_HINT =
+  'Confirm the FastAPI service is running, check Docker Compose or dev-server logs, then retry. Current browser-side planning state is kept unless you refresh or close the page.';
+
 function humanizeKey(key: string): string {
   return key
     .replace(/_/g, ' ')
@@ -54,13 +57,63 @@ export function formatApiErrorDetail(detail: unknown, fallback: string): string 
   return fallback;
 }
 
-async function readApiError(response: Response, fallback: string): Promise<string> {
+function responseStatusLabel(response: Response): string {
+  const statusText = response.statusText ? ` ${response.statusText}` : '';
+  return `HTTP ${response.status}${statusText}`;
+}
+
+export function buildApiRecoveryMessage(fallback: string, statusLabel?: string): string {
+  const statusPrefix = statusLabel ? `${statusLabel}. ` : '';
+  return `${fallback} ${statusPrefix}${API_RECOVERY_HINT}`;
+}
+
+async function apiFetch(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  fallback: string,
+): Promise<Response> {
   try {
-    const payload = (await response.json()) as ApiErrorPayload;
-    return formatApiErrorDetail(payload.detail ?? payload, fallback);
+    return await fetch(input, init);
   } catch {
-    return fallback;
+    throw new Error(buildApiRecoveryMessage(fallback));
   }
+}
+
+async function readJsonPayload(response: Response): Promise<unknown | null> {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function formatApiResponseError(
+  response: Response,
+  payload: unknown | null,
+  fallback: string,
+): string {
+  if (payload) {
+    const apiPayload = payload as ApiErrorPayload;
+    const formatted = formatApiErrorDetail(apiPayload.detail ?? apiPayload, '');
+    if (formatted) return formatted;
+  }
+  return buildApiRecoveryMessage(fallback, responseStatusLabel(response));
+}
+
+async function readApiError(response: Response, fallback: string): Promise<string> {
+  const payload = await readJsonPayload(response);
+  return formatApiResponseError(response, payload, fallback);
+}
+
+async function readJsonResponse<T>(response: Response, fallback: string): Promise<T> {
+  const payload = await readJsonPayload(response);
+  if (!response.ok) {
+    throw new Error(formatApiResponseError(response, payload, fallback));
+  }
+  if (payload === null) {
+    throw new Error(buildApiRecoveryMessage(fallback, responseStatusLabel(response)));
+  }
+  return payload as T;
 }
 
 // ─── Health ───────────────────────────────────────────────────────────────────
@@ -71,11 +124,8 @@ export type HealthResponse = {
 };
 
 export async function checkApiHealth(): Promise<HealthResponse> {
-  const response = await fetch('/health');
-  if (!response.ok) {
-    throw new Error('API health check failed.');
-  }
-  return response.json();
+  const response = await apiFetch('/health', undefined, 'API health check failed.');
+  return readJsonResponse<HealthResponse>(response, 'API health check failed.');
 }
 
 // ─── Workbooks ────────────────────────────────────────────────────────────────
@@ -83,55 +133,49 @@ export async function checkApiHealth(): Promise<HealthResponse> {
 export async function uploadWorkbook(file: File): Promise<WorkbookSummary> {
   const formData = new FormData();
   formData.append('workbook', file);
-  const response = await fetch('/api/workbooks/summary', {
+  const response = await apiFetch('/api/workbooks/summary', {
     method: 'POST',
     body: formData,
-  });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(formatApiErrorDetail(payload.detail, 'Workbook upload failed.'));
-  }
-  return payload;
+  }, 'Workbook upload failed.');
+  return readJsonResponse<WorkbookSummary>(response, 'Workbook upload failed.');
 }
 
 // ─── Projects ─────────────────────────────────────────────────────────────────
 
 export async function listProjects(): Promise<SavedProject[]> {
-  const response = await fetch('/api/projects');
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(formatApiErrorDetail(payload.detail, 'Could not load saved projects.'));
-  }
+  const response = await apiFetch('/api/projects', undefined, 'Could not load saved projects.');
+  const payload = await readJsonResponse<{ projects?: SavedProject[] }>(
+    response,
+    'Could not load saved projects.',
+  );
   return payload.projects || [];
 }
 
 export async function createProject(name: string, description: string): Promise<SavedProject> {
-  const response = await fetch('/api/projects', {
+  const response = await apiFetch('/api/projects', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: name.trim(), description: description.trim() }),
-  });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(formatApiErrorDetail(payload.detail, 'Could not create project.'));
-  }
+  }, 'Could not create project.');
+  const payload = await readJsonResponse<{ project: SavedProject }>(response, 'Could not create project.');
   return payload.project;
 }
 
 export async function updateProject(projectId: string, name: string, description: string): Promise<void> {
-  const response = await fetch(`/api/projects/${projectId}`, {
+  const response = await apiFetch(`/api/projects/${projectId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: name.trim(), description: description.trim() }),
-  });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(formatApiErrorDetail(payload.detail, 'Could not update project.'));
-  }
+  }, 'Could not update project.');
+  await readJsonResponse<unknown>(response, 'Could not update project.');
 }
 
 export async function deleteProject(projectId: string): Promise<void> {
-  const response = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' });
+  const response = await apiFetch(
+    `/api/projects/${projectId}`,
+    { method: 'DELETE' },
+    'Could not delete project.',
+  );
   if (!response.ok) {
     throw new Error(await readApiError(response, 'Could not delete project.'));
   }
@@ -140,11 +184,11 @@ export async function deleteProject(projectId: string): Promise<void> {
 export async function loadProject(
   projectId: string,
 ): Promise<{ project: SavedProject; state: SavedProjectState | null }> {
-  const response = await fetch(`/api/projects/${projectId}`);
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(formatApiErrorDetail(payload.detail, 'Could not load project.'));
-  }
+  const response = await apiFetch(`/api/projects/${projectId}`, undefined, 'Could not load project.');
+  const payload = await readJsonResponse<{ project: SavedProject; state?: SavedProjectState | null }>(
+    response,
+    'Could not load project.',
+  );
   return { project: payload.project, state: payload.state ?? null };
 }
 
@@ -155,18 +199,15 @@ export async function saveProjectState(
   planningState: Record<string, unknown>,
   projectName: string,
 ): Promise<void> {
-  const response = await fetch(`/api/projects/${projectId}/state`, {
+  const response = await apiFetch(`/api/projects/${projectId}/state`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       planning_state: planningState,
       project_name: projectName,
     }),
-  });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(formatApiErrorDetail(payload.detail, 'Could not save project state.'));
-  }
+  }, 'Could not save project state.');
+  await readJsonResponse<unknown>(response, 'Could not save project state.');
 }
 
 // ─── Network plan ─────────────────────────────────────────────────────────────
@@ -184,23 +225,22 @@ export type NetworkPlanBody = {
 };
 
 export async function saveNetworkPlan(projectId: string, plan: NetworkPlanBody): Promise<void> {
-  const response = await fetch(`/api/projects/${projectId}/network-plan`, {
+  const response = await apiFetch(`/api/projects/${projectId}/network-plan`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(plan),
-  });
+  }, 'Failed to save network plan.');
   if (!response.ok) {
     throw new Error(await readApiError(response, 'Failed to save network plan.'));
   }
 }
 
 export async function loadNetworkPlan(projectId: string): Promise<NetworkPlanningState | Record<string, unknown>> {
-  const response = await fetch(`/api/projects/${projectId}/network-plan`);
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(formatApiErrorDetail(payload.detail, 'Could not load network plan.'));
-  }
-  return payload;
+  const response = await apiFetch(`/api/projects/${projectId}/network-plan`, undefined, 'Could not load network plan.');
+  return readJsonResponse<NetworkPlanningState | Record<string, unknown>>(
+    response,
+    'Could not load network plan.',
+  );
 }
 
 // ─── VM assignments ───────────────────────────────────────────────────────────
@@ -209,11 +249,11 @@ export async function updateVmAssignments(
   projectId: string,
   assignments: ApiVmAssignmentPayload[],
 ): Promise<void> {
-  const response = await fetch(`/api/projects/${projectId}/vm-assignments`, {
+  const response = await apiFetch(`/api/projects/${projectId}/vm-assignments`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(assignments),
-  });
+  }, 'Could not update VM assignments.');
   if (!response.ok) {
     throw new Error(await readApiError(response, 'Could not update VM assignments.'));
   }
@@ -222,10 +262,10 @@ export async function updateVmAssignments(
 // ─── Terraform ────────────────────────────────────────────────────────────────
 
 export async function generateTerraform(projectId: string): Promise<Blob> {
-  const response = await fetch(`/api/projects/${projectId}/terraform`, {
+  const response = await apiFetch(`/api/projects/${projectId}/terraform`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-  });
+  }, 'Terraform generation failed.');
   if (!response.ok) {
     throw new Error(await readApiError(response, 'Terraform generation failed.'));
   }
@@ -246,15 +286,11 @@ export type TerraformPreviewResponse = {
 };
 
 export async function previewTerraform(projectId: string): Promise<TerraformPreviewResponse> {
-  const response = await fetch(`/api/projects/${projectId}/terraform/preview`, {
+  const response = await apiFetch(`/api/projects/${projectId}/terraform/preview`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-  });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(formatApiErrorDetail(payload.detail, 'Terraform preview failed.'));
-  }
-  return payload;
+  }, 'Terraform preview failed.');
+  return readJsonResponse<TerraformPreviewResponse>(response, 'Terraform preview failed.');
 }
 
 export type PreflightFinding = {
@@ -287,15 +323,11 @@ export type PreflightResponse = {
 };
 
 export async function runProjectPreflight(projectId: string): Promise<PreflightResponse> {
-  const response = await fetch(`/api/projects/${projectId}/preflight`, {
+  const response = await apiFetch(`/api/projects/${projectId}/preflight`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-  });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(formatApiErrorDetail(payload.detail, 'Preflight check failed.'));
-  }
-  return payload;
+  }, 'Preflight check failed.');
+  return readJsonResponse<PreflightResponse>(response, 'Preflight check failed.');
 }
 
 // Made with Bob

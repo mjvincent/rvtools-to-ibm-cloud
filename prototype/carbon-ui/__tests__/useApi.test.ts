@@ -1,4 +1,9 @@
-import { formatApiErrorDetail } from '../hooks/useApi';
+import {
+  buildApiRecoveryMessage,
+  formatApiErrorDetail,
+  previewTerraform,
+  uploadWorkbook,
+} from '../hooks/useApi';
 
 describe('formatApiErrorDetail', () => {
   it('keeps string error details readable', () => {
@@ -39,5 +44,49 @@ describe('formatApiErrorDetail', () => {
   it('falls back when detail content is empty', () => {
     expect(formatApiErrorDetail({}, 'Fallback')).toBe('Fallback');
     expect(formatApiErrorDetail([], 'Fallback')).toBe('Fallback');
+  });
+});
+
+describe('API failure recovery messages', () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    jest.restoreAllMocks();
+  });
+
+  it('adds a consistent recovery hint for transport failures', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(
+      uploadWorkbook(
+        new File(['broken'], 'broken.xlsx', {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        }),
+      ),
+    ).rejects.toThrow(
+      'Workbook upload failed. Confirm the FastAPI service is running, check Docker Compose or dev-server logs, then retry.',
+    );
+  });
+
+  it('adds status and recovery guidance when the API returns non-JSON errors', async () => {
+    global.fetch = jest.fn().mockResolvedValue(
+      {
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        json: jest.fn().mockRejectedValue(new SyntaxError('Unexpected token <')),
+      } as unknown as Response,
+    );
+
+    await expect(previewTerraform('project-1')).rejects.toThrow(
+      'Terraform preview failed. HTTP 502 Bad Gateway. Confirm the FastAPI service is running, check Docker Compose or dev-server logs, then retry.',
+    );
+  });
+
+  it('keeps recovery guidance text centralized', () => {
+    expect(buildApiRecoveryMessage('Could not save project state.', 'HTTP 503 Service Unavailable')).toBe(
+      'Could not save project state. HTTP 503 Service Unavailable. Confirm the FastAPI service is running, check Docker Compose or dev-server logs, then retry. Current browser-side planning state is kept unless you refresh or close the page.',
+    );
   });
 });

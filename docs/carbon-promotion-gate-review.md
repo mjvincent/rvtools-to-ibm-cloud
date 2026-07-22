@@ -81,7 +81,9 @@ It also guards malformed planning-state imports so invalid JSON or incomplete
 schema files surface errors without replacing the current exportable project
 state. Intake unit coverage now also verifies workbook upload failures preserve
 the current workbook state and that a successful retry clears the previous
-upload error.
+upload error. Shared Carbon API error handling also normalizes transport
+outages and non-JSON backend failures into recovery guidance for checking the
+FastAPI service, Docker Compose or dev-server logs, and retrying.
 
 The Python parity suite now includes Streamlit-vs-Carbon single-VM, edge-case,
 multi-VM, workshop real-workbook subset, workshop operational edge subset, and

@@ -172,6 +172,9 @@ when those steps reached execution.
    Export Readiness.
 8. Run preflight or preview/download checks appropriate for the branch under
    test.
+9. For Carbon API failure-path changes, simulate or inspect failed upload,
+   save, preflight, preview, and ZIP generation paths and confirm errors give a
+   concrete recovery action instead of only a raw backend or browser exception.
 
 ## Carbon Private Performance Fixtures
 

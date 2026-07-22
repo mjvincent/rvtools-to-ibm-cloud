@@ -66,6 +66,8 @@ The current checked-in sample and workshop workbook evidence is summarized in
    - Extend browser coverage for API unavailable, package preview failure,
      malformed planning-state import, workbook upload failure, and ZIP
      generation failure.
+   - Keep shared API error normalization current so transport outages and
+     non-JSON backend failures give users concrete recovery guidance.
    - Keep fast unit coverage for Export failure paths so preflight, preview,
      and ZIP-generation errors cannot regress without running the full browser
      suite.

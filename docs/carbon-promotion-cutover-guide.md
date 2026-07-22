@@ -140,6 +140,7 @@ Track:
 - API errors during save/load/autosave
 - Terraform ZIP generation failures
 - preflight blocker patterns
+- non-JSON or transport-level API failures that require operator recovery
 - package parity regressions
 - user-reported accessibility or browser issues
 - Postgres storage growth

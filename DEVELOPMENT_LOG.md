@@ -22,6 +22,14 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Failure Recovery Guidance
+- Hardened the shared Carbon API hook so transport outages and non-JSON backend
+  failures show consistent recovery guidance instead of raw browser or parsing
+  errors.
+- Added unit coverage for unreachable API calls, HTML/non-JSON backend
+  failures, and the centralized recovery message.
+- Updated Carbon testing and promotion documentation for failure-path review.
+
 ### July 22, 2026: Carbon Real-Workbook Parity Evidence
 - Added a reviewer-facing evidence map for checked-in Carbon parity coverage
   across the small sample workbook and larger workshop workbook.

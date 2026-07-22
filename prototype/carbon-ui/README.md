@@ -33,6 +33,10 @@ The shell includes a workflow progress guide, compact collapsible workflow
 completion checklists, workflow-header `Step help`, shell-level help, and a
 separate user-guide route so evaluators can see what to do next without leaving
 the workbench.
+API transport failures and non-JSON backend errors are normalized into
+actionable recovery guidance that tells evaluators to check the FastAPI service,
+Docker Compose or dev-server logs, and retry without implying browser-side
+planning state was discarded.
 Streamlit remains the supported production UI while Carbon is evaluated against
 the promotion gates.
 
