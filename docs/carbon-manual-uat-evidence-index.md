@@ -26,6 +26,7 @@ Streamlit remains available as fallback during any Carbon pilot.
 | [Carbon Real-Workbook Parity Evidence](carbon-real-workbook-parity-evidence.md) | Checked-in sample/workshop workbook parser, parity, API ZIP, preview, and performance evidence. | Ready |
 | [Carbon Accessibility and UAT Results - Focused Automated Pass](carbon-accessibility-uat-results-2026-07-10-focused.md) | Automated focused evidence for VM Overrides and Export Readiness accessibility fixes. | Complete for focused scope |
 | [Carbon Accessibility and UAT Results - Network Plan Focused Pass](carbon-accessibility-uat-results-2026-07-15-network-plan.md) | Automated focused evidence for Network Plan component editing and validation. | Complete for focused scope |
+| [Carbon Pilot Dry-Run Evidence - 2026-07-22](carbon-pilot-dry-run-evidence-2026-07-22.md) | Automated local dry-run evidence for checked-in small/workshop sample coverage. | Complete for dry-run scope |
 
 ## Manual Evidence Still Required
 

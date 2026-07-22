@@ -170,6 +170,9 @@ For issue-template changes, validate `.github/ISSUE_TEMPLATE/carbon-pilot-findin
 and confirm it captures severity, workflow, reproduction steps, expected/actual
 results, evidence, owner, mitigation, Streamlit fallback status, promotion
 impact, and sensitive-data confirmation.
+For dry-run evidence changes, confirm the evidence record names the commands
+run, sample labels used, results observed, remaining human/hosted evidence gaps,
+and sensitive-data boundary.
 
 1. Confirm the shell loads and the left workflow navigation is visible.
 2. Confirm the `Progress guide` shows workflow step statuses and a next

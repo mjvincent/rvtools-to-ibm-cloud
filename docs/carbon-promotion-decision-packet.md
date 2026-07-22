@@ -40,6 +40,9 @@ completed packet explicitly approves a Carbon pilot or later default promotion.
 Use the GitHub `Carbon pilot finding` issue template for every UAT or pilot
 finding that could affect pilot scope, default promotion, accessibility,
 operations, output parity, or Streamlit fallback.
+Use [Carbon Pilot Dry-Run Evidence - 2026-07-22](carbon-pilot-dry-run-evidence-2026-07-22.md)
+as automated local evidence only; it does not replace human UAT, hosted
+operations evidence, or a completed decision packet.
 
 ## Gate Checklist
 

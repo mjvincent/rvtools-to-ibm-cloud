@@ -154,5 +154,6 @@ See also:
 - [Carbon Real-Workbook Parity Evidence](carbon-real-workbook-parity-evidence.md)
 - [Carbon Accessibility and UAT Checklist](carbon-accessibility-uat-checklist.md)
 - [Carbon Manual UAT Evidence Index](carbon-manual-uat-evidence-index.md)
+- [Carbon Pilot Dry-Run Evidence - 2026-07-22](carbon-pilot-dry-run-evidence-2026-07-22.md)
 - [Carbon Operations Runbook](carbon-operations-runbook.md)
 - [Carbon Hosted Operations Readiness Checklist](carbon-hosted-operations-readiness.md)

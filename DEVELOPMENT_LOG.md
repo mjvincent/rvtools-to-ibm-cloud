@@ -22,6 +22,15 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Pilot Dry-Run Evidence
+- Added a sanitized automated dry-run evidence record for checked-in small and
+  workshop sample coverage.
+- Recorded the focused sample/parity/performance command result while clearly
+  preserving the no-go production decision and remaining human, accessibility,
+  hosted operations, customer-scale, and final decision gaps.
+- Added documentation guard tests and linked the dry-run record from the Carbon
+  evidence index, promotion decision packet, roadmap, and testing guide.
+
 ### July 22, 2026: Carbon Pilot Issue Template
 - Added a structured GitHub issue template for Carbon pilot and UAT findings,
   including severity, workflow, reproduction steps, expected/actual results,
