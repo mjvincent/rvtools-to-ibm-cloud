@@ -140,6 +140,48 @@ describe('PackagePreflight', () => {
     expect(screen.getByText('Storage tier should be reviewed.')).toBeTruthy();
   });
 
+  it('shows when additional findings are hidden and exposes an expand action', async () => {
+    const onToggleFindings = jest.fn();
+    renderPreflight({
+      summary: { blockers: 6, warnings: 0, info: 0, total: 6 },
+      findings: [
+        preflightFinding({ Subject: 'app-01' }),
+        preflightFinding({ Subject: 'app-02' }),
+        preflightFinding({ Subject: 'app-03' }),
+        preflightFinding({ Subject: 'app-04' }),
+        preflightFinding({ Subject: 'app-05' }),
+      ],
+      totalFindingCount: 6,
+      showingAllFindings: false,
+      onToggleFindings,
+      suggestionForFinding: jest.fn(() => null),
+    });
+
+    expect(screen.getByText(/Showing top 5; 1 additional finding\(s\) are hidden\./)).toBeTruthy();
+    await userEvent.click(screen.getByText('Show all findings'));
+
+    expect(onToggleFindings).toHaveBeenCalledTimes(1);
+  });
+
+  it('can collapse the full finding list back to top findings', async () => {
+    const onToggleFindings = jest.fn();
+    renderPreflight({
+      summary: { blockers: 6, warnings: 0, info: 0, total: 6 },
+      findings: Array.from({ length: 6 }, (_, index) =>
+        preflightFinding({ Subject: `app-0${index + 1}` }),
+      ),
+      totalFindingCount: 6,
+      showingAllFindings: true,
+      onToggleFindings,
+      suggestionForFinding: jest.fn(() => null),
+    });
+
+    expect(screen.getByText(/Showing all findings\./)).toBeTruthy();
+    await userEvent.click(screen.getByText('Show top findings'));
+
+    expect(onToggleFindings).toHaveBeenCalledTimes(1);
+  });
+
   it('shows a ready state when preflight returns no visible findings', () => {
     renderPreflight({
       summary: { blockers: 0, warnings: 0, info: 0, total: 0 },

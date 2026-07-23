@@ -88,6 +88,7 @@ export default function ExportWorkflow() {
   const [previewCategory, setPreviewCategory] = useState('All');
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [selectedQueueSuggestionIds, setSelectedQueueSuggestionIds] = useState<string[]>([]);
+  const [showAllPreflightFindings, setShowAllPreflightFindings] = useState(false);
   const {
     assignmentRows,
     resources,
@@ -107,7 +108,10 @@ export default function ExportWorkflow() {
   const findings = useMemo(() => planningFindings(planningCompleteness), [planningCompleteness]);
   const blockingFindingCount = findings.reduce((total, [, count]) => total + count, 0);
   const preflightSummary = preflight?.summary;
-  const visiblePreflightFindings = preflight?.findings.slice(0, 5) || [];
+  const preflightFindings = preflight?.findings || [];
+  const visiblePreflightFindings = showAllPreflightFindings
+    ? preflightFindings
+    : preflightFindings.slice(0, 5);
   const exportChecklist = buildExportChecklist({
     selectedProjectId,
     isDirty: state.isDirty,
@@ -331,6 +335,7 @@ export default function ExportWorkflow() {
       dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Running package preflight...' });
       const result = await runProjectPreflight(selectedProjectId);
       setPreflight(result);
+      setShowAllPreflightFindings(false);
       dispatch({
         type: 'SET_TERRAFORM_STATUS',
         payload: preflightCompleteMessage(result.summary),
@@ -392,6 +397,7 @@ export default function ExportWorkflow() {
       dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Running package preflight before ZIP download...' });
       const preflightResult = await runProjectPreflight(selectedProjectId);
       setPreflight(preflightResult);
+      setShowAllPreflightFindings(false);
       if (preflightResult.summary.blockers > 0) {
         dispatch({
           type: 'SET_TERRAFORM_ERROR',
@@ -609,11 +615,14 @@ export default function ExportWorkflow() {
         <PackagePreflight
           summary={preflightSummary}
           findings={visiblePreflightFindings}
+          totalFindingCount={preflightFindings.length}
+          showingAllFindings={showAllPreflightFindings}
           suggestionForFinding={(finding) =>
             suggestionForFinding({ finding, assignmentRows, resources })
           }
           onApplySuggestion={applyAssignmentSuggestion}
           onOpenFinding={openPreflightFinding}
+          onToggleFindings={() => setShowAllPreflightFindings((current) => !current)}
         />
       )}
       {terraformPreview && selectedPreviewFile && (

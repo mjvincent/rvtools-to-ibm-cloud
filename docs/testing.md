@@ -211,7 +211,9 @@ and sensitive-data boundary.
    next action.
 15. Confirm package preflight findings are grouped by severity and category,
    with blockers shown before warnings and informational findings.
-16. For Carbon API failure-path changes, simulate or inspect failed upload,
+16. When more than five package preflight findings exist, confirm Carbon shows
+   the top findings first and can expand or collapse the full finding list.
+17. For Carbon API failure-path changes, simulate or inspect failed upload,
    save, preflight, preview, and ZIP generation paths and confirm errors give a
    concrete recovery action instead of only a raw backend or browser exception.
 

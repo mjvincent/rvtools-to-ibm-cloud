@@ -14,6 +14,8 @@ import {
 type PackagePreflightProps = {
   summary: PreflightResponse['summary'];
   findings: PreflightResponse['findings'];
+  totalFindingCount?: number;
+  showingAllFindings?: boolean;
   suggestionForFinding: (
     finding: PreflightResponse['findings'][number],
   ) => AssignmentSuggestion | null;
@@ -22,6 +24,7 @@ type PackagePreflightProps = {
     finding: PreflightResponse['findings'][number],
     route: PreflightRoute,
   ) => void;
+  onToggleFindings?: () => void;
 };
 
 const severityOrder = ['blocker', 'warning', 'info'] as const;
@@ -72,18 +75,32 @@ export function groupPreflightFindings(findings: PreflightResponse['findings']):
 export default function PackagePreflight({
   summary,
   findings,
+  totalFindingCount = findings.length,
+  showingAllFindings = true,
   suggestionForFinding,
   onApplySuggestion,
   onOpenFinding,
+  onToggleFindings,
 }: PackagePreflightProps) {
   const groupedFindings = groupPreflightFindings(findings);
+  const hiddenFindingCount = Math.max(totalFindingCount - findings.length, 0);
+  const canToggleFindings = Boolean(onToggleFindings) && (
+    totalFindingCount > findings.length || (showingAllFindings && totalFindingCount > 5)
+  );
 
   return (
     <div className="export-package">
       <div className="section-header compact">
         <div>
           <h2>Package preflight</h2>
-          <p>{summary.total} backend finding(s) from the saved Carbon network plan.</p>
+          <p>
+            {summary.total} backend finding(s) from the saved Carbon network plan.
+            {hiddenFindingCount > 0
+              ? ` Showing top ${findings.length}; ${hiddenFindingCount} additional finding(s) are hidden.`
+              : totalFindingCount > 5
+                ? ' Showing all findings.'
+                : ''}
+          </p>
         </div>
         <div className="network-actions">
           <Tag type={summary.blockers === 0 ? 'green' : 'red'}>
@@ -93,6 +110,15 @@ export default function PackagePreflight({
             {summary.warnings} warning(s)
           </Tag>
           <Tag type="gray">{summary.info} info</Tag>
+          {canToggleFindings && onToggleFindings && (
+            <Button
+              kind="tertiary"
+              size="sm"
+              onClick={onToggleFindings}
+            >
+              {showingAllFindings ? 'Show top findings' : 'Show all findings'}
+            </Button>
+          )}
         </div>
       </div>
       {findings.length > 0 ? (
