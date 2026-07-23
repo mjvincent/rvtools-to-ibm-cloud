@@ -1,7 +1,10 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import PackagePreflight, { groupPreflightFindings } from '../../components/workflows/export/PackagePreflight';
+import PackagePreflight, {
+  filterPreflightFindings,
+  groupPreflightFindings,
+} from '../../components/workflows/export/PackagePreflight';
 import { sampleRows } from '../../store/AppContext';
 import type { PreflightFinding, PreflightResponse } from '../../hooks/useApi';
 import type { AssignmentSuggestion } from '../../utils/export-workflow';
@@ -57,6 +60,29 @@ function renderPreflight(overrides: Partial<React.ComponentProps<typeof PackageP
 }
 
 describe('PackagePreflight', () => {
+  it('filters findings by search text and severity', () => {
+    const findings = [
+      preflightFinding({
+        Severity: 'blocker',
+        Category: 'readiness',
+        Subject: 'db-01',
+        Message: 'Image readiness is blocked.',
+      }),
+      preflightFinding({
+        Severity: 'warning',
+        Category: 'storage_mapping',
+        Subject: 'app-02',
+        Message: 'Storage tier should be reviewed.',
+      }),
+    ];
+
+    expect(filterPreflightFindings(findings, { search: 'image', severity: 'all' })).toHaveLength(1);
+    expect(filterPreflightFindings(findings, { search: '', severity: 'warning' })).toEqual([
+      expect.objectContaining({ Subject: 'app-02' }),
+    ]);
+    expect(filterPreflightFindings(findings, { search: 'storage', severity: 'blocker' })).toEqual([]);
+  });
+
   it('groups findings by severity first and category second', () => {
     const groups = groupPreflightFindings([
       preflightFinding({
@@ -144,14 +170,9 @@ describe('PackagePreflight', () => {
     const onToggleFindings = jest.fn();
     renderPreflight({
       summary: { blockers: 6, warnings: 0, info: 0, total: 6 },
-      findings: [
-        preflightFinding({ Subject: 'app-01' }),
-        preflightFinding({ Subject: 'app-02' }),
-        preflightFinding({ Subject: 'app-03' }),
-        preflightFinding({ Subject: 'app-04' }),
-        preflightFinding({ Subject: 'app-05' }),
-      ],
-      totalFindingCount: 6,
+      findings: Array.from({ length: 6 }, (_, index) =>
+        preflightFinding({ Subject: `app-0${index + 1}` }),
+      ),
       showingAllFindings: false,
       onToggleFindings,
       suggestionForFinding: jest.fn(() => null),
@@ -170,7 +191,6 @@ describe('PackagePreflight', () => {
       findings: Array.from({ length: 6 }, (_, index) =>
         preflightFinding({ Subject: `app-0${index + 1}` }),
       ),
-      totalFindingCount: 6,
       showingAllFindings: true,
       onToggleFindings,
       suggestionForFinding: jest.fn(() => null),
@@ -180,6 +200,38 @@ describe('PackagePreflight', () => {
     await userEvent.click(screen.getByText('Show top findings'));
 
     expect(onToggleFindings).toHaveBeenCalledTimes(1);
+  });
+
+  it('filters rendered findings by search and severity controls', async () => {
+    renderPreflight({
+      summary: { blockers: 1, warnings: 1, info: 0, total: 2 },
+      findings: [
+        preflightFinding({
+          Severity: 'blocker',
+          Category: 'readiness',
+          Subject: 'db-01',
+          Message: 'Image readiness is blocked.',
+        }),
+        preflightFinding({
+          Severity: 'warning',
+          Category: 'storage_mapping',
+          Subject: 'app-02',
+          Message: 'Storage tier should be reviewed.',
+        }),
+      ],
+      suggestionForFinding: jest.fn(() => null),
+    });
+
+    await userEvent.type(screen.getByLabelText('Search findings'), 'storage');
+
+    expect(screen.getByText('Storage tier should be reviewed.')).toBeTruthy();
+    expect(screen.queryByText('Image readiness is blocked.')).toBeNull();
+    expect(screen.getByText(/1 matching finding\(s\)\./)).toBeTruthy();
+
+    await userEvent.selectOptions(screen.getByLabelText('Severity'), 'blocker');
+
+    expect(screen.getByText('No matches')).toBeTruthy();
+    expect(screen.getByText('No package preflight findings match the current filter.')).toBeTruthy();
   });
 
   it('shows a ready state when preflight returns no visible findings', () => {

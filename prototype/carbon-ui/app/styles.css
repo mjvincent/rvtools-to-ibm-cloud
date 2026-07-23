@@ -852,6 +852,14 @@ body {
   gap: 0.75rem;
 }
 
+.preflight-finding-filters {
+  align-items: end;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(16rem, 1fr) minmax(12rem, 16rem);
+  margin-bottom: 0.75rem;
+}
+
 .preflight-finding-group {
   border: 1px solid #e0e0e0;
   display: grid;
@@ -1579,6 +1587,10 @@ body {
   .export-state-banner {
     align-items: start;
     flex-direction: column;
+  }
+
+  .preflight-finding-filters {
+    grid-template-columns: 1fr;
   }
 
   .summary-grid {

@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Button, Tag, Tile } from '@carbon/react';
+import React, { useMemo, useState } from 'react';
+import { Button, Select, SelectItem, Tag, TextInput, Tile } from '@carbon/react';
 import type { PreflightResponse } from '../../../hooks/useApi';
 import {
   confidenceTagType,
@@ -14,7 +14,6 @@ import {
 type PackagePreflightProps = {
   summary: PreflightResponse['summary'];
   findings: PreflightResponse['findings'];
-  totalFindingCount?: number;
   showingAllFindings?: boolean;
   suggestionForFinding: (
     finding: PreflightResponse['findings'][number],
@@ -28,6 +27,7 @@ type PackagePreflightProps = {
 };
 
 const severityOrder = ['blocker', 'warning', 'info'] as const;
+type PreflightSeverityFilter = 'all' | 'blocker' | 'warning' | 'info';
 
 function severityLabel(severity: string) {
   if (severity === 'blocker') return 'Blockers';
@@ -47,6 +47,33 @@ export type PreflightFindingGroup = {
   category: string;
   findings: PreflightResponse['findings'];
 };
+
+export function filterPreflightFindings(
+  findings: PreflightResponse['findings'],
+  filters: { search: string; severity: PreflightSeverityFilter },
+) {
+  const normalizedSearch = filters.search.trim().toLowerCase();
+  return findings.filter((finding) => {
+    const severity = String(finding.Severity || '').toLowerCase();
+    if (filters.severity !== 'all' && severity !== filters.severity) {
+      return false;
+    }
+    if (!normalizedSearch) {
+      return true;
+    }
+    return [
+      finding.Subject,
+      finding.Category,
+      finding.Message,
+      finding['Fix Category'],
+      finding.Remediation,
+      finding['Suggested Action'],
+      finding.Field,
+      finding['Current Value'],
+      finding.Constraint,
+    ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch));
+  });
+}
 
 export function groupPreflightFindings(findings: PreflightResponse['findings']): PreflightFindingGroup[] {
   const grouped = new Map<string, PreflightFindingGroup>();
@@ -75,17 +102,24 @@ export function groupPreflightFindings(findings: PreflightResponse['findings']):
 export default function PackagePreflight({
   summary,
   findings,
-  totalFindingCount = findings.length,
   showingAllFindings = true,
   suggestionForFinding,
   onApplySuggestion,
   onOpenFinding,
   onToggleFindings,
 }: PackagePreflightProps) {
-  const groupedFindings = groupPreflightFindings(findings);
-  const hiddenFindingCount = Math.max(totalFindingCount - findings.length, 0);
+  const [search, setSearch] = useState('');
+  const [severityFilter, setSeverityFilter] = useState<PreflightSeverityFilter>('all');
+  const filteredFindings = useMemo(() => filterPreflightFindings(findings, {
+    search,
+    severity: severityFilter,
+  }), [findings, search, severityFilter]);
+  const visibleFindings = showingAllFindings ? filteredFindings : filteredFindings.slice(0, 5);
+  const groupedFindings = groupPreflightFindings(visibleFindings);
+  const hiddenFindingCount = Math.max(filteredFindings.length - visibleFindings.length, 0);
+  const hasActiveFilter = search.trim() !== '' || severityFilter !== 'all';
   const canToggleFindings = Boolean(onToggleFindings) && (
-    totalFindingCount > findings.length || (showingAllFindings && totalFindingCount > 5)
+    filteredFindings.length > visibleFindings.length || (showingAllFindings && filteredFindings.length > 5)
   );
 
   return (
@@ -95,9 +129,10 @@ export default function PackagePreflight({
           <h2>Package preflight</h2>
           <p>
             {summary.total} backend finding(s) from the saved Carbon network plan.
+            {hasActiveFilter ? ` ${filteredFindings.length} matching finding(s).` : ''}
             {hiddenFindingCount > 0
-              ? ` Showing top ${findings.length}; ${hiddenFindingCount} additional finding(s) are hidden.`
-              : totalFindingCount > 5
+              ? ` Showing top ${visibleFindings.length}; ${hiddenFindingCount} additional finding(s) are hidden.`
+              : filteredFindings.length > 5
                 ? ' Showing all findings.'
                 : ''}
           </p>
@@ -121,7 +156,31 @@ export default function PackagePreflight({
           )}
         </div>
       </div>
-      {findings.length > 0 ? (
+      {findings.length > 0 && (
+        <div className="preflight-finding-filters" aria-label="Package preflight finding filters">
+          <TextInput
+            id="preflight-finding-search"
+            labelText="Search findings"
+            placeholder="Search VM, category, message, or fix..."
+            size="sm"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <Select
+            id="preflight-severity-filter"
+            labelText="Severity"
+            size="sm"
+            value={severityFilter}
+            onChange={(event) => setSeverityFilter(event.target.value as PreflightSeverityFilter)}
+          >
+            <SelectItem value="all" text="All severities" />
+            <SelectItem value="blocker" text="Blockers" />
+            <SelectItem value="warning" text="Warnings" />
+            <SelectItem value="info" text="Info" />
+          </Select>
+        </div>
+      )}
+      {visibleFindings.length > 0 ? (
         <div className="preflight-finding-groups">
           {groupedFindings.map((group) => (
             <section
@@ -196,8 +255,8 @@ export default function PackagePreflight({
         </div>
       ) : (
         <Tile className="resource-tile">
-          <h3>Ready</h3>
-          <p>No package preflight findings returned.</p>
+          <h3>{findings.length > 0 ? 'No matches' : 'Ready'}</h3>
+          <p>{findings.length > 0 ? 'No package preflight findings match the current filter.' : 'No package preflight findings returned.'}</p>
         </Tile>
       )}
     </div>

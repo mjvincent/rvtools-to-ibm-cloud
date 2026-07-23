@@ -109,9 +109,6 @@ export default function ExportWorkflow() {
   const blockingFindingCount = findings.reduce((total, [, count]) => total + count, 0);
   const preflightSummary = preflight?.summary;
   const preflightFindings = preflight?.findings || [];
-  const visiblePreflightFindings = showAllPreflightFindings
-    ? preflightFindings
-    : preflightFindings.slice(0, 5);
   const exportChecklist = buildExportChecklist({
     selectedProjectId,
     isDirty: state.isDirty,
@@ -614,8 +611,7 @@ export default function ExportWorkflow() {
       {preflightSummary && (
         <PackagePreflight
           summary={preflightSummary}
-          findings={visiblePreflightFindings}
-          totalFindingCount={preflightFindings.length}
+          findings={preflightFindings}
           showingAllFindings={showAllPreflightFindings}
           suggestionForFinding={(finding) =>
             suggestionForFinding({ finding, assignmentRows, resources })

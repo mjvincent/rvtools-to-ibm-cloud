@@ -42,10 +42,10 @@ current-state banner, a recommended resolution order for the next export action,
 plus handoff guidance for package controls, key generated files, owner roles,
 and the Terraform execution boundary. Export action feedback adds next-step
 language after preflight, preview, planning-state, readiness-report, and ZIP
-actions. Package preflight findings are grouped by severity and category so
-blockers stay ahead of warnings and informational items. When backend preflight
-returns more than five findings, Carbon shows the top findings first and offers
-a control to expand or collapse the full list.
+actions. Package preflight findings can be searched by VM, category, message, or
+fix context and filtered by severity before they are grouped by severity and
+category. When backend preflight returns more than five findings, Carbon shows
+the top findings first and offers a control to expand or collapse the full list.
 The shell includes a workflow progress guide, compact collapsible workflow
 completion checklists, workflow-header `Step help`, shell-level help, and a
 separate user-guide route so evaluators can see what to do next without leaving
