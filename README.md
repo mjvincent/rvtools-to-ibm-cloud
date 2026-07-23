@@ -128,7 +128,9 @@ for saved-project state, planning gaps, preflight, remediation queue, preview,
 and ZIP readiness, a current-state banner, a recommended resolution order for
 the next export action, and handoff guidance that explains key package controls,
 generated files, primary owners, and the boundary that Terraform execution
-remains outside the app.
+remains outside the app. Export action feedback explains what happened, what
+changed, and what to do next after preflight, preview, planning-state,
+readiness-report, and ZIP actions.
 
 ## Common First-Run Fixes
 | Symptom | Fix |

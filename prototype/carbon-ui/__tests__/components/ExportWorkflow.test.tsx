@@ -202,7 +202,7 @@ describe('ExportWorkflow', () => {
     const [, payload] = (api.saveNetworkPlan as jest.Mock).mock.calls[0];
     expect(payload.vm_assignments).toHaveLength(3);
     expect(payload.metadata.project_name).toBe('Export Project');
-    expect(screen.getByText('Terraform ZIP downloaded with 1 warning(s).')).toBeTruthy();
+    expect(screen.getByText(/Terraform ZIP downloaded with 1 warning\(s\)\. Next:/)).toBeTruthy();
   });
 
   it('blocks Terraform ZIP download when export preflight has blockers', async () => {
@@ -212,7 +212,7 @@ describe('ExportWorkflow', () => {
 
     await waitFor(() => expect(api.runProjectPreflight).toHaveBeenCalledWith('project-1'));
     expect(api.generateTerraform).not.toHaveBeenCalled();
-    expect(screen.getByText('Terraform ZIP blocked by 1 preflight blocker(s). Resolve or route the findings below, then try again.')).toBeTruthy();
+    expect(screen.getByText(/Terraform ZIP blocked by 1 preflight blocker\(s\)\. Next:/)).toBeTruthy();
     expect(screen.getByText('Package preflight')).toBeTruthy();
   });
 
@@ -242,7 +242,7 @@ describe('ExportWorkflow', () => {
 
     await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(api.runProjectPreflight).toHaveBeenCalledWith('project-1'));
-    expect(screen.getByText('Preflight service unavailable.')).toBeTruthy();
+    expect(screen.getByText(/Preflight failed: Preflight service unavailable\. Next:/)).toBeTruthy();
     expect(screen.queryByText('Package preflight')).toBeNull();
     expect(screen.getByText('Run preflight')).toBeTruthy();
   });
@@ -291,7 +291,7 @@ describe('ExportWorkflow', () => {
 
     await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
     expect(api.previewTerraform).not.toHaveBeenCalled();
-    expect(screen.getByText('Network plan save unavailable before preview.')).toBeTruthy();
+    expect(screen.getByText(/Terraform preview failed: Network plan save unavailable before preview\. Next:/)).toBeTruthy();
     expect(screen.queryByText('Package preview')).toBeNull();
     expect(screen.getByText('Preview Terraform')).toBeTruthy();
   });
@@ -331,7 +331,7 @@ describe('ExportWorkflow', () => {
     await waitFor(() => expect(api.saveNetworkPlan).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(api.runProjectPreflight).toHaveBeenCalledWith('project-1'));
     await waitFor(() => expect(api.generateTerraform).toHaveBeenCalledWith('project-1'));
-    expect(screen.getByText('Terraform ZIP renderer unavailable.')).toBeTruthy();
+    expect(screen.getByText(/Terraform ZIP export failed: Terraform ZIP renderer unavailable\. Next:/)).toBeTruthy();
     expect(screen.getByText('Download Terraform ZIP')).toBeTruthy();
     expect(window.URL.createObjectURL).not.toHaveBeenCalled();
   });
@@ -495,7 +495,7 @@ describe('ExportWorkflow', () => {
     const payload = JSON.parse(await readBlobText(blob));
     expect(payload.vm_assignments).toHaveLength(3);
     expect(payload.metadata.project_name).toBe('Export Project');
-    expect(screen.getByText('Planning state JSON downloaded.')).toBeTruthy();
+    expect(screen.getByText(/Planning state JSON downloaded\. Next:/)).toBeTruthy();
   });
 
   it('downloads an export readiness report with checklist, gaps, and package inventory', async () => {
@@ -517,7 +517,7 @@ describe('ExportWorkflow', () => {
     expect(payload.readiness.planning_gaps['Missing subnet assignments']).toBe(3);
     expect(payload.package_inventory.total_files).toBe(37);
     expect(payload.suggestions.available.length).toBeGreaterThan(0);
-    expect(screen.getByText('Export readiness report downloaded.')).toBeTruthy();
+    expect(screen.getByText(/Export readiness report downloaded\. Next:/)).toBeTruthy();
   });
 
   it('imports planning-state JSON before saving Terraform', async () => {
@@ -568,7 +568,7 @@ describe('ExportWorkflow', () => {
 
     await userEvent.upload(screen.getByLabelText('Import planning state JSON'), file);
     await waitFor(() =>
-      expect(screen.getByText('Imported planning state from planning-state.json. Review and save the project to persist it.')).toBeTruthy(),
+      expect(screen.getByText(/Imported planning state from planning-state\.json\. Next:/)).toBeTruthy(),
     );
     await userEvent.click(screen.getByText('Download Terraform ZIP'));
 
@@ -596,7 +596,7 @@ describe('ExportWorkflow', () => {
     await userEvent.upload(screen.getByLabelText('Import planning state JSON'), file);
 
     await waitFor(() =>
-      expect(screen.getByText('Planning state file must be valid JSON.')).toBeTruthy(),
+      expect(screen.getByText(/Planning state import failed: Planning state file must be valid JSON\. Next:/)).toBeTruthy(),
     );
     expect(screen.queryByText(/Imported planning state from/)).toBeNull();
 
@@ -618,7 +618,7 @@ describe('ExportWorkflow', () => {
     await userEvent.upload(screen.getByLabelText('Import planning state JSON'), file);
 
     await waitFor(() =>
-      expect(screen.getByText('Planning state file is missing security group resources.')).toBeTruthy(),
+      expect(screen.getByText(/Planning state import failed: Planning state file is missing security group resources\. Next:/)).toBeTruthy(),
     );
     await userEvent.click(screen.getByText('Download Terraform ZIP'));
 

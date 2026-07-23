@@ -22,6 +22,16 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 23, 2026: Carbon Export Action Feedback
+- Centralized Carbon Export action feedback so preflight, preview,
+  planning-state, readiness-report, selected-file, and ZIP actions explain what
+  happened and the recommended next step.
+- Kept the `Terraform ZIP downloaded` progress phrase intact so workflow
+  completion tracking still recognizes successful ZIP downloads.
+- Added focused helper tests and updated Carbon README, user manual, testing
+  checklist, and README notes while preserving generated Terraform and handoff
+  outputs.
+
 ### July 22, 2026: Carbon Export Status Continuity
 - Added a Carbon Export current-state banner that keeps the active handoff
   stage visible and routes to the next available action when possible.

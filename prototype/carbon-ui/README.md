@@ -40,7 +40,9 @@ Export Readiness includes a summary metrics strip for saved-project state,
 planning gaps, preflight, remediation queue, preview, and ZIP readiness, a
 current-state banner, a recommended resolution order for the next export action,
 plus handoff guidance for package controls, key generated files, owner roles,
-and the Terraform execution boundary.
+and the Terraform execution boundary. Export action feedback adds next-step
+language after preflight, preview, planning-state, readiness-report, and ZIP
+actions.
 The shell includes a workflow progress guide, compact collapsible workflow
 completion checklists, workflow-header `Step help`, shell-level help, and a
 separate user-guide route so evaluators can see what to do next without leaving

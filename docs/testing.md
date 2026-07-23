@@ -207,8 +207,9 @@ and sensitive-data boundary.
 13. Confirm Export Readiness shows handoff guidance for package controls, key
    generated files, owner roles, and the Terraform execution boundary.
 14. Run preflight or preview/download checks appropriate for the branch under
-   test.
-13. For Carbon API failure-path changes, simulate or inspect failed upload,
+   test and confirm the success or error message explains what happened and the
+   next action.
+15. For Carbon API failure-path changes, simulate or inspect failed upload,
    save, preflight, preview, and ZIP generation paths and confirm errors give a
    concrete recovery action instead of only a raw backend or browser exception.
 

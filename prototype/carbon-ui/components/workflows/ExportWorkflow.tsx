@@ -26,6 +26,17 @@ import {
 import PackageParityStatus from './export/PackageParityStatus';
 import PackagePreflight from './export/PackagePreflight';
 import PackagePreview from './export/PackagePreview';
+import {
+  exportActionFailureMessage,
+  packagePreviewGeneratedMessage,
+  planningStateDownloadedMessage,
+  planningStateImportedMessage,
+  preflightCompleteMessage,
+  previewFileDownloadedMessage,
+  readinessReportDownloadedMessage,
+  terraformZipBlockedMessage,
+  terraformZipDownloadedMessage,
+} from './export/ExportActionFeedback';
 import ExportChecklistPanel from './export/ExportChecklistPanel';
 import ExportHandoffGuide from './export/ExportHandoffGuide';
 import ExportReadinessHeader from './export/ExportReadinessHeader';
@@ -322,12 +333,17 @@ export default function ExportWorkflow() {
       setPreflight(result);
       dispatch({
         type: 'SET_TERRAFORM_STATUS',
-        payload: `Preflight complete: ${result.summary.blockers} blocker(s), ${result.summary.warnings} warning(s).`,
+        payload: preflightCompleteMessage(result.summary),
       });
     } catch (error) {
       dispatch({
         type: 'SET_TERRAFORM_ERROR',
-        payload: error instanceof Error ? error.message : 'Preflight check failed.',
+        payload: exportActionFailureMessage({
+          action: 'Preflight',
+          error,
+          fallback: 'Preflight check failed.',
+          nextStep: 'confirm the project is saved and the FastAPI service is available, then retry.',
+        }),
       });
     } finally {
       setRunningPreflight(false);
@@ -349,12 +365,17 @@ export default function ExportWorkflow() {
       setPreviewCategory('All');
       dispatch({
         type: 'SET_TERRAFORM_STATUS',
-        payload: `Package preview generated for ${result.files.length} file(s).`,
+        payload: packagePreviewGeneratedMessage(result.files.length),
       });
     } catch (error) {
       dispatch({
         type: 'SET_TERRAFORM_ERROR',
-        payload: error instanceof Error ? error.message : 'Terraform preview failed.',
+        payload: exportActionFailureMessage({
+          action: 'Terraform preview',
+          error,
+          fallback: 'Terraform preview failed.',
+          nextStep: 'confirm the project is saved and backend package generation is healthy, then retry.',
+        }),
       });
     } finally {
       setLoadingPreview(false);
@@ -374,7 +395,7 @@ export default function ExportWorkflow() {
       if (preflightResult.summary.blockers > 0) {
         dispatch({
           type: 'SET_TERRAFORM_ERROR',
-          payload: `Terraform ZIP blocked by ${preflightResult.summary.blockers} preflight blocker(s). Resolve or route the findings below, then try again.`,
+          payload: terraformZipBlockedMessage(preflightResult.summary.blockers),
         });
         return;
       }
@@ -386,15 +407,18 @@ export default function ExportWorkflow() {
       });
       dispatch({
         type: 'SET_TERRAFORM_STATUS',
-        payload: preflightResult.summary.warnings > 0
-          ? `Terraform ZIP downloaded with ${preflightResult.summary.warnings} warning(s).`
-          : 'Terraform ZIP downloaded.',
+        payload: terraformZipDownloadedMessage(preflightResult.summary.warnings),
       });
       dispatch({ type: 'SET_IS_DIRTY', payload: false });
     } catch (error) {
       dispatch({
         type: 'SET_TERRAFORM_ERROR',
-        payload: error instanceof Error ? error.message : 'Terraform export failed.',
+        payload: exportActionFailureMessage({
+          action: 'Terraform ZIP export',
+          error,
+          fallback: 'Terraform export failed.',
+          nextStep: 'review preflight status and backend logs, then retry the ZIP download.',
+        }),
       });
     } finally {
       dispatch({ type: 'SET_GENERATING_TERRAFORM', payload: false });
@@ -407,7 +431,7 @@ export default function ExportWorkflow() {
       blob,
       filename: file.path.replace(/\//g, '__'),
     });
-    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: `Downloaded ${file.path}.` });
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: previewFileDownloadedMessage(file.path) });
   }
 
   function handleDownloadReadinessReport() {
@@ -431,7 +455,7 @@ export default function ExportWorkflow() {
       blob,
       filename: `${projectName.replace(/\s+/g, '-')}-carbon-export-readiness-${generatedAt.split('T')[0]}.json`,
     });
-    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Export readiness report downloaded.' });
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: readinessReportDownloadedMessage() });
   }
 
   function showHandoffCsvs() {
@@ -454,7 +478,7 @@ export default function ExportWorkflow() {
       blob,
       filename: `${projectName.replace(/\s+/g, '-')}-planning-state-${new Date().toISOString().split('T')[0]}.json`,
     });
-    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: 'Planning state JSON downloaded.' });
+    dispatch({ type: 'SET_TERRAFORM_STATUS', payload: planningStateDownloadedMessage() });
   }
 
   async function handleImportPlanningState(event: React.ChangeEvent<HTMLInputElement>) {
@@ -474,12 +498,17 @@ export default function ExportWorkflow() {
       });
       dispatch({
         type: 'SET_TERRAFORM_STATUS',
-        payload: `Imported planning state from ${file.name}. Review and save the project to persist it.`,
+        payload: planningStateImportedMessage(file.name),
       });
     } catch (error) {
       dispatch({
         type: 'SET_TERRAFORM_ERROR',
-        payload: error instanceof Error ? error.message : 'Planning state import failed.',
+        payload: exportActionFailureMessage({
+          action: 'Planning state import',
+          error,
+          fallback: 'Planning state import failed.',
+          nextStep: 'confirm the file is a valid Carbon planning-state JSON export, then import again.',
+        }),
       });
     }
   }
