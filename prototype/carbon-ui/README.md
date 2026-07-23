@@ -38,9 +38,9 @@ near the saved-project controls, including whether work is still browser-only,
 queued for autosave, saved to Postgres, or blocked by an API/database issue.
 Export Readiness includes a summary metrics strip for saved-project state,
 planning gaps, preflight, remediation queue, preview, and ZIP readiness, a
-recommended resolution order for the next export action, plus handoff guidance
-for package controls, key generated files, owner roles, and the Terraform
-execution boundary.
+current-state banner, a recommended resolution order for the next export action,
+plus handoff guidance for package controls, key generated files, owner roles,
+and the Terraform execution boundary.
 The shell includes a workflow progress guide, compact collapsible workflow
 completion checklists, workflow-header `Step help`, shell-level help, and a
 separate user-guide route so evaluators can see what to do next without leaving

@@ -198,12 +198,15 @@ and sensitive-data boundary.
 10. Confirm Export Readiness shows summary metrics for saved-project state,
    planning gaps, preflight status, remediation queue, preview, and ZIP
    readiness.
-11. Confirm Export Readiness shows recommended resolution order guidance from
+11. Confirm Export Readiness shows a current-state banner with the next export
+   action, such as saved project, planning gaps, preflight, blockers, preview,
+   or download readiness.
+12. Confirm Export Readiness shows recommended resolution order guidance from
    saved project through planning gaps, preflight, preview, and handoff
    download.
-12. Confirm Export Readiness shows handoff guidance for package controls, key
+13. Confirm Export Readiness shows handoff guidance for package controls, key
    generated files, owner roles, and the Terraform execution boundary.
-13. Run preflight or preview/download checks appropriate for the branch under
+14. Run preflight or preview/download checks appropriate for the branch under
    test.
 13. For Carbon API failure-path changes, simulate or inspect failed upload,
    save, preflight, preview, and ZIP generation paths and confirm errors give a

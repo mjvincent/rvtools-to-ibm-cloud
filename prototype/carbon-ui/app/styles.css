@@ -891,6 +891,45 @@ body {
   margin: 0;
 }
 
+.export-state-banner {
+  align-items: center;
+  border-left: 4px solid #0f62fe;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+}
+
+.export-state-banner > div {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.export-state-banner span {
+  color: #525252;
+  font-size: 0.8125rem;
+}
+
+.export-state-banner__headline {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.export-state-banner strong {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.export-state-banner p {
+  color: #525252;
+  line-height: 1.45;
+  margin: 0;
+}
+
 .export-resolution-order {
   margin-bottom: 0.75rem;
   padding: 1rem;
@@ -1504,6 +1543,11 @@ body {
   .export-resolution-order li .cds--tag {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .export-state-banner {
+    align-items: start;
+    flex-direction: column;
   }
 
   .summary-grid {

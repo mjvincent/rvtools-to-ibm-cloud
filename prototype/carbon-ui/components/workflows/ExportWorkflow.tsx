@@ -30,6 +30,7 @@ import ExportChecklistPanel from './export/ExportChecklistPanel';
 import ExportHandoffGuide from './export/ExportHandoffGuide';
 import ExportReadinessHeader from './export/ExportReadinessHeader';
 import ExportResolutionOrder, { buildExportResolutionOrder } from './export/ExportResolutionOrder';
+import ExportStateBanner, { buildExportStateBanner } from './export/ExportStateBanner';
 import ExportSummaryMetrics, { buildExportSummaryMetrics } from './export/ExportSummaryMetrics';
 import PlanningGapSummary from './export/PlanningGapSummary';
 import RemediationQueuePanel from './export/RemediationQueuePanel';
@@ -237,6 +238,7 @@ export default function ExportWorkflow() {
     remediationQueue,
     terraformPreview,
   });
+  const exportStateBanner = buildExportStateBanner(exportResolutionSteps);
   const hasResolvableIssue = remediationQueue.length > 0;
 
   const queueSuggestionEntries = remediationQueue
@@ -482,6 +484,24 @@ export default function ExportWorkflow() {
     }
   }
 
+  function handleExportStateNextAction() {
+    if (exportStateBanner.state === 'Planning gaps' || exportStateBanner.state === 'Blockers remain') {
+      handleResolveNextIssue();
+      return;
+    }
+    if (exportStateBanner.state === 'Ready for preflight') {
+      void handleRunPreflight();
+      return;
+    }
+    if (exportStateBanner.state === 'Ready to preview') {
+      void handlePreviewTerraform();
+      return;
+    }
+    if (exportStateBanner.state === 'Ready to download') {
+      handleDownloadReadinessReport();
+    }
+  }
+
   return (
     <Layer className="workbench-section">
       <ExportReadinessHeader
@@ -501,6 +521,10 @@ export default function ExportWorkflow() {
         onDownloadTerraform={handleDownloadTerraform}
       />
       <WorkflowCompletionChecklist workflow="export" />
+      <ExportStateBanner
+        model={exportStateBanner}
+        onNextAction={exportStateBanner.state === 'Needs save' ? undefined : handleExportStateNextAction}
+      />
       <ExportSummaryMetrics metrics={exportSummaryMetrics} />
       <ExportResolutionOrder steps={exportResolutionSteps} />
       {terraformStatus && (

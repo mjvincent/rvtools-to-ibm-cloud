@@ -125,10 +125,10 @@ project save guidance near the saved-project controls so users can tell whether
 work is browser-only, queued for autosave, saved to Postgres, or blocked by an
 API/database issue. Carbon Export Readiness includes a summary metrics strip
 for saved-project state, planning gaps, preflight, remediation queue, preview,
-and ZIP readiness, a recommended resolution order for the next export action,
-and handoff guidance that explains key package controls, generated files,
-primary owners, and the boundary that Terraform execution remains outside the
-app.
+and ZIP readiness, a current-state banner, a recommended resolution order for
+the next export action, and handoff guidance that explains key package controls,
+generated files, primary owners, and the boundary that Terraform execution
+remains outside the app.
 
 ## Common First-Run Fixes
 | Symptom | Fix |
