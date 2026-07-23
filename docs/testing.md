@@ -213,9 +213,11 @@ and sensitive-data boundary.
    with blockers shown before warnings and informational findings.
 16. Confirm package preflight search and severity filters narrow findings by VM,
    category, message, fix context, and severity.
-17. When more than five package preflight findings exist, confirm Carbon shows
+17. Confirm active package preflight filter indicators appear and `Clear filters`
+   restores the unfiltered findings.
+18. When more than five package preflight findings exist, confirm Carbon shows
    the top findings first and can expand or collapse the full finding list.
-18. For Carbon API failure-path changes, simulate or inspect failed upload,
+19. For Carbon API failure-path changes, simulate or inspect failed upload,
    save, preflight, preview, and ZIP generation paths and confirm errors give a
    concrete recovery action instead of only a raw backend or browser exception.
 

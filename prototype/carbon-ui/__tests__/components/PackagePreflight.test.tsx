@@ -224,14 +224,50 @@ describe('PackagePreflight', () => {
 
     await userEvent.type(screen.getByLabelText('Search findings'), 'storage');
 
+    expect(screen.getByLabelText('Active preflight filters')).toBeTruthy();
+    expect(screen.getByText('Search: storage')).toBeTruthy();
     expect(screen.getByText('Storage tier should be reviewed.')).toBeTruthy();
     expect(screen.queryByText('Image readiness is blocked.')).toBeNull();
     expect(screen.getByText(/1 matching finding\(s\)\./)).toBeTruthy();
 
     await userEvent.selectOptions(screen.getByLabelText('Severity'), 'blocker');
 
+    expect(screen.getByText('Severity: Blockers')).toBeTruthy();
     expect(screen.getByText('No matches')).toBeTruthy();
     expect(screen.getByText('No package preflight findings match the current filter.')).toBeTruthy();
+  });
+
+  it('clears active search and severity filters', async () => {
+    renderPreflight({
+      summary: { blockers: 1, warnings: 1, info: 0, total: 2 },
+      findings: [
+        preflightFinding({
+          Severity: 'blocker',
+          Category: 'readiness',
+          Subject: 'db-01',
+          Message: 'Image readiness is blocked.',
+        }),
+        preflightFinding({
+          Severity: 'warning',
+          Category: 'storage_mapping',
+          Subject: 'app-02',
+          Message: 'Storage tier should be reviewed.',
+        }),
+      ],
+      suggestionForFinding: jest.fn(() => null),
+    });
+
+    await userEvent.type(screen.getByLabelText('Search findings'), 'storage');
+    await userEvent.selectOptions(screen.getByLabelText('Severity'), 'blocker');
+    expect(screen.getByText('No matches')).toBeTruthy();
+
+    await userEvent.click(screen.getByText('Clear filters'));
+
+    expect(screen.queryByLabelText('Active preflight filters')).toBeNull();
+    expect((screen.getByLabelText('Search findings') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('Severity') as HTMLSelectElement).value).toBe('all');
+    expect(screen.getByText('Image readiness is blocked.')).toBeTruthy();
+    expect(screen.getByText('Storage tier should be reviewed.')).toBeTruthy();
   });
 
   it('shows a ready state when preflight returns no visible findings', () => {

@@ -860,6 +860,14 @@ body {
   margin-bottom: 0.75rem;
 }
 
+.preflight-active-filters {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 .preflight-finding-group {
   border: 1px solid #e0e0e0;
   display: grid;

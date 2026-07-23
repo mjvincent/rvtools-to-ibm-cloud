@@ -42,6 +42,13 @@ function severityTagType(severity: string) {
   return 'gray';
 }
 
+function severityFilterLabel(severity: PreflightSeverityFilter) {
+  if (severity === 'blocker') return 'Blockers';
+  if (severity === 'warning') return 'Warnings';
+  if (severity === 'info') return 'Info';
+  return 'All severities';
+}
+
 export type PreflightFindingGroup = {
   severity: string;
   category: string;
@@ -121,6 +128,10 @@ export default function PackagePreflight({
   const canToggleFindings = Boolean(onToggleFindings) && (
     filteredFindings.length > visibleFindings.length || (showingAllFindings && filteredFindings.length > 5)
   );
+  function clearFilters() {
+    setSearch('');
+    setSeverityFilter('all');
+  }
 
   return (
     <div className="export-package">
@@ -157,27 +168,38 @@ export default function PackagePreflight({
         </div>
       </div>
       {findings.length > 0 && (
-        <div className="preflight-finding-filters" aria-label="Package preflight finding filters">
-          <TextInput
-            id="preflight-finding-search"
-            labelText="Search findings"
-            placeholder="Search VM, category, message, or fix..."
-            size="sm"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <Select
-            id="preflight-severity-filter"
-            labelText="Severity"
-            size="sm"
-            value={severityFilter}
-            onChange={(event) => setSeverityFilter(event.target.value as PreflightSeverityFilter)}
-          >
-            <SelectItem value="all" text="All severities" />
-            <SelectItem value="blocker" text="Blockers" />
-            <SelectItem value="warning" text="Warnings" />
-            <SelectItem value="info" text="Info" />
-          </Select>
+        <div aria-label="Package preflight finding filters">
+          <div className="preflight-finding-filters">
+            <TextInput
+              id="preflight-finding-search"
+              labelText="Search findings"
+              placeholder="Search VM, category, message, or fix..."
+              size="sm"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <Select
+              id="preflight-severity-filter"
+              labelText="Severity"
+              size="sm"
+              value={severityFilter}
+              onChange={(event) => setSeverityFilter(event.target.value as PreflightSeverityFilter)}
+            >
+              <SelectItem value="all" text="All severities" />
+              <SelectItem value="blocker" text="Blockers" />
+              <SelectItem value="warning" text="Warnings" />
+              <SelectItem value="info" text="Info" />
+            </Select>
+          </div>
+          {hasActiveFilter && (
+            <div className="preflight-active-filters" aria-label="Active preflight filters">
+              {search.trim() !== '' && <Tag type="blue">Search: {search.trim()}</Tag>}
+              {severityFilter !== 'all' && <Tag type="purple">Severity: {severityFilterLabel(severityFilter)}</Tag>}
+              <Button kind="ghost" size="sm" onClick={clearFilters}>
+                Clear filters
+              </Button>
+            </div>
+          )}
         </div>
       )}
       {visibleFindings.length > 0 ? (

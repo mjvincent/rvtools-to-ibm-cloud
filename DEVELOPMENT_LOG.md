@@ -22,6 +22,15 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 23, 2026: Carbon Preflight Filter Reset
+- Added active filter indicators and a `Clear filters` action to Carbon package
+  preflight search/severity filters.
+- Made filtered views easier to recognize and reset without changing finding
+  grouping, visibility, routing, or suggested assignment actions.
+- Added focused component tests and updated Carbon README, user manual, testing
+  checklist, and README notes while preserving generated Terraform and handoff
+  outputs.
+
 ### July 23, 2026: Carbon Preflight Finding Filter
 - Added Carbon package preflight search and severity filtering before grouped
   severity/category rendering.
