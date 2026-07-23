@@ -891,6 +891,55 @@ body {
   margin: 0;
 }
 
+.export-resolution-order {
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+}
+
+.export-resolution-order ol {
+  counter-reset: export-resolution-step;
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.export-resolution-order li {
+  align-items: start;
+  border: 1px solid #e0e0e0;
+  counter-increment: export-resolution-step;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 2rem minmax(0, 1fr) max-content;
+  padding: 0.75rem;
+}
+
+.export-resolution-order li::before {
+  align-items: center;
+  background: #f4f4f4;
+  color: #161616;
+  content: counter(export-resolution-step);
+  display: inline-flex;
+  font-size: 0.875rem;
+  font-weight: 600;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.export-resolution-order strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.export-resolution-order p {
+  color: #525252;
+  line-height: 1.45;
+  margin: 0;
+}
+
 .export-handoff-grid {
   display: grid;
   gap: 0.75rem;
@@ -1446,6 +1495,15 @@ body {
   .export-handoff-grid,
   .export-file-guide__table {
     grid-template-columns: 1fr;
+  }
+
+  .export-resolution-order li {
+    grid-template-columns: 2rem minmax(0, 1fr);
+  }
+
+  .export-resolution-order li .cds--tag {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .summary-grid {

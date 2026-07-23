@@ -1063,7 +1063,7 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 - **Override workflow**: Carbon includes a VM Overrides workflow for profile overrides, storage-tier overrides, exclusion reasons, override reasons, pricing-impact review, and decision-audit CSV export. Assignment rows route directly to override review for a selected VM.
 - **Wave planning, remediation, image import, and migration ops**: Carbon includes workflow tabs for wave metadata, remediation backlog tracking, image import status, and cutover readiness. These workflows persist through saved project state and contribute to the generated handoff ZIP.
 - **Export parity status**: Carbon Export shows package parity status before download. It identifies the Streamlit handoff file set, the Carbon modular Terraform layout, and the documented Carbon-only `network-plan.json` addition.
-- **Export readiness guidance**: Carbon Export includes a readiness checklist, summary metrics, backend package preflight, blocker routing, Terraform package preview, handoff guidance, and ZIP download gating. The summary metrics show saved-project state, planning gaps, preflight blockers/warnings, remediation queue count, preview status, and ZIP readiness. The handoff guidance explains key package controls, generated files, owners, and the boundary that Terraform execution remains outside the app. ZIP download runs preflight first and stops when blockers remain.
+- **Export readiness guidance**: Carbon Export includes a readiness checklist, summary metrics, recommended resolution order, backend package preflight, blocker routing, Terraform package preview, handoff guidance, and ZIP download gating. The summary metrics show saved-project state, planning gaps, preflight blockers/warnings, remediation queue count, preview status, and ZIP readiness. The recommended resolution order points users to the next export action from saved project, planning gaps, preflight, blockers, preview, and handoff download. The handoff guidance explains key package controls, generated files, owners, and the boundary that Terraform execution remains outside the app. ZIP download runs preflight first and stops when blockers remain.
 - **Remediation queue**: Carbon Export includes a prioritized queue that combines backend preflight blockers, local planning gaps, subnet CIDR gaps, Terraform naming cleanup, and warnings. `Resolve next issue` and each row-level `Review issue` action use the same routing logic so the user lands in the correct workflow with the affected VM or planning area selected.
 - **Suggested assignment fixes**: Carbon can suggest subnet, security group, storage/IOPS, and wave assignments from similarly named VMs, shared application/network/owner/cutover metadata, or matching bucket purpose. Suggestions show confidence and evidence, and users must explicitly apply them.
 - **Bulk remediation assistance**: Suggested queue fixes can be selected with checkboxes, selected in bulk when confidence is high, cleared, or applied from the Export Readiness queue. Each applied fix is audited.
@@ -1092,12 +1092,13 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 13. Review `Network Plan`, `Security Plan`, `Storage / IOPS Plan`, and `Wave Plan` for target design completeness.
 14. Open `Export Readiness`.
 15. Review the summary metrics to see saved-project state, planning gaps, preflight status, remediation queue count, preview status, and ZIP readiness.
-16. Review the handoff guidance to understand package controls, key generated files, owners, and operator responsibilities.
-17. Save or load the desired project, then run `Run preflight`.
-18. Use the remediation queue to route to blockers or apply reviewed high-confidence suggestions.
-19. Use `Preview Terraform` to inspect generated package files in the UI.
-20. Download the readiness report if a review artifact is needed.
-21. Click `Download Terraform ZIP` after preflight blockers are resolved.
+16. Follow the recommended resolution order to see the next export action before jumping between panels.
+17. Review the handoff guidance to understand package controls, key generated files, owners, and operator responsibilities.
+18. Save or load the desired project, then run `Run preflight`.
+19. Use the remediation queue to route to blockers or apply reviewed high-confidence suggestions.
+20. Use `Preview Terraform` to inspect generated package files in the UI.
+21. Download the readiness report if a review artifact is needed.
+22. Click `Download Terraform ZIP` after preflight blockers are resolved.
 
 ### Carbon And Streamlit Parity
 | Area | Carbon status | Notes |

@@ -22,6 +22,15 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Export Guided Resolution Ordering
+- Added a Carbon Export recommended resolution order panel that turns saved
+  project state, planning gaps, preflight state, blockers, preview state, and
+  handoff download readiness into a clear next-action sequence.
+- Added focused helper/component tests for the resolution ordering and rendered
+  panel.
+- Updated Carbon README, user manual, testing checklist, and README notes while
+  preserving generated Terraform and handoff outputs.
+
 ### July 22, 2026: Carbon Export Summary Metrics
 - Added a Carbon Export summary metrics strip for saved-project state,
   planning gaps, preflight blockers/warnings, remediation queue count, package
