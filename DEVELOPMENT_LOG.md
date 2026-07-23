@@ -22,6 +22,14 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Project Save Guidance
+- Added state-aware Carbon project save guidance near the saved-project
+  controls so users can distinguish browser-only work, queued autosave, saved
+  Postgres state, and API/database availability problems.
+- Clarified that saved projects restore planning state but do not replace the
+  source RVTools workbook, generated Terraform ZIPs, or readiness reports.
+- Added focused Carbon helper/component tests and updated user/testing docs.
+
 ### July 22, 2026: Carbon Intake Decision Clarity
 - Reorganized Carbon Workbook Intake into clear choices for the bundled clean
   sample, real RVTools upload, and the larger workshop sample exercise.

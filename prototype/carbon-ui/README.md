@@ -33,7 +33,9 @@ when the evaluator wants expected readiness findings. Both load paths call the
 real FastAPI summary engine and show next-step guidance after a workbook is
 loaded. Saved project controls, network-plan save/load, drag-and-drop VM
 assignment, autosave, and Terraform ZIP export all use the shared
-FastAPI/Postgres prototype stack.
+FastAPI/Postgres prototype stack. The shell also shows project save guidance
+near the saved-project controls, including whether work is still browser-only,
+queued for autosave, saved to Postgres, or blocked by an API/database issue.
 The shell includes a workflow progress guide, compact collapsible workflow
 completion checklists, workflow-header `Step help`, shell-level help, and a
 separate user-guide route so evaluators can see what to do next without leaving

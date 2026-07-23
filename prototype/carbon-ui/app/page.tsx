@@ -60,6 +60,7 @@ import ImageImportWorkflow from '../components/workflows/ImageImportWorkflow';
 import MigrationOpsWorkflow from '../components/workflows/MigrationOpsWorkflow';
 import ExportWorkflow from '../components/workflows/ExportWorkflow';
 import GuidedHelp from '../components/ui/GuidedHelp';
+import ProjectSaveGuidance from '../components/ui/ProjectSaveGuidance';
 import WorkflowProgressGuide from '../components/ui/WorkflowProgressGuide';
 import { buildWorkflowProgress } from '../utils/workflow-progress';
 
@@ -442,6 +443,15 @@ function WorkbenchShell() {
                 </Button>
               </div>
             </div>
+            <ProjectSaveGuidance
+              persistenceEnabled={persistenceEnabled}
+              selectedProjectId={selectedProjectId}
+              isDirty={isDirty}
+              autoSaveStatus={autoSaveStatus}
+              autoSaveError={autoSaveError}
+              projectError={projectError}
+              apiStatus={apiStatus}
+            />
             {projectStatus && (
               <InlineNotification
                 kind="success"

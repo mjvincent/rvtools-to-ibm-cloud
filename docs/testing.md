@@ -190,11 +190,14 @@ and sensitive-data boundary.
 7. Confirm Workbook Intake shows the clean sample, real RVTools upload, and
    workshop sample choices, then shows `What happens next` after a workbook
    loads.
-8. Visit VM Assignment, Network Plan, Remediation Backlog, Migration Ops, and
+8. Confirm project save guidance appears near the saved-project controls and
+   explains whether work is browser-only, queued for autosave, saved to
+   Postgres, or blocked by API/database availability.
+9. Visit VM Assignment, Network Plan, Remediation Backlog, Migration Ops, and
    Export Readiness.
-9. Run preflight or preview/download checks appropriate for the branch under
+10. Run preflight or preview/download checks appropriate for the branch under
    test.
-10. For Carbon API failure-path changes, simulate or inspect failed upload,
+11. For Carbon API failure-path changes, simulate or inspect failed upload,
    save, preflight, preview, and ZIP generation paths and confirm errors give a
    concrete recovery action instead of only a raw backend or browser exception.
 

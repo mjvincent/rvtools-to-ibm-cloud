@@ -120,7 +120,10 @@ evidence is recorded in
 Carbon Workbook Intake includes `Load sample workbook` for the bundled small
 sample, normal RVTools upload for local files, and a workshop-sample prompt for
 the larger manual exercise. After a workbook loads, Carbon shows the immediate
-next steps from overview review through Export Readiness.
+next steps from overview review through Export Readiness. Carbon also shows
+project save guidance near the saved-project controls so users can tell whether
+work is browser-only, queued for autosave, saved to Postgres, or blocked by an
+API/database issue.
 
 ## Common First-Run Fixes
 | Symptom | Fix |

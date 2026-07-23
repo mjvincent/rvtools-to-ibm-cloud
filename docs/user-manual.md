@@ -1054,7 +1054,7 @@ The IBM Carbon UI under `prototype/carbon-ui` is an experimental enterprise UI c
 
 As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow surfaces, package parity checks, guided export readiness controls, remediation-queue assistance, and initial keyboard accessibility coverage needed for continued evaluation:
 
-- **Workbook intake and overview**: Carbon separates Workbook Intake into clean sample, real RVTools upload, and workshop-sample choices. It can load the bundled small sample workbook directly or upload RVTools workbooks through the shared FastAPI summary path, then shows estate metrics, readiness counts, project persistence status, saved-project controls, and immediate next-step guidance.
+- **Workbook intake and overview**: Carbon separates Workbook Intake into clean sample, real RVTools upload, and workshop-sample choices. It can load the bundled small sample workbook directly or upload RVTools workbooks through the shared FastAPI summary path, then shows estate metrics, readiness counts, project persistence status, saved-project controls, project save guidance, and immediate next-step guidance.
 - **Assignment workflow**: VM rows can be selected individually or in groups, then assigned by drag/drop or the explicit `Assign` button.
 - **Assignment targets**: Subnet, security group, storage/IOPS, and migration wave buckets all support placement through the same confirmation flow. Assignment bucket regions and explicit `Assign` buttons expose target-specific accessible names for keyboard and assistive-technology review.
 - **Confirmation modal**: Drag/drop assignment opens a placement modal that confirms the target bucket and selected VM count before applying changes.
@@ -1073,7 +1073,7 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 - **Guided help**: Each Carbon workflow header exposes a local `Step help` control, and the shell keeps the broader `Help` control available near the project controls. Both explain the current step's purpose, what to check before continuing, when the step is complete, common mistakes, and the recommended next step. `Open user guide` launches a separate guide window so reviewers can keep instructions visible while using the app.
 - **Readiness report**: Carbon can download a `carbon-export-readiness` JSON report containing checklist status, assignment gaps, latest preflight findings, suggestion audit entries, and package inventory counts for migration review meetings.
 - **Terraform ZIP contents**: Carbon-generated ZIPs include the Streamlit handoff inventory, Carbon modular Terraform files, and `network-plan.json`. The UI inventory is backed by a shared JSON contract and tested against backend ZIP inventory constants to prevent drift.
-- **Persistence expectations**: Saved projects, network plans, VM assignments, override values, and dirty-state autosave use the shared FastAPI/Postgres prototype stack. If the API or database is unavailable, Carbon shows a persistence warning and the work should be treated as temporary until saved successfully.
+- **Persistence expectations**: Saved projects, network plans, VM assignments, override values, and dirty-state autosave use the shared FastAPI/Postgres prototype stack. Carbon shows project save guidance near the saved-project controls so users can see whether work is browser-only, queued for autosave, saved to Postgres, or blocked by API/database availability. Saved projects restore planning state; they do not replace the source RVTools workbook or downloaded Terraform ZIPs and readiness reports.
 - **Accessibility and E2E coverage**: Drag/drop regions, assignment buttons, row checkboxes, and reviewable readiness chips expose descriptive accessible names. Playwright coverage runs in Chromium, Firefox, and WebKit and includes workbook upload, project save/load, keyboard navigation, keyboard assignment, review-chip routing, single and multi-select drag/drop, unassign persistence, autosave reload, and drag/drop accessibility labels.
 
 ### Carbon End-to-End Workflow
@@ -1085,21 +1085,22 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 6. Use `Workbook Intake` to load the bundled clean sample, upload an RVTools XLSX workbook, or manually upload the workshop sample for a larger practice run.
 7. After a workbook loads, follow the `What happens next` guidance to review Overview, resolve findings, complete assignments, and run Export Readiness.
 8. Review `Overview` metrics, project persistence state, and readiness counts.
-9. Use `VM Assignment` to map VMs to subnets, security groups, storage/IOPS targets, and waves.
-10. Use `VM Overrides` for VSI profile overrides, storage tier overrides, exclusion decisions, and override reasons.
-11. Review `Remediation Backlog`, `Image Import Planning`, and `Migration Ops` to track blocker owners, image import status, and cutover readiness.
-12. Review `Network Plan`, `Security Plan`, `Storage / IOPS Plan`, and `Wave Plan` for target design completeness.
-13. Open `Export Readiness`.
-14. Save or load the desired project, then run `Run preflight`.
-15. Use the remediation queue to route to blockers or apply reviewed high-confidence suggestions.
-16. Use `Preview Terraform` to inspect generated package files in the UI.
-17. Download the readiness report if a review artifact is needed.
-18. Click `Download Terraform ZIP` after preflight blockers are resolved.
+9. Review the project save guidance before refreshing, closing the browser, or switching machines.
+10. Use `VM Assignment` to map VMs to subnets, security groups, storage/IOPS targets, and waves.
+11. Use `VM Overrides` for VSI profile overrides, storage tier overrides, exclusion decisions, and override reasons.
+12. Review `Remediation Backlog`, `Image Import Planning`, and `Migration Ops` to track blocker owners, image import status, and cutover readiness.
+13. Review `Network Plan`, `Security Plan`, `Storage / IOPS Plan`, and `Wave Plan` for target design completeness.
+14. Open `Export Readiness`.
+15. Save or load the desired project, then run `Run preflight`.
+16. Use the remediation queue to route to blockers or apply reviewed high-confidence suggestions.
+17. Use `Preview Terraform` to inspect generated package files in the UI.
+18. Download the readiness report if a review artifact is needed.
+19. Click `Download Terraform ZIP` after preflight blockers are resolved.
 
 ### Carbon And Streamlit Parity
 | Area | Carbon status | Notes |
 | --- | --- | --- |
-| Workbook upload and overview | Implemented | Uses FastAPI summary path, direct bundled sample loading, decision-oriented intake choices, and Postgres project persistence. |
+| Workbook upload and overview | Implemented | Uses FastAPI summary path, direct bundled sample loading, decision-oriented intake choices, project save guidance, and Postgres project persistence. |
 | VM assignment | Implemented | Supports row selection, drag/drop, explicit assignment, unassign actions, and target chips. |
 | VSI profile and storage overrides | Implemented | VM Overrides workflow records profile, storage, scope, reasons, pricing impact, and decision audit. |
 | Network, security, storage, and wave planning | Implemented | Carbon has workflow tabs and saved-state persistence for these planning surfaces. |

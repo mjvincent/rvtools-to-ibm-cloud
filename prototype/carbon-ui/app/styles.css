@@ -236,6 +236,40 @@ body {
   line-height: 1.4;
 }
 
+.project-save-guidance {
+  border-left: 0.25rem solid #0f62fe;
+  margin-bottom: 1rem;
+}
+
+.project-save-guidance__header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.project-save-guidance h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.project-save-guidance p,
+.project-save-guidance li {
+  color: #525252;
+  line-height: 1.5;
+}
+
+.project-save-guidance p {
+  margin: 0 0 0.5rem;
+}
+
+.project-save-guidance ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
 .workbench-section {
   background: #ffffff;
   padding: 1rem;
