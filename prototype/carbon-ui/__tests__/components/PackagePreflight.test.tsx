@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import PackagePreflight from '../../components/workflows/export/PackagePreflight';
+import PackagePreflight, { groupPreflightFindings } from '../../components/workflows/export/PackagePreflight';
 import { sampleRows } from '../../store/AppContext';
 import type { PreflightFinding, PreflightResponse } from '../../hooks/useApi';
 import type { AssignmentSuggestion } from '../../utils/export-workflow';
@@ -57,12 +57,47 @@ function renderPreflight(overrides: Partial<React.ComponentProps<typeof PackageP
 }
 
 describe('PackagePreflight', () => {
+  it('groups findings by severity first and category second', () => {
+    const groups = groupPreflightFindings([
+      preflightFinding({
+        Severity: 'warning',
+        Category: 'storage_mapping',
+        Subject: 'app-02',
+      }),
+      preflightFinding({
+        Severity: 'info',
+        Category: 'package',
+        Subject: 'package',
+      }),
+      preflightFinding({
+        Severity: 'blocker',
+        Category: 'readiness',
+        Subject: 'db-01',
+      }),
+      preflightFinding({
+        Severity: 'blocker',
+        Category: 'network_mapping',
+        Subject: 'web-01',
+      }),
+    ]);
+
+    expect(groups.map((group) => `${group.severity}:${group.category}:${group.findings.length}`)).toEqual([
+      'blocker:network_mapping:1',
+      'blocker:readiness:1',
+      'warning:storage_mapping:1',
+      'info:package:1',
+    ]);
+  });
+
   it('renders preflight summary, finding details, and suggested assignment actions', async () => {
     const { props, finding, suggestion } = renderPreflight();
 
     expect(screen.getByText('Package preflight')).toBeTruthy();
     expect(screen.getByText('1 backend finding(s) from the saved Carbon network plan.')).toBeTruthy();
     expect(screen.getByText('1 blocker(s)')).toBeTruthy();
+    expect(screen.getByLabelText('Blockers network_mapping')).toBeTruthy();
+    expect(screen.getByText('network_mapping')).toBeTruthy();
+    expect(screen.getByText('1 finding(s)')).toBeTruthy();
     expect(screen.getByText('app-01')).toBeTruthy();
     expect(screen.getByText('VM has no subnet assigned.')).toBeTruthy();
     expect(screen.getByText('Suggested subnet: prod-app-us-south-1. Best matching subnet from VM metadata.')).toBeTruthy();
@@ -77,6 +112,32 @@ describe('PackagePreflight', () => {
       finding,
       expect.objectContaining({ assignmentMode: 'network', workflow: 'assignment' }),
     );
+  });
+
+  it('renders grouped blocker and warning sections', () => {
+    renderPreflight({
+      summary: { blockers: 1, warnings: 1, info: 0, total: 2 },
+      findings: [
+        preflightFinding({
+          Severity: 'warning',
+          Category: 'storage_mapping',
+          Subject: 'app-02',
+          Message: 'Storage tier should be reviewed.',
+        }),
+        preflightFinding({
+          Severity: 'blocker',
+          Category: 'readiness',
+          Subject: 'db-01',
+          Message: 'Image readiness is blocked.',
+        }),
+      ],
+      suggestionForFinding: jest.fn(() => null),
+    });
+
+    expect(screen.getByLabelText('Blockers readiness')).toBeTruthy();
+    expect(screen.getByLabelText('Warnings storage_mapping')).toBeTruthy();
+    expect(screen.getByText('Image readiness is blocked.')).toBeTruthy();
+    expect(screen.getByText('Storage tier should be reviewed.')).toBeTruthy();
   });
 
   it('shows a ready state when preflight returns no visible findings', () => {

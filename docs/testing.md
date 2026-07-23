@@ -209,7 +209,9 @@ and sensitive-data boundary.
 14. Run preflight or preview/download checks appropriate for the branch under
    test and confirm the success or error message explains what happened and the
    next action.
-15. For Carbon API failure-path changes, simulate or inspect failed upload,
+15. Confirm package preflight findings are grouped by severity and category,
+   with blockers shown before warnings and informational findings.
+16. For Carbon API failure-path changes, simulate or inspect failed upload,
    save, preflight, preview, and ZIP generation paths and confirm errors give a
    concrete recovery action instead of only a raw backend or browser exception.
 

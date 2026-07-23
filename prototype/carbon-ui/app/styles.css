@@ -847,6 +847,37 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.preflight-finding-groups {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.preflight-finding-group {
+  border: 1px solid #e0e0e0;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.preflight-finding-group__header {
+  align-items: start;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.preflight-finding-group__header h3,
+.package-tile__header h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.preflight-finding-group__header p {
+  color: #525252;
+  margin: 0.25rem 0 0;
+}
+
 .export-handoff-guide {
   margin-bottom: 0.75rem;
   padding: 1rem;

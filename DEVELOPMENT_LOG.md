@@ -22,6 +22,14 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 23, 2026: Carbon Preflight Finding Groups
+- Grouped Carbon package preflight findings by severity and category so
+  blockers, warnings, and informational findings are easier to scan and route.
+- Preserved existing finding review routing and suggested assignment actions.
+- Added focused grouping/render tests and updated Carbon README, user manual,
+  testing checklist, and README notes while preserving generated Terraform and
+  handoff outputs.
+
 ### July 23, 2026: Carbon Export Action Feedback
 - Centralized Carbon Export action feedback so preflight, preview,
   planning-state, readiness-report, selected-file, and ZIP actions explain what

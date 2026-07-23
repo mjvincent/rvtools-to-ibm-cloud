@@ -130,7 +130,8 @@ the next export action, and handoff guidance that explains key package controls,
 generated files, primary owners, and the boundary that Terraform execution
 remains outside the app. Export action feedback explains what happened, what
 changed, and what to do next after preflight, preview, planning-state,
-readiness-report, and ZIP actions.
+readiness-report, and ZIP actions. Preflight findings are grouped by severity
+and category so blockers are easier to route before package download.
 
 ## Common First-Run Fixes
 | Symptom | Fix |
