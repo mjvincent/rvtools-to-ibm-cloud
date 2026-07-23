@@ -847,6 +847,64 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.export-handoff-guide {
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+}
+
+.export-handoff-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.export-handoff-card {
+  border: 1px solid #e0e0e0;
+  display: grid;
+  gap: 0.5rem;
+  min-height: 9rem;
+  padding: 0.75rem;
+}
+
+.export-handoff-card h3,
+.export-file-guide h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.export-handoff-card p,
+.export-file-guide span,
+.export-handoff-boundary {
+  color: #525252;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.export-file-guide {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.export-file-guide__table {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem 0.75rem;
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) max-content;
+}
+
+.export-file-guide__table strong {
+  font-family: var(--cds-code-01-font-family, monospace);
+  overflow-wrap: anywhere;
+}
+
+.export-handoff-boundary {
+  border-top: 1px solid #e0e0e0;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+}
+
 .package-parity-grid {
   display: grid;
   gap: 0.75rem;
@@ -1342,6 +1400,11 @@ body {
   }
 
   .intake-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .export-handoff-grid,
+  .export-file-guide__table {
     grid-template-columns: 1fr;
   }
 

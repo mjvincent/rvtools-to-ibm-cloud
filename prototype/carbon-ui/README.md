@@ -36,6 +36,8 @@ assignment, autosave, and Terraform ZIP export all use the shared
 FastAPI/Postgres prototype stack. The shell also shows project save guidance
 near the saved-project controls, including whether work is still browser-only,
 queued for autosave, saved to Postgres, or blocked by an API/database issue.
+Export Readiness includes handoff guidance for package controls, key generated
+files, owner roles, and the Terraform execution boundary.
 The shell includes a workflow progress guide, compact collapsible workflow
 completion checklists, workflow-header `Step help`, shell-level help, and a
 separate user-guide route so evaluators can see what to do next without leaving

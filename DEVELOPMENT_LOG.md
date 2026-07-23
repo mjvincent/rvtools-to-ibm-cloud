@@ -22,6 +22,14 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Export Handoff Explainability
+- Added a Carbon Export handoff guidance panel that explains package controls,
+  key generated files, primary owner roles, and the Terraform execution
+  boundary.
+- Added focused helper/component tests for Export control and file guidance.
+- Updated Carbon README, user manual, testing checklist, and README notes while
+  preserving generated Terraform and handoff outputs.
+
 ### July 22, 2026: Carbon Project Save Guidance
 - Added state-aware Carbon project save guidance near the saved-project
   controls so users can distinguish browser-only work, queued autosave, saved

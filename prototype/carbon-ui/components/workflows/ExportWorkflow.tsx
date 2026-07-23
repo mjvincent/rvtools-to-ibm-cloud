@@ -27,6 +27,7 @@ import PackageParityStatus from './export/PackageParityStatus';
 import PackagePreflight from './export/PackagePreflight';
 import PackagePreview from './export/PackagePreview';
 import ExportChecklistPanel from './export/ExportChecklistPanel';
+import ExportHandoffGuide from './export/ExportHandoffGuide';
 import ExportReadinessHeader from './export/ExportReadinessHeader';
 import PlanningGapSummary from './export/PlanningGapSummary';
 import RemediationQueuePanel from './export/RemediationQueuePanel';
@@ -502,6 +503,7 @@ export default function ExportWorkflow() {
         checklist={exportChecklist}
         completeCount={exportChecklistComplete}
       />
+      <ExportHandoffGuide />
       <PlanningGapSummary findings={findings} />
       <RemediationQueuePanel
         remediationQueue={remediationQueue}

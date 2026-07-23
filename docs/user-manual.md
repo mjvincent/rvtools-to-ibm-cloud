@@ -1063,7 +1063,7 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 - **Override workflow**: Carbon includes a VM Overrides workflow for profile overrides, storage-tier overrides, exclusion reasons, override reasons, pricing-impact review, and decision-audit CSV export. Assignment rows route directly to override review for a selected VM.
 - **Wave planning, remediation, image import, and migration ops**: Carbon includes workflow tabs for wave metadata, remediation backlog tracking, image import status, and cutover readiness. These workflows persist through saved project state and contribute to the generated handoff ZIP.
 - **Export parity status**: Carbon Export shows package parity status before download. It identifies the Streamlit handoff file set, the Carbon modular Terraform layout, and the documented Carbon-only `network-plan.json` addition.
-- **Export readiness guidance**: Carbon Export includes a readiness checklist, backend package preflight, blocker routing, Terraform package preview, and ZIP download gating. ZIP download runs preflight first and stops when blockers remain.
+- **Export readiness guidance**: Carbon Export includes a readiness checklist, backend package preflight, blocker routing, Terraform package preview, handoff guidance, and ZIP download gating. The handoff guidance explains key package controls, generated files, owners, and the boundary that Terraform execution remains outside the app. ZIP download runs preflight first and stops when blockers remain.
 - **Remediation queue**: Carbon Export includes a prioritized queue that combines backend preflight blockers, local planning gaps, subnet CIDR gaps, Terraform naming cleanup, and warnings. `Resolve next issue` and each row-level `Review issue` action use the same routing logic so the user lands in the correct workflow with the affected VM or planning area selected.
 - **Suggested assignment fixes**: Carbon can suggest subnet, security group, storage/IOPS, and wave assignments from similarly named VMs, shared application/network/owner/cutover metadata, or matching bucket purpose. Suggestions show confidence and evidence, and users must explicitly apply them.
 - **Bulk remediation assistance**: Suggested queue fixes can be selected with checkboxes, selected in bulk when confidence is high, cleared, or applied from the Export Readiness queue. Each applied fix is audited.
@@ -1091,11 +1091,12 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 12. Review `Remediation Backlog`, `Image Import Planning`, and `Migration Ops` to track blocker owners, image import status, and cutover readiness.
 13. Review `Network Plan`, `Security Plan`, `Storage / IOPS Plan`, and `Wave Plan` for target design completeness.
 14. Open `Export Readiness`.
-15. Save or load the desired project, then run `Run preflight`.
-16. Use the remediation queue to route to blockers or apply reviewed high-confidence suggestions.
-17. Use `Preview Terraform` to inspect generated package files in the UI.
-18. Download the readiness report if a review artifact is needed.
-19. Click `Download Terraform ZIP` after preflight blockers are resolved.
+15. Review the handoff guidance to understand package controls, key generated files, owners, and operator responsibilities.
+16. Save or load the desired project, then run `Run preflight`.
+17. Use the remediation queue to route to blockers or apply reviewed high-confidence suggestions.
+18. Use `Preview Terraform` to inspect generated package files in the UI.
+19. Download the readiness report if a review artifact is needed.
+20. Click `Download Terraform ZIP` after preflight blockers are resolved.
 
 ### Carbon And Streamlit Parity
 | Area | Carbon status | Notes |
@@ -1105,7 +1106,7 @@ As of July 9, 2026, Carbon includes the core planning path, Phase 4 workflow sur
 | VSI profile and storage overrides | Implemented | VM Overrides workflow records profile, storage, scope, reasons, pricing impact, and decision audit. |
 | Network, security, storage, and wave planning | Implemented | Carbon has workflow tabs and saved-state persistence for these planning surfaces. |
 | Remediation, image import, and migration ops | Implemented | Carbon includes workflow tabs, CSV exports/imports where applicable, and handoff ZIP persistence. |
-| Export readiness and Terraform ZIP | Implemented | Includes package parity inventory, preview, preflight, queue routing, ZIP download, and readiness report. |
+| Export readiness and Terraform ZIP | Implemented | Includes package parity inventory, handoff guidance, preview, preflight, queue routing, ZIP download, and readiness report. |
 | Handoff package parity | Strong but still under review | Real-workbook parity coverage exists, but broader customer-scale and edge-case fixture coverage remains a promotion item. |
 | Accessibility and browser coverage | Partial | Automated Chromium, Firefox, and WebKit smoke coverage exists; broader manual screen-reader validation remains required. |
 | Production operations | Partial | Local Compose stack is healthy; hosted-runtime, backup/restore, support, and formal cutover operating model still need signoff. |
