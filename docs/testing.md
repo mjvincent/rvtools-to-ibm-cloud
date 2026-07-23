@@ -187,11 +187,14 @@ and sensitive-data boundary.
 6. Click `Load sample workbook` from Workbook Intake for the bundled small
    sample path, then optionally upload `samples/rvtools-small-complete.xlsx`
    manually to confirm upload still overrides loaded sample data.
-7. Visit VM Assignment, Network Plan, Remediation Backlog, Migration Ops, and
+7. Confirm Workbook Intake shows the clean sample, real RVTools upload, and
+   workshop sample choices, then shows `What happens next` after a workbook
+   loads.
+8. Visit VM Assignment, Network Plan, Remediation Backlog, Migration Ops, and
    Export Readiness.
-8. Run preflight or preview/download checks appropriate for the branch under
+9. Run preflight or preview/download checks appropriate for the branch under
    test.
-9. For Carbon API failure-path changes, simulate or inspect failed upload,
+10. For Carbon API failure-path changes, simulate or inspect failed upload,
    save, preflight, preview, and ZIP generation paths and confirm errors give a
    concrete recovery action instead of only a raw backend or browser exception.
 

@@ -26,11 +26,14 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-The workbook intake area can load `samples/rvtools-small-complete.xlsx` directly
-with `Load sample workbook`, or upload a local RVTools `.xlsx`. Both paths call
-the real FastAPI summary engine. Saved project controls, network-plan save/load,
-drag-and-drop VM assignment, autosave, and Terraform ZIP export all use the
-shared FastAPI/Postgres prototype stack.
+The workbook intake area separates the first decision into three clear paths:
+load `samples/rvtools-small-complete.xlsx` directly with `Load sample workbook`,
+upload a local RVTools `.xlsx`, or manually upload the larger workshop sample
+when the evaluator wants expected readiness findings. Both load paths call the
+real FastAPI summary engine and show next-step guidance after a workbook is
+loaded. Saved project controls, network-plan save/load, drag-and-drop VM
+assignment, autosave, and Terraform ZIP export all use the shared
+FastAPI/Postgres prototype stack.
 The shell includes a workflow progress guide, compact collapsible workflow
 completion checklists, workflow-header `Step help`, shell-level help, and a
 separate user-guide route so evaluators can see what to do next without leaving

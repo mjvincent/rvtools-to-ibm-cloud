@@ -22,6 +22,13 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Intake Decision Clarity
+- Reorganized Carbon Workbook Intake into clear choices for the bundled clean
+  sample, real RVTools upload, and the larger workshop sample exercise.
+- Added post-load next-step guidance so first-time users know to review
+  Overview, resolve findings, complete assignments, and run Export Readiness.
+- Updated Carbon intake tests and documentation for the clearer first-run flow.
+
 ### July 22, 2026: Carbon First-Run Sample Loader
 - Added a Carbon Workbook Intake `Load sample workbook` action backed by a
   FastAPI sample summary endpoint that parses the bundled small RVTools sample

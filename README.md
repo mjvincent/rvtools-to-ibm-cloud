@@ -118,8 +118,9 @@ replacement for Streamlit. Current checked-in sample/workshop workbook parity
 evidence is recorded in
 [`docs/carbon-real-workbook-parity-evidence.md`](docs/carbon-real-workbook-parity-evidence.md).
 Carbon Workbook Intake includes `Load sample workbook` for the bundled small
-sample, plus normal RVTools upload for local files and the larger workshop
-exercise.
+sample, normal RVTools upload for local files, and a workshop-sample prompt for
+the larger manual exercise. After a workbook loads, Carbon shows the immediate
+next steps from overview review through Export Readiness.
 
 ## Common First-Run Fixes
 | Symptom | Fix |

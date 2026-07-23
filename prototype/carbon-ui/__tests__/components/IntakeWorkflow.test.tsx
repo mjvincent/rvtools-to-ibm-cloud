@@ -1,7 +1,10 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import IntakeWorkflow, { rowsFromSummary } from '../../components/workflows/IntakeWorkflow';
+import IntakeWorkflow, {
+  getIntakeChoiceGuidance,
+  rowsFromSummary,
+} from '../../components/workflows/IntakeWorkflow';
 import { AppProvider, useAppState } from '../../store/AppContext';
 import { loadSampleWorkbookSummary, uploadWorkbook } from '../../hooks/useApi';
 import type { WorkbookSummary } from '../../types/network-planning';
@@ -106,6 +109,25 @@ describe('rowsFromSummary', () => {
   });
 });
 
+describe('getIntakeChoiceGuidance', () => {
+  it('explains clean sample, real upload, workshop sample, and next steps', () => {
+    const guidance = getIntakeChoiceGuidance();
+
+    expect(guidance.choices.map((choice) => choice.title)).toEqual([
+      'Start with clean sample',
+      'Upload RVTools workbook',
+      'Try workshop sample manually',
+    ]);
+    expect(guidance.choices[2].description).toContain('samples/SizingWorkshop-RVTools.xlsx');
+    expect(guidance.nextSteps).toEqual([
+      'Review Overview and readiness counts',
+      'Resolve or assign readiness findings',
+      'Map VMs to target network, security, storage, and wave plans',
+      'Run Export Readiness before downloading Terraform',
+    ]);
+  });
+});
+
 describe('IntakeWorkflow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -121,9 +143,20 @@ describe('IntakeWorkflow', () => {
 
     await waitFor(() => expect(loadSampleWorkbookSummary).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText('Loaded rvtools-small-complete.xlsx')).toBeTruthy());
+    expect(screen.getByLabelText('What happens next')).toBeTruthy();
+    expect(screen.getByText('Run Export Readiness before downloading Terraform')).toBeTruthy();
     expect(screen.getByTestId('intake-state').textContent).toContain(
       'rvtools-small-complete.xlsx|Loaded rvtools-small-complete.xlsx|no-error|rvtools-small-complete|1|app-01',
     );
+  });
+
+  it('shows distinct intake choices before a workbook is loaded', () => {
+    renderIntake();
+
+    expect(screen.getByText('Start with clean sample')).toBeTruthy();
+    expect(screen.getByText('Upload RVTools workbook')).toBeTruthy();
+    expect(screen.getByText('Try workshop sample manually')).toBeTruthy();
+    expect(screen.getByText('Manual upload exercise')).toBeTruthy();
   });
 
   it('reports workbook upload failures without replacing the current workbook state', async () => {

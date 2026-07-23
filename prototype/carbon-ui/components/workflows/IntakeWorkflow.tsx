@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, FileUploaderDropContainer, InlineNotification, Layer, Tag } from '@carbon/react';
+import { Button, FileUploaderDropContainer, InlineNotification, Layer, Tag, Tile } from '@carbon/react';
 import { useAppState } from '../../store/AppContext';
 import { sampleRows } from '../../store/AppContext';
 import { loadSampleWorkbookSummary, uploadWorkbook } from '../../hooks/useApi';
@@ -92,11 +92,45 @@ function rowsFromSummary(summary: WorkbookSummary) {
   }));
 }
 
-export { rowsFromSummary };
+type IntakeChoice = {
+  title: string;
+  description: string;
+};
+
+function getIntakeChoiceGuidance(): {
+  choices: IntakeChoice[];
+  nextSteps: string[];
+} {
+  return {
+    choices: [
+      {
+        title: 'Start with clean sample',
+        description: 'Use the bundled small workbook to confirm the workflow without browsing for a file.',
+      },
+      {
+        title: 'Upload RVTools workbook',
+        description: 'Use a real RVTools .xlsx export when you are ready to assess a source estate.',
+      },
+      {
+        title: 'Try workshop sample manually',
+        description: 'Upload samples/SizingWorkshop-RVTools.xlsx when you want a larger exercise with expected findings.',
+      },
+    ],
+    nextSteps: [
+      'Review Overview and readiness counts',
+      'Resolve or assign readiness findings',
+      'Map VMs to target network, security, storage, and wave plans',
+      'Run Export Readiness before downloading Terraform',
+    ],
+  };
+}
+
+export { getIntakeChoiceGuidance, rowsFromSummary };
 
 export default function IntakeWorkflow() {
   const { state, dispatch } = useAppState();
   const { uploadStatus, uploadError, projectName } = state;
+  const guidance = getIntakeChoiceGuidance();
 
   function applyWorkbookSummary(payload: WorkbookSummary) {
     const nextRows = rowsFromSummary(payload);
@@ -153,19 +187,31 @@ export default function IntakeWorkflow() {
         </div>
       </div>
       <WorkflowCompletionChecklist workflow="intake" />
-      <div className="sample-workbook-action">
-        <Button kind="tertiary" size="sm" onClick={handleLoadSample}>
-          Load sample workbook
-        </Button>
-        <p>Uses samples/rvtools-small-complete.xlsx for a clean first run.</p>
+      <div className="intake-choice-grid">
+        <Tile className="intake-choice-card">
+          <h3>{guidance.choices[0].title}</h3>
+          <p>{guidance.choices[0].description}</p>
+          <Button kind="tertiary" size="sm" onClick={handleLoadSample}>
+            Load sample workbook
+          </Button>
+        </Tile>
+        <Tile className="intake-choice-card intake-choice-card--upload">
+          <h3>{guidance.choices[1].title}</h3>
+          <p>{guidance.choices[1].description}</p>
+          <FileUploaderDropContainer
+            accept={['.xlsx']}
+            labelText="Drag and drop RVTools .xlsx here or click to upload"
+            multiple={false}
+            name="workbook"
+            onAddFiles={handleUpload}
+          />
+        </Tile>
+        <Tile className="intake-choice-card">
+          <h3>{guidance.choices[2].title}</h3>
+          <p>{guidance.choices[2].description}</p>
+          <Tag type="purple">Manual upload exercise</Tag>
+        </Tile>
       </div>
-      <FileUploaderDropContainer
-        accept={['.xlsx']}
-        labelText="Drag and drop RVTools .xlsx here or click to upload"
-        multiple={false}
-        name="workbook"
-        onAddFiles={handleUpload}
-      />
       {uploadStatus && (
         <InlineNotification
           kind="success"
@@ -181,6 +227,16 @@ export default function IntakeWorkflow() {
           title="Upload failed"
           subtitle={uploadError}
         />
+      )}
+      {state.summary && (
+        <div className="intake-next-steps" aria-label="What happens next">
+          <h3>What happens next</h3>
+          <ol>
+            {guidance.nextSteps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </div>
       )}
     </Layer>
   );

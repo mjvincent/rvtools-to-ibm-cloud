@@ -263,19 +263,53 @@ body {
   font-size: 1.25rem;
 }
 
-.sample-workbook-action {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+.intake-choice-grid {
+  align-items: stretch;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 1rem;
 }
 
-.sample-workbook-action p {
-  color: #525252;
-  font-size: 0.875rem;
-  line-height: 1.4;
+.intake-choice-card {
+  border-left: 0.25rem solid #0f62fe;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 13rem;
+}
+
+.intake-choice-card h3,
+.intake-next-steps h3 {
+  font-size: 1rem;
+  font-weight: 600;
   margin: 0;
+}
+
+.intake-choice-card p,
+.intake-next-steps li {
+  color: #525252;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.intake-choice-card--upload {
+  border-left-color: #24a148;
+}
+
+.intake-choice-card .cds--file__drop-container {
+  min-height: 4rem;
+}
+
+.intake-next-steps {
+  border-top: 1px solid #e0e0e0;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.intake-next-steps ol {
+  margin: 0.75rem 0 0 1.25rem;
+  padding: 0;
 }
 
 .assignment-layout {
@@ -1270,6 +1304,10 @@ body {
   .workflow-progress-guide__header,
   .workflow-progress-guide__steps,
   .workflow-completion-checklist ul {
+    grid-template-columns: 1fr;
+  }
+
+  .intake-choice-grid {
     grid-template-columns: 1fr;
   }
 
