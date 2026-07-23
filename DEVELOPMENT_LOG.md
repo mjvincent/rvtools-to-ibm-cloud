@@ -22,6 +22,15 @@ Evolution from a single-tab compute calculator to a multi-tab correlation model 
 - **vDisk**: Storage inventory (Capacity, Aggregate VM disk demand).
 
 ## Milestones
+### July 22, 2026: Carbon Export Summary Metrics
+- Added a Carbon Export summary metrics strip for saved-project state,
+  planning gaps, preflight blockers/warnings, remediation queue count, package
+  preview status, and ZIP readiness.
+- Added focused helper/component tests for the summary calculations and
+  rendered metrics panel.
+- Updated Carbon README, user manual, testing checklist, and README notes while
+  preserving generated Terraform and handoff outputs.
+
 ### July 22, 2026: Carbon Export Handoff Explainability
 - Added a Carbon Export handoff guidance panel that explains package controls,
   key generated files, primary owner roles, and the Terraform execution

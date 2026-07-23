@@ -852,6 +852,45 @@ body {
   padding: 1rem;
 }
 
+.export-summary-metrics {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-bottom: 0.75rem;
+}
+
+.export-summary-metric {
+  display: grid;
+  gap: 0.5rem;
+  min-height: 8.5rem;
+  padding: 0.75rem;
+}
+
+.export-summary-metric__header {
+  align-items: start;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.export-summary-metric h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.export-summary-metric strong {
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.export-summary-metric p {
+  color: #525252;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
 .export-handoff-grid {
   display: grid;
   gap: 0.75rem;
@@ -1403,6 +1442,7 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .export-summary-metrics,
   .export-handoff-grid,
   .export-file-guide__table {
     grid-template-columns: 1fr;

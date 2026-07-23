@@ -195,11 +195,14 @@ and sensitive-data boundary.
    Postgres, or blocked by API/database availability.
 9. Visit VM Assignment, Network Plan, Remediation Backlog, Migration Ops, and
    Export Readiness.
-10. Confirm Export Readiness shows handoff guidance for package controls, key
+10. Confirm Export Readiness shows summary metrics for saved-project state,
+   planning gaps, preflight status, remediation queue, preview, and ZIP
+   readiness.
+11. Confirm Export Readiness shows handoff guidance for package controls, key
    generated files, owner roles, and the Terraform execution boundary.
-11. Run preflight or preview/download checks appropriate for the branch under
+12. Run preflight or preview/download checks appropriate for the branch under
    test.
-12. For Carbon API failure-path changes, simulate or inspect failed upload,
+13. For Carbon API failure-path changes, simulate or inspect failed upload,
    save, preflight, preview, and ZIP generation paths and confirm errors give a
    concrete recovery action instead of only a raw backend or browser exception.
 

@@ -29,6 +29,7 @@ import PackagePreview from './export/PackagePreview';
 import ExportChecklistPanel from './export/ExportChecklistPanel';
 import ExportHandoffGuide from './export/ExportHandoffGuide';
 import ExportReadinessHeader from './export/ExportReadinessHeader';
+import ExportSummaryMetrics, { buildExportSummaryMetrics } from './export/ExportSummaryMetrics';
 import PlanningGapSummary from './export/PlanningGapSummary';
 import RemediationQueuePanel from './export/RemediationQueuePanel';
 import AssignmentSuggestionsPanel from './export/AssignmentSuggestionsPanel';
@@ -218,6 +219,14 @@ export default function ExportWorkflow() {
     preflightFindings: preflight?.findings || [],
     assignmentRows,
     planningCompleteness,
+  });
+  const exportSummaryMetrics = buildExportSummaryMetrics({
+    selectedProjectId,
+    isDirty: state.isDirty,
+    planningCompleteness,
+    preflight,
+    remediationQueue,
+    terraformPreview,
   });
   const hasResolvableIssue = remediationQueue.length > 0;
 
@@ -483,6 +492,7 @@ export default function ExportWorkflow() {
         onDownloadTerraform={handleDownloadTerraform}
       />
       <WorkflowCompletionChecklist workflow="export" />
+      <ExportSummaryMetrics metrics={exportSummaryMetrics} />
       {terraformStatus && (
         <InlineNotification
           kind="success"
